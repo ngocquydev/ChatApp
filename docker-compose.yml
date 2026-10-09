@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  redis:
+    image: redis:alpine
+    container_name: chat_redis
+    ports:
+      - "6379:6379"
+  mongo:
+    image: mongo:latest
+    container_name: chat_mongo
+    ports:
+      - "27017:27017"
