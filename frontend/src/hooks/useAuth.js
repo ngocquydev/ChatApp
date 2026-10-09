@@ -19,8 +19,7 @@ export const useAuth = () => {
       // Lưu thông tin user & token vào Zustand store
       setAuth(data.user, data.token);
 
-      // Chuyển hướng vào trang chính
-      navigate("/dashboard");
+      navigate("/");
     },
 
     // Xử lý khi xảy ra lỗi
