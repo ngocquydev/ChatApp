@@ -1,11 +1,12 @@
+// src/modules/users/entities/user.entity.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type UserDocument = User & Document;
+export type UserRepository = User & Document;
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ required: true, text: true })
+  @Prop({ required: true })
   name: string;
 
   @Prop({ required: false })
@@ -24,9 +25,14 @@ export class User {
   isBan: boolean;
 
   @Prop({ default: 'user' })
-  role: string;
+  role: string; // 'user', 'admin'
+  @Prop({ required: false })
+  refreshToken?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
+// Đánh Text Index cho name để hỗ trợ tìm kiếm
 UserSchema.index({ name: 'text' });

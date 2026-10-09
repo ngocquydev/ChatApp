@@ -6,7 +6,9 @@ import { redisStore } from 'cache-manager-redis-yet';
 import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
+import { RedisService } from './modules/redis/redis/redis.service.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
@@ -52,8 +54,10 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
     // 5. Các module tính năng khác
     UsersModule,
+
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, RedisService],
 })
 export class AppModule {}

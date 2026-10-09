@@ -4,8 +4,10 @@ import {
   IsString,
   MinLength,
   Matches,
+  IsOptional,
+  IsIn,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'Nguyễn Văn A', description: 'Họ và tên người dùng' })
@@ -13,14 +15,15 @@ export class CreateUserDto {
   @IsString({ message: 'Tên phải là chuỗi ký tự' })
   name: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '0987654321',
-    description: 'Số điện thoại (10 chữ số, chuẩn Việt Nam)',
+    description: 'Số điện thoại (đúng 10 chữ số, chuẩn đầu số VN)',
   })
-  @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
+  @IsOptional()
+  @IsString({ message: 'Số điện thoại phải là chuỗi ký tự' })
   @Matches(/^(03|05|07|08|09)\d{8}$/, {
     message:
-      'Số điện thoại không hợp lệ (phải có 10 chữ số và thuộc các đầu số 03, 05, 07, 08, 09)',
+      'Số điện thoại không hợp lệ (phải có đúng 10 chữ số và thuộc các đầu số 03, 05, 07, 08, 09)',
   })
   phone: string;
 
@@ -44,4 +47,13 @@ export class CreateUserDto {
       'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt',
   })
   password: string;
+
+  @ApiPropertyOptional({
+    example: 'user',
+    description: 'Vai trò người dùng (user hoặc admin)',
+  })
+  @IsOptional()
+  @IsString({ message: 'Role phải là chuỗi ký tự' })
+  @IsIn(['user', 'admin'], { message: 'Role chỉ có thể là user hoặc admin' })
+  role?: string;
 }

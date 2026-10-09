@@ -1,3 +1,4 @@
+// src/modules/users/users.controller.ts
 import {
   Controller,
   Get,
@@ -11,7 +12,7 @@ import { UsersService } from './users.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 
-@Controller('/v1/users')
+@Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -27,16 +28,19 @@ export class UsersController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+    // Đổi từ number sang string
+    return this.usersService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+    // Đổi từ number sang string
+    return this.usersService.update(id, updateUserDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+    // Đổi từ number sang string
+    return this.usersService.remove(id);
   }
 }
