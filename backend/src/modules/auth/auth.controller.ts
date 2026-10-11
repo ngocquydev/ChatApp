@@ -16,7 +16,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from '../users/users.service.js';
 import type { Response as ExpressResponse } from 'express';
 import { SignInDto } from './dto/sign-in.dto.js';
-import { MultiAuthGuard } from './guards/jwt-auth.guard.js';
+import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -110,7 +110,7 @@ export class AuthController {
       accessToken: result.accessToken,
     };
   }
-  @UseGuards(MultiAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('profile')
   getProfile(@Req() req: Request) {
@@ -125,7 +125,7 @@ export class AuthController {
     summary:
       'Đăng xuất tài khoản, xóa token trong DB và đưa vào Redis Blacklist',
   })
-  @UseGuards(MultiAuthGuard)
+  @UseGuards(JwtAuthGuard)
   async logout(
     @Req() req: Request,
     @Res({ passthrough: true }) res: ExpressResponse,

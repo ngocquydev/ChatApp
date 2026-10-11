@@ -145,7 +145,7 @@ function SmoothTypewriter({ words = ["Chào mừng bạn!", "Hôm nay thế nào
 }
 export default function Login() {
   const navigate = useNavigate();
-
+  const { redirectToSignIn } = useClerk();
   const [showPassword, setShowPassword] = useState(false);
 
   const [alertInfo, setAlertInfo] = useState({
@@ -246,8 +246,8 @@ export default function Login() {
       });
     }
   };
-  const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+  const handleGoogleLogin = async () => {
+    window.location.href = "http://localhost:5000/api/auth/facebook";
   };
 
   const handleFacebookLogin = () => {
