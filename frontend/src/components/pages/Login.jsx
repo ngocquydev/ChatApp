@@ -24,8 +24,13 @@ import {
 } from "@mui/material";
 import { useMotionValue, useTransform, animate } from "motion/react";
 import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight } from "lucide-react";
-
 import login from "@/data/loginData";
+import { getAuth, signInWithPopup } from "firebase/auth";
+import {
+  auth,
+  googleProvider,
+  facebookProvider,
+} from "../../config/firebase-config";
 
 const loginSchema = z.object({
   email: z
@@ -145,7 +150,6 @@ function SmoothTypewriter({ words = ["Chào mừng bạn!", "Hôm nay thế nào
 }
 export default function Login() {
   const navigate = useNavigate();
-  const { redirectToSignIn } = useClerk();
   const [showPassword, setShowPassword] = useState(false);
 
   const [alertInfo, setAlertInfo] = useState({
@@ -247,7 +251,13 @@ export default function Login() {
     }
   };
   const handleGoogleLogin = async () => {
-    window.location.href = "http://localhost:5000/api/auth/facebook";
+    try {
+      const auth = getAuth();
+      const res = await signInWithPopup(auth, googleProvider);
+      console.log(res);
+    } catch (error) {
+      console.error("lỗi", error);
+    }
   };
 
   const handleFacebookLogin = () => {
