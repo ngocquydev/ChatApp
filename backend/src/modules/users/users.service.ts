@@ -5,8 +5,6 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserRepository } from './entities/user.entity.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
-import { UpdateUserDto } from './dto/update-user.dto.js';
-
 @Injectable()
 export class UsersService {
   constructor(
@@ -16,40 +14,33 @@ export class UsersService {
   async create(createUserDto: CreateUserDto) {
     const { name, phone, email, password, role } = createUserDto;
 
-    // 1. Kiểm tra xem email đã tồn tại trong hệ thống hay chưa
     const existingUser = await this.userModel.findOne({ email });
     if (existingUser) {
-      throw new BadRequestException(
-        'Email này đã được sử dụng bởi tài khoản khác!',
-      );
+      throw new BadRequestException('Email đã được sử dụng!');
     }
 
-    // 2. Kiểm tra xem số điện thoại đã tồn tại chưa (nếu có nhập)
     if (phone) {
       const existingPhone = await this.userModel.findOne({ phone });
       if (existingPhone) {
-        throw new BadRequestException('Số điện thoại này đã được đăng ký!');
+        throw new BadRequestException('Số điện thoại này đã được sử dụng!');
       }
     }
 
-    // 3. Mã hóa mật khẩu bằng bcrypt (saltRounds = 10)
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // 4. Tạo bản ghi người dùng mới và lưu vào MongoDB
     const newUser = new this.userModel({
       name,
       phone,
       email,
       password: hashedPassword,
-      role: role || 'user', // Mặc định là 'user' nếu không truyền
+      role: role || 'user',
       isDeleted: false,
       isBan: false,
     });
 
     await newUser.save();
 
-    // 5. Trả về kết quả thành công (ẩn mật khẩu)
     return {
       success: true,
       message: 'Tạo người dùng thành công!',
@@ -67,16 +58,28 @@ export class UsersService {
   findAll() {
     return this.userModel.find({ isDeleted: false }).exec();
   }
-
-  findOne(id: string) {
-    return this.userModel.findById(id).exec();
+  async getStoredRefreshToken(userId: string) {
+    const user = await this.userModel
+      .findById(userId)
+      .select('refreshToken email')
+      .exec();
+    if (!user) {
+      return null;
+    }
+    return {
+      refreshToken: user.refreshToken,
+    };
   }
-
-  update(id: string, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async findByIdAndUpdate(userId: string, updateData: Partial<User>) {
+    return this.userModel
+      .findByIdAndUpdate(userId, updateData, { new: true })
+      .exec();
   }
-
-  remove(id: string) {
-    return `This action removes a #${id} user`;
+  async findOne(email: string) {
+    const user = await this.userModel.findOne({ email }).exec();
+    return user;
+  }
+  async findById(id: string) {
+    return this.userModel.findById(id).select('-password').exec();
   }
 }

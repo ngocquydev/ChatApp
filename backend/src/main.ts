@@ -1,33 +1,36 @@
-// src/main.ts
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common'; // <-- Thêm import này vào
+import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule, ObserveInstrument } from './app.module.js';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     instrument: ObserveInstrument,
   });
 
+  app.use(cookieParser());
+
   app.enableCors({
-    origin: '*', // Hoặc chỉ định rõ domain frontend của bạn, ví dụ: 'http://localhost:3000'
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:3000',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
-  // Kích hoạt Validation toàn cục cho DTO
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       transform: true,
       forbidNonWhitelisted: true,
+      stopAtFirstError: true,
     }),
   );
 
-  app.enableCsrfProtection();
-
-  // Cấu hình Swagger
   const config = new DocumentBuilder()
     .setTitle('Chat API Documentation')
     .setDescription('Hệ thống tài liệu API cho dự án Chat NestJS')
@@ -38,7 +41,6 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  // Khởi chạy ứng dụng (Phải đặt ở CUỐI CÙNG)
   const port = Number(process.env.PORT) || 3000;
   await app.listen(port);
 

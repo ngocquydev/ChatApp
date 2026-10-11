@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -9,6 +9,7 @@ import { AppService } from './app.service.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { RedisService } from './modules/redis/redis/redis.service.js';
+import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
@@ -60,4 +61,12 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
   controllers: [AppController],
   providers: [AppService, RedisService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RateLimitMiddleware)
+      // Áp dụng riêng cho đường dẫn đăng nhập hoặc toàn bộ api
+      .forRoutes('auth/login', 'auth/register');
+    // Hoặc dùng .forRoutes('*') nếu muốn áp dụng cho toàn bộ server
+  }
+}

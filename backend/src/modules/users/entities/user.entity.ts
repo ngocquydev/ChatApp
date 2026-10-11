@@ -26,8 +26,8 @@ export class User {
 
   @Prop({ default: 'user' })
   role: string; // 'user', 'admin'
-  @Prop({ required: false })
-  refreshToken?: string;
+  @Prop({ required: false, type: String })
+  refreshToken?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }

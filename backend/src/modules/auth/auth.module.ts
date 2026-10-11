@@ -1,21 +1,21 @@
-// src/modules/auth/auth.module.ts
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-
 import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { User, UserSchema } from '../users/entities/user.entity.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy.js';
 import { UsersModule } from '../users/users.module.js';
+import { RedisModule } from '../redis/redis/redis.module.js';
 
 @Module({
   imports: [
     PassportModule,
     UsersModule,
+    RedisModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -44,7 +44,7 @@ import { UsersModule } from '../users/users.module.js';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenStrategy, UsersModule],
+  providers: [AuthService, JwtStrategy, RefreshTokenStrategy],
   exports: [AuthService, JwtStrategy, RefreshTokenStrategy, PassportModule],
 })
 export class AuthModule {}

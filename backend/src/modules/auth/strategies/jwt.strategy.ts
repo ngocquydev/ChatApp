@@ -1,26 +1,28 @@
 // src/modules/auth/strategies/jwt.strategy.ts
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config';
+import { Strategy } from 'passport-jwt';
+import type { Request } from 'express';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(configService: ConfigService) {
+  constructor() {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      // ✅ Tự động trích xuất Access Token từ HttpOnly Cookie có tên là 'accessToken'
+      jwtFromRequest: (req: Request) => {
+        let token = null;
+        if (req && req.cookies) {
+          token = req.cookies['accessToken'];
+        }
+        return token;
+      },
       ignoreExpiration: false,
-      secretOrKey:
-        configService.get<string>('JWT_SECRET') ||
-        'my_super_secret_key_chat_app',
+      secretOrKey: process.env.JWT_SECRET || 'your_secret_key',
     });
   }
 
   async validate(payload: any) {
-    return {
-      userId: payload.sub,
-      email: payload.email,
-      role: payload.role,
-    };
+    // Payload sau khi verify sẽ được gán vào req.user
+    return { sub: payload.sub, email: payload.email, role: payload.role };
   }
 }
