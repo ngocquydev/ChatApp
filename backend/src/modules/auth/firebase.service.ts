@@ -26,7 +26,7 @@ export class FirebaseService implements OnModuleInit {
       // Dùng getAuth() thay vì admin.auth()
       const decodedToken = await getAuth().verifyIdToken(idToken);
       return decodedToken;
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException(
         'Firebase Token không hợp lệ hoặc đã hết hạn',
       );

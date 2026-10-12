@@ -6,7 +6,6 @@ import * as z from "zod";
 
 import {
   Box,
-  Paper,
   Typography,
   TextField,
   Button,
@@ -33,7 +32,6 @@ import {
   ArrowRight,
   User,
   Phone,
-  Check,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import useSocialAuth from "../../hooks/useSocialAuth";

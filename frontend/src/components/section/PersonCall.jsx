@@ -9,7 +9,7 @@ import {
   Divider,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { Search, Image as ImageIcon, Circle } from "lucide-react";
+import { Search, Circle } from "lucide-react";
 const INITIAL_FRIENDS = [
   {
     id: 1,

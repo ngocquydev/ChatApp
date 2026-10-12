@@ -54,7 +54,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const userObj =
       typeof user.toObject === 'function' ? user.toObject() : user;
 
-    const { password, refreshToken, ...result } = userObj;
+    const {
+      password: _password,
+      refreshToken: _refreshToken,
+      ...result
+    } = userObj;
 
     return {
       ...result,

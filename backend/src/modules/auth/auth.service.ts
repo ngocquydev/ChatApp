@@ -102,7 +102,7 @@ export class AuthService {
         message: 'Làm mới token thành công!',
         ...tokens,
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException(
         'Refresh Token không hợp lệ hoặc đã hết hạn!',
       );

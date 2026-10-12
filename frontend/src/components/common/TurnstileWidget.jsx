@@ -57,7 +57,9 @@ const TurnstileWidget = forwardRef(function TurnstileWidget(
       if (widgetIdRef.current !== null) {
         try {
           window.turnstile.remove(widgetIdRef.current);
-        } catch {}
+        } catch {
+          // Bỏ qua lỗi khi widget đã bị huỷ
+        }
         widgetIdRef.current = null;
       }
 
@@ -115,7 +117,9 @@ const TurnstileWidget = forwardRef(function TurnstileWidget(
       if (widgetIdRef.current !== null && window.turnstile) {
         try {
           window.turnstile.remove(widgetIdRef.current);
-        } catch {}
+        } catch {
+          // Bỏ qua lỗi khi widget đã bị huỷ
+        }
         widgetIdRef.current = null;
       }
     };

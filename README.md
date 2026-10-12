@@ -269,19 +269,47 @@ Khi Backend đang chạy, truy cập đường dẫn sau để xem và thử ngh
 
 ---
 
-## 🧪 Kiểm thử (Testing)
+## 🧪 Kiểm thử & CI/CD Tự động (Testing & CI Quality Gate)
 
-### Backend E2E Tests:
-Chạy bộ kiểm thử luồng xác thực toàn diện (Đăng ký $\rightarrow$ Đăng nhập $\rightarrow$ Gọi API bảo vệ $\rightarrow$ Đăng xuất $\rightarrow$ Xác thực blacklist):
+Dự án được bảo vệ bởi hệ thống kiểm soát chất lượng **CI 2 lớp** (Local Git Hook và GitHub Actions CI) nhằm đảm bảo không thể push mã nguồn lỗi lên nhánh `main`:
+
+### 1. GitHub Actions CI (`.github/workflows/ci.yml`)
+Mỗi khi có commit được `push` hoặc tạo `pull_request` vào nhánh `main`, GitHub Actions sẽ tự động kích hoạt 2 pipeline độc lập:
+- **Backend CI**: Chạy linter (`oxlint --type-aware`), unit tests (`vitest run`), và build ứng dụng NestJS (`nest build`).
+- **Frontend CI**: Chạy linter (`eslint .`), và build bundle production (`vite build`).
+
+### 2. Git Pre-Push Hook (Kiểm tra cục bộ trước khi push)
+Tệp `.git/hooks/pre-push` được cấu hình để tự động chặn lệnh `git push` nếu phát hiện bất kỳ lỗi cú pháp, linting, unit test hay build nào:
 ```bash
-cd backend
-npm run test:e2e
+git push origin main
+# Hook sẽ tự động chạy: Backend Lint -> Tests -> Build -> Frontend Lint -> Build
+# Nếu 1 trong các bước thất bại, quá trình push sẽ bị HỦY BỎ ngay lập tức!
 ```
 
-### Frontend Build Kiểm tra:
+### 3. Chạy kiểm tra thủ công (Local Script)
+Bạn có thể tự chạy kiểm tra toàn diện cả 2 phía bất kỳ lúc nào:
+- **Windows (PowerShell)**:
+  ```powershell
+  .\scripts\check.ps1
+  ```
+- **Linux / macOS (Bash)**:
+  ```bash
+  ./scripts/check.sh
+  ```
+
+### 4. Lệnh kiểm thử thủ công từng phần:
 ```bash
+# Backend:
+cd backend
+npm run lint      # Kiểm tra lỗi TypeScript & Linting với Oxlint
+npm run test      # Chạy Unit Tests với Vitest
+npm run test:e2e  # Chạy E2E Tests luồng xác thực toàn diện
+npm run build     # Build kiểm tra NestJS
+
+# Frontend:
 cd frontend
-npm run build
+npm run lint      # Kiểm tra ESLint
+npm run build     # Build kiểm tra Vite bundle
 ```
 
 ---

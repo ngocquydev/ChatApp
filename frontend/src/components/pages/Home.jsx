@@ -1,4 +1,3 @@
-import React, { useState, useRef, useEffect } from "react";
 import { Box } from "@mui/material";
 
 import Feed from "../section/Feed";

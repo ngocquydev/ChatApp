@@ -57,7 +57,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         await this.client.quit();
       }
     } catch (err) {
-      this.logger.warn(`Lỗi khi ngắt kết nối Redis: ${err}`);
+      this.logger.warn(
+        `Lỗi khi ngắt kết nối Redis: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
