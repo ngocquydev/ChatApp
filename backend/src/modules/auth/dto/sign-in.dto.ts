@@ -42,4 +42,13 @@ export class SignInDto {
   @IsOptional()
   @IsString({ message: 'Turnstile token phải là chuỗi ký tự' })
   turnstileToken?: string;
+
+  @ApiProperty({
+    example: '0.xxxxxxxxxxxx',
+    description: 'Cloudflare Turnstile token canonical field (cf-turnstile-response)',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'cf-turnstile-response phải là chuỗi ký tự' })
+  'cf-turnstile-response'?: string;
 }

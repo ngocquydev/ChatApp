@@ -10,8 +10,11 @@ const TurnstileWidget = forwardRef(function TurnstileWidget(
     onSuccess,
     onError,
     onExpire,
-    siteKey = import.meta.env.VITE_SITE_KEY ||
-      import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY,
+    siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY ||
+      import.meta.env.VITE_SITE_KEY ||
+      import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY ||
+      "0x4AAAAAAFUR2RRMbBht62MJ",
+    action = "login",
     theme = "light",
   },
   ref
@@ -22,21 +25,27 @@ const TurnstileWidget = forwardRef(function TurnstileWidget(
 
   useImperativeHandle(ref, () => ({
     reset: () => {
-      if (widgetIdRef.current && window.turnstile) {
+      if (widgetIdRef.current !== null && window.turnstile) {
         window.turnstile.reset(widgetIdRef.current);
       }
     },
     remove: () => {
-      if (widgetIdRef.current && window.turnstile) {
+      if (widgetIdRef.current !== null && window.turnstile) {
         window.turnstile.remove(widgetIdRef.current);
         widgetIdRef.current = null;
       }
+    },
+    getResponse: () => {
+      if (widgetIdRef.current !== null && window.turnstile) {
+        return window.turnstile.getResponse(widgetIdRef.current);
+      }
+      return "";
     },
   }));
 
   useEffect(() => {
     if (!cleanSiteKey) {
-      console.warn("Chưa cấu hình VITE_SITE_KEY cho Cloudflare Turnstile.");
+      console.warn("Chưa cấu hình Turnstile Site Key.");
       return;
     }
 
@@ -45,8 +54,7 @@ const TurnstileWidget = forwardRef(function TurnstileWidget(
     const renderWidget = () => {
       if (!isMounted || !containerRef.current || !window.turnstile) return;
 
-      // Xóa widget cũ nếu đã từng render
-      if (widgetIdRef.current) {
+      if (widgetIdRef.current !== null) {
         try {
           window.turnstile.remove(widgetIdRef.current);
         } catch {}
@@ -56,6 +64,7 @@ const TurnstileWidget = forwardRef(function TurnstileWidget(
       try {
         const id = window.turnstile.render(containerRef.current, {
           sitekey: cleanSiteKey,
+          action: action,
           theme: theme,
           callback: (token) => {
             if (isMounted && onSuccess) {
@@ -79,7 +88,6 @@ const TurnstileWidget = forwardRef(function TurnstileWidget(
       }
     };
 
-    // Kiểm tra xem script Turnstile đã được load vào trang chưa
     const SCRIPT_ID = "cf-turnstile-script";
     let script = document.getElementById(SCRIPT_ID);
 
@@ -104,20 +112,20 @@ const TurnstileWidget = forwardRef(function TurnstileWidget(
 
     return () => {
       isMounted = false;
-      if (widgetIdRef.current && window.turnstile) {
+      if (widgetIdRef.current !== null && window.turnstile) {
         try {
           window.turnstile.remove(widgetIdRef.current);
         } catch {}
         widgetIdRef.current = null;
       }
     };
-  }, [cleanSiteKey, theme]);
+  }, [cleanSiteKey, action, theme]);
 
   if (!cleanSiteKey) {
     return (
       <Box sx={{ my: 1.5, p: 1, border: "1px dashed #cbd5e1", borderRadius: 1.5 }}>
         <Typography variant="caption" color="text.secondary">
-          Vui lòng thêm VITE_SITE_KEY trong file .env để kích hoạt Turnstile.
+          Vui lòng thêm VITE_TURNSTILE_SITE_KEY trong file .env để kích hoạt Turnstile.
         </Typography>
       </Box>
     );

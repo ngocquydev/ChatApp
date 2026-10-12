@@ -80,9 +80,13 @@ export class AuthController {
       (req.headers as any)?.['x-forwarded-for'] ||
       (req as any).ip;
 
+    const turnstileToken =
+      signInDto['cf-turnstile-response'] || signInDto.turnstileToken;
+
     await this.turnstileService.validateTurnstile(
-      signInDto.turnstileToken,
+      turnstileToken,
       clientIp,
+      'login',
     );
 
     const { email, password } = signInDto;

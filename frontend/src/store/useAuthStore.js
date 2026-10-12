@@ -53,6 +53,8 @@ export const useAuthStore = create((set) => ({
         email: credentials.email,
         password: credentials.password,
         turnstileToken: credentials.turnstileToken,
+        "cf-turnstile-response":
+          credentials["cf-turnstile-response"] || credentials.turnstileToken,
       });
 
       // Lấy trực tiếp profile từ response đăng nhập (tránh gọi thêm request /auth/profile)
