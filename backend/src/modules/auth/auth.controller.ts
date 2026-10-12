@@ -14,18 +14,22 @@ import { AuthService } from './auth.service.js';
 import { CreateUserDto } from '../users/dto/create-user.dto.js';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from '../users/users.service.js';
-import type { Response as ExpressResponse } from 'express';
+import type {
+  Response as ExpressResponse,
+  Request as ExpressRequest,
+} from 'express';
 import { SignInDto } from './dto/sign-in.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { FirebaseService } from './firebase.service.js';
 import { TurnstileService } from './turnstile.service.js';
-interface AuthenticatedRequest extends Request {
-  user: {
-    sub: string;
-    email: string;
-    role: string;
-  };
-}
+import type {
+  AuthenticatedRequest,
+  RequestWithCookies,
+} from './types/auth.types.js';
+
+const ACCESS_TOKEN_MAX_AGE = 60 * 60 * 1000; // 1 giờ
+const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 ngày
+
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -56,11 +60,25 @@ export class AuthController {
       res,
       'accessToken',
       token.accessToken,
-      15 * 60 * 1000,
+      ACCESS_TOKEN_MAX_AGE,
+    );
+    this.authService.setTokenCookie(
+      res,
+      'refreshToken',
+      token.refreshToken,
+      REFRESH_TOKEN_MAX_AGE,
     );
     return {
       success: true,
       message: 'Đăng ký tài khoản thành công!',
+      profile: {
+        _id: payload.id.toString(),
+        name: payload.name,
+        email: payload.email,
+        phone: payload.phone,
+        role: payload.role,
+        avatar: payload.avatar,
+      },
       ...token,
     };
   }
@@ -72,13 +90,22 @@ export class AuthController {
   })
   async login(
     @Body() signInDto: SignInDto,
-    @Req() req: Request,
+    @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: ExpressResponse,
   ) {
+    const rawForwarded = req.headers['x-forwarded-for'];
+    const forwardedIp =
+      typeof rawForwarded === 'string'
+        ? rawForwarded.split(',')[0].trim()
+        : Array.isArray(rawForwarded)
+          ? rawForwarded[0]
+          : undefined;
+
     const clientIp =
-      (req.headers as any)?.['cf-connecting-ip'] ||
-      (req.headers as any)?.['x-forwarded-for'] ||
-      (req as any).ip;
+      (req.headers['cf-connecting-ip'] as string | undefined) ||
+      forwardedIp ||
+      req.ip ||
+      '';
 
     const turnstileToken =
       signInDto['cf-turnstile-response'] || signInDto.turnstileToken;
@@ -95,13 +122,13 @@ export class AuthController {
       res,
       'accessToken',
       result.accessToken,
-      15 * 60 * 1000,
+      ACCESS_TOKEN_MAX_AGE,
     );
     this.authService.setTokenCookie(
       res,
       'refreshToken',
       result.refreshToken,
-      7 * 24 * 60 * 60 * 1000,
+      REFRESH_TOKEN_MAX_AGE,
     );
 
     return result;
@@ -111,10 +138,10 @@ export class AuthController {
     summary: 'Làm mới Access Token từ Refresh Token trong cookie',
   })
   async refreshTokens(
-    @Req() req: Request,
+    @Req() req: RequestWithCookies,
     @Res({ passthrough: true }) res: ExpressResponse,
   ) {
-    const token = (req as any).cookies?.refreshToken;
+    const token = req.cookies?.refreshToken;
     if (!token) {
       throw new UnauthorizedException('Không tìm thấy Refresh Token!');
     }
@@ -125,7 +152,7 @@ export class AuthController {
       res,
       'accessToken',
       result.accessToken,
-      15 * 60 * 1000,
+      ACCESS_TOKEN_MAX_AGE,
     );
 
     return {
@@ -152,13 +179,13 @@ export class AuthController {
       'Đăng xuất tài khoản, xóa token trong DB và đưa vào Redis Blacklist',
   })
   async logout(
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
     @Res({ passthrough: true }) res: ExpressResponse,
   ) {
-    const user = (req as any).user;
-    const userId = user?._id || user?.id || user?.sub;
+    const user = req.user;
+    const userId = user?._id?.toString() || user?.id?.toString() || user?.sub;
 
-    const accessToken = (req as any).cookies?.['accessToken'];
+    const accessToken = req.cookies?.['accessToken'];
 
     if (userId) {
       await this.authService.logout(userId.toString(), accessToken);
@@ -183,11 +210,10 @@ export class AuthController {
   }
   @Post('firebase-login')
   async firebaseLogin(
-    @Req() req: Request,
+    @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: ExpressResponse,
   ) {
-    const headers = req.headers as any;
-    const authHeader = headers.authorization || headers.Authorization;
+    const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -226,13 +252,13 @@ export class AuthController {
       res,
       'accessToken',
       tokens.accessToken,
-      15 * 60 * 1000,
+      ACCESS_TOKEN_MAX_AGE,
     );
     this.authService.setTokenCookie(
       res,
       'refreshToken',
       tokens.refreshToken,
-      7 * 24 * 60 * 60 * 1000,
+      REFRESH_TOKEN_MAX_AGE,
     );
 
     return {

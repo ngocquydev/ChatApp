@@ -1,6 +1,6 @@
 # 💬 Realtime Chat Application
 
-Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (Modern Realtime Chat Application) được xây dựng theo kiến trúc Client - Server với **NestJS** ở phía Backend và **React 19 (Vite)** ở phía Frontend, tích hợp **MongoDB**, **Redis**, **Firebase Auth** và **JWT HttpOnly Cookies**.
+Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (**Modern Realtime Chat Application**) được xây dựng theo kiến trúc Client - Server với **NestJS** ở phía Backend và **React 19 (Vite)** ở phía Frontend, tích hợp **MongoDB**, **Redis**, **Firebase Auth**, **Cloudflare Turnstile** và **JWT HttpOnly Cookies**.
 
 ---
 
@@ -13,28 +13,35 @@ Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (Modern
   - [2. Khởi chạy cơ sở dữ liệu (Docker)](#2-khởi-chạy-cơ-sở-dữ-liệu-docker)
   - [3. Cấu hình & Chạy Backend](#3-cấu-hình--chạy-backend)
   - [4. Cấu hình & Chạy Frontend](#4-cấu-hình--chạy-frontend)
-- [🔐 Cơ chế xác thực (Authentication Flow)](#-cơ-chế-xác-thực-authentication-flow)
+- [🔐 Cơ chế xác thực & Bảo mật (Authentication Flow)](#-cơ-chế-xác-thực--bảo-mật-authentication-flow)
 - [📚 Tài liệu API (Swagger)](#-tài-liệu-api-swagger)
 - [🧪 Kiểm thử (Testing)](#-kiểm-thử-testing)
-- [📋 Checklist các thay đổi & Lộ trình](#-checklist-các-thay-đổi--lộ-trình)
+- [📋 Lịch sử cập nhật & Lộ trình phát triển](#-lịch-sử-cập-nhật--lộ-trình-phát-triển)
 
 ---
 
 ## ✨ Tính năng nổi bật
 
 - **Đăng nhập & Đăng ký đa phương thức**:
-  - Đăng nhập truyền thống bằng Email & Mật khẩu (mã hóa mật khẩu bằng `bcrypt`).
-  - Đăng nhập mạng xã hội (Google & Facebook) thông qua Firebase Authentication.
+  - Đăng nhập & Đăng ký truyền thống bằng Email & Mật khẩu (mã hóa mật khẩu bằng `bcrypt` 10 salt rounds).
+  - Tách biệt thông báo lỗi đăng nhập chuẩn xác: *"Email không tồn tại trên hệ thống!"* hoặc *"Mật khẩu không chính xác!"*.
+  - Đăng nhập mạng xã hội (**Google & Facebook**) qua Firebase Authentication SDK với kiến trúc Custom Hook `useSocialAuth` dùng chung.
+  - Tự động bắt và xử lý lỗi xung đột email Firebase (`auth/account-exists-with-different-credential` $\rightarrow$ *"Email này đã được đăng ký"*).
+  - Đo lường độ mạnh mật khẩu thời gian thực (Password Strength Meter) với 3 mức độ (Yếu / Trung bình / Rất mạnh).
+  - Nút ẩn/hiện mật khẩu tiện lợi trên toàn bộ các biểu mẫu.
 - **Bảo mật phiên đăng nhập & Chống Bot / DDoS**:
-  - Tích hợp **Cloudflare Turnstile** thông minh bảo vệ biểu mẫu đăng nhập khỏi bot và tấn công brute-force.
-  - Cặp `AccessToken` và `RefreshToken` được lưu trong **HttpOnly Cookie** chống tấn công XSS.
-  - Tự động làm mới token (`auto-refresh`) qua Axios Response Interceptor khi AccessToken hết hạn.
+  - Tích hợp **Cloudflare Turnstile** thông minh bảo vệ biểu mẫu đăng nhập khỏi bot tự động và tấn công brute-force.
+  - Cặp `AccessToken` (1 giờ) và `RefreshToken` (7 ngày) được lưu trữ trong **HttpOnly Cookie** (`sameSite: 'lax'`) chống đánh cắp qua XSS.
+  - Tự động làm mới token (`auto-refresh`) qua Axios Response Interceptor khi AccessToken hết hạn mà không làm gián đoạn trải nghiệm người dùng.
   - Thu hồi token và đưa vào **Redis Blacklist** khi người dùng đăng xuất.
-  - Phân quyền và bảo vệ route bằng NestJS Guards (`JwtAuthGuard`) và React `ProtectedRoute`.
-- **Giao diện hiện đại & Mượt mà**:
-  - Xây dựng bằng React 19, Material UI (MUI), Lucide Icons và Motion Animations.
-  - Hiệu ứng gõ chữ mượt mà (Smooth Typewriter), thông báo lỗi rõ ràng, trạng thái loading trực quan.
-  - Hỗ trợ ghi nhớ tài khoản đăng nhập (`Remember Me`).
+  - Phân quyền và bảo vệ route bằng NestJS Guards (`JwtAuthGuard`) và React Router (`ProtectedRoute`).
+- **Tối ưu hóa hiệu năng & Chống gọi trùng lặp (Deduplication)**:
+  - Áp dụng cơ chế **In-flight Promise Deduplication** trong `useAuthStore` cho hàm `checkAuth()`: triệt tiêu việc gọi đúp API `/auth/profile` khi reload trang (kể cả trong `React.StrictMode`).
+  - Tối ưu luồng đăng nhập/đăng ký: trực tiếp tái sử dụng dữ liệu `profile` từ response ban đầu, loại bỏ các lệnh gọi API thừa.
+- **Giao diện hiện đại & Chuẩn hóa React 19 / MUI**:
+  - Giao diện xây dựng bằng **React 19**, **Material UI (MUI)**, **Lucide Icons** và **Motion Animations**.
+  - Chuẩn hóa 100% sang API `slotProps={{ input: { ... } }}` của MUI, loại bỏ hoàn toàn các cảnh báo deprecated `InputProps`.
+  - Hỗ trợ ghi nhớ tài khoản đăng nhập (`Remember Me`) qua `localStorage`.
 - **Tài liệu API chuẩn hóa**:
   - Swagger UI được cấu hình sẵn tại `/api-docs`.
 
@@ -44,9 +51,9 @@ Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (Modern
 
 | Tầng | Công nghệ / Thư viện chính |
 | :--- | :--- |
-| **Frontend** | React 19, Vite, Material UI (MUI), Zustand, TanStack React Query, React Hook Form, Zod, Axios, Firebase SDK, Lucide React, Motion |
-| **Backend** | NestJS (Express), TypeScript, Passport.js (JWT Strategy), Mongoose, Redis (IoRedis / Cache Manager), Firebase Admin SDK, Class Validator |
-| **Cơ sở dữ liệu & Cache** | MongoDB (lưu trữ người dùng, dữ liệu tin nhắn), Redis (cache, blacklist token, session) |
+| **Frontend** | React 19, Vite, Material UI (MUI), Zustand, TanStack React Query, React Hook Form, Zod, Axios, Firebase Client SDK, Lucide React, Motion |
+| **Backend** | NestJS (Express), TypeScript, Passport.js (JWT Strategy), Mongoose (MongoDB), Redis (IoRedis), Firebase Admin SDK, Cloudflare Turnstile, Class Validator |
+| **Cơ sở dữ liệu & Cache** | MongoDB (lưu trữ người dùng, dữ liệu tin nhắn), Redis (Blacklist token, session người dùng, rate limiting) |
 | **DevOps & Môi trường** | Docker & Docker Compose |
 
 ---
@@ -62,31 +69,36 @@ chat/
 │   ├── src/
 │   │   ├── common/              # Guards, Interceptors, Filters dùng chung
 │   │   ├── modules/
-│   │   │   ├── auth/            # Module xác thực (JWT, Firebase, Controller, Service)
-│   │   │   │   ├── dto/         # Data Transfer Objects (Login, Register)
+│   │   │   ├── auth/            # Module xác thực (JWT, Firebase, Turnstile, Controller, Service)
+│   │   │   │   ├── dto/         # Data Transfer Objects (SignInDto, CreateUserDto)
 │   │   │   │   ├── guards/      # JWT Guards
-│   │   │   │   └── strategies/  # Passport JWT Strategy
-│   │   │   ├── redis/           # Module kết nối và thao tác Redis
+│   │   │   │   ├── strategies/  # Passport JWT Strategy
+│   │   │   │   └── types/       # TypeScript interfaces (AuthResult, JwtPayload, RequestWithCookies)
+│   │   │   ├── redis/           # Module kết nối Redis, quản lý Blacklist & Session (Fail-safe mode)
 │   │   │   └── users/           # Module quản lý thông tin User & Schema
 │   │   ├── app.module.ts        # Module gốc của ứng dụng
 │   │   └── main.ts              # Entry point cấu hình CORS, Cookie, Swagger
 │   ├── test/                    # Kiểm thử E2E (Vitest & Supertest)
+│   ├── .env.example             # Biến môi trường mẫu cho Backend
 │   ├── package.json
 │   └── tsconfig.json
 │
 └── frontend/                    # Mã nguồn Frontend (React + Vite)
     ├── src/
     │   ├── components/
+    │   │   ├── common/          # Component dùng chung (TurnstileWidget)
     │   │   ├── layout/          # AppBar, Header, Drawer menu
-    │   │   ├── pages/           # Login, Home, ChatApp
+    │   │   ├── pages/           # Login, Register, Home, ChatApp
     │   │   └── section/         # Feed, Message, PersonCall
     │   ├── config/              # Cấu hình Firebase Client SDK
-    │   ├── data/                # Dữ liệu tĩnh, nội dung hiển thị
+    │   ├── data/                # Dữ liệu tĩnh, nội dung hiển thị (loginData, registerData)
+    │   ├── hooks/               # Custom Hooks (useSocialAuth)
     │   ├── routes/              # Cấu hình React Router & ProtectedRoute
-    │   ├── services/            # Cấu hình Axios Instance & Interceptors
-    │   ├── store/               # Zustand Store (useAuthStore)
-    │   ├── App.jsx              # Khởi tạo React Query & Router Provider
-    │   └── main.jsx             # Entry point Frontend
+    │   ├── services/            # Cấu hình Axios Instance & Response Interceptors
+    │   ├── store/               # Zustand Store (useAuthStore với in-flight deduplication)
+    │   ├── App.jsx              # Khởi tạo React Query, Router Provider & khôi phục phiên
+    │   └── main.jsx             # Entry point Frontend (React 19)
+    ├── .env.example             # Biến môi trường mẫu cho Frontend
     ├── package.json
     └── vite.config.js
 ```
@@ -103,7 +115,7 @@ chat/
 ---
 
 ### 2. Khởi chạy cơ sở dữ liệu (Docker)
-Tại thư mục gốc của dự án (`d:\Web\chat`), khởi chạy container Redis và MongoDB:
+Tại thư mục gốc của dự án (`chat/`), khởi chạy container Redis và MongoDB:
 
 ```bash
 docker compose up -d
@@ -131,14 +143,14 @@ docker compose ps
    ```
 
 3. Cấu hình biến môi trường (`backend/.env`):
-   Tạo file `.env` với nội dung mẫu:
+   Tạo file `.env` dựa trên `.env.example`:
    ```env
    PORT=3000
    MONGODB_URI=mongodb://localhost:27017/chatapp
    REDIS_HOST=localhost
    REDIS_PORT=6379
    JWT_SECRET=your_jwt_secret_key_here
-   JWT_EXPIRES_IN=15m
+   JWT_EXPIRES_IN=1h
    JWT_REFRESH_SECRET=your_jwt_refresh_secret_key_here
    JWT_REFRESH_EXPIRES_IN=7d
    NODE_ENV=development
@@ -147,6 +159,9 @@ docker compose ps
    FIREBASE_PROJECT_ID=your-firebase-project-id
    FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
    FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+   # Cloudflare Turnstile Secret Key
+   SECRET_KEY_CLOUDFLARE=your_cloudflare_turnstile_secret_key
    ```
 
 4. Khởi chạy Backend ở chế độ phát triển:
@@ -171,6 +186,7 @@ docker compose ps
    ```
 
 3. Cấu hình biến môi trường (`frontend/.env`):
+   Tạo file `.env` dựa trên `.env.example`:
    ```env
    VITE_BACKEND_URL=http://localhost:3000
    VITE_FIREBASE_API_KEY=your_firebase_api_key
@@ -180,6 +196,9 @@ docker compose ps
    VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
    VITE_FIREBASE_APP_ID=your_app_id
    VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+   # Cloudflare Turnstile Site Key
+   VITE_SITE_KEY=your_cloudflare_turnstile_site_key
    ```
 
 4. Khởi chạy Frontend:
@@ -190,40 +209,45 @@ docker compose ps
 
 ---
 
-## 🔐 Cơ chế xác thực (Authentication Flow)
+## 🔐 Cơ chế xác thực & Bảo mật (Authentication Flow)
 
 ```text
 [ Người Dùng ]
       │
-      ├─► Đăng nhập (Email/Password) ────► POST /auth/login
-      │                                       │
-      │                                       ▼
-      │                             Xác thực mật khẩu (Bcrypt)
-      │                                       │
-      │                                       ▼
-      │                             Tạo Access & Refresh Token
-      │                                       │
-      │   Nhận HttpOnly Cookies ◄─────────────┘
+      ├─► Đăng nhập (Email/Password + Turnstile) ─► POST /auth/login
+      │                                                │
+      │                                                ├─► 1. Xác thực Turnstile Token
+      │                                                ├─► 2. Kiểm tra tài khoản & Mật khẩu (Bcrypt)
+      │                                                └─► 3. Tạo AccessToken (1h) & RefreshToken (7d)
+      │                                                         │
+      │   Nhận HttpOnly Cookies ◄───────────────────────────────┘
       │   (accessToken & refreshToken)
+      │
+      ├─► Đăng nhập Mạng xã hội ────────────────► Firebase Client Popup (Google / FB)
+      │                                                │
+      │                                                ▼ Lấy IdToken
+      │                                         POST /auth/firebase-login
+      │                                                │
+      │                                                ▼ Cấp Cookie Access & Refresh Token
       │
       ├─► Gọi API được bảo vệ (VD: /auth/profile)
       │         │
-      │         ├─► [Hợp lệ 200] ──► Truy cập dữ liệu
+      │         ├─► [Hợp lệ 200] ──► Truy cập dữ liệu thành công
       │         │
-      │         └─► [401 Hết hạn] ──► Axios Interceptor bắt lỗi
+      │         └─► [401 Hết hạn] ──► Axios Response Interceptor bắt lỗi
       │                                       │
       │                                       ▼
       │                                 POST /auth/refresh
       │                                       │
       │                                       ▼
-      │                                 Cấp lại AccessToken mới
-      │                                 Thử lại request ban đầu tự động
+      │                                 Cấp lại AccessToken mới (HttpOnly)
+      │                                 Tự động retry lại request ban đầu
       │
       └─► Đăng xuất ─────────────────────► POST /auth/logout
                                               │
                                               ▼
                                    Xóa Cookies + Đưa AccessToken
-                                   vào Redis Blacklist
+                                   vào Redis Blacklist (với TTL còn lại)
 ```
 
 ---
@@ -236,8 +260,8 @@ Khi Backend đang chạy, truy cập đường dẫn sau để xem và thử ngh
 ### Các Endpoint chính:
 | Phương thức | Endpoint | Mô tả | Yêu cầu xác thực |
 | :--- | :--- | :--- | :---: |
-| `POST` | `/auth/register` | Đăng ký tài khoản mới và cấp Token Cookie | ❌ |
-| `POST` | `/auth/login` | Đăng nhập tài khoản và cấp Token Cookie | ❌ |
+| `POST` | `/auth/register` | Đăng ký tài khoản mới, trả về profile và cấp Token Cookie | ❌ |
+| `POST` | `/auth/login` | Đăng nhập tài khoản (xác thực Turnstile) và cấp Token Cookie | ❌ |
 | `POST` | `/auth/firebase-login` | Xác thực đăng nhập qua Firebase (Google/Facebook) | ❌ (Gửi Bearer IdToken) |
 | `POST` | `/auth/refresh` | Làm mới AccessToken từ RefreshToken trong Cookie | ❌ (Cần Cookie refreshToken) |
 | `GET` | `/auth/profile` | Lấy thông tin tài khoản người dùng đang đăng nhập | ✅ (Bearer / Cookie) |
@@ -248,7 +272,7 @@ Khi Backend đang chạy, truy cập đường dẫn sau để xem và thử ngh
 ## 🧪 Kiểm thử (Testing)
 
 ### Backend E2E Tests:
-Chạy bộ kiểm thử luồng xác thực toàn diện (Đăng ký -> Đăng nhập -> Gọi API bảo vệ -> Đăng xuất -> Xác thực blacklist):
+Chạy bộ kiểm thử luồng xác thực toàn diện (Đăng ký $\rightarrow$ Đăng nhập $\rightarrow$ Gọi API bảo vệ $\rightarrow$ Đăng xuất $\rightarrow$ Xác thực blacklist):
 ```bash
 cd backend
 npm run test:e2e
@@ -262,59 +286,35 @@ npm run build
 
 ---
 
-## 📋 Checklist các thay đổi & Lộ trình
+## 📋 Lịch sử cập nhật & Lộ trình phát triển
 
-### 📂 Checklist các file đã thay đổi (Modified Files)
+### ✅ Các tính năng & Cải tiến đã hoàn thành
 
-#### 🔹 Phía Frontend:
-- [x] [`frontend/src/store/useAuthStore.js`](frontend/src/store/useAuthStore.js): Bổ sung `checkAuth()`, quản lý các trạng thái `isCheckingAuth`, `isLoggingIn`, chuẩn hóa dữ liệu trả về cho `loginMe`, `loginfirebase` và `logout`.
-- [x] [`frontend/src/services/api.js`](frontend/src/services/api.js): Cấu hình Axios với `withCredentials: true`, triển khai Interceptor tự động bắt lỗi `401 Unauthorized` để gọi `/auth/refresh` và retry request với hàng đợi `failedQueue`.
-- [x] [`frontend/src/routes/ProtectedRoute.jsx`](frontend/src/routes/ProtectedRoute.jsx): Thêm trạng thái chờ `isCheckingAuth` với màn hình loading đẹp mắt, ngăn ngừa việc văng ra `/login` khi F5 hoặc mở tab mới.
-- [x] [`frontend/src/App.jsx`](frontend/src/App.jsx): Gọi `checkAuth()` trong `useEffect` khi `Layout` mount để tự động khôi phục phiên đăng nhập trên toàn ứng dụng.
-- [x] [`frontend/src/components/pages/Login.jsx`](frontend/src/components/pages/Login.jsx): Xóa import lỗi `da from "zod/v4/locales"`, thêm tự động redirect về `/` nếu đã login, thêm tính năng "Ghi nhớ đăng nhập" qua `localStorage`, loading indicator trên các nút và chuẩn hóa hiển thị lỗi.
-- [x] [`frontend/vite.config.js`](frontend/vite.config.js): Cập nhật alias `@` sang chuẩn ESM `fileURLToPath` để loại bỏ hoàn toàn cảnh báo của Vite.
+1. **Kiến trúc Xác thực & Bảo mật nâng cao**:
+   - [x] Cấu hình thời hạn token chuẩn an toàn: **AccessToken = 1 giờ**, **RefreshToken = 7 ngày**.
+   - [x] Tích hợp **Cloudflare Turnstile** chống bot và tấn công brute-force phía Backend & Frontend.
+   - [x] Thiết kế lại **Redis Service**: cấu trúc key rõ ràng (`chat:blacklist:`, `chat:session:`, `chat:rate:`, `chat:online:`), hỗ trợ chế độ **Fail-safe** không làm gián đoạn luồng đăng nhập nếu Redis mất kết nối.
+   - [x] Loại bỏ toàn bộ kiểu dữ liệu `any` trong Backend, chuẩn hóa định nghĩa TypeScript trong `auth.types.ts` và `users.types.ts`.
+   - [x] Tách biệt thông báo lỗi đăng nhập: thông báo cụ thể tài khoản không tồn tại hoặc sai mật khẩu.
+   - [x] Xử lý lỗi Firebase `auth/account-exists-with-different-credential` khi tài khoản đã liên kết với nhà cung cấp khác.
 
-#### 🔹 Phía Backend & DevOps:
-- [x] [`backend/src/modules/auth/auth.controller.ts`](backend/src/modules/auth/auth.controller.ts): Bổ sung tạo Access & Refresh Token Cookie cho `POST /auth/firebase-login`, loại bỏ decorator `@Post('refresh')` bị khai báo trùng lặp.
-- [x] [`backend/src/modules/auth/auth.service.ts`](backend/src/modules/auth/auth.service.ts): Cập nhật cấu hình Cookie sang `sameSite: 'lax'` để đảm bảo truyền nhận cookie giữa port `5173` và `3000`.
-- [x] [`docker-compose.yml`](docker-compose.yml): Xóa thuộc tính `version: "3.8"` lỗi thời để loại bỏ cảnh báo khi chạy `docker compose up`.
-- [x] [`README.md`](README.md): Soạn thảo tài liệu toàn diện hướng dẫn cài đặt, kiến trúc, sơ đồ luồng xác thực, Swagger API và checklist phát triển.
-
----
-
-### ✅ Chi tiết các thay đổi về mặt tính năng (Feature Changelog)
-- [x] **Xác thực phiên làm việc (Session Rehydration)**:
-  - Bổ sung `checkAuth()` trong `useAuthStore` để khôi phục phiên từ Cookie HttpOnly khi người dùng F5 hoặc mở tab mới.
-  - Thêm cờ `isCheckingAuth` để ngăn `ProtectedRoute` chuyển hướng vội về `/login` trước khi kiểm tra xong token.
-  - Tự động điều hướng người dùng đã đăng nhập từ `/login` về trang chủ `/`.
-- [x] **Cơ chế tự động làm mới Token (Auto Refresh Token)**:
-  - Kích hoạt Axios Response Interceptor đón bắt mã lỗi `401 Unauthorized`.
-  - Tự động gọi `POST /auth/refresh` bằng RefreshToken lưu trong Cookie và gửi lại request ban đầu.
-  - Tích hợp hàng đợi `failedQueue` để xử lý mượt mà khi nhiều API đồng thời gặp lỗi 401.
-- [x] **Tối ưu trải nghiệm Form đăng nhập (Login UX/UI)**:
-  - Hiển thị spinner và trạng thái `Đang đăng nhập...` trên nút bấm khi gửi request.
-  - Vô hiệu hóa nút Submit và các nút mạng xã hội trong lúc đang xử lý để tránh spam request.
-  - Thêm tính năng **Ghi nhớ đăng nhập (Remember Me)** lưu email vào `localStorage`.
-  - Chuẩn hóa hiển thị thông báo lỗi từ ValidationPipe của NestJS (xử lý cả dạng mảng chuỗi).
-- [x] **Đăng nhập mạng xã hội (Social Auth)**:
-  - Tích hợp Firebase Popup Auth cho cả **Google** và **Facebook**.
-  - Bổ sung trạng thái loading riêng (`isGoogleLoading`, `isFacebookLoading`) và xử lý êm đẹp sự kiện tắt popup (`auth/popup-closed-by-user`).
-- [x] **Đồng bộ Backend & Bảo mật**:
-  - Endpoint `POST /auth/firebase-login` được bổ sung việc tạo và gán cặp HttpOnly Cookie (`accessToken`, `refreshToken`) giống như đăng nhập thường.
-  - Cập nhật cấu hình Cookie sang `sameSite: 'lax'` giúp tương thích chia sẻ cookie giữa hai domain khác port (`localhost:5173` và `localhost:3000`).
-  - Xóa decorator `@Post('refresh')` bị khai báo trùng lặp trong `auth.controller.ts`.
-- [x] **Dọn dẹp môi trường & Cấu hình**:
-  - Xóa import thừa `da from "zod/v4/locales"` gây lỗi bundle.
-  - Chuẩn hóa cấu hình Path Alias `@` trong `vite.config.js` sang chuẩn ESM `fileURLToPath`.
-  - Xóa thuộc tính `version: "3.8"` lỗi thời trong `docker-compose.yml` để loại bỏ cảnh báo Docker.
+2. **Frontend UI & Trải nghiệm người dùng**:
+   - [x] Hoàn thiện toàn diện trang **Đăng ký (`/register`)**:
+     - Form validation qua Zod & React Hook Form (Họ tên, Email, SĐT chuẩn VN, Mật khẩu có độ phức tạp cao, Xác nhận mật khẩu).
+     - Thanh đo độ mạnh mật khẩu thời gian thực (Password Strength Meter).
+     - Nút ẩn/hiện mật khẩu (Eye / EyeOff).
+     - Điều khoản & chính sách checkbox.
+     - Hỗ trợ đăng ký nhanh qua Google / Facebook.
+   - [x] Tách Custom Hook tái sử dụng **`useSocialAuth`**: gom toàn bộ logic popup Firebase, bắt lỗi đóng popup và điều hướng thành 1 hook duy nhất dùng cho cả Login, Register và các modal trong tương lai.
+   - [x] Tối ưu hóa API Call & Deduplication:
+     - Thêm cơ chế **In-flight Promise Deduplication** (`checkAuthPromise`) trong `useAuthStore` giúp triệt tiêu việc gọi 2 lần `/auth/profile` khi reload trang.
+     - Thêm `hasCheckedRef` trong `Layout` của `App.jsx` chống double invocation từ `React.StrictMode`.
+     - Tận dụng trực tiếp `profile` trả về từ các API login/register để loại bỏ request `/auth/profile` thừa.
+   - [x] Chuẩn hóa **Material UI & React 19**: thay thế toàn bộ thuộc tính `InputProps` cũ sang `slotProps={{ input: { ... } }}` để loại bỏ hoàn toàn các cảnh báo DOM.
 
 ---
 
-### 📌 Lộ trình phát triển tiếp theo (Roadmap Checklist)
-- [ ] **Xác thực & Tài khoản**:
-  - [ ] Hoàn thiện giao diện & tính năng Đăng ký tài khoản mới (`/register`).
-  - [ ] Tính năng Quên mật khẩu & Đặt lại mật khẩu qua Email OTP (`/forgot-password`).
-  - [ ] Trang cập nhật thông tin cá nhân & tải ảnh đại diện (`/profile`).
+### 📌 Lộ trình phát triển tiếp theo (Roadmap)
 - [ ] **Tin nhắn thời gian thực (Realtime Messaging)**:
   - [ ] Tích hợp WebSocket Gateway (Socket.IO / NestJS WebSockets) cho phòng chat.
   - [ ] Gửi và nhận tin nhắn 1-1 theo thời gian thực (Direct Messages).
@@ -323,8 +323,11 @@ npm run build
   - [ ] Theo dõi trạng thái trực tuyến của người dùng (Online / Offline status indicator) qua Redis Pub/Sub.
   - [ ] Tạo nhóm chat, thêm/xóa thành viên và chỉ định quyền nhóm trưởng (Group Chat).
 - [ ] **Đa phương tiện & Tiện ích**:
-  - [ ] Hỗ trợ gửi hình ảnh, video và tệp đính kèm trong khung chat.
+  - [ ] Hỗ trợ gửi hình ảnh, video và tệp đính kèm trong khung chat (Cloudinary / S3 / Firebase Storage).
   - [ ] Thông báo đẩy trên trình duyệt khi có tin nhắn mới (Web Push Notifications).
+- [ ] **Tài khoản cá nhân**:
+  - [ ] Trang cập nhật thông tin cá nhân & tải ảnh đại diện (`/profile`).
+  - [ ] Tính năng Quên mật khẩu & Đặt lại mật khẩu qua Email OTP (`/forgot-password`).
 
 ---
 

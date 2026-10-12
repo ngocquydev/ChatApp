@@ -236,12 +236,14 @@ export default function ChatApp() {
                 "&:hover fieldset": { borderColor: "#cbd5e1" },
               },
             }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={18} color="#94a3b8" />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={18} color="#94a3b8" />
+                  </InputAdornment>
+                ),
+              },
             }}
           />
         </Box>
@@ -592,9 +594,11 @@ export default function ChatApp() {
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyPress}
               variant="standard"
-              InputProps={{
-                disableUnderline: true,
-                sx: { px: 1.5, py: 0.5, fontSize: "0.95rem" },
+              slotProps={{
+                input: {
+                  disableUnderline: true,
+                  sx: { px: 1.5, py: 0.5, fontSize: "0.95rem" },
+                },
               }}
             />
 

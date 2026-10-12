@@ -25,13 +25,8 @@ import {
 import { useMotionValue, useTransform, animate } from "motion/react";
 import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight } from "lucide-react";
 import login from "@/data/loginData";
-import {  signInWithPopup } from "firebase/auth";
-import {
-  auth,
-  googleProvider,
-  facebookProvider,
-} from "../../config/firebase-config";
 import { useAuthStore } from "../../store/useAuthStore";
+import useSocialAuth from "../../hooks/useSocialAuth";
 import TurnstileWidget from "../common/TurnstileWidget";
 
 const loginSchema = z.object({
@@ -151,8 +146,6 @@ function SmoothTypewriter({ words = ["Chào mừng bạn!", "Hôm nay thế nào
 export default function Login() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isFacebookLoading, setIsFacebookLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const turnstileRef = useRef(null);
@@ -161,7 +154,6 @@ export default function Login() {
     isAuthenticated,
     isCheckingAuth,
     isLoggingIn,
-    loginfirebase,
     loginMe,
   } = useAuthStore();
 
@@ -233,7 +225,7 @@ export default function Login() {
       turnstileRef.current?.reset();
       setTurnstileToken("");
 
-      let message = "Email hoặc mật khẩu không chính xác!";
+      let message = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!";
       if (err.response?.data?.message) {
         message = Array.isArray(err.response.data.message)
           ? err.response.data.message.join(", ")
@@ -250,77 +242,19 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setAlertInfo({ open: false, type: "info", message: "" });
-    setIsGoogleLoading(true);
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const idToken = await result.user.getIdToken();
-      await loginfirebase(idToken);
-      navigate("/");
-    } catch (err) {
-      console.error("Đăng nhập Google thất bại:", err);
-      if (
-        err.code === "auth/popup-closed-by-user" ||
-        err.code === "auth/cancelled-popup-request"
-      ) {
-        return;
-      }
-
-      let message = "Đăng nhập Google thất bại! Vui lòng thử lại.";
-      if (err.response?.data?.message) {
-        message = Array.isArray(err.response.data.message)
-          ? err.response.data.message.join(", ")
-          : err.response.data.message;
-      } else if (err.message) {
-        message = err.message;
-      }
-
+  const {
+    handleGoogleLogin,
+    handleFacebookLogin,
+    isGoogleLoading,
+    isFacebookLoading,
+  } = useSocialAuth({
+    onError: (message) =>
       setAlertInfo({
         open: true,
-        type: "error",
+        type: message === "Email này đã được đăng ký" ? "warning" : "error",
         message,
-      });
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
-
-  const handleFacebookLogin = async () => {
-    setAlertInfo({ open: false, type: "info", message: "" });
-    setIsFacebookLoading(true);
-    try {
-      const result = await signInWithPopup(auth, facebookProvider);
-      const idToken = await result.user.getIdToken();
-      await loginfirebase(idToken);
-      navigate("/");
-    } catch (err) {
-      console.error("Đăng nhập Facebook thất bại:", err);
-      if (
-        err.code === "auth/popup-closed-by-user" ||
-        err.code === "auth/cancelled-popup-request"
-      ) {
-        return;
-      }
-
-      let message = "Đăng nhập Facebook thất bại! Vui lòng thử lại.";
-      if (err.response?.data?.message) {
-        message = Array.isArray(err.response.data.message)
-          ? err.response.data.message.join(", ")
-          : err.response.data.message;
-      } else if (err.message) {
-        message = err.message;
-      }
-
-      setAlertInfo({
-        open: true,
-        type: "error",
-        message,
-      });
-    } finally {
-      setIsFacebookLoading(false);
-    }
-  };
+      }),
+  });
 
   return (
     <Box
@@ -710,11 +644,13 @@ export default function Login() {
                 },
               }}
               slotProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Mail size={18} color="#94a3b8" />
-                  </InputAdornment>
-                ),
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Mail size={18} color="#94a3b8" />
+                    </InputAdornment>
+                  ),
+                },
               }}
             />
 

@@ -10,6 +10,12 @@ import { ConfigService } from '@nestjs/config';
 import { Response as ExpressResponse } from 'express';
 import { UsersService } from '../users/users.service.js';
 import { RedisService } from '../redis/redis/redis.service.js';
+import type { JwtSignOptions } from '@nestjs/jwt';
+import type {
+  JwtPayload,
+  JwtPayloadWithExp,
+  TokensResponse,
+} from './types/auth.types.js';
 @Injectable()
 export class AuthService {
   constructor(
@@ -31,18 +37,22 @@ export class AuthService {
       maxAge: maxAgeMs,
     });
   }
-  async generateTokens(userId: string, email: string, role: string) {
-    const payload = { sub: userId, email, role };
+  async generateTokens(
+    userId: string,
+    email: string,
+    role: string,
+  ): Promise<TokensResponse> {
+    const payload: JwtPayload = { sub: userId, email, role };
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),
       expiresIn: (this.configService.get<string>('JWT_EXPIRES_IN') ||
-        '15m') as any,
+        '1h') as JwtSignOptions['expiresIn'],
     });
 
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       expiresIn: (this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') ||
-        '7d') as any,
+        '7d') as JwtSignOptions['expiresIn'],
     });
     await this.saveRefreshToken(userId, refreshToken);
 
@@ -102,7 +112,7 @@ export class AuthService {
     // 1. Tìm user qua UsersService
     const user = await this.userService.findOne(email);
     if (!user) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác!');
+      throw new UnauthorizedException('Sai email!');
     }
     if (!user.password) {
       throw new UnauthorizedException(
@@ -122,7 +132,7 @@ export class AuthService {
     // 3. Kiểm tra mật khẩu
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác!');
+      throw new UnauthorizedException('Mật khẩu không chính xác!');
     }
 
     const tokens = await this.generateTokens(
@@ -176,14 +186,26 @@ export class AuthService {
       hashedToken: tokenInfo.refreshToken,
     };
   }
-  async logout(userId: string, token: string) {
+  async logout(userId: string, token?: string) {
     await this.userService.findByIdAndUpdate(userId, {
       refreshToken: null,
     });
 
     if (token) {
-      const ttlSeconds = 30;
-      await this.redisService.blacklistToken(token, ttlSeconds);
+      let ttlSeconds = 60 * 60; // 1h mặc định
+      try {
+        const decoded = this.jwtService.decode<JwtPayloadWithExp>(token);
+        if (decoded?.exp) {
+          const remainingSeconds = decoded.exp - Math.floor(Date.now() / 1000);
+          ttlSeconds = remainingSeconds > 0 ? remainingSeconds : 0;
+        }
+      } catch {
+        // Fallback default
+      }
+
+      if (ttlSeconds > 0) {
+        await this.redisService.blacklistToken(token, ttlSeconds);
+      }
     }
 
     return { success: true, message: 'Đăng xuất thành công' };

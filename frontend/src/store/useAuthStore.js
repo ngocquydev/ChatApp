@@ -1,43 +1,49 @@
 import { create } from "zustand";
 import api from "../services/api";
-import { auth } from "../config/firebase-config";
-import { signOut } from "firebase/auth";
+import { auth, googleProvider, facebookProvider } from "../config/firebase-config";
+import { signOut, signInWithPopup } from "firebase/auth";
 
-// Biến lưu giữ Promise đang chạy của checkAuth để chống gọi trùng lặp (Deduplication)
 let checkAuthPromise = null;
 
-export const useAuthStore = create((set) => ({
+export const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
   isCheckingAuth: true,
   isLoggingIn: false,
+  isGoogleLoading: false,
+  isFacebookLoading: false,
 
-  // Kiểm tra phiên đăng nhập hiện tại khi khởi động app hoặc F5 trang
+  setAuth: (user) => {
+    set({
+      user,
+      isAuthenticated: !!user,
+    });
+  },
+
   checkAuth: async () => {
-    // Nếu đã có tiến trình checkAuth đang chạy, tái sử dụng Promise đó
+    // Tránh gọi API trùng lặp nếu đang có 1 request checkAuth đang chạy
     if (checkAuthPromise) {
       return checkAuthPromise;
     }
 
+    set({ isCheckingAuth: true });
+
     checkAuthPromise = (async () => {
-      set({ isCheckingAuth: true });
       try {
-        // api.js đã có Interceptor tự động xử lý refresh token khi gặp 401
-        const res = await api.get("/auth/profile");
+        const resUser = await api.get("/auth/profile");
         set({
-          user: res.data.profile,
+          user: resUser.data.profile,
           isAuthenticated: true,
-          isCheckingAuth: false,
         });
-        return res.data.profile;
+        return resUser.data;
       } catch (error) {
         set({
           user: null,
           isAuthenticated: false,
-          isCheckingAuth: false,
         });
-        return null;
+        throw error;
       } finally {
+        set({ isCheckingAuth: false });
         checkAuthPromise = null;
       }
     })();
@@ -45,39 +51,6 @@ export const useAuthStore = create((set) => ({
     return checkAuthPromise;
   },
 
-  // Đăng nhập truyền thống bằng email & password
-  loginMe: async (credentials) => {
-    set({ isLoggingIn: true });
-    try {
-      const res = await api.post("/auth/login", {
-        email: credentials.email,
-        password: credentials.password,
-        turnstileToken: credentials.turnstileToken,
-        "cf-turnstile-response":
-          credentials["cf-turnstile-response"] || credentials.turnstileToken,
-      });
-
-      // Lấy trực tiếp profile từ response đăng nhập (tránh gọi thêm request /auth/profile)
-      let profile = res.data?.profile;
-      if (!profile) {
-        const resUser = await api.get("/auth/profile");
-        profile = resUser.data.profile;
-      }
-
-      set({
-        user: profile,
-        isAuthenticated: true,
-        isLoggingIn: false,
-      });
-
-      return res.data;
-    } catch (error) {
-      set({ isLoggingIn: false });
-      throw error;
-    }
-  },
-
-  // Đăng nhập bằng Firebase (Google / Facebook)
   loginfirebase: async (idToken) => {
     set({ isLoggingIn: true });
     try {
@@ -88,51 +61,111 @@ export const useAuthStore = create((set) => ({
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
-        }
+        },
       );
 
-      // Lấy trực tiếp profile từ response
-      let profile = res.data?.profile;
-      if (!profile) {
-        const resUser = await api.get("/auth/profile");
-        profile = resUser.data.profile;
-      }
+      const profile =
+        res.data?.profile || (await api.get("/auth/profile")).data.profile;
 
       set({
         user: profile,
         isAuthenticated: true,
-        isLoggingIn: false,
       });
 
       return res.data;
     } catch (error) {
-      console.error("Lỗi đăng nhập Firebase:", error);
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoggingIn: false,
-      });
+      console.error("Lỗi login firebase:", error);
       throw error;
+    } finally {
+      set({ isLoggingIn: false });
     }
   },
 
-  // Đăng xuất
+  loginWithGoogle: async () => {
+    set({ isGoogleLoading: true });
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      return await get().loginfirebase(idToken);
+    } catch (error) {
+      console.error("Lỗi đăng nhập Google:", error);
+      throw error;
+    } finally {
+      set({ isGoogleLoading: false });
+    }
+  },
+
+  loginWithFacebook: async () => {
+    set({ isFacebookLoading: true });
+    try {
+      const result = await signInWithPopup(auth, facebookProvider);
+      const idToken = await result.user.getIdToken();
+      return await get().loginfirebase(idToken);
+    } catch (error) {
+      console.error("Lỗi đăng nhập Facebook:", error);
+      throw error;
+    } finally {
+      set({ isFacebookLoading: false });
+    }
+  },
+
+  loginMe: async (body) => {
+    set({ isLoggingIn: true });
+    try {
+      const res = await api.post("/auth/login", body);
+      const profile =
+        res.data?.profile || (await api.get("/auth/profile")).data.profile;
+
+      set({
+        user: profile,
+        isAuthenticated: true,
+      });
+
+      return res.data;
+    } catch (error) {
+      console.error("Lỗi login truyền thống:", error);
+      throw error;
+    } finally {
+      set({ isLoggingIn: false });
+    }
+  },
+
+  registerMe: async (body) => {
+    set({ isLoggingIn: true });
+    try {
+      const res = await api.post("/auth/register", body);
+      const profile =
+        res.data?.profile || (await api.get("/auth/profile")).data.profile;
+
+      set({
+        user: profile,
+        isAuthenticated: true,
+      });
+
+      return res.data;
+    } catch (error) {
+      console.error("Lỗi đăng ký:", error);
+      throw error;
+    } finally {
+      set({ isLoggingIn: false });
+    }
+  },
+
   logout: async () => {
     try {
       await api.post("/auth/logout");
     } catch (error) {
-      console.error("Lỗi khi gọi API logout backend:", error);
+      console.error("Lỗi khi đăng xuất backend:", error);
+    } finally {
+      try {
+        await signOut(auth);
+      } catch (firebaseError) {
+        console.warn("Lỗi khi đăng xuất firebase:", firebaseError);
+      }
+      set({
+        user: null,
+        isAuthenticated: false,
+      });
     }
-
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Lỗi khi signOut firebase:", error);
-    }
-
-    set({
-      user: null,
-      isAuthenticated: false,
-    });
   },
 }));

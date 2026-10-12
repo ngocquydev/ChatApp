@@ -1,14 +1,12 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-yet';
 import { createObserveModule } from '@nestjs/observe';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
-import { RedisService } from './modules/redis/redis/redis.service.js';
+import { RedisModule } from './modules/redis/redis/redis.module.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -28,23 +26,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       inject: [ConfigService],
     }),
 
-    // 3. Kết nối Redis sử dụng CacheModule
-    CacheModule.registerAsync({
-      isGlobal: true,
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
-        const store = await redisStore({
-          socket: {
-            host: configService.get<string>('REDIS_HOST'),
-            port: configService.get<number>('REDIS_PORT'),
-          },
-        });
-        return {
-          store: () => store,
-        };
-      },
-      inject: [ConfigService],
-    }),
+    // 3. Kết nối Redis toàn cục
+    RedisModule,
 
     // 4. Theo dõi và Telemetry từ Observe
     ObserveModule.forRoot({
@@ -59,7 +42,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService, RedisService],
+  providers: [AppService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

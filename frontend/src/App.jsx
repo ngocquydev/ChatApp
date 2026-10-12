@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, useLocation, Outlet } from "react-router-dom";
 import router from "./routes/routes";
@@ -19,9 +19,13 @@ export function Layout() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const hideAppBarRoutes = ["/login", "/register"];
   const shouldHideAppBar = hideAppBarRoutes.includes(location.pathname);
+  const hasCheckedRef = useRef(false);
 
   useEffect(() => {
-    checkAuth();
+    if (!hasCheckedRef.current) {
+      hasCheckedRef.current = true;
+      checkAuth?.();
+    }
   }, [checkAuth]);
 
   return (
