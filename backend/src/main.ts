@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule, ObserveInstrument } from './app.module.js';
+import { ErrorHandlerFilter } from './errorHandleer/index.js';
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
@@ -33,6 +34,8 @@ async function bootstrap() {
       stopAtFirstError: true,
     }),
   );
+
+  app.useGlobalFilters(new ErrorHandlerFilter());
 
   const config = new DocumentBuilder()
     .setTitle('Chat API Documentation')
