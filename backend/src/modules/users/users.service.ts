@@ -4,15 +4,17 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserRepository } from './entities/user.entity.js';
-import { CreateUserDto } from './dto/create-user.dto.js';
+import { CreateUserData } from './types/user.types.js';
+
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserRepository>,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
-    const { name, phone, email, password, role } = createUserDto;
+  async create(createUserDto: CreateUserData) {
+    const { name, phone, email, password, role, firebaseUid, avatar } =
+      createUserDto;
 
     const existingUser = await this.userModel.findOne({ email });
     if (existingUser) {
@@ -26,14 +28,19 @@ export class UsersService {
       }
     }
 
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    let hashedPassword = null;
+    if (password) {
+      const saltRounds = 10;
+      hashedPassword = await bcrypt.hash(password, saltRounds);
+    }
 
     const newUser = new this.userModel({
-      name,
-      phone,
+      name: name || 'Người dùng mới',
+      phone: phone || null,
       email,
       password: hashedPassword,
+      firebaseUid: firebaseUid || null,
+      avatar: avatar || null,
       role: role || 'user',
       isDeleted: false,
       isBan: false,
@@ -49,6 +56,7 @@ export class UsersService {
         name: newUser.name,
         email: newUser.email,
         phone: newUser.phone,
+        avatar: newUser.avatar,
         role: newUser.role,
         createdAt: newUser.createdAt,
       },
@@ -81,5 +89,45 @@ export class UsersService {
   }
   async findById(id: string) {
     return this.userModel.findById(id).select('-password').exec();
+  }
+  async findByUid(firebaseUid: string) {
+    return await this.userModel.findOne({ firebaseUid }).select('-password');
+  }
+  async findOrCreateFirebase(firebaseData: {
+    firebaseUid: string;
+    email: string;
+    name?: string;
+    avatar?: string;
+  }) {
+    // 1. Tìm theo firebaseUid trước
+    let user = await this.userModel.findOne({
+      firebaseUid: firebaseData.firebaseUid,
+    });
+
+    if (!user) {
+      // 2. Nếu chưa có uid, tìm theo email (phòng trường hợp họ đã đăng ký tài khoản thường trước đó rồi dùng Google cùng email)
+      user = await this.userModel.findOne({ email: firebaseData.email });
+
+      if (user) {
+        // Nếu đã có email, cập nhật thêm firebaseUid và avatar vào tài khoản cũ
+        user.firebaseUid = firebaseData.firebaseUid;
+        if (!user.avatar && firebaseData.avatar) {
+          user.avatar = firebaseData.avatar;
+        }
+        await user.save();
+      } else {
+        // 3. Nếu hoàn toàn chưa tồn tại, tạo mới hoàn toàn
+        user = new this.userModel({
+          name: firebaseData.name,
+          email: firebaseData.email,
+          firebaseUid: firebaseData.firebaseUid,
+          avatar: firebaseData.avatar || null,
+          role: 'user',
+          isDeleted: false,
+          isBan: false,
+        });
+        await user.save();
+      }
+    }
   }
 }

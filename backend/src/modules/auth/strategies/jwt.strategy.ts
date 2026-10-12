@@ -1,14 +1,35 @@
 // src/modules/auth/strategies/jwt.strategy.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-jwt';
 import type { Request } from 'express';
+import { Types } from 'mongoose';
+import { UsersService } from '../../users/users.service.js';
+
+type Payload = {
+  sub: string;
+  email: string;
+  role: string;
+};
+
+type SafeUserResponse = {
+  _id: Types.ObjectId | string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  isDeleted: boolean;
+  isBan: boolean;
+  firebaseUid?: string;
+  avatar?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+  constructor(private readonly usersService: UsersService) {
     super({
-      // ✅ Tự động trích xuất Access Token từ HttpOnly Cookie có tên là 'accessToken'
       jwtFromRequest: (req: Request) => {
         let token = null;
         if (req && req.cookies) {
@@ -21,8 +42,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
-    // Payload sau khi verify sẽ được gán vào req.user
-    return { sub: payload.sub, email: payload.email, role: payload.role };
+  async validate(payload: Payload): Promise<SafeUserResponse> {
+    const user = await this.usersService.findById(payload.sub);
+
+    if (!user || user.isDeleted || user.isBan) {
+      throw new UnauthorizedException(
+        'Người dùng không tồn tại hoặc đã bị khóa!',
+      );
+    }
+
+    const userObj =
+      typeof user.toObject === 'function' ? user.toObject() : user;
+
+    const { password, refreshToken, ...result } = userObj;
+
+    return {
+      ...result,
+      _id: result._id.toString(),
+    } as SafeUserResponse;
   }
 }

@@ -31,16 +31,16 @@ import {
 } from "@mui/material";
 import { X } from "lucide-react";
 import Message from "../section/Message";
-
-const settings = ["Tên: Nguyễn Ngọc Qúy", "Tài khoản", "Cài đặt", "Đăng xuất"];
+import { useAuthStore } from "../../store/useAuthStore";
+import { useNavigate } from "react-router-dom";
 
 function ResponsiveAppBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorElUser, setAnchorElUser] = useState(null);
   const [chatAnchorEl, setChatAnchorEl] = useState(null);
-
+  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
   const [openChatBoxes, setOpenChatBoxes] = useState([]);
-
   const handleDrawerToggle = () => {
     setMobileOpen((prev) => !prev);
   };
@@ -53,11 +53,11 @@ function ResponsiveAppBar() {
   const handleOpenChat = (event) => setChatAnchorEl(event.currentTarget);
   const handleCloseChat = () => setChatAnchorEl(null);
 
-  const handleSelectUserToChat = (user) => {
+  const handleSelectUserToChat = (chatUser) => {
     handleCloseChat();
     setMobileOpen(false);
-    if (!openChatBoxes.some((item) => item.id === user.id)) {
-      setOpenChatBoxes((prev) => [...prev, user]);
+    if (!openChatBoxes.some((item) => item.id === chatUser.id)) {
+      setOpenChatBoxes((prev) => [...prev, chatUser]);
     }
   };
 
@@ -66,6 +66,24 @@ function ResponsiveAppBar() {
       prev.filter((item) => String(item.id) !== String(userId)),
     );
   };
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Lỗi khi đăng xuất:", error);
+    }
+  };
+  const settings = [
+    { label: user?.name ? `Tên: ${user.name}` : "Tài khoản", disabled: true },
+    { label: "Cài đặt", action: () => {} },
+    {
+      label: "Đăng xuất",
+      action: () => {
+        handleLogout();
+      },
+    },
+  ];
 
   const pages = [
     { id: "feed", label: "Bảng tin", icon: <FeedIcon />, href: "/" },
@@ -78,7 +96,6 @@ function ResponsiveAppBar() {
     { id: "chat", label: "Tin nhắn", icon: <ChatIcon /> },
     { id: "profile", label: "Cá nhân", icon: <PersonIcon />, href: "/profile" },
   ];
-
   return (
     <>
       <AppBar position="fixed">
@@ -346,8 +363,8 @@ function ResponsiveAppBar() {
               <Tooltip title="Mở cài đặt">
                 <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                   <Avatar
-                    alt="Nguyễn Ngọc Quý"
-                    src="/static/images/avatar/2.jpg"
+                    alt={user?.name || "User Avatar"}
+                    src={user?.avatar || ""}
                   />
                 </IconButton>
               </Tooltip>
@@ -361,10 +378,17 @@ function ResponsiveAppBar() {
                 open={Boolean(anchorElUser)}
                 onClose={handleCloseUserMenu}
               >
-                {settings.map((setting) => (
-                  <MenuItem key={setting} onClick={handleCloseUserMenu}>
+                {settings.map((setting, index) => (
+                  <MenuItem
+                    key={index}
+                    disabled={setting.disabled}
+                    onClick={() => {
+                      if (setting.action) setting.action();
+                      else handleCloseUserMenu();
+                    }}
+                  >
                     <Typography sx={{ textAlign: "center" }}>
-                      {setting}
+                      {setting.label}
                     </Typography>
                   </MenuItem>
                 ))}
@@ -441,11 +465,11 @@ function ResponsiveAppBar() {
           zIndex: 1300,
         }}
       >
-        {openChatBoxes.map((user) => (
+        {openChatBoxes.map((chatUser) => (
           <Message
-            key={user.id}
-            friend={user}
-            onClose={() => handleCloseChatBox(user.id)}
+            key={chatUser.id}
+            friend={chatUser}
+            onClose={() => handleCloseChatBox(chatUser.id)}
           />
         ))}
       </Box>

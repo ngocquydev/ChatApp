@@ -1,8 +1,8 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { Layout } from "../App";
 import ProtectedRoute from "./ProtectedRoute";
-import { Home } from "lucide-react";
 import Login from "../components/pages/Login";
+import Home from "../components/pages/Home";
 
 const router = createBrowserRouter([
   {

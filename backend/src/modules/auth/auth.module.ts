@@ -10,6 +10,8 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy.js';
 import { UsersModule } from '../users/users.module.js';
 import { RedisModule } from '../redis/redis/redis.module.js';
+import { FirebaseService } from './firebase.service.js';
+import { TurnstileService } from './turnstile.service.js';
 
 @Module({
   imports: [
@@ -44,7 +46,19 @@ import { RedisModule } from '../redis/redis/redis.module.js';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenStrategy],
-  exports: [AuthService, JwtStrategy, RefreshTokenStrategy, PassportModule],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RefreshTokenStrategy,
+    FirebaseService,
+    TurnstileService,
+  ],
+  exports: [
+    AuthService,
+    JwtStrategy,
+    RefreshTokenStrategy,
+    PassportModule,
+    TurnstileService,
+  ],
 })
 export class AuthModule {}

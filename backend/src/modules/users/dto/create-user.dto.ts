@@ -23,9 +23,9 @@ export class CreateUserDto {
     example: '0987654321',
     description: 'Số điện thoại (đúng chuẩn đầu số VN)',
   })
-  @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
+  @IsOptional()
   @IsPhoneNumber('VN', { message: 'Số điện thoại không hợp lệ' })
-  phone: string;
+  phone?: string;
 
   @ApiProperty({
     example: 'user@example.com',

@@ -1,7 +1,7 @@
-// src/modules/auth/dto/sign-in.dto.ts
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   MinLength,
   Matches,
@@ -33,4 +33,13 @@ export class SignInDto {
     },
   )
   password: string;
+
+  @ApiProperty({
+    example: '0.xxxxxxxxxxxx',
+    description: 'Mã token xác thực từ Cloudflare Turnstile',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Turnstile token phải là chuỗi ký tự' })
+  turnstileToken?: string;
 }

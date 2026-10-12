@@ -10,6 +10,9 @@ async function bootstrap() {
     instrument: ObserveInstrument,
   });
 
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
+
   app.use(cookieParser());
 
   app.enableCors({

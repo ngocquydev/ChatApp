@@ -1,47 +1,136 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
-import Cookies from "js-cookie";
+import api from "../services/api";
+import { auth } from "../config/firebase-config";
+import { signOut } from "firebase/auth";
 
-// 1. Tạo adapter kết nối interface Storage của Zustand với js-cookie
-const cookieStorage = {
-  getItem: (name) => {
-    return Cookies.get(name) ?? null;
-  },
-  setItem: (name, value) => {
-    // expires: số ngày cookie tồn tại (ví dụ: 7 ngày)
-    // sameSite: "strict" để tăng cường bảo mật chống CSRF
-    Cookies.set(name, value, { expires: 7, sameSite: "strict" });
-  },
-  removeItem: (name) => {
-    Cookies.remove(name);
-  },
-};
+// Biến lưu giữ Promise đang chạy của checkAuth để chống gọi trùng lặp (Deduplication)
+let checkAuthPromise = null;
 
-// 2. Cấu hình store
-export const useAuthStore = create(
-  persist(
-    (set) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
+export const useAuthStore = create((set) => ({
+  user: null,
+  isAuthenticated: false,
+  isCheckingAuth: true,
+  isLoggingIn: false,
 
-      setAuth: (userData, token) =>
+  // Kiểm tra phiên đăng nhập hiện tại khi khởi động app hoặc F5 trang
+  checkAuth: async () => {
+    // Nếu đã có tiến trình checkAuth đang chạy, tái sử dụng Promise đó
+    if (checkAuthPromise) {
+      return checkAuthPromise;
+    }
+
+    checkAuthPromise = (async () => {
+      set({ isCheckingAuth: true });
+      try {
+        // api.js đã có Interceptor tự động xử lý refresh token khi gặp 401
+        const res = await api.get("/auth/profile");
         set({
-          user: userData,
-          token: token,
+          user: res.data.profile,
           isAuthenticated: true,
-        }),
-
-      logout: () =>
+          isCheckingAuth: false,
+        });
+        return res.data.profile;
+      } catch (error) {
         set({
           user: null,
-          token: null,
           isAuthenticated: false,
-        }),
-    }),
-    {
-      name: "auth-storage", // Tên cookie được tạo ra
-      storage: createJSONStorage(() => cookieStorage), // Chỉ định dùng Cookie thay vì localStorage
-    },
-  ),
-);
+          isCheckingAuth: false,
+        });
+        return null;
+      } finally {
+        checkAuthPromise = null;
+      }
+    })();
+
+    return checkAuthPromise;
+  },
+
+  // Đăng nhập truyền thống bằng email & password
+  loginMe: async (credentials) => {
+    set({ isLoggingIn: true });
+    try {
+      const res = await api.post("/auth/login", {
+        email: credentials.email,
+        password: credentials.password,
+        turnstileToken: credentials.turnstileToken,
+      });
+
+      // Lấy trực tiếp profile từ response đăng nhập (tránh gọi thêm request /auth/profile)
+      let profile = res.data?.profile;
+      if (!profile) {
+        const resUser = await api.get("/auth/profile");
+        profile = resUser.data.profile;
+      }
+
+      set({
+        user: profile,
+        isAuthenticated: true,
+        isLoggingIn: false,
+      });
+
+      return res.data;
+    } catch (error) {
+      set({ isLoggingIn: false });
+      throw error;
+    }
+  },
+
+  // Đăng nhập bằng Firebase (Google / Facebook)
+  loginfirebase: async (idToken) => {
+    set({ isLoggingIn: true });
+    try {
+      const res = await api.post(
+        "/auth/firebase-login",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+
+      // Lấy trực tiếp profile từ response
+      let profile = res.data?.profile;
+      if (!profile) {
+        const resUser = await api.get("/auth/profile");
+        profile = resUser.data.profile;
+      }
+
+      set({
+        user: profile,
+        isAuthenticated: true,
+        isLoggingIn: false,
+      });
+
+      return res.data;
+    } catch (error) {
+      console.error("Lỗi đăng nhập Firebase:", error);
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoggingIn: false,
+      });
+      throw error;
+    }
+  },
+
+  // Đăng xuất
+  logout: async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (error) {
+      console.error("Lỗi khi gọi API logout backend:", error);
+    }
+
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Lỗi khi signOut firebase:", error);
+    }
+
+    set({
+      user: null,
+      isAuthenticated: false,
+    });
+  },
+}));

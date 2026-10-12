@@ -15,8 +15,14 @@ export class User {
   @Prop({ required: true, unique: true })
   email: string;
 
-  @Prop({ required: true })
-  password: string;
+  @Prop({ required: false })
+  password?: string; // Không bắt buộc cho tài khoản Google/Facebook
+
+  @Prop({ required: false })
+  firebaseUid?: string; // Liên kết Firebase
+
+  @Prop({ required: false })
+  avatar?: string; // Ảnh đại diện Google/Facebook
 
   @Prop({ default: false })
   isDeleted: boolean;
@@ -25,14 +31,14 @@ export class User {
   isBan: boolean;
 
   @Prop({ default: 'user' })
-  role: string; // 'user', 'admin'
+  role: string;
+
   @Prop({ required: false, type: String })
   refreshToken?: string | null;
+
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-
-// Đánh Text Index cho name để hỗ trợ tìm kiếm
 UserSchema.index({ name: 'text' });

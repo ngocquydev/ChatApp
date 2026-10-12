@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,12 +25,14 @@ import {
 import { useMotionValue, useTransform, animate } from "motion/react";
 import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight } from "lucide-react";
 import login from "@/data/loginData";
-import { getAuth, signInWithPopup } from "firebase/auth";
+import {  signInWithPopup } from "firebase/auth";
 import {
   auth,
   googleProvider,
   facebookProvider,
 } from "../../config/firebase-config";
+import { useAuthStore } from "../../store/useAuthStore";
+import TurnstileWidget from "../common/TurnstileWidget";
 
 const loginSchema = z.object({
   email: z
@@ -46,8 +48,6 @@ const loginSchema = z.object({
     .regex(/[A-Z]/, "Mật khẩu phải chứa ít nhất một chữ cái hoa")
     .regex(/[0-9]/, "Mật khẩu phải chứa ít nhất một chữ số")
     .regex(/[^a-zA-Z0-9]/, "Mật khẩu phải chứa ít nhất một ký tự đặc biệt"),
-
-  remember: z.boolean().default(false),
 });
 
 function GoogleIcon() {
@@ -151,6 +151,19 @@ function SmoothTypewriter({ words = ["Chào mừng bạn!", "Hôm nay thế nào
 export default function Login() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isFacebookLoading, setIsFacebookLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileRef = useRef(null);
+
+  const {
+    isAuthenticated,
+    isCheckingAuth,
+    isLoggingIn,
+    loginfirebase,
+    loginMe,
+  } = useAuthStore();
 
   const [alertInfo, setAlertInfo] = useState({
     open: false,
@@ -161,107 +174,152 @@ export default function Login() {
   const {
     register,
     handleSubmit,
-    watch,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(loginSchema),
-
     defaultValues: {
-      email: localStorage.getItem("rememberedEmail") || "",
+      email: "",
       password: "",
-      remember: Boolean(localStorage.getItem("rememberedEmail")),
     },
   });
 
-  const rememberValue = watch("remember");
-
+  // Tự động chuyển hướng nếu người dùng đã đăng nhập sẵn
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-
-    if (token) {
-      navigate("/", {
-        replace: true,
-      });
+    if (isAuthenticated && !isCheckingAuth) {
+      navigate("/", { replace: true });
     }
-  }, [navigate]);
+  }, [isAuthenticated, isCheckingAuth, navigate]);
+
+  // Khôi phục email nếu người dùng đã tích chọn "Ghi nhớ đăng nhập" trước đó
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("remember_email");
+    if (savedEmail) {
+      setValue("email", savedEmail);
+      setRememberMe(true);
+    }
+  }, [setValue]);
 
   const onSubmit = async (data) => {
-    setAlertInfo({
-      open: false,
-      type: "info",
-      message: "",
-    });
-
-    try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
-      });
-
-      const resData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          resData.message ||
-            "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!",
-        );
-      }
-
-      if (data.remember) {
-        localStorage.setItem("rememberedEmail", data.email);
-      } else {
-        localStorage.removeItem("rememberedEmail");
-      }
-      localStorage.setItem(
-        "authToken",
-        resData.token || "jwt_token_placeholder",
-      );
-
-      if (resData.user) {
-        localStorage.setItem("user", JSON.stringify(resData.user));
-      }
-
+    if (!turnstileToken) {
       setAlertInfo({
         open: true,
-        type: "success",
-        message: "Đăng nhập thành công! Đang chuyển hướng...",
+        type: "warning",
+        message:
+          "Vui lòng hoàn thành xác minh bảo mật Cloudflare Turnstile trước khi đăng nhập!",
+      });
+      return;
+    }
+
+    setAlertInfo({ open: false, type: "info", message: "" });
+    try {
+      await loginMe({
+        email: data.email,
+        password: data.password,
+        turnstileToken,
       });
 
-      setTimeout(() => {
-        navigate("/", {
-          replace: true,
-        });
-      }, 1000);
+      if (rememberMe) {
+        localStorage.setItem("remember_email", data.email);
+      } else {
+        localStorage.removeItem("remember_email");
+      }
+
+      navigate("/");
     } catch (err) {
+      console.error("Lỗi đăng nhập:", err);
+
+      // Reset Turnstile token khi đăng nhập thất bại để yêu cầu xác minh lại
+      turnstileRef.current?.reset();
+      setTurnstileToken("");
+
+      let message = "Email hoặc mật khẩu không chính xác!";
+      if (err.response?.data?.message) {
+        message = Array.isArray(err.response.data.message)
+          ? err.response.data.message.join(", ")
+          : err.response.data.message;
+      } else if (err.message) {
+        message = err.message;
+      }
+
       setAlertInfo({
         open: true,
         type: "error",
-        message:
-          err.message || "Không thể kết nối tới máy chủ. Vui lòng thử lại sau!",
+        message,
       });
     }
   };
+
   const handleGoogleLogin = async () => {
+    setAlertInfo({ open: false, type: "info", message: "" });
+    setIsGoogleLoading(true);
     try {
-      const auth = getAuth();
-      const res = await signInWithPopup(auth, googleProvider);
-      console.log(res);
-    } catch (error) {
-      console.error("lỗi", error);
+      const result = await signInWithPopup(auth, googleProvider);
+      const idToken = await result.user.getIdToken();
+      await loginfirebase(idToken);
+      navigate("/");
+    } catch (err) {
+      console.error("Đăng nhập Google thất bại:", err);
+      if (
+        err.code === "auth/popup-closed-by-user" ||
+        err.code === "auth/cancelled-popup-request"
+      ) {
+        return;
+      }
+
+      let message = "Đăng nhập Google thất bại! Vui lòng thử lại.";
+      if (err.response?.data?.message) {
+        message = Array.isArray(err.response.data.message)
+          ? err.response.data.message.join(", ")
+          : err.response.data.message;
+      } else if (err.message) {
+        message = err.message;
+      }
+
+      setAlertInfo({
+        open: true,
+        type: "error",
+        message,
+      });
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
-  const handleFacebookLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/facebook";
+  const handleFacebookLogin = async () => {
+    setAlertInfo({ open: false, type: "info", message: "" });
+    setIsFacebookLoading(true);
+    try {
+      const result = await signInWithPopup(auth, facebookProvider);
+      const idToken = await result.user.getIdToken();
+      await loginfirebase(idToken);
+      navigate("/");
+    } catch (err) {
+      console.error("Đăng nhập Facebook thất bại:", err);
+      if (
+        err.code === "auth/popup-closed-by-user" ||
+        err.code === "auth/cancelled-popup-request"
+      ) {
+        return;
+      }
+
+      let message = "Đăng nhập Facebook thất bại! Vui lòng thử lại.";
+      if (err.response?.data?.message) {
+        message = Array.isArray(err.response.data.message)
+          ? err.response.data.message.join(", ")
+          : err.response.data.message;
+      } else if (err.message) {
+        message = err.message;
+      }
+
+      setAlertInfo({
+        open: true,
+        type: "error",
+        message,
+      });
+    } finally {
+      setIsFacebookLoading(false);
+    }
   };
 
   return (
@@ -739,8 +797,8 @@ export default function Login() {
                 control={
                   <Checkbox
                     size="small"
-                    checked={rememberValue}
-                    onChange={(e) => setValue("remember", e.target.checked)}
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
                     sx={{
                       color: "#cbd5e1",
 
@@ -781,12 +839,28 @@ export default function Login() {
               </Link>
             </Box>
 
+            {/* Cloudflare Turnstile Widget */}
+            <TurnstileWidget
+              ref={turnstileRef}
+              onSuccess={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken("")}
+              onError={() => setTurnstileToken("")}
+            />
+
             <Button
               type="submit"
               fullWidth
               variant="contained"
-              disabled={isSubmitting}
-              endIcon={!isSubmitting && <ArrowRight size={18} />}
+              disabled={
+                isSubmitting ||
+                isLoggingIn ||
+                isGoogleLoading ||
+                isFacebookLoading
+              }
+              endIcon={
+                !isSubmitting &&
+                !isLoggingIn && <ArrowRight size={18} />
+              }
               sx={{
                 py: 1.35,
                 borderRadius: "10px",
@@ -803,8 +877,17 @@ export default function Login() {
                 },
               }}
             >
-              {isSubmitting ? (
-                <CircularProgress size={22} color="inherit" />
+              {isSubmitting || isLoggingIn ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.2,
+                  }}
+                >
+                  <CircularProgress size={18} color="inherit" />
+                  <span>Đang đăng nhập...</span>
+                </Box>
               ) : (
                 login.form.loginButton
               )}
@@ -838,7 +921,19 @@ export default function Login() {
                 fullWidth
                 variant="outlined"
                 onClick={handleGoogleLogin}
-                startIcon={<GoogleIcon />}
+                disabled={
+                  isSubmitting ||
+                  isLoggingIn ||
+                  isGoogleLoading ||
+                  isFacebookLoading
+                }
+                startIcon={
+                  isGoogleLoading ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <GoogleIcon />
+                  )
+                }
                 sx={{
                   flex: 1,
                   py: 1.2,
@@ -857,14 +952,26 @@ export default function Login() {
                   },
                 }}
               >
-                {login.form.googleButton}
+                {isGoogleLoading ? "Đang xử lý..." : login.form.googleButton}
               </Button>
 
               <Button
                 fullWidth
                 variant="outlined"
                 onClick={handleFacebookLogin}
-                startIcon={<FacebookIcon />}
+                disabled={
+                  isSubmitting ||
+                  isLoggingIn ||
+                  isGoogleLoading ||
+                  isFacebookLoading
+                }
+                startIcon={
+                  isFacebookLoading ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <FacebookIcon />
+                  )
+                }
                 sx={{
                   flex: 1,
                   py: 1.2,
@@ -883,7 +990,7 @@ export default function Login() {
                   },
                 }}
               >
-                {login.form.facebookButton}
+                {isFacebookLoading ? "Đang xử lý..." : login.form.facebookButton}
               </Button>
             </Box>
 

@@ -27,7 +27,7 @@ export class AuthService {
     res.cookie(name, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: maxAgeMs,
     });
   }
@@ -104,6 +104,11 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác!');
     }
+    if (!user.password) {
+      throw new UnauthorizedException(
+        'Tài khoản này được đăng ký bằng Google/Facebook. Vui lòng đăng nhập qua mạng xã hội!',
+      );
+    }
 
     // 2. Kiểm tra tài khoản có bị khóa hoặc xóa không
     if (user.isDeleted) {
@@ -129,6 +134,14 @@ export class AuthService {
     return {
       success: true,
       message: 'Đăng nhập thành công!',
+      profile: {
+        _id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        avatar: user.avatar,
+      },
       ...tokens,
     };
   }
