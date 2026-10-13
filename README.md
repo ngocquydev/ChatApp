@@ -1,6 +1,6 @@
 # 💬 Realtime Chat Application
 
-Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (**Modern Realtime Chat Application**) được xây dựng theo kiến trúc Client - Server với **NestJS** ở phía Backend và **React 19 (Vite)** ở phía Frontend, tích hợp **MongoDB**, **Redis**, **Firebase Auth**, **Cloudflare Turnstile** và **JWT HttpOnly Cookies**.
+Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (**Modern Realtime Chat Application**) được xây dựng theo kiến trúc Client - Server với **NestJS** ở phía Backend và **Next.js 16 (App Router + Turbopack + TypeScript)** ở phía Frontend, tích hợp **Material UI (MUI v9)**, **MongoDB**, **Redis**, **Firebase Auth**, **Cloudflare Turnstile** và **JWT HttpOnly Cookies**.
 
 ---
 
@@ -15,31 +15,36 @@ Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (**Mode
   - [4. Cấu hình & Chạy Frontend](#4-cấu-hình--chạy-frontend)
 - [🔐 Cơ chế xác thực & Bảo mật (Authentication Flow)](#-cơ-chế-xác-thực--bảo-mật-authentication-flow)
 - [📚 Tài liệu API (Swagger)](#-tài-liệu-api-swagger)
-- [🧪 Kiểm thử (Testing)](#-kiểm-thử-testing)
+- [🧪 Kiểm thử & CI/CD Tự động (Testing & CI Quality Gate)](#-kiểm-thử--cicd-tự-động-testing--ci-quality-gate)
 - [📋 Lịch sử cập nhật & Lộ trình phát triển](#-lịch-sử-cập-nhật--lộ-trình-phát-triển)
 
 ---
 
 ## ✨ Tính năng nổi bật
 
+- **Kiến trúc Next.js 16 App Router & TypeScript**:
+  - Frontend chuyển đổi toàn diện sang **Next.js 16 (App Router)** với TypeScript nghiêm ngặt, tách biệt rõ ràng Server & Client Components (`'use client'`).
+  - Tích hợp chuẩn **`@mui/material-nextjs`** Emotion SSR caching, loại bỏ hoàn toàn hiện tượng chớp nháy giao diện (FOUC) khi tải trang.
 - **Đăng nhập & Đăng ký đa phương thức**:
   - Đăng nhập & Đăng ký truyền thống bằng Email & Mật khẩu (mã hóa mật khẩu bằng `bcrypt` 10 salt rounds).
   - Tách biệt thông báo lỗi đăng nhập chuẩn xác: *"Email không tồn tại trên hệ thống!"* hoặc *"Mật khẩu không chính xác!"*.
-  - Đăng nhập mạng xã hội (**Google & Facebook**) qua Firebase Authentication SDK với kiến trúc Custom Hook `useSocialAuth` dùng chung.
+  - Đăng nhập mạng xã hội (**Google & Facebook**) qua Firebase Authentication SDK với kiến trúc Custom Hook `useSocialAuth` tái sử dụng.
   - Tự động bắt và xử lý lỗi xung đột email Firebase (`auth/account-exists-with-different-credential` $\rightarrow$ *"Email này đã được đăng ký"*).
   - Đo lường độ mạnh mật khẩu thời gian thực (Password Strength Meter) với 3 mức độ (Yếu / Trung bình / Rất mạnh).
   - Nút ẩn/hiện mật khẩu tiện lợi trên toàn bộ các biểu mẫu.
 - **Bảo mật phiên đăng nhập & Chống Bot / DDoS**:
-  - Tích hợp **Cloudflare Turnstile** thông minh bảo vệ biểu mẫu đăng nhập khỏi bot tự động và tấn công brute-force.
+  - Tích hợp **Cloudflare Turnstile** thông minh bảo vệ biểu mẫu đăng nhập khỏi bot tự động và brute-force.
+  - Widget Turnstile tối ưu hóa cơ chế callback qua `useRef` và lifecycle cleanup, chống triệt để tình trạng xoay vòng re-render liên tục.
   - Cặp `AccessToken` (1 giờ) và `RefreshToken` (7 ngày) được lưu trữ trong **HttpOnly Cookie** (`sameSite: 'lax'`) chống đánh cắp qua XSS.
   - Tự động làm mới token (`auto-refresh`) qua Axios Response Interceptor khi AccessToken hết hạn mà không làm gián đoạn trải nghiệm người dùng.
   - Thu hồi token và đưa vào **Redis Blacklist** khi người dùng đăng xuất.
-  - Phân quyền và bảo vệ route bằng NestJS Guards (`JwtAuthGuard`) và React Router (`ProtectedRoute`).
-- **Tối ưu hóa hiệu năng & Chống gọi trùng lặp (Deduplication)**:
-  - Áp dụng cơ chế **In-flight Promise Deduplication** trong `useAuthStore` cho hàm `checkAuth()`: triệt tiêu việc gọi đúp API `/auth/profile` khi reload trang (kể cả trong `React.StrictMode`).
+  - Phân quyền và bảo vệ route bằng NestJS Guards (`JwtAuthGuard`) và Next.js Route Guards.
+- **Tối ưu hóa hiệu năng & Triệt tiêu API Call thừa**:
+  - **Quản lý phiên thông minh qua cờ `has_session`**: Người dùng chưa từng đăng nhập khi vào `/login` hoặc `/register` sẽ không bị kích hoạt gọi ngầm `/auth/profile` hoặc `/auth/refresh` gây lỗi 401 trên DevTools Network.
+  - **In-flight Promise Deduplication**: `useAuthStore` áp dụng bộ nhớ đệm Promise đang chờ (`checkAuthPromise`) cho hàm `checkAuth()`, triệt tiêu việc gọi đúp API `/auth/profile` khi reload trang (kể cả trong `React.StrictMode`).
   - Tối ưu luồng đăng nhập/đăng ký: trực tiếp tái sử dụng dữ liệu `profile` từ response ban đầu, loại bỏ các lệnh gọi API thừa.
-- **Giao diện hiện đại & Chuẩn hóa React 19 / MUI**:
-  - Giao diện xây dựng bằng **React 19**, **Material UI (MUI)**, **Lucide Icons** và **Motion Animations**.
+- **Giao diện hiện đại, công thái học & Material UI v9**:
+  - Chuẩn hóa chiều cao ô nhập liệu chuẩn công thái học 54px (`height: 54px`), font chữ rõ ràng, bố cục cân đối và dễ tương tác.
   - Chuẩn hóa 100% sang API `slotProps={{ input: { ... } }}` của MUI, loại bỏ hoàn toàn các cảnh báo deprecated `InputProps`.
   - Hỗ trợ ghi nhớ tài khoản đăng nhập (`Remember Me`) qua `localStorage`.
 - **Tài liệu API chuẩn hóa**:
@@ -51,10 +56,10 @@ Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (**Mode
 
 | Tầng | Công nghệ / Thư viện chính |
 | :--- | :--- |
-| **Frontend** | React 19, Vite, Material UI (MUI), Zustand, TanStack React Query, React Hook Form, Zod, Axios, Firebase Client SDK, Lucide React, Motion |
+| **Frontend** | Next.js 16 (App Router + Turbopack), React 19, TypeScript, Material UI (MUI v9) + @mui/material-nextjs, Emotion, Zustand, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase Client SDK, Lucide React, Motion |
 | **Backend** | NestJS (Express), TypeScript, Passport.js (JWT Strategy), Mongoose (MongoDB), Redis (IoRedis), Firebase Admin SDK, Cloudflare Turnstile, Class Validator |
 | **Cơ sở dữ liệu & Cache** | MongoDB (lưu trữ người dùng, dữ liệu tin nhắn), Redis (Blacklist token, session người dùng, rate limiting) |
-| **DevOps & Môi trường** | Docker & Docker Compose |
+| **DevOps & Môi trường** | Docker & Docker Compose, GitHub Actions CI |
 
 ---
 
@@ -83,24 +88,34 @@ chat/
 │   ├── package.json
 │   └── tsconfig.json
 │
-└── frontend/                    # Mã nguồn Frontend (React + Vite)
+└── frontend/                    # Mã nguồn Frontend (Next.js 16 + TypeScript)
     ├── src/
+    │   ├── app/                 # Next.js App Router (File-system Based Routing)
+    │   │   ├── chat/            # Route phòng trò chuyện (/chat)
+    │   │   ├── login/           # Route đăng nhập (/login)
+    │   │   ├── register/        # Route đăng ký (/register)
+    │   │   ├── layout.tsx       # Root Layout (EmotionCacheProvider, ThemeProvider)
+    │   │   ├── providers.tsx    # Client Providers (React Query, Auth Init, Theme)
+    │   │   ├── page.tsx         # Trang chủ điều hướng
+    │   │   └── not-found.tsx    # Giao diện lỗi 404 tùy biến
     │   ├── components/
-    │   │   ├── common/          # Component dùng chung (TurnstileWidget)
+    │   │   ├── common/          # Component dùng chung (TurnstileWidget, PasswordStrengthMeter)
     │   │   ├── layout/          # AppBar, Header, Drawer menu
-    │   │   ├── pages/           # Login, Register, Home, ChatApp
+    │   │   ├── pages/           # Login, Register, Home, ChatApp views
     │   │   └── section/         # Feed, Message, PersonCall
     │   ├── config/              # Cấu hình Firebase Client SDK
-    │   ├── data/                # Dữ liệu tĩnh, nội dung hiển thị (loginData, registerData)
-    │   ├── hooks/               # Custom Hooks (useSocialAuth)
-    │   ├── routes/              # Cấu hình React Router & ProtectedRoute
-    │   ├── services/            # Cấu hình Axios Instance & Response Interceptors
-    │   ├── store/               # Zustand Store (useAuthStore với in-flight deduplication)
-    │   ├── App.jsx              # Khởi tạo React Query, Router Provider & khôi phục phiên
-    │   └── main.jsx             # Entry point Frontend (React 19)
+    │   ├── data/                # Dữ liệu tĩnh, nội dung hiển thị
+    │   ├── hooks/               # Custom Hooks (useSocialAuth, useAuth, ...)
+    │   ├── services/            # Cấu hình Axios Instance, interceptors & skipAuthRefresh
+    │   ├── store/               # Zustand Store (useAuthStore với has_session & deduplication)
+    │   ├── styles/              # Styles toàn cục (globals.css)
+    │   └── theme/               # Cấu hình MUI Theme & tùy biến giao diện Input 54px
+    ├── public/                  # Tệp tĩnh (ảnh, favicon, logo)
+    ├── next.config.mjs          # Cấu hình Next.js (port 5173, headers, rewrite)
+    ├── tsconfig.json            # Cấu hình TypeScript Frontend
+    ├── eslint.config.mjs        # Cấu hình ESLint
     ├── .env.example             # Biến môi trường mẫu cho Frontend
-    ├── package.json
-    └── vite.config.js
+    └── package.json
 ```
 
 ---
@@ -108,7 +123,7 @@ chat/
 ## 🚀 Hướng dẫn cài đặt & Khởi chạy
 
 ### 1. Yêu cầu hệ thống
-- **Node.js**: Phiên bản 18 trở lên (Khuyến nghị 20+)
+- **Node.js**: Phiên bản 18 trở lên (Khuyến nghị 20 hoặc 24 LTS)
 - **Docker & Docker Compose**: Đã cài đặt và đang chạy
 - **Git**
 
@@ -185,27 +200,39 @@ docker compose ps
    npm install
    ```
 
-3. Cấu hình biến môi trường (`frontend/.env`):
+3. Cấu hình biến môi trường (`frontend/.env` hoặc `frontend/.env.local`):
    Tạo file `.env` dựa trên `.env.example`:
    ```env
-   VITE_BACKEND_URL=http://localhost:3000
-   VITE_FIREBASE_API_KEY=your_firebase_api_key
-   VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   VITE_FIREBASE_PROJECT_ID=your_project_id
-   VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
-   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   VITE_FIREBASE_APP_ID=your_app_id
-   VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+   PORT_FE=5173
+   PORT_BACKEND=3000
+
+   # Backend URL
+   NEXT_PUBLIC_BACKEND_URL=http://localhost:3000
+
+   # Firebase Client Config (cho Google/Facebook login)
+   NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
 
    # Cloudflare Turnstile Site Key
-   VITE_SITE_KEY=your_cloudflare_turnstile_site_key
+   NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_cloudflare_turnstile_site_key
    ```
 
 4. Khởi chạy Frontend:
    ```bash
    npm run dev
    ```
-   - Mở trình duyệt tại: `http://localhost:5173`
+   - Server Next.js phát triển sẽ chạy tại: `http://localhost:5173`
+
+5. Build kiểm tra sản phẩm:
+   ```bash
+   npm run build
+   npm run start
+   ```
 
 ---
 
@@ -222,6 +249,7 @@ docker compose ps
       │                                                         │
       │   Nhận HttpOnly Cookies ◄───────────────────────────────┘
       │   (accessToken & refreshToken)
+      │   Lưu cờ has_session = 'true' vào localStorage
       │
       ├─► Đăng nhập Mạng xã hội ────────────────► Firebase Client Popup (Google / FB)
       │                                                │
@@ -236,7 +264,7 @@ docker compose ps
       │         │
       │         └─► [401 Hết hạn] ──► Axios Response Interceptor bắt lỗi
       │                                       │
-      │                                       ▼
+      │                                       ▼ (nếu has_session == true)
       │                                 POST /auth/refresh
       │                                       │
       │                                       ▼
@@ -246,8 +274,8 @@ docker compose ps
       └─► Đăng xuất ─────────────────────► POST /auth/logout
                                               │
                                               ▼
-                                   Xóa Cookies + Đưa AccessToken
-                                   vào Redis Blacklist (với TTL còn lại)
+                                   Xóa Cookies + Xóa has_session
+                                   Đưa AccessToken vào Redis Blacklist (TTL còn lại)
 ```
 
 ---
@@ -271,12 +299,12 @@ Khi Backend đang chạy, truy cập đường dẫn sau để xem và thử ngh
 
 ## 🧪 Kiểm thử & CI/CD Tự động (Testing & CI Quality Gate)
 
-Dự án được bảo vệ bởi hệ thống kiểm soát chất lượng **CI 2 lớp** (Local Git Hook và GitHub Actions CI) nhằm đảm bảo không thể push mã nguồn lỗi lên nhánh `main`:
+Dự án được bảo vệ bởi hệ thống kiểm soát chất lượng **CI 2 lớp** (Local Git Hooks và GitHub Actions CI) nhằm đảm bảo không thể push mã nguồn lỗi lên nhánh `main`:
 
 ### 1. GitHub Actions CI (`.github/workflows/ci.yml`)
 Mỗi khi có commit được `push` hoặc tạo `pull_request` vào nhánh `main`, GitHub Actions sẽ tự động kích hoạt 2 pipeline độc lập:
 - **Backend CI**: Chạy linter (`oxlint --type-aware`), unit tests (`vitest run`), và build ứng dụng NestJS (`nest build`).
-- **Frontend CI**: Chạy linter (`eslint .`), và build bundle production (`vite build`).
+- **Frontend CI**: Chạy linter (`eslint .`), và build ứng dụng Next.js (`next build`).
 
 ### 2. Git Pre-Push Hook (Kiểm tra cục bộ trước khi push)
 Tệp `.git/hooks/pre-push` được cấu hình để tự động chặn lệnh `git push` nếu phát hiện bất kỳ lỗi cú pháp, linting, unit test hay build nào:
@@ -286,18 +314,9 @@ git push origin main
 # Nếu 1 trong các bước thất bại, quá trình push sẽ bị HỦY BỎ ngay lập tức!
 ```
 
-### 3. Chạy kiểm tra thủ công (Local Script)
-Bạn có thể tự chạy kiểm tra toàn diện cả 2 phía bất kỳ lúc nào:
-- **Windows (PowerShell)**:
-  ```powershell
-  .\scripts\check.ps1
-  ```
-- **Linux / macOS (Bash)**:
-  ```bash
-  ./scripts/check.sh
-  ```
+> **Lưu ý**: Thư mục tiện ích nội bộ `scripts/` (chứa các script chạy kiểm tra cục bộ `check.ps1` / `check.sh`) được cấu hình trong `.gitignore` để đảm bảo remote repository luôn gọn gàng và không phụ thuộc file cục bộ.
 
-### 4. Lệnh kiểm thử thủ công từng phần:
+### 3. Lệnh kiểm thử thủ công từng phần:
 ```bash
 # Backend:
 cd backend
@@ -309,7 +328,7 @@ npm run build     # Build kiểm tra NestJS
 # Frontend:
 cd frontend
 npm run lint      # Kiểm tra ESLint
-npm run build     # Build kiểm tra Vite bundle
+npm run build     # Build kiểm tra Next.js production bundle
 ```
 
 ---
@@ -318,15 +337,24 @@ npm run build     # Build kiểm tra Vite bundle
 
 ### ✅ Các tính năng & Cải tiến đã hoàn thành
 
-1. **Kiến trúc Xác thực & Bảo mật nâng cao**:
+1. **Di chuyển toàn diện sang Next.js 16 (App Router) & TypeScript**:
+   - [x] Chuyển đổi toàn bộ mã nguồn Frontend từ React 19 (Vite + Javascript) sang **Next.js 16 App Router + Turbopack + TypeScript**.
+   - [x] Tích hợp bộ đệm Emotion SSR bằng `@mui/material-nextjs` trong [RootLayout](file:///frontend/src/app/layout.tsx).
+   - [x] Tái cấu trúc phân chia routes: `/login`, `/register`, `/chat`, `/` và trang `not-found.tsx` chuẩn Next.js.
+   - [x] Giữ nguyên dev port 5173 và backend port 3000 đồng bộ môi trường.
+
+2. **Kiến trúc Xác thực & Bảo mật nâng cao**:
    - [x] Cấu hình thời hạn token chuẩn an toàn: **AccessToken = 1 giờ**, **RefreshToken = 7 ngày**.
-   - [x] Tích hợp **Cloudflare Turnstile** chống bot và tấn công brute-force phía Backend & Frontend.
+   - [x] Tích hợp **Cloudflare Turnstile** chống bot và brute-force phía Backend & Frontend.
+   - [x] **Ổn định hóa Cloudflare Turnstile**: Khắc phục lỗi loop re-render widget bằng `callbacksRef` và cleanup lifecycle.
    - [x] Thiết kế lại **Redis Service**: cấu trúc key rõ ràng (`chat:blacklist:`, `chat:session:`, `chat:rate:`, `chat:online:`), hỗ trợ chế độ **Fail-safe** không làm gián đoạn luồng đăng nhập nếu Redis mất kết nối.
    - [x] Loại bỏ toàn bộ kiểu dữ liệu `any` trong Backend, chuẩn hóa định nghĩa TypeScript trong `auth.types.ts` và `users.types.ts`.
    - [x] Tách biệt thông báo lỗi đăng nhập: thông báo cụ thể tài khoản không tồn tại hoặc sai mật khẩu.
    - [x] Xử lý lỗi Firebase `auth/account-exists-with-different-credential` khi tài khoản đã liên kết với nhà cung cấp khác.
 
-2. **Frontend UI & Trải nghiệm người dùng**:
+3. **Frontend UI & Trải nghiệm người dùng**:
+   - [x] **Chuẩn hóa kích thước Input 54px**: Nâng cấp toàn bộ text fields, password fields lên chuẩn 54px thanh thoát, padding cân đối, xóa bỏ cảm giác chật chội.
+   - [x] **Triệt tiêu lỗi 401 thừa trên trang Login/Register**: Tích hợp cờ `has_session` trong `localStorage` và `skipAuthRefresh` trên Axios, giữ cho DevTools Network luôn sạch sẽ khi chưa đăng nhập.
    - [x] Hoàn thiện toàn diện trang **Đăng ký (`/register`)**:
      - Form validation qua Zod & React Hook Form (Họ tên, Email, SĐT chuẩn VN, Mật khẩu có độ phức tạp cao, Xác nhận mật khẩu).
      - Thanh đo độ mạnh mật khẩu thời gian thực (Password Strength Meter).
@@ -336,9 +364,8 @@ npm run build     # Build kiểm tra Vite bundle
    - [x] Tách Custom Hook tái sử dụng **`useSocialAuth`**: gom toàn bộ logic popup Firebase, bắt lỗi đóng popup và điều hướng thành 1 hook duy nhất dùng cho cả Login, Register và các modal trong tương lai.
    - [x] Tối ưu hóa API Call & Deduplication:
      - Thêm cơ chế **In-flight Promise Deduplication** (`checkAuthPromise`) trong `useAuthStore` giúp triệt tiêu việc gọi 2 lần `/auth/profile` khi reload trang.
-     - Thêm `hasCheckedRef` trong `Layout` của `App.jsx` chống double invocation từ `React.StrictMode`.
      - Tận dụng trực tiếp `profile` trả về từ các API login/register để loại bỏ request `/auth/profile` thừa.
-   - [x] Chuẩn hóa **Material UI & React 19**: thay thế toàn bộ thuộc tính `InputProps` cũ sang `slotProps={{ input: { ... } }}` để loại bỏ hoàn toàn các cảnh báo DOM.
+   - [x] Chuẩn hóa **Material UI**: thay thế toàn bộ thuộc tính `InputProps` cũ sang `slotProps={{ input: { ... } }}` để loại bỏ hoàn toàn các cảnh báo DOM.
 
 ---
 
