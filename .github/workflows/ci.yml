@@ -65,5 +65,5 @@ jobs:
       - name: Run Linter (ESLint)
         run: npm run lint
 
-      - name: Build Frontend (Vite)
+      - name: Build Frontend (Next.js)
         run: npm run build
