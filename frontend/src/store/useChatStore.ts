@@ -192,6 +192,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     );
 
+    socket.on("friend:request_received", () => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("refresh_friend_requests"));
+      }
+    });
+
+    socket.on("friend:accepted", () => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("refresh_friends_list"));
+      }
+    });
+
     set({ socket });
   },
 

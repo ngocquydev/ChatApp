@@ -24,6 +24,6 @@ import { RedisModule } from '../redis/redis/redis.module.js';
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],
-  exports: [ChatService],
+  exports: [ChatService, ChatGateway],
 })
 export class ChatModule {}

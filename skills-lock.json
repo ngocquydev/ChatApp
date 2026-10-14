@@ -97,6 +97,18 @@
       "skillPath": "skills/interview-me/SKILL.md",
       "computedHash": "4229002dd862e6e037c8a01c3e31d9af097465c58b2c3611912edb2af005f303"
     },
+    "js-ts-business-crud-transforms": {
+      "source": "icyJoseph/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/js-ts-business-crud-transforms/SKILL.md",
+      "computedHash": "64e9b134f0099dd10bd558a38e26b4ddd3d190b9409c02525145337e6bf7513c"
+    },
+    "js-ts-performance-readability": {
+      "source": "icyJoseph/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/js-ts-performance-readability/SKILL.md",
+      "computedHash": "c29a1d1066e3847ab925714df950f3cce187e8d877353e9ca1d3599db440d38a"
+    },
     "observability-and-instrumentation": {
       "source": "addyosmani/agent-skills",
       "sourceType": "github",
