@@ -85,6 +85,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
     sendFriendRequest,
     cancelRequest,
     respondToRequest,
+    clearSearchResults,
   } = useFriendStore();
 
   const { onlineUserIds, startConversationWithUser } = useChatStore();
@@ -159,7 +160,11 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
       <Box sx={{ mb: 1.5 }}>
         <Tabs
           value={activeTab}
-          onChange={(_, val) => setActiveTab(val)}
+          onChange={(_, val) => {
+            setActiveTab(val);
+            setSearchQuery("");
+            clearSearchResults();
+          }}
           variant="fullWidth"
           sx={{
             minHeight: 40,
@@ -366,7 +371,6 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
           <Box sx={{ mb: 1.5 }}>
             <TextField
               fullWidth
-              autoFocus
               size="small"
               placeholder="Nhập tên hoặc email..."
               value={searchQuery}

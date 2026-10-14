@@ -121,6 +121,7 @@ export default function ChatApp() {
     respondToRequest,
     cancelRequest,
     unfriend,
+    clearSearchResults,
   } = useFriendStore();
 
   // Sidebar Tab: 0 = Hội thoại (Chats), 1 = Danh bạ & Bạn bè (Friends)
@@ -132,6 +133,18 @@ export default function ChatApp() {
   // Search bạn mới Dialog
   const [openAddFriendDialog, setOpenAddFriendDialog] = useState(false);
   const [searchFriendInput, setSearchFriendInput] = useState("");
+
+  const handleOpenAddFriendDialog = () => {
+    clearSearchResults();
+    setSearchFriendInput("");
+    setOpenAddFriendDialog(true);
+  };
+
+  const handleCloseAddFriendDialog = () => {
+    setOpenAddFriendDialog(false);
+    setSearchFriendInput("");
+    clearSearchResults();
+  };
 
   const [inputText, setInputText] = useState("");
   const [searchChatQuery, setSearchChatQuery] = useState("");
@@ -305,10 +318,7 @@ export default function ChatApp() {
                 <Button
                   size="small"
                   variant="outlined"
-                  onClick={() => {
-                    setOpenAddFriendDialog(true);
-                    setSearchFriendInput("");
-                  }}
+                  onClick={handleOpenAddFriendDialog}
                   startIcon={<UserPlus size={16} />}
                   sx={{
                     borderRadius: "10px",
@@ -1232,12 +1242,18 @@ export default function ChatApp() {
       {/* ==================== DIALOG TÌM BẠN & KẾT BẠN MỚI ==================== */}
       <Dialog
         open={openAddFriendDialog}
-        onClose={() => setOpenAddFriendDialog(false)}
+        onClose={handleCloseAddFriendDialog}
         maxWidth="sm"
         fullWidth
+        disableScrollLock
+        keepMounted={false}
         slotProps={{
           paper: {
-            sx: { borderRadius: "20px", p: 1 },
+            sx: {
+              borderRadius: "20px",
+              p: 1,
+              boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.15)",
+            },
           },
         }}
       >
@@ -1245,14 +1261,13 @@ export default function ChatApp() {
           <Typography component="span" variant="h6" sx={{ fontWeight: 800 }}>
             Tìm kiếm & Kết bạn mới
           </Typography>
-          <IconButton size="small" onClick={() => setOpenAddFriendDialog(false)}>
+          <IconButton size="small" onClick={handleCloseAddFriendDialog}>
             <X size={18} />
           </IconButton>
         </DialogTitle>
 
         <DialogContent>
           <TextField
-            autoFocus
             fullWidth
             placeholder="Nhập tên, email hoặc số điện thoại..."
             value={searchFriendInput}
@@ -1275,14 +1290,26 @@ export default function ChatApp() {
             }}
           />
 
-          {isSearching ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          {!searchFriendInput.trim() ? (
+            <Box sx={{ textAlign: "center", py: 5, px: 2 }}>
+              <Search size={36} color="#94a3b8" style={{ marginBottom: 12, opacity: 0.6 }} />
+              <Typography variant="body2" sx={{ fontWeight: 700, color: "#475569", mb: 0.5 }}>
+                Tìm kiếm người dùng trên ChatApp
+              </Typography>
+              <Typography variant="caption" sx={{ color: "#94a3b8", display: "block" }}>
+                Nhập tên, email hoặc số điện thoại để tìm và gửi lời mời kết bạn.
+              </Typography>
+            </Box>
+          ) : isSearching ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
               <CircularProgress size={28} />
             </Box>
-          ) : searchFriendInput.trim() && searchResults.length === 0 ? (
-            <Typography variant="body2" sx={{ color: "#94a3b8", textAlign: "center", py: 4 }}>
-              Không tìm thấy người dùng nào phù hợp với từ khóa
-            </Typography>
+          ) : searchResults.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 5 }}>
+              <Typography variant="body2" sx={{ color: "#94a3b8" }}>
+                Không tìm thấy người dùng nào phù hợp với từ khóa
+              </Typography>
+            </Box>
           ) : (
             <List sx={{ p: 0 }}>
               {searchResults.map((searchUser: UserRelationResult) => (

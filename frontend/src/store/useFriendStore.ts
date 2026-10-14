@@ -40,6 +40,7 @@ interface FriendState {
   ) => Promise<{ success: boolean; message: string }>;
   cancelRequest: (requestId: string) => Promise<{ success: boolean; message: string }>;
   unfriend: (friendId: string) => Promise<{ success: boolean; message: string }>;
+  clearSearchResults: () => void;
 }
 
 export const useFriendStore = create<FriendState>((set, get) => ({
@@ -50,6 +51,10 @@ export const useFriendStore = create<FriendState>((set, get) => ({
   isLoadingFriends: false,
   isLoadingRequests: false,
   isSearching: false,
+
+  clearSearchResults: () => {
+    set({ searchResults: [], isSearching: false });
+  },
 
   fetchFriends: async () => {
     set({ isLoadingFriends: true });
