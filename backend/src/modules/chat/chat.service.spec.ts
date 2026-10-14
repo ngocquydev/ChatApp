@@ -97,7 +97,7 @@ describe('ChatService', () => {
         _id: conversationId,
         participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
         unreadCounts: new Map<string, number>([[userBId, 0]]),
-        lastMessage: null,
+        lastMessage: null as any,
         save: vi.fn().mockResolvedValue(true),
       };
 

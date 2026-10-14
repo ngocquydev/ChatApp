@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -12,9 +13,7 @@ import {
   FriendshipDocument,
 } from './schemas/friendship.schema.js';
 import { UsersService } from '../users/users.service.js';
-
 import { ChatGateway } from '../chat/chat.gateway.js';
-import { Optional } from '@nestjs/common';
 
 export interface UserRelationResult {
   _id: string;
