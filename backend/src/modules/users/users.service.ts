@@ -1,7 +1,7 @@
 // src/modules/users/users.service.ts
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserRepository } from './entities/user.entity.js';
 import { CreateUserData } from './types/user.types.js';
@@ -69,16 +69,19 @@ export class UsersService {
 
   async searchUsers(keyword?: string, excludeUserId?: string) {
     const query: Record<string, any> = {
-      isDeleted: false,
-      isBan: false,
+      isDeleted: { $ne: true },
+      isBan: { $ne: true },
     };
     if (excludeUserId) {
-      query._id = { $ne: excludeUserId };
+      query._id = Types.ObjectId.isValid(excludeUserId)
+        ? { $ne: new Types.ObjectId(excludeUserId) }
+        : { $ne: excludeUserId };
     }
     if (keyword && keyword.trim()) {
+      const escaped = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { name: { $regex: keyword.trim(), $options: 'i' } },
-        { email: { $regex: keyword.trim(), $options: 'i' } },
+        { name: { $regex: escaped, $options: 'i' } },
+        { email: { $regex: escaped, $options: 'i' } },
       ];
     }
     return this.userModel

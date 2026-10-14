@@ -25,6 +25,7 @@ import {
   Smile,
 } from "lucide-react";
 import PostComments, { PostItem, CommentItem } from "./PostComments";
+import { useAuthStore } from "../../store/useAuthStore";
 
 const INITIAL_POSTS: PostItem[] = [
   {
@@ -84,6 +85,7 @@ const INITIAL_POSTS: PostItem[] = [
 ];
 
 function Feed() {
+  const { user } = useAuthStore();
   const [posts, setPosts] = useState<PostItem[]>(INITIAL_POSTS);
   const [open, setOpen] = useState(false);
   const [activePostId, setActivePostId] = useState<number | null>(null);
@@ -105,8 +107,9 @@ function Feed() {
     if (!newPostText.trim()) return;
     const newPost: PostItem = {
       id: Date.now(),
-      author: "Bạn (Tôi)",
+      author: user?.name || "Bạn (Tôi)",
       avatar:
+        user?.avatar ||
         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100",
       time: "Vừa xong",
       content: newPostText,
@@ -185,7 +188,9 @@ function Feed() {
         }}
       >
         <Box sx={{ display: "flex", gap: 1.5, mb: 2 }}>
-          <Avatar src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100" />
+          <Avatar src={user?.avatar || ""} alt={user?.name || ""}>
+            {(user?.name || "U")[0].toUpperCase()}
+          </Avatar>
           <TextField
             fullWidth
             multiline
