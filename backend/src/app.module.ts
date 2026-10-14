@@ -7,12 +7,13 @@ import { AppService } from './app.service.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { RedisModule } from './modules/redis/redis/redis.module.js';
+import { ChatModule } from './modules/chat/chat.module.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
   imports: [
-    // 1. Cấu hình biến môi trường toàn cục từ tệp .env
+    // 1. Cấu hình biến môi trường toàn cục từ tệp .env (reload on update)
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -40,6 +41,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     UsersModule,
 
     AuthModule,
+
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

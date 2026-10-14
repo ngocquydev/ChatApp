@@ -24,6 +24,9 @@ export class User {
   @Prop({ required: false })
   avatar?: string; // Ảnh đại diện Google/Facebook
 
+  @Prop({ required: false })
+  bio?: string; // Giới thiệu bản thân
+
   @Prop({ default: false })
   isDeleted: boolean;
 

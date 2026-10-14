@@ -64,7 +64,28 @@ export class UsersService {
   }
 
   findAll() {
-    return this.userModel.find({ isDeleted: false }).exec();
+    return this.userModel.find({ isDeleted: false, isBan: false }).select('-password').exec();
+  }
+
+  async searchUsers(keyword?: string, excludeUserId?: string) {
+    const query: Record<string, any> = {
+      isDeleted: false,
+      isBan: false,
+    };
+    if (excludeUserId) {
+      query._id = { $ne: excludeUserId };
+    }
+    if (keyword && keyword.trim()) {
+      query.$or = [
+        { name: { $regex: keyword.trim(), $options: 'i' } },
+        { email: { $regex: keyword.trim(), $options: 'i' } },
+      ];
+    }
+    return this.userModel
+      .find(query)
+      .select('name email avatar phone bio')
+      .limit(20)
+      .exec();
   }
   async getStoredRefreshToken(userId: string) {
     const user = await this.userModel

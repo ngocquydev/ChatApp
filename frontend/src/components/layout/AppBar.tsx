@@ -91,7 +91,18 @@ function ResponsiveAppBar() {
 
   const settings = [
     { label: user?.name ? `Tên: ${user.name}` : "Tài khoản", disabled: true },
-    { label: "Cài đặt", action: () => {} },
+    {
+      label: "Hồ sơ cá nhân",
+      action: () => {
+        router.push("/profile");
+      },
+    },
+    {
+      label: "Cài đặt",
+      action: () => {
+        router.push("/profile");
+      },
+    },
     {
       label: "Đăng xuất",
       action: () => {

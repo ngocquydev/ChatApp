@@ -22,6 +22,7 @@ type SafeUserResponse = {
   isBan: boolean;
   firebaseUid?: string;
   avatar?: string;
+  bio?: string;
   createdAt?: Date;
   updatedAt?: Date;
 };

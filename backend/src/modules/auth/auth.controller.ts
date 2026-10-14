@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Patch,
   Body,
   Res,
   UseGuards,
@@ -19,12 +20,22 @@ import type {
   Request as ExpressRequest,
 } from 'express';
 import { SignInDto } from './dto/sign-in.dto.js';
+import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
+import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
+import { VerifyOtpDto } from './dto/verify-otp.dto.js';
+import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { FirebaseService } from './firebase.service.js';
 import { TurnstileService } from './turnstile.service.js';
 import type {
   AuthenticatedRequest,
   RequestWithCookies,
+  UpdateProfileResponse,
+  ChangePasswordResponse,
+  ForgotPasswordResponse,
+  VerifyOtpResponse,
+  ResetPasswordResponse,
 } from './types/auth.types.js';
 
 const ACCESS_TOKEN_MAX_AGE = 60 * 60 * 1000; // 1 giờ
@@ -133,6 +144,43 @@ export class AuthController {
 
     return result;
   }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Yêu cầu gửi mã OTP đặt lại mật khẩu qua email',
+  })
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<ForgotPasswordResponse> {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
+  }
+
+  @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Xác thực mã OTP 6 số để nhận Reset Token',
+  })
+  async verifyOtp(
+    @Body() verifyOtpDto: VerifyOtpDto,
+  ): Promise<VerifyOtpResponse> {
+    return this.authService.verifyOtp(verifyOtpDto.email, verifyOtpDto.otp);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Đặt lại mật khẩu mới bằng Reset Token',
+  })
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+  ): Promise<ResetPasswordResponse> {
+    return this.authService.resetPassword(
+      resetPasswordDto.resetToken,
+      resetPasswordDto.newPassword,
+    );
+  }
+
   @Post('refresh')
   @ApiOperation({
     summary: 'Làm mới Access Token từ Refresh Token trong cookie',
@@ -171,6 +219,48 @@ export class AuthController {
       profile: req.user,
     };
   }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Patch('profile')
+  @ApiOperation({
+    summary: 'Cập nhật thông tin tài khoản cá nhân',
+  })
+  async updateProfile(
+    @Req() req: AuthenticatedRequest,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ): Promise<UpdateProfileResponse> {
+    const userId =
+      req.user._id?.toString() || req.user.id?.toString() || req.user.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Không xác định được danh tính người dùng');
+    }
+    return this.authService.updateProfile(userId, updateProfileDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Đổi mật khẩu tài khoản người dùng',
+  })
+  async changePassword(
+    @Req() req: AuthenticatedRequest,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ): Promise<ChangePasswordResponse> {
+    const userId =
+      req.user._id?.toString() || req.user.id?.toString() || req.user.sub;
+    if (!userId) {
+      throw new UnauthorizedException('Không xác định được danh tính người dùng');
+    }
+    return this.authService.changePassword(
+      userId,
+      changePasswordDto.currentPassword,
+      changePasswordDto.newPassword,
+    );
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(HttpStatus.OK)

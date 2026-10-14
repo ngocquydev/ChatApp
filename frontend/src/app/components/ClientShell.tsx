@@ -10,8 +10,8 @@ interface ClientShellProps {
 
 export default function ClientShell({ children }: ClientShellProps) {
   const pathname = usePathname();
-  const hideAppBarRoutes = ["/login", "/register"];
-  const shouldHideAppBar = hideAppBarRoutes.includes(pathname);
+  const hideAppBarRoutes = ["/login", "/register", "/forgot-password"];
+  const shouldHideAppBar = hideAppBarRoutes.some((route) => pathname === route || pathname?.startsWith(`${route}/`));
 
   return (
     <>

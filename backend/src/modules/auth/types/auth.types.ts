@@ -24,6 +24,7 @@ export interface AuthUser {
   isBan?: boolean;
   firebaseUid?: string;
   avatar?: string;
+  bio?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -46,4 +47,31 @@ export interface ValidatedRefreshTokenResult {
 export interface TokensResponse {
   accessToken: string;
   refreshToken: string;
+}
+
+export interface UpdateProfileResponse {
+  success: boolean;
+  message: string;
+  profile: AuthUser;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface VerifyOtpResponse {
+  success: boolean;
+  message: string;
+  resetToken: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
 }

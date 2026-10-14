@@ -13,7 +13,12 @@ export interface UserProfile {
   name?: string;
   email?: string;
   avatar?: string;
+  phone?: string;
+  bio?: string;
   role?: string;
+  firebaseUid?: string;
+  createdAt?: string;
+  updatedAt?: string;
   [key: string]: unknown;
 }
 
@@ -31,6 +36,27 @@ export interface AuthState {
   loginWithFacebook: () => Promise<unknown>;
   loginMe: (body: Record<string, unknown>) => Promise<unknown>;
   registerMe: (body: Record<string, unknown>) => Promise<unknown>;
+  updateProfile: (data: {
+    name?: string;
+    phone?: string;
+    avatar?: string;
+    bio?: string;
+  }) => Promise<UserProfile>;
+  changePassword: (data: {
+    currentPassword: string;
+    newPassword: string;
+  }) => Promise<{ success: boolean; message: string }>;
+  forgotPassword: (
+    email: string,
+  ) => Promise<{ success: boolean; message: string }>;
+  verifyOtp: (
+    email: string,
+    otp: string,
+  ) => Promise<{ success: boolean; message: string; resetToken: string }>;
+  resetPassword: (
+    resetToken: string,
+    newPassword: string,
+  ) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
 }
 
@@ -212,6 +238,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } finally {
       set({ isLoggingIn: false });
     }
+  },
+
+  updateProfile: async (data) => {
+    const res = await api.patch("/auth/profile", data);
+    const updatedProfile = res.data?.profile || res.data;
+    set((state) => ({
+      user: state.user ? { ...state.user, ...updatedProfile } : updatedProfile,
+    }));
+    return updatedProfile;
+  },
+
+  changePassword: async (data) => {
+    const res = await api.post("/auth/change-password", data);
+    return res.data;
+  },
+
+  forgotPassword: async (email: string) => {
+    const res = await api.post("/auth/forgot-password", { email });
+    return res.data;
+  },
+
+  verifyOtp: async (email: string, otp: string) => {
+    const res = await api.post("/auth/verify-otp", { email, otp });
+    return res.data;
+  },
+
+  resetPassword: async (resetToken: string, newPassword: string) => {
+    const res = await api.post("/auth/reset-password", {
+      resetToken,
+      newPassword,
+    });
+    return res.data;
   },
 
   logout: async () => {

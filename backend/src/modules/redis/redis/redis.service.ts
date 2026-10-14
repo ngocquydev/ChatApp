@@ -89,5 +89,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const result = await this.client.get(`bl_${token}`);
     return result !== null;
   }
+
+  getClient(): Redis {
+    return this.client;
+  }
 }
 

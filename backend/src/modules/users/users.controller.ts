@@ -4,6 +4,7 @@ import {
   Get,
   Post,
   Body,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
@@ -20,5 +21,10 @@ export class UsersController {
   @Get()
   findAll() {
     return this.usersService.findAll();
+  }
+
+  @Get('search')
+  search(@Query('q') query?: string) {
+    return this.usersService.searchUsers(query);
   }
 }

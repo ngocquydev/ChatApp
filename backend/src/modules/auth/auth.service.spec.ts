@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service.js';
 import { RedisService } from '../redis/redis/redis.service.js';
+import { MailService } from '../mail/mail.service.js';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -16,6 +17,7 @@ describe('AuthService', () => {
         { provide: ConfigService, useValue: { get: () => 'test' } },
         { provide: UsersService, useValue: {} },
         { provide: RedisService, useValue: {} },
+        { provide: MailService, useValue: { sendOtpEmail: () => Promise.resolve(true) } },
       ],
     }).compile();
 
