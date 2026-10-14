@@ -29,6 +29,7 @@ interface FriendState {
   isLoadingFriends: boolean;
   isLoadingRequests: boolean;
   isSearching: boolean;
+  searchSeq?: number;
 
   fetchFriends: () => Promise<void>;
   fetchRequests: () => Promise<void>;
@@ -51,6 +52,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
   isLoadingFriends: false,
   isLoadingRequests: false,
   isSearching: false,
+  searchSeq: 0,
 
   clearSearchResults: () => {
     set({ searchResults: [], isSearching: false });
@@ -86,18 +88,24 @@ export const useFriendStore = create<FriendState>((set, get) => ({
   },
 
   searchUsers: async (query: string) => {
-    if (!query.trim()) {
+    const trimmed = query.trim();
+    if (!trimmed) {
       set({ searchResults: [], isSearching: false });
       return;
     }
-    set({ isSearching: true });
+    const nextSeq = (get().searchSeq || 0) + 1;
+    set({ isSearching: true, searchSeq: nextSeq });
     try {
-      const res = await api.get(`/friends/search?q=${encodeURIComponent(query.trim())}`);
-      set({ searchResults: res.data?.users || [] });
+      const res = await api.get(`/friends/search?q=${encodeURIComponent(trimmed)}`);
+      // Chỉ cập nhật nếu request này là mới nhất (tránh race condition giữa các phím gõ nhanh)
+      if (get().searchSeq === nextSeq) {
+        set({ searchResults: res.data?.users || [], isSearching: false });
+      }
     } catch (err) {
       console.error("Lỗi tìm kiếm bạn bè:", err);
-    } finally {
-      set({ isSearching: false });
+      if (get().searchSeq === nextSeq) {
+        set({ isSearching: false });
+      }
     }
   },
 

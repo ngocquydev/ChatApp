@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -15,6 +15,7 @@ import {
   Button,
   IconButton,
   CircularProgress,
+  LinearProgress,
   Tooltip,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
@@ -73,7 +74,6 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
   const [activeTab, setActiveTab] = useState<number>(0);
   const [searchFriend, setSearchFriend] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [, startTransition] = useTransition();
 
   const {
     friends,
@@ -98,9 +98,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
   useEffect(() => {
     if (activeTab !== 1) return;
     const timer = setTimeout(() => {
-      startTransition(() => {
-        searchUsers(searchQuery);
-      });
+      searchUsers(searchQuery);
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery, activeTab, searchUsers]);
@@ -401,7 +399,11 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
 
           <Divider sx={{ mb: 1.5 }} />
 
-          <Box sx={{ flex: 1, overflowY: "auto", pr: 0.5 }}>
+          <Box sx={{ flex: 1, overflowY: "auto", pr: 0.5, position: "relative" }}>
+            {isSearching && searchResults.length > 0 && (
+              <LinearProgress sx={{ mb: 1, height: 2, borderRadius: 1 }} />
+            )}
+
             {!searchQuery.trim() && (
               <Box sx={{ textAlign: "center", py: 4, px: 2 }}>
                 <Search size={32} color="#94a3b8" style={{ marginBottom: 8 }} />
@@ -410,6 +412,15 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                 </Typography>
                 <Typography variant="caption" sx={{ color: "#94a3b8", display: "block" }}>
                   Gõ tên hoặc địa chỉ email của người bạn muốn kết nối để gửi lời mời kết bạn!
+                </Typography>
+              </Box>
+            )}
+
+            {searchQuery.trim() && isSearching && searchResults.length === 0 && (
+              <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 4, gap: 1 }}>
+                <CircularProgress size={20} />
+                <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                  Đang tìm kiếm người dùng...
                 </Typography>
               </Box>
             )}

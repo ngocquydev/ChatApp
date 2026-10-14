@@ -14,6 +14,7 @@ import {
   Chip,
   Tooltip,
   CircularProgress,
+  LinearProgress,
   List,
   ListItem,
   ListItemAvatar,
@@ -1300,121 +1301,131 @@ export default function ChatApp() {
                 Nhập tên, email hoặc số điện thoại để tìm và gửi lời mời kết bạn.
               </Typography>
             </Box>
-          ) : isSearching ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
-              <CircularProgress size={28} />
-            </Box>
           ) : searchResults.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 5 }}>
-              <Typography variant="body2" sx={{ color: "#94a3b8" }}>
-                Không tìm thấy người dùng nào phù hợp với từ khóa
-              </Typography>
-            </Box>
+            isSearching ? (
+              <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 5, gap: 1.5 }}>
+                <CircularProgress size={24} />
+                <Typography variant="body2" sx={{ color: "#64748b" }}>
+                  Đang tìm kiếm người dùng...
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ textAlign: "center", py: 5 }}>
+                <Typography variant="body2" sx={{ color: "#94a3b8" }}>
+                  Không tìm thấy người dùng nào phù hợp với từ khóa
+                </Typography>
+              </Box>
+            )
           ) : (
-            <List sx={{ p: 0 }}>
-              {searchResults.map((searchUser: UserRelationResult) => (
-                <ListItem
-                  key={searchUser._id}
-                  sx={{
-                    borderRadius: "12px",
-                    bgcolor: "#f8fafc",
-                    mb: 1,
-                    p: 1.5,
-                  }}
-                >
-                  <ListItemAvatar>
-                    <Avatar src={searchUser.avatar} sx={{ width: 42, height: 42 }}>
-                      {searchUser.name?.[0]}
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={
-                      <Typography sx={{ fontWeight: 700, fontSize: "0.92rem", color: "#0f172a" }}>
-                        {searchUser.name}
-                      </Typography>
-                    }
-                    secondary={
-                      <Typography sx={{ fontSize: "0.78rem", color: "#64748b" }} noWrap>
-                        {searchUser.email}
-                      </Typography>
-                    }
-                  />
+            <Box sx={{ position: "relative" }}>
+              {isSearching && (
+                <LinearProgress sx={{ mb: 1.5, height: 2, borderRadius: 1 }} />
+              )}
+              <List sx={{ p: 0 }}>
+                {searchResults.map((searchUser: UserRelationResult) => (
+                  <ListItem
+                    key={searchUser._id}
+                    sx={{
+                      borderRadius: "12px",
+                      bgcolor: "#f8fafc",
+                      mb: 1,
+                      p: 1.5,
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar src={searchUser.avatar} sx={{ width: 42, height: 42 }}>
+                        {searchUser.name?.[0]}
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Typography sx={{ fontWeight: 700, fontSize: "0.92rem", color: "#0f172a" }}>
+                          {searchUser.name}
+                        </Typography>
+                      }
+                      secondary={
+                        <Typography sx={{ fontSize: "0.78rem", color: "#64748b" }} noWrap>
+                          {searchUser.email}
+                        </Typography>
+                      }
+                    />
 
-                  {/* Nút theo trạng thái quan hệ */}
-                  {searchUser.relationStatus === "friends" && (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<MessageSquare size={14} />}
-                      onClick={async () => {
-                        await startConversationWithUser(searchUser);
-                        setOpenAddFriendDialog(false);
-                      }}
-                      sx={{ textTransform: "none", fontWeight: 700, borderRadius: "8px" }}
-                    >
-                      Nhắn tin
-                    </Button>
-                  )}
+                    {/* Nút theo trạng thái quan hệ */}
+                    {searchUser.relationStatus === "friends" && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<MessageSquare size={14} />}
+                        onClick={async () => {
+                          await startConversationWithUser(searchUser);
+                          setOpenAddFriendDialog(false);
+                        }}
+                        sx={{ textTransform: "none", fontWeight: 700, borderRadius: "8px" }}
+                      >
+                        Nhắn tin
+                      </Button>
+                    )}
 
-                  {searchUser.relationStatus === "pending_sent" && (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="warning"
-                      startIcon={<Clock size={14} />}
-                      onClick={async () => {
-                        if (searchUser.requestId) {
-                          const res = await cancelRequest(searchUser.requestId);
-                          showToast(res.message, "info");
-                        }
-                      }}
-                      sx={{ textTransform: "none", fontWeight: 700, borderRadius: "8px" }}
-                    >
-                      Đã gửi (Hủy)
-                    </Button>
-                  )}
+                    {searchUser.relationStatus === "pending_sent" && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="warning"
+                        startIcon={<Clock size={14} />}
+                        onClick={async () => {
+                          if (searchUser.requestId) {
+                            const res = await cancelRequest(searchUser.requestId);
+                            showToast(res.message, "info");
+                          }
+                        }}
+                        sx={{ textTransform: "none", fontWeight: 700, borderRadius: "8px" }}
+                      >
+                        Đã gửi (Hủy)
+                      </Button>
+                    )}
 
-                  {searchUser.relationStatus === "pending_received" && (
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="success"
-                      startIcon={<Check size={14} />}
-                      onClick={async () => {
-                        if (searchUser.requestId) {
-                          const res = await respondToRequest(searchUser.requestId, "accept");
-                          showToast(res.message, "success");
-                        }
-                      }}
-                      sx={{ textTransform: "none", fontWeight: 700, borderRadius: "8px" }}
-                    >
-                      Chấp nhận
-                    </Button>
-                  )}
+                    {searchUser.relationStatus === "pending_received" && (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="success"
+                        startIcon={<Check size={14} />}
+                        onClick={async () => {
+                          if (searchUser.requestId) {
+                            const res = await respondToRequest(searchUser.requestId, "accept");
+                            showToast(res.message, "success");
+                          }
+                        }}
+                        sx={{ textTransform: "none", fontWeight: 700, borderRadius: "8px" }}
+                      >
+                        Chấp nhận
+                      </Button>
+                    )}
 
-                  {searchUser.relationStatus === "none" && (
-                    <Button
-                      size="small"
-                      variant="contained"
-                      startIcon={<UserPlus size={14} />}
-                      onClick={async () => {
-                        const res = await sendFriendRequest(searchUser._id);
-                        showToast(res.message, res.success ? "success" : "error");
-                      }}
-                      sx={{
-                        textTransform: "none",
-                        fontWeight: 700,
-                        borderRadius: "8px",
-                        bgcolor: "#2563eb",
-                        "&:hover": { bgcolor: "#1d4ed8" },
-                      }}
-                    >
-                      Kết bạn
-                    </Button>
-                  )}
-                </ListItem>
-              ))}
-            </List>
+                    {searchUser.relationStatus === "none" && (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        startIcon={<UserPlus size={14} />}
+                        onClick={async () => {
+                          const res = await sendFriendRequest(searchUser._id);
+                          showToast(res.message, res.success ? "success" : "error");
+                        }}
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 700,
+                          borderRadius: "8px",
+                          bgcolor: "#2563eb",
+                          "&:hover": { bgcolor: "#1d4ed8" },
+                        }}
+                      >
+                        Kết bạn
+                      </Button>
+                    )}
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
           )}
         </DialogContent>
       </Dialog>

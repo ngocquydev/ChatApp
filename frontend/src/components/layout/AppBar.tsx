@@ -29,6 +29,7 @@ import {
   Paper,
   ClickAwayListener,
   CircularProgress,
+  LinearProgress,
   Badge,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -308,33 +309,53 @@ function ResponsiveAppBar() {
                       borderRadius: 2,
                       bgcolor: "#ffffff",
                       border: "1px solid #e2e8f0",
+                      position: "relative",
                     }}
                   >
                     {isSearching && (
-                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", py: 3, gap: 1.5 }}>
-                        <CircularProgress size={20} />
-                        <Typography variant="body2" sx={{ color: "#64748b" }}>
-                          Đang tìm kiếm người dùng...
-                        </Typography>
-                      </Box>
+                      <LinearProgress
+                        sx={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: 3,
+                          borderTopLeftRadius: 8,
+                          borderTopRightRadius: 8,
+                        }}
+                      />
                     )}
 
-                    {!isSearching && searchResults.length === 0 && (
-                      <Box sx={{ textAlign: "center", py: 3 }}>
-                        <Typography variant="body2" sx={{ color: "#64748b" }}>
-                          Không tìm thấy người dùng nào khớp với &quot;{searchQuery}&quot;
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {!isSearching && searchResults.length > 0 && (
+                    {searchResults.length === 0 ? (
+                      isSearching ? (
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", py: 3, gap: 1.5 }}>
+                          <CircularProgress size={20} />
+                          <Typography variant="body2" sx={{ color: "#64748b" }}>
+                            Đang tìm kiếm người dùng...
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <Box sx={{ textAlign: "center", py: 3 }}>
+                          <Typography variant="body2" sx={{ color: "#64748b" }}>
+                            Không tìm thấy người dùng nào khớp với &quot;{searchQuery}&quot;
+                          </Typography>
+                        </Box>
+                      )
+                    ) : (
                       <>
-                        <Typography
-                          variant="caption"
-                          sx={{ fontWeight: 700, color: "#64748b", px: 1, mb: 1, display: "block" }}
-                        >
-                          KẾT QUẢ TÌM KIẾM ({searchResults.length})
-                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1, mb: 1 }}>
+                          <Typography
+                            variant="caption"
+                            sx={{ fontWeight: 700, color: "#64748b", display: "block" }}
+                          >
+                            KẾT QUẢ TÌM KIẾM ({searchResults.length})
+                          </Typography>
+                          {isSearching && (
+                            <Typography variant="caption" sx={{ color: "#94a3b8", fontStyle: "italic" }}>
+                              Đang cập nhật...
+                            </Typography>
+                          )}
+                        </Box>
                         <List disablePadding>
                           {searchResults.map((userItem) => (
                             <ListItem
