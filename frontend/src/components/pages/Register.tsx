@@ -44,7 +44,8 @@ const registerSchema = z
     name: z
       .string()
       .min(1, "Vui lòng nhập họ và tên")
-      .regex(/^[a-zA-ZÀ-ỹ\s]+$/, "Tên chỉ được chứa chữ cái và khoảng trắng"),
+      .min(2, "Họ và tên phải có ít nhất 2 ký tự")
+      .regex(/^[a-zA-Z0-9À-ỹ\s._-]+$/, "Tên không được chứa ký tự đặc biệt không hợp lệ"),
 
     email: z
       .string()
@@ -242,12 +243,16 @@ export default function Register() {
   const onSubmit = async (data: RegisterFormData) => {
     setAlertInfo({ open: false, type: "info", message: "" });
     try {
-      await registerMe({
-        name: data.name,
-        email: data.email,
-        phone: data.phone || undefined,
+      const payload: Record<string, string> = {
+        name: data.name.trim(),
+        email: data.email.trim().toLowerCase(),
         password: data.password,
-      });
+      };
+      if (data.phone && data.phone.trim()) {
+        payload.phone = data.phone.trim();
+      }
+
+      await registerMe(payload);
 
       setAlertInfo({
         open: true,

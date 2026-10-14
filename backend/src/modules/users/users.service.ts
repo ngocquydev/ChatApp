@@ -16,13 +16,15 @@ export class UsersService {
     const { name, phone, email, password, role, firebaseUid, avatar } =
       createUserDto;
 
-    const existingUser = await this.userModel.findOne({ email });
+    const cleanEmail = email.trim().toLowerCase();
+    const existingUser = await this.userModel.findOne({ email: cleanEmail });
     if (existingUser) {
       throw new BadRequestException('Email đã được sử dụng!');
     }
 
-    if (phone) {
-      const existingPhone = await this.userModel.findOne({ phone });
+    const cleanPhone = phone && typeof phone === 'string' && phone.trim() ? phone.trim() : null;
+    if (cleanPhone) {
+      const existingPhone = await this.userModel.findOne({ phone: cleanPhone });
       if (existingPhone) {
         throw new BadRequestException('Số điện thoại này đã được sử dụng!');
       }
@@ -35,9 +37,9 @@ export class UsersService {
     }
 
     const newUser = new this.userModel({
-      name: name || 'Người dùng mới',
-      phone: phone || null,
-      email,
+      name: (name || 'Người dùng mới').trim(),
+      phone: cleanPhone,
+      email: cleanEmail,
       password: hashedPassword,
       firebaseUid: firebaseUid || null,
       avatar: avatar || null,

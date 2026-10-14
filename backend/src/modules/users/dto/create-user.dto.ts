@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsIn,
   IsPhoneNumber,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -14,8 +15,9 @@ export class CreateUserDto {
   @ApiProperty({ example: 'Nguyễn Văn A', description: 'Họ và tên người dùng' })
   @IsNotEmpty({ message: 'Tên không được để trống' })
   @IsString({ message: 'Tên phải là chuỗi ký tự' })
-  @Matches(/^[a-zA-ZÀ-ỹ\s]+$/, {
-    message: 'Tên chỉ được chứa chữ cái và khoảng trắng',
+  @MinLength(2, { message: 'Tên phải có ít nhất 2 ký tự' })
+  @Matches(/^[a-zA-Z0-9À-ỹ\s._-]+$/, {
+    message: 'Tên không được chứa ký tự đặc biệt không hợp lệ',
   })
   name: string;
 
@@ -24,6 +26,7 @@ export class CreateUserDto {
     description: 'Số điện thoại (đúng chuẩn đầu số VN)',
   })
   @IsOptional()
+  @ValidateIf((o) => !!o.phone && String(o.phone).trim() !== '')
   @IsPhoneNumber('VN', { message: 'Số điện thoại không hợp lệ' })
   phone?: string;
 
@@ -40,7 +43,7 @@ export class CreateUserDto {
     description:
       'Mật khẩu tối thiểu 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt',
   })
-  @Matches(/((?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W]).{8,})/, {
+  @Matches(/((?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,})/, {
     message:
       'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt',
   })

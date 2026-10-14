@@ -1242,7 +1242,7 @@ export default function ChatApp() {
         }}
       >
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+          <Typography component="span" variant="h6" sx={{ fontWeight: 800 }}>
             Tìm kiếm & Kết bạn mới
           </Typography>
           <IconButton size="small" onClick={() => setOpenAddFriendDialog(false)}>
