@@ -1,6 +1,6 @@
 # 💬 Realtime Chat Application
 
-Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (**Modern Realtime Chat Application**) được xây dựng theo kiến trúc Client - Server với **NestJS** ở phía Backend và **Next.js 16 (App Router + Turbopack + TypeScript)** ở phía Frontend, tích hợp **Material UI (MUI v9)**, **MongoDB**, **Redis**, **Firebase Auth**, **Cloudflare Turnstile** và **JWT HttpOnly Cookies**.
+Hệ thống ứng dụng trò chuyện và mạng xã hội thời gian thực hiện đại (**Modern Realtime Chat & Social Platform**) được xây dựng theo kiến trúc Client - Server với **NestJS** ở phía Backend và **Next.js 16 (App Router + Turbopack + TypeScript)** ở phía Frontend, tích hợp **Socket.IO (WebSockets)**, **Material UI (MUI v9)**, **MongoDB**, **Redis**, **Firebase Auth**, **Cloudflare Turnstile** và **JWT HttpOnly Cookies**.
 
 ---
 
@@ -14,6 +14,7 @@ Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (**Mode
   - [3. Cấu hình & Chạy Backend](#3-cấu-hình--chạy-backend)
   - [4. Cấu hình & Chạy Frontend](#4-cấu-hình--chạy-frontend)
 - [🔐 Cơ chế xác thực & Bảo mật (Authentication Flow)](#-cơ-chế-xác-thực--bảo-mật-authentication-flow)
+- [⚡ Giao thức Thời Gian Thực (WebSocket & Socket.IO Events)](#-giao-thức-thời-gian-thực-websocket--socketio-events)
 - [📚 Tài liệu API (Swagger)](#-tài-liệu-api-swagger)
 - [🧪 Kiểm thử & CI/CD Tự động (Testing & CI Quality Gate)](#-kiểm-thử--cicd-tự-động-testing--ci-quality-gate)
 - [📋 Lịch sử cập nhật & Lộ trình phát triển](#-lịch-sử-cập-nhật--lộ-trình-phát-triển)
@@ -22,33 +23,43 @@ Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (**Mode
 
 ## ✨ Tính năng nổi bật
 
-- **Kiến trúc Next.js 16 App Router & TypeScript**:
-  - Frontend chuyển đổi toàn diện sang **Next.js 16 (App Router)** với TypeScript nghiêm ngặt, tách biệt rõ ràng Server & Client Components (`'use client'`).
-  - Tích hợp chuẩn **`@mui/material-nextjs`** Emotion SSR caching, loại bỏ hoàn toàn hiện tượng chớp nháy giao diện (FOUC) khi tải trang.
-- **Đăng nhập & Đăng ký đa phương thức**:
-  - Đăng nhập & Đăng ký truyền thống bằng Email & Mật khẩu (mã hóa mật khẩu bằng `bcrypt` 10 salt rounds).
-  - Tách biệt thông báo lỗi đăng nhập chuẩn xác: *"Email không tồn tại trên hệ thống!"* hoặc *"Mật khẩu không chính xác!"*.
-  - Đăng nhập mạng xã hội (**Google & Facebook**) qua Firebase Authentication SDK với kiến trúc Custom Hook `useSocialAuth` tái sử dụng.
-  - Tự động bắt và xử lý lỗi xung đột email Firebase (`auth/account-exists-with-different-credential` $\rightarrow$ *"Email này đã được đăng ký"*).
-  - Đo lường độ mạnh mật khẩu thời gian thực (Password Strength Meter) với 3 mức độ (Yếu / Trung bình / Rất mạnh).
-  - Nút ẩn/hiện mật khẩu tiện lợi trên toàn bộ các biểu mẫu.
-- **Bảo mật phiên đăng nhập & Chống Bot / DDoS**:
-  - Tích hợp **Cloudflare Turnstile** thông minh bảo vệ biểu mẫu đăng nhập khỏi bot tự động và brute-force.
-  - Widget Turnstile tối ưu hóa cơ chế callback qua `useRef` và lifecycle cleanup, chống triệt để tình trạng xoay vòng re-render liên tục.
-  - Cặp `AccessToken` (1 giờ) và `RefreshToken` (7 ngày) được lưu trữ trong **HttpOnly Cookie** (`sameSite: 'lax'`) chống đánh cắp qua XSS.
-  - Tự động làm mới token (`auto-refresh`) qua Axios Response Interceptor khi AccessToken hết hạn mà không làm gián đoạn trải nghiệm người dùng.
-  - Thu hồi token và đưa vào **Redis Blacklist** khi người dùng đăng xuất.
-  - Phân quyền và bảo vệ route bằng NestJS Guards (`JwtAuthGuard`) và Next.js Route Guards.
-- **Tối ưu hóa hiệu năng & Triệt tiêu API Call thừa**:
-  - **Quản lý phiên thông minh qua cờ `has_session`**: Người dùng chưa từng đăng nhập khi vào `/login` hoặc `/register` sẽ không bị kích hoạt gọi ngầm `/auth/profile` hoặc `/auth/refresh` gây lỗi 401 trên DevTools Network.
-  - **In-flight Promise Deduplication**: `useAuthStore` áp dụng bộ nhớ đệm Promise đang chờ (`checkAuthPromise`) cho hàm `checkAuth()`, triệt tiêu việc gọi đúp API `/auth/profile` khi reload trang (kể cả trong `React.StrictMode`).
-  - Tối ưu luồng đăng nhập/đăng ký: trực tiếp tái sử dụng dữ liệu `profile` từ response ban đầu, loại bỏ các lệnh gọi API thừa.
-- **Giao diện hiện đại, công thái học & Material UI v9**:
-  - Chuẩn hóa chiều cao ô nhập liệu chuẩn công thái học 54px (`height: 54px`), font chữ rõ ràng, bố cục cân đối và dễ tương tác.
-  - Chuẩn hóa 100% sang API `slotProps={{ input: { ... } }}` của MUI, loại bỏ hoàn toàn các cảnh báo deprecated `InputProps`.
-  - Hỗ trợ ghi nhớ tài khoản đăng nhập (`Remember Me`) qua `localStorage`.
-- **Tài liệu API chuẩn hóa**:
-  - Swagger UI được cấu hình sẵn tại `/api-docs`.
+### 1. Nhắn tin thời gian thực (Realtime Messaging with Socket.IO)
+- **Kiến trúc WebSocket Gateway 2 chiều**: Tích hợp `@nestjs/websockets` và `@nestjs/platform-socket.io` phía Server cùng `socket.io-client` phía Client.
+- **Trò chuyện 1-1 tức thì**: Gửi và nhận tin nhắn theo thời gian thực không độ trễ, tự động cuộn đến tin nhắn mới nhất.
+- **Chỉ báo đang soạn tin (Typing Indicator)**: Hiển thị trạng thái gõ phím của đối phương trong phòng chat theo thời gian thực (tự động tắt sau 2 giây ngưng gõ).
+- **Trạng thái đã xem (Seen Status)**: Cập nhật trạng thái tin nhắn đã đọc ngay khi người nhận mở cuộc hội thoại.
+- **Theo dõi trạng thái trực tuyến (Online/Offline Status)**: Quản lý danh sách người dùng đang online trên toàn hệ thống thông qua WebSocket rooms và broadcast sự kiện kết nối/ngắt kết nối.
+
+### 2. Hệ thống Tìm bạn & Quản lý quan hệ bạn bè thật (Friendship System)
+- **100% Dữ liệu thực**: Loại bỏ hoàn toàn mock data, đồng bộ quan hệ bạn bè từ MongoDB qua Mongoose Schema (`Friendship`).
+- **Tìm kiếm bạn bè toàn hệ thống**: Tìm kiếm theo tên hoặc email với thông tin quan hệ thời gian thực:
+  - `none`: Chưa kết bạn (hiển thị nút *Kết bạn*).
+  - `pending_sent`: Đã gửi lời mời (hiển thị nút *Đã gửi (Hủy)*).
+  - `pending_received`: Nhận được lời mời (hiển thị nút *Chấp nhận* / *Từ chối*).
+  - `friends`: Đã là bạn bè (hiển thị nút *Nhắn tin*).
+- **Tự động kết bạn 2 chiều (Auto-accept)**: Nếu người dùng B gửi lời mời cho người dùng A khi người dùng A đã gửi lời mời trước đó, hệ thống tự động xác nhận quan hệ bạn bè ngay lập tức.
+- **Hủy kết bạn (Unfriend)** và **Hủy lời mời đã gửi (Cancel Request)** tức thì.
+- **Realtime Friend Alerts**: Nhận thông báo lời mời kết bạn và bạn bè mới qua Socket.IO mà không cần reload trang.
+
+### 3. Tối ưu hóa UI/UX Không chớp giật (Zero-Flicker Search)
+- **Zero-Collapse UI**: Khi kết quả tìm kiếm đang hiển thị, danh sách người dùng không bao giờ bị unmount khi người dùng gõ thêm ký tự. Thanh `LinearProgress` mỏng chạy ở mép trên thông báo trạng thái cập nhật ngầm mà không gây co giãn chiều cao dropdown (`Layout Shift`).
+- **Chống Race Condition (`searchSeq`)**: Gán sequence ID cho từng phím gõ, loại bỏ hoàn toàn tình trạng các phản hồi mạng chậm ghi đè lên kết quả mới.
+- **Triệt tiêu hiện tượng giật trang khi mở Modal**: Áp dụng `disableScrollLock` trên Material UI Dialogs, giữ nguyên thanh cuộn trang web và loại bỏ `autoFocus` giật khung hình.
+
+### 4. Đăng nhập & Đăng ký bảo mật cao
+- **Đa phương thức xác thực**:
+  - Đăng ký & Đăng nhập bằng Email/Password (mật khẩu mã hóa `bcrypt` 10 rounds).
+  - Đăng nhập mạng xã hội Google & Facebook qua Firebase Authentication SDK và Custom Hook `useSocialAuth`.
+  - Phân tách lỗi đăng nhập cụ thể: *"Email không tồn tại"* hoặc *"Mật khẩu không chính xác"*.
+- **Chống Bot & Brute-force với Cloudflare Turnstile**:
+  - Tích hợp Turnstile widget với cơ chế lifecycle cleanup, chống vòng lặp re-render.
+- **Bảo mật phiên bằng HttpOnly Cookie**:
+  - Cặp `AccessToken` (1 giờ) và `RefreshToken` (7 ngày) lưu trong HttpOnly Cookie (`sameSite: 'lax'`) chống XSS.
+  - Tự động làm mới token ngầm qua Axios Response Interceptors khi token hết hạn.
+  - Đăng xuất đưa token vào **Redis Blacklist** (hỗ trợ chế độ Fail-safe).
+- **Tối ưu hóa gọi API (Deduplication)**:
+  - Quản lý phiên qua cờ `has_session`, triệt tiêu lỗi 401 khi chưa đăng nhập.
+  - In-flight Promise Deduplication (`checkAuthPromise`) loại bỏ việc gọi lặp API `/auth/profile` khi reload trang.
 
 ---
 
@@ -56,10 +67,10 @@ Hệ thống ứng dụng trò chuyện thời gian thực hiện đại (**Mode
 
 | Tầng | Công nghệ / Thư viện chính |
 | :--- | :--- |
-| **Frontend** | Next.js 16 (App Router + Turbopack), React 19, TypeScript, Material UI (MUI v9) + @mui/material-nextjs, Emotion, Zustand, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase Client SDK, Lucide React, Motion |
-| **Backend** | NestJS (Express), TypeScript, Passport.js (JWT Strategy), Mongoose (MongoDB), Redis (IoRedis), Firebase Admin SDK, Cloudflare Turnstile, Class Validator |
-| **Cơ sở dữ liệu & Cache** | MongoDB (lưu trữ người dùng, dữ liệu tin nhắn), Redis (Blacklist token, session người dùng, rate limiting) |
-| **DevOps & Môi trường** | Docker & Docker Compose, GitHub Actions CI |
+| **Frontend** | Next.js 16 (App Router + Turbopack), React 19, TypeScript, Material UI (MUI v9) + @mui/material-nextjs, Emotion, Zustand, Socket.IO Client, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase Client SDK, Lucide React, Motion |
+| **Backend** | NestJS (Express), TypeScript, WebSockets (@nestjs/websockets, @nestjs/platform-socket.io), Passport.js (JWT Strategy), Mongoose (MongoDB), Redis (IoRedis), Firebase Admin SDK, Cloudflare Turnstile, Class Validator |
+| **Cơ sở dữ liệu & Cache** | MongoDB (lưu trữ người dùng, quan hệ bạn bè, cuộc hội thoại và tin nhắn), Redis (Blacklist token, session người dùng, rate limiting) |
+| **DevOps & Môi trường** | Docker & Docker Compose, GitHub Actions CI, Git Pre-Push Quality Gate |
 
 ---
 
@@ -73,16 +84,27 @@ chat/
 ├── backend/                     # Mã nguồn Backend (NestJS)
 │   ├── src/
 │   │   ├── common/              # Guards, Interceptors, Filters dùng chung
+│   │   ├── errorHandleer/       # Exception Filter toàn cục chuẩn hóa response lỗi
 │   │   ├── modules/
-│   │   │   ├── auth/            # Module xác thực (JWT, Firebase, Turnstile, Controller, Service)
-│   │   │   │   ├── dto/         # Data Transfer Objects (SignInDto, CreateUserDto)
-│   │   │   │   ├── guards/      # JWT Guards
-│   │   │   │   ├── strategies/  # Passport JWT Strategy
-│   │   │   │   └── types/       # TypeScript interfaces (AuthResult, JwtPayload, RequestWithCookies)
-│   │   │   ├── redis/           # Module kết nối Redis, quản lý Blacklist & Session (Fail-safe mode)
-│   │   │   └── users/           # Module quản lý thông tin User & Schema
+│   │   │   ├── auth/            # Xác thực JWT, OTP, Firebase, Turnstile, Cookie
+│   │   │   ├── chat/            # WebSocket Gateway, Chat Service, Hội thoại & Tin nhắn
+│   │   │   │   ├── dto/         # SendMessageDto
+│   │   │   │   ├── schemas/     # ConversationSchema, MessageSchema (Mongoose)
+│   │   │   │   ├── chat.controller.ts
+│   │   │   │   ├── chat.gateway.ts     # Socket.IO Gateway (message, typing, seen, status)
+│   │   │   │   ├── chat.service.ts
+│   │   │   │   └── chat.service.spec.ts
+│   │   │   ├── friends/         # Hệ thống bạn bè & tìm kiếm quan hệ
+│   │   │   │   ├── dto/         # FriendRequestDto, RespondRequestDto
+│   │   │   │   ├── schemas/     # FriendshipSchema (Mongoose)
+│   │   │   │   ├── friends.controller.ts
+│   │   │   │   ├── friends.service.ts
+│   │   │   │   └── friends.service.spec.ts
+│   │   │   ├── mail/            # Module gửi email thông báo và OTP
+│   │   │   ├── redis/           # Module kết nối Redis, Blacklist & Session
+│   │   │   └── users/           # Quản lý hồ sơ User & tìm kiếm người dùng
 │   │   ├── app.module.ts        # Module gốc của ứng dụng
-│   │   └── main.ts              # Entry point cấu hình CORS, Cookie, Swagger
+│   │   └── main.ts              # Entry point cấu hình CORS, Cookie, Swagger, Validation
 │   ├── test/                    # Kiểm thử E2E (Vitest & Supertest)
 │   ├── .env.example             # Biến môi trường mẫu cho Backend
 │   ├── package.json
@@ -91,31 +113,25 @@ chat/
 └── frontend/                    # Mã nguồn Frontend (Next.js 16 + TypeScript)
     ├── src/
     │   ├── app/                 # Next.js App Router (File-system Based Routing)
-    │   │   ├── chat/            # Route phòng trò chuyện (/chat)
-    │   │   ├── login/           # Route đăng nhập (/login)
-    │   │   ├── register/        # Route đăng ký (/register)
+    │   │   ├── chat/            # Giao diện ứng dụng nhắn tin (/chat)
+    │   │   ├── login/           # Giao diện đăng nhập (/login)
+    │   │   ├── register/        # Giao diện đăng ký (/register)
+    │   │   ├── profile/         # Quản lý hồ sơ cá nhân (/profile)
     │   │   ├── layout.tsx       # Root Layout (EmotionCacheProvider, ThemeProvider)
-    │   │   ├── providers.tsx    # Client Providers (React Query, Auth Init, Theme)
-    │   │   ├── page.tsx         # Trang chủ điều hướng
-    │   │   └── not-found.tsx    # Giao diện lỗi 404 tùy biến
+    │   │   ├── providers.tsx    # Client Providers (Theme, Auth Init)
+    │   │   └── page.tsx         # Trang chủ kết nối bảng tin & danh bạ
     │   ├── components/
-    │   │   ├── common/          # Component dùng chung (TurnstileWidget, PasswordStrengthMeter)
-    │   │   ├── layout/          # AppBar, Header, Drawer menu
+    │   │   ├── common/          # Component dùng chung (AuthGuard, Turnstile, PasswordMeter)
+    │   │   ├── layout/          # AppBar với Search dropdown mượt mà, Drawer menu
     │   │   ├── pages/           # Login, Register, Home, ChatApp views
-    │   │   └── section/         # Feed, Message, PersonCall
-    │   ├── config/              # Cấu hình Firebase Client SDK
-    │   ├── data/                # Dữ liệu tĩnh, nội dung hiển thị
-    │   ├── hooks/               # Custom Hooks (useSocialAuth, useAuth, ...)
-    │   ├── services/            # Cấu hình Axios Instance, interceptors & skipAuthRefresh
-    │   ├── store/               # Zustand Store (useAuthStore với has_session & deduplication)
-    │   ├── styles/              # Styles toàn cục (globals.css)
-    │   └── theme/               # Cấu hình MUI Theme & tùy biến giao diện Input 54px
-    ├── public/                  # Tệp tĩnh (ảnh, favicon, logo)
-    ├── next.config.mjs          # Cấu hình Next.js (port 5173, headers, rewrite)
-    ├── tsconfig.json            # Cấu hình TypeScript Frontend
-    ├── eslint.config.mjs        # Cấu hình ESLint
-    ├── .env.example             # Biến môi trường mẫu cho Frontend
-    └── package.json
+    │   │   └── section/         # Feed, Message, PersonCall (Sidebar danh bạ & Tìm bạn)
+    │   ├── hooks/               # Custom Hooks (useSocialAuth)
+    │   ├── services/            # Axios API client cấu hình interceptor & credentials
+    │   ├── store/               # Zustand Stores (useAuthStore, useChatStore, useFriendStore)
+    │   └── theme/               # Cấu hình Material UI Theme
+    ├── next.config.mjs          # Cấu hình Next.js (port 5173, headers)
+    ├── package.json
+    └── tsconfig.json
 ```
 
 ---
@@ -123,7 +139,7 @@ chat/
 ## 🚀 Hướng dẫn cài đặt & Khởi chạy
 
 ### 1. Yêu cầu hệ thống
-- **Node.js**: Phiên bản 18 trở lên (Khuyến nghị 20 hoặc 24 LTS)
+- **Node.js**: Phiên bản 18 trở lên (Khuyến nghị 20 hoặc 22/24 LTS)
 - **Docker & Docker Compose**: Đã cài đặt và đang chạy
 - **Git**
 
@@ -170,7 +186,7 @@ docker compose ps
    JWT_REFRESH_EXPIRES_IN=7d
    NODE_ENV=development
 
-   # Cấu hình Firebase Admin SDK (cho đăng nhập Google/Facebook)
+   # Firebase Admin SDK (cho đăng nhập Google/Facebook)
    FIREBASE_PROJECT_ID=your-firebase-project-id
    FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
    FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
@@ -183,8 +199,8 @@ docker compose ps
    ```bash
    npm run start:dev
    ```
-   - Server Backend sẽ chạy tại: `http://localhost:3000`
-   - Tài liệu Swagger Docs: `http://localhost:3000/api-docs`
+   - Server Backend: `http://localhost:3000`
+   - Tài liệu Swagger API Docs: `http://localhost:3000/api-docs`
 
 ---
 
@@ -206,7 +222,7 @@ docker compose ps
    PORT_FE=5173
    PORT_BACKEND=3000
 
-   # Backend URL
+   # Backend URL (REST & Socket.IO)
    NEXT_PUBLIC_BACKEND_URL=http://localhost:3000
 
    # Firebase Client Config (cho Google/Facebook login)
@@ -226,7 +242,7 @@ docker compose ps
    ```bash
    npm run dev
    ```
-   - Server Next.js phát triển sẽ chạy tại: `http://localhost:5173`
+   - Ứng dụng Frontend phát triển chạy tại: `http://localhost:5173`
 
 5. Build kiểm tra sản phẩm:
    ```bash
@@ -258,7 +274,13 @@ docker compose ps
       │                                                │
       │                                                ▼ Cấp Cookie Access & Refresh Token
       │
-      ├─► Gọi API được bảo vệ (VD: /auth/profile)
+      ├─► Kết nối WebSocket Realtime ──────────► ws://localhost:3000 (Socket.IO)
+      │                                                │
+      │                                                ▼ Gửi AccessToken qua handshake auth
+      │                                         Tham gia phòng cá nhân `user:{userId}`
+      │                                         Broadcast trạng thái Online
+      │
+      ├─► Gọi API được bảo vệ (VD: /friends, /chat)
       │         │
       │         ├─► [Hợp lệ 200] ──► Truy cập dữ liệu thành công
       │         │
@@ -267,16 +289,45 @@ docker compose ps
       │                                       ▼ (nếu has_session == true)
       │                                 POST /auth/refresh
       │                                       │
-      │                                       ▼
-      │                                 Cấp lại AccessToken mới (HttpOnly)
-      │                                 Tự động retry lại request ban đầu
+      │                                       ▼ Cấp lại AccessToken mới (HttpOnly)
+      │                                         Tự động retry lại request ban đầu
       │
       └─► Đăng xuất ─────────────────────► POST /auth/logout
                                               │
                                               ▼
                                    Xóa Cookies + Xóa has_session
-                                   Đưa AccessToken vào Redis Blacklist (TTL còn lại)
+                                   Đưa AccessToken vào Redis Blacklist
+                                   Ngắt kết nối Socket.IO
 ```
+
+---
+
+## ⚡ Giao thức Thời Gian Thực (WebSocket & Socket.IO Events)
+
+Gateway WebSocket được cấu hình với namespace mặc định tại `http://localhost:3000`.
+
+### 1. Luồng xác thực kết nối
+Client kết nối tới WebSocket kèm token:
+```typescript
+io('http://localhost:3000', {
+  auth: { token: accessToken },
+  withCredentials: true,
+});
+```
+
+### 2. Bảng sự kiện Socket.IO
+
+| Chiều | Tên sự kiện | Dữ liệu truyền (Payload) | Ý nghĩa |
+| :--- | :--- | :--- | :--- |
+| **Client ➔ Server** | `message:send` | `{ receiverId, text, conversationId? }` | Gửi tin nhắn trực tiếp đến người dùng |
+| **Client ➔ Server** | `typing` | `{ conversationId, isTyping: boolean }` | Báo trạng thái người dùng đang gõ/ngưng gõ |
+| **Client ➔ Server** | `message:read` | `{ conversationId }` | Đánh dấu đã xem toàn bộ tin nhắn trong phòng |
+| **Server ➔ Client** | `message:new` | `MessageDocument` | Nhận tin nhắn mới tức thì |
+| **Server ➔ Client** | `typing` | `{ conversationId, userId, isTyping }` | Cập nhật chỉ báo soạn tin của đối phương |
+| **Server ➔ Client** | `message:seen` | `{ conversationId, readerId, readAt }` | Nhận thông báo tin nhắn đã được đọc |
+| **Server ➔ Client** | `user:status` | `{ userId, online: boolean }` | Cập nhật trạng thái online/offline của bạn bè |
+| **Server ➔ Client** | `friend:request_received` | `{ request }` | Nhận thông báo lời mời kết bạn mới |
+| **Server ➔ Client** | `friend:accepted` | `{ friendshipId, user }` | Thông báo lời mời kết bạn đã được chấp thuận |
 
 ---
 
@@ -286,14 +337,36 @@ Khi Backend đang chạy, truy cập đường dẫn sau để xem và thử ngh
 👉 **[http://localhost:3000/api-docs](http://localhost:3000/api-docs)**
 
 ### Các Endpoint chính:
-| Phương thức | Endpoint | Mô tả | Yêu cầu xác thực |
+
+#### 1. Nhóm Xác thực (`/auth`)
+| Phương thức | Endpoint | Mô tả | Xác thực |
 | :--- | :--- | :--- | :---: |
 | `POST` | `/auth/register` | Đăng ký tài khoản mới, trả về profile và cấp Token Cookie | ❌ |
 | `POST` | `/auth/login` | Đăng nhập tài khoản (xác thực Turnstile) và cấp Token Cookie | ❌ |
-| `POST` | `/auth/firebase-login` | Xác thực đăng nhập qua Firebase (Google/Facebook) | ❌ (Gửi Bearer IdToken) |
-| `POST` | `/auth/refresh` | Làm mới AccessToken từ RefreshToken trong Cookie | ❌ (Cần Cookie refreshToken) |
-| `GET` | `/auth/profile` | Lấy thông tin tài khoản người dùng đang đăng nhập | ✅ (Bearer / Cookie) |
+| `POST` | `/auth/firebase-login` | Xác thực đăng nhập qua Firebase (Google/Facebook) | ❌ |
+| `POST` | `/auth/refresh` | Làm mới AccessToken từ RefreshToken trong Cookie | ❌ |
+| `GET` | `/auth/profile` | Lấy thông tin tài khoản người dùng đang đăng nhập | ✅ |
 | `POST` | `/auth/logout` | Đăng xuất, xóa Cookie và Blacklist Token trong Redis | ✅ |
+
+#### 2. Nhóm Bạn bè (`/friends`)
+| Phương thức | Endpoint | Mô tả | Xác thực |
+| :--- | :--- | :--- | :---: |
+| `GET` | `/friends` | Lấy danh sách bạn bè chính thức của người dùng | ✅ |
+| `GET` | `/friends/requests` | Lấy danh sách lời mời kết bạn đã nhận & đã gửi | ✅ |
+| `GET` | `/friends/search?q=...` | Tìm kiếm người dùng kèm trạng thái quan hệ (`relationStatus`) | ✅ |
+| `POST` | `/friends/request` | Gửi lời mời kết bạn (hỗ trợ auto-accept nếu đối phương đã gửi) | ✅ |
+| `PATCH` | `/friends/requests/:id/respond` | Chấp nhận (`accept`) hoặc từ chối (`reject`) lời mời kết bạn | ✅ |
+| `DELETE` | `/friends/requests/:id` | Hủy lời mời kết bạn đã gửi | ✅ |
+| `DELETE` | `/friends/:friendId` | Hủy kết bạn (Unfriend) | ✅ |
+
+#### 3. Nhóm Tin nhắn & Hội thoại (`/chat`)
+| Phương thức | Endpoint | Mô tả | Xác thực |
+| :--- | :--- | :--- | :---: |
+| `GET` | `/chat/conversations` | Lấy danh sách các cuộc hội thoại gần nhất | ✅ |
+| `POST` | `/chat/conversations` | Tạo hoặc lấy cuộc hội thoại 1-1 với người dùng mục tiêu | ✅ |
+| `GET` | `/chat/conversations/:id/messages` | Lấy lịch sử tin nhắn trong cuộc hội thoại (phân trang) | ✅ |
+| `POST` | `/chat/messages` | Gửi tin nhắn qua REST API (fallback khi socket gián đoạn) | ✅ |
+| `PATCH` | `/chat/conversations/:id/read` | Đánh dấu các tin nhắn trong hội thoại là đã xem | ✅ |
 
 ---
 
@@ -307,28 +380,25 @@ Mỗi khi có commit được `push` hoặc tạo `pull_request` vào nhánh `ma
 - **Frontend CI**: Chạy linter (`eslint .`), và build ứng dụng Next.js (`next build`).
 
 ### 2. Git Pre-Push Hook (Kiểm tra cục bộ trước khi push)
-Tệp `.git/hooks/pre-push` được cấu hình để tự động chặn lệnh `git push` nếu phát hiện bất kỳ lỗi cú pháp, linting, unit test hay build nào:
-```bash
-git push origin main
-# Hook sẽ tự động chạy: Backend Lint -> Tests -> Build -> Frontend Lint -> Build
-# Nếu 1 trong các bước thất bại, quá trình push sẽ bị HỦY BỎ ngay lập tức!
-```
-
-> **Lưu ý**: Thư mục tiện ích nội bộ `scripts/` (chứa các script chạy kiểm tra cục bộ `check.ps1` / `check.sh`) được cấu hình trong `.gitignore` để đảm bảo remote repository luôn gọn gàng và không phụ thuộc file cục bộ.
+Tệp `.git/hooks/pre-push` tự động chạy 4 cổng kiểm soát chất lượng nghiêm ngặt trước mỗi lần `git push`:
+1. `➡️ [1/4] Backend Lint & Types` (`oxlint --type-aware`)
+2. `➡️ [2/4] Backend Unit Tests` (`vitest run` - 38/38 tests passed)
+3. `➡️ [3/4] Backend Build` (`nest build`)
+4. `➡️ [4/4] Frontend Lint & Build` (`eslint .` & `next build` với Turbopack)
 
 ### 3. Lệnh kiểm thử thủ công từng phần:
 ```bash
 # Backend:
 cd backend
 npm run lint      # Kiểm tra lỗi TypeScript & Linting với Oxlint
-npm run test      # Chạy Unit Tests với Vitest
-npm run test:e2e  # Chạy E2E Tests luồng xác thực toàn diện
+npm run test      # Chạy 38 Unit Tests với Vitest
+npm run test:e2e  # Chạy E2E Tests
 npm run build     # Build kiểm tra NestJS
 
 # Frontend:
 cd frontend
 npm run lint      # Kiểm tra ESLint
-npm run build     # Build kiểm tra Next.js production bundle
+npm run build     # Build kiểm tra Next.js Turbopack production bundle
 ```
 
 ---
@@ -337,51 +407,53 @@ npm run build     # Build kiểm tra Next.js production bundle
 
 ### ✅ Các tính năng & Cải tiến đã hoàn thành
 
-1. **Di chuyển toàn diện sang Next.js 16 (App Router) & TypeScript**:
-   - [x] Chuyển đổi toàn bộ mã nguồn Frontend từ React 19 (Vite + Javascript) sang **Next.js 16 App Router + Turbopack + TypeScript**.
-   - [x] Tích hợp bộ đệm Emotion SSR bằng `@mui/material-nextjs` trong [RootLayout](file:///frontend/src/app/layout.tsx).
-   - [x] Tái cấu trúc phân chia routes: `/login`, `/register`, `/chat`, `/` và trang `not-found.tsx` chuẩn Next.js.
-   - [x] Giữ nguyên dev port 5173 và backend port 3000 đồng bộ môi trường.
+1. **Tin nhắn thời gian thực (Realtime Messaging)**:
+   - [x] Tích hợp WebSocket Gateway (`@nestjs/websockets`, `@nestjs/platform-socket.io`) cho phòng chat.
+   - [x] Gửi và nhận tin nhắn 1-1 theo thời gian thực (Direct Messages).
+   - [x] Chỉ báo đang soạn tin (*typing indicator*) và trạng thái đã xem (*seen status*).
+   - [x] Theo dõi trạng thái trực tuyến của người dùng (Online / Offline status indicator).
 
-2. **Kiến trúc Xác thực & Bảo mật nâng cao**:
-   - [x] Cấu hình thời hạn token chuẩn an toàn: **AccessToken = 1 giờ**, **RefreshToken = 7 ngày**.
-   - [x] Tích hợp **Cloudflare Turnstile** chống bot và brute-force phía Backend & Frontend.
-   - [x] **Ổn định hóa Cloudflare Turnstile**: Khắc phục lỗi loop re-render widget bằng `callbacksRef` và cleanup lifecycle.
-   - [x] Thiết kế lại **Redis Service**: cấu trúc key rõ ràng (`chat:blacklist:`, `chat:session:`, `chat:rate:`, `chat:online:`), hỗ trợ chế độ **Fail-safe** không làm gián đoạn luồng đăng nhập nếu Redis mất kết nối.
-   - [x] Loại bỏ toàn bộ kiểu dữ liệu `any` trong Backend, chuẩn hóa định nghĩa TypeScript trong `auth.types.ts` và `users.types.ts`.
-   - [x] Tách biệt thông báo lỗi đăng nhập: thông báo cụ thể tài khoản không tồn tại hoặc sai mật khẩu.
-   - [x] Xử lý lỗi Firebase `auth/account-exists-with-different-credential` khi tài khoản đã liên kết với nhà cung cấp khác.
+2. **Hệ thống Bạn bè & Tìm kiếm Realtime (Friendship System)**:
+   - [x] Thiết kế Mongoose Schema `Friendship` với unique compound index chống trùng lặp.
+   - [x] Loại bỏ hoàn toàn mock data, kết nối danh bạ và bạn bè thật 100%.
+   - [x] Tìm kiếm người dùng toàn hệ thống kèm trạng thái quan hệ: `none`, `pending_sent`, `pending_received`, `friends`.
+   - [x] Luồng tự động kết bạn (Auto-accept) khi 2 người cùng gửi lời mời cho nhau.
+   - [x] Gửi lời mời, Hủy lời mời đã gửi, Chấp nhận, Từ chối, và Hủy kết bạn (Unfriend).
+   - [x] Đồng bộ thông báo bạn bè mới qua Socket.IO.
 
-3. **Frontend UI & Trải nghiệm người dùng**:
-   - [x] **Chuẩn hóa kích thước Input 54px**: Nâng cấp toàn bộ text fields, password fields lên chuẩn 54px thanh thoát, padding cân đối, xóa bỏ cảm giác chật chội.
-   - [x] **Triệt tiêu lỗi 401 thừa trên trang Login/Register**: Tích hợp cờ `has_session` trong `localStorage` và `skipAuthRefresh` trên Axios, giữ cho DevTools Network luôn sạch sẽ khi chưa đăng nhập.
-   - [x] Hoàn thiện toàn diện trang **Đăng ký (`/register`)**:
-     - Form validation qua Zod & React Hook Form (Họ tên, Email, SĐT chuẩn VN, Mật khẩu có độ phức tạp cao, Xác nhận mật khẩu).
-     - Thanh đo độ mạnh mật khẩu thời gian thực (Password Strength Meter).
-     - Nút ẩn/hiện mật khẩu (Eye / EyeOff).
-     - Điều khoản & chính sách checkbox.
-     - Hỗ trợ đăng ký nhanh qua Google / Facebook.
-   - [x] Tách Custom Hook tái sử dụng **`useSocialAuth`**: gom toàn bộ logic popup Firebase, bắt lỗi đóng popup và điều hướng thành 1 hook duy nhất dùng cho cả Login, Register và các modal trong tương lai.
-   - [x] Tối ưu hóa API Call & Deduplication:
-     - Thêm cơ chế **In-flight Promise Deduplication** (`checkAuthPromise`) trong `useAuthStore` giúp triệt tiêu việc gọi 2 lần `/auth/profile` khi reload trang.
-     - Tận dụng trực tiếp `profile` trả về từ các API login/register để loại bỏ request `/auth/profile` thừa.
-   - [x] Chuẩn hóa **Material UI**: thay thế toàn bộ thuộc tính `InputProps` cũ sang `slotProps={{ input: { ... } }}` để loại bỏ hoàn toàn các cảnh báo DOM.
+3. **Tối ưu hóa UI/UX & Triệt tiêu Chớp giật (Zero-Flicker Search)**:
+   - [x] **Zero-Collapse List**: Giữ nguyên danh sách kết quả trên DOM khi gõ tiếp, tích hợp `LinearProgress` chạy ngầm.
+   - [x] **Chống Race Condition**: Bổ sung `searchSeq` trong `useFriendStore`, loại bỏ xung đột response mạng bất đồng bộ.
+   - [x] Khắc phục hiện tượng giật trang khi mở modal (`disableScrollLock`, loại bỏ autoFocus giật cuộn).
+   - [x] Đồng bộ giao diện tìm kiếm mượt mà trên Header (`AppBar.tsx`), Sidebar (`PersonCall.tsx`) và Modal Chat (`ChatApp.tsx`).
+
+4. **Di chuyển toàn diện sang Next.js 16 (App Router) & TypeScript**:
+   - [x] Chuyển đổi toàn bộ mã nguồn Frontend sang Next.js 16 App Router + Turbopack + TypeScript.
+   - [x] Tích hợp bộ đệm Emotion SSR bằng `@mui/material-nextjs` trong RootLayout.
+   - [x] Tái cấu trúc phân chia routes: `/login`, `/register`, `/chat`, `/` và `not-found.tsx`.
+
+5. **Kiến trúc Xác thực & Bảo mật nâng cao**:
+   - [x] Cặp token chuẩn an toàn: AccessToken = 1 giờ, RefreshToken = 7 ngày trong HttpOnly Cookie.
+   - [x] Tích hợp Cloudflare Turnstile chống bot và brute-force.
+   - [x] Redis Token Blacklist với chế độ Fail-safe.
+   - [x] Tách biệt thông báo lỗi đăng nhập chuẩn xác.
+   - [x] Xử lý lỗi Firebase `auth/account-exists-with-different-credential`.
+   - [x] Chuẩn hóa kích thước ô nhập liệu công thái học 54px trên toàn bộ form.
+   - [x] In-flight Promise Deduplication triệt tiêu việc gọi lặp API `/auth/profile`.
 
 ---
 
 ### 📌 Lộ trình phát triển tiếp theo (Roadmap)
-- [ ] **Tin nhắn thời gian thực (Realtime Messaging)**:
-  - [ ] Tích hợp WebSocket Gateway (Socket.IO / NestJS WebSockets) cho phòng chat.
-  - [ ] Gửi và nhận tin nhắn 1-1 theo thời gian thực (Direct Messages).
-  - [ ] Hiển thị trạng thái đang soạn tin (*typing indicator*) và trạng thái đã xem (*seen status*).
-- [ ] **Trạng thái & Quản lý nhóm**:
-  - [ ] Theo dõi trạng thái trực tuyến của người dùng (Online / Offline status indicator) qua Redis Pub/Sub.
-  - [ ] Tạo nhóm chat, thêm/xóa thành viên và chỉ định quyền nhóm trưởng (Group Chat).
-- [ ] **Đa phương tiện & Tiện ích**:
-  - [ ] Hỗ trợ gửi hình ảnh, video và tệp đính kèm trong khung chat (Cloudinary / S3 / Firebase Storage).
-  - [ ] Thông báo đẩy trên trình duyệt khi có tin nhắn mới (Web Push Notifications).
-- [ ] **Tài khoản cá nhân**:
-  - [ ] Trang cập nhật thông tin cá nhân & tải ảnh đại diện (`/profile`).
+- [ ] **Nhóm chat (Group Chat)**:
+  - [ ] Tạo nhóm chat, thêm/xóa thành viên và chỉ định quyền nhóm trưởng / phó nhóm.
+  - [ ] Đổi tên nhóm và ảnh đại diện nhóm.
+- [ ] **Đa phương tiện & Tệp đính kèm**:
+  - [ ] Hỗ trợ gửi hình ảnh, video, âm thanh và tệp đính kèm trong tin nhắn.
+  - [ ] Tích hợp dịch vụ lưu trữ đám mây (Cloudinary / AWS S3 / Firebase Storage).
+- [ ] **Thông báo đẩy (Push Notifications)**:
+  - [ ] Web Push Notifications khi người dùng không mở tab trình duyệt.
+- [ ] **Cập nhật Hồ sơ cá nhân**:
+  - [ ] Trang cập nhật thông tin cá nhân & đổi ảnh đại diện (`/profile`).
   - [ ] Tính năng Quên mật khẩu & Đặt lại mật khẩu qua Email OTP (`/forgot-password`).
 
 ---
