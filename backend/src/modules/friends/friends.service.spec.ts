@@ -30,9 +30,27 @@ describe('FriendsService', () => {
       findById: vi.fn(),
     };
 
+    const mockRedisClient = {
+      geoadd: vi.fn().mockResolvedValue(1),
+      georadius: vi.fn().mockResolvedValue([]),
+      geopos: vi.fn().mockResolvedValue(null),
+      sadd: vi.fn().mockResolvedValue(1),
+      sinter: vi.fn().mockResolvedValue([]),
+      smembers: vi.fn().mockResolvedValue([]),
+      del: vi.fn().mockResolvedValue(1),
+      expire: vi.fn().mockResolvedValue(1),
+      set: vi.fn().mockResolvedValue('OK'),
+      get: vi.fn().mockResolvedValue(null),
+    };
+
+    const mockRedisService = {
+      client: mockRedisClient,
+    };
+
     service = new FriendsService(
       mockFriendshipModel as any,
       mockUsersService as any,
+      mockRedisService as any,
     );
   });
 

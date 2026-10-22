@@ -9,10 +9,9 @@ export default function Home() {
     <Box
       sx={{
         display: "flex",
-        minHeight: "calc(100vh - 64px)",
+        minHeight: "100vh",
         width: { xs: "100%", md: "75%", lg: "80%" },
         bgcolor: "#f1f5f9",
-        overflow: "hidden",
         pt: "64px",
       }}
     >

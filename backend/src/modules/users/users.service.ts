@@ -156,4 +156,34 @@ export class UsersService {
       }
     }
   }
+
+  async findByIds(ids: (string | Types.ObjectId)[]) {
+    const objectIds = ids
+      .filter((id) => Types.ObjectId.isValid(id.toString()))
+      .map((id) => new Types.ObjectId(id.toString()));
+    return this.userModel
+      .find({
+        _id: { $in: objectIds },
+        isDeleted: { $ne: true },
+        isBan: { $ne: true },
+      })
+      .select('name email avatar phone bio createdAt')
+      .exec();
+  }
+
+  async findActiveUsersExcluding(excludeIds: (string | Types.ObjectId)[], limit = 30) {
+    const objectIds = excludeIds
+      .filter((id) => Types.ObjectId.isValid(id.toString()))
+      .map((id) => new Types.ObjectId(id.toString()));
+    return this.userModel
+      .find({
+        _id: { $nin: objectIds },
+        isDeleted: { $ne: true },
+        isBan: { $ne: true },
+      })
+      .select('name email avatar phone bio createdAt')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .exec();
+  }
 }

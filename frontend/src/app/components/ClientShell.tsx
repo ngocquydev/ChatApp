@@ -6,6 +6,7 @@ import ResponsiveAppBar from "@/components/layout/AppBar";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
 import { useFriendStore } from "@/store/useFriendStore";
+import FloatingChatDock from "@/components/chat/FloatingChatDock";
 
 interface ClientShellProps {
   children: ReactNode;
@@ -38,6 +39,7 @@ export default function ClientShell({ children }: ClientShellProps) {
     <>
       {!shouldHideAppBar && <ResponsiveAppBar />}
       {children}
+      <FloatingChatDock />
     </>
   );
 }

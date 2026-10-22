@@ -21,18 +21,39 @@ export interface UserRelationResult extends ChatUser {
   requestId?: string;
 }
 
+export interface FriendRecommendationResult {
+  _id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  bio?: string;
+  distanceKm?: number;
+  mutualFriendsCount: number;
+  friendsCount: number;
+  score: number;
+  recommendationReason: string;
+  relationStatus: "none" | "pending_sent" | "pending_received" | "friends";
+  requestId?: string;
+}
+
 interface FriendState {
   friends: FriendItem[];
   receivedRequests: FriendRequestItem[];
   sentRequests: FriendRequestItem[];
   searchResults: UserRelationResult[];
+  recommendations: FriendRecommendationResult[];
   isLoadingFriends: boolean;
   isLoadingRequests: boolean;
+  isLoadingRecommendations: boolean;
+  isLocating: boolean;
   isSearching: boolean;
   searchSeq?: number;
+  userLocation: { latitude: number; longitude: number } | null;
 
   fetchFriends: () => Promise<void>;
   fetchRequests: () => Promise<void>;
+  fetchRecommendations: (coords?: { latitude: number; longitude: number }) => Promise<void>;
+  updateLocation: (latitude: number, longitude: number) => Promise<boolean>;
   searchUsers: (query: string) => Promise<void>;
   sendFriendRequest: (recipientId: string) => Promise<{ success: boolean; message: string }>;
   respondToRequest: (
@@ -49,10 +70,14 @@ export const useFriendStore = create<FriendState>((set, get) => ({
   receivedRequests: [],
   sentRequests: [],
   searchResults: [],
+  recommendations: [],
   isLoadingFriends: false,
   isLoadingRequests: false,
+  isLoadingRecommendations: false,
+  isLocating: false,
   isSearching: false,
   searchSeq: 0,
+  userLocation: null,
 
   clearSearchResults: () => {
     set({ searchResults: [], isSearching: false });
@@ -109,22 +134,67 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     }
   },
 
+  fetchRecommendations: async (coords?: { latitude: number; longitude: number }) => {
+    set({ isLoadingRecommendations: true });
+    try {
+      let url = "/friends/recommendations?limit=25";
+      const targetCoords = coords || get().userLocation;
+      if (targetCoords) {
+        url += `&lat=${targetCoords.latitude}&lng=${targetCoords.longitude}&radiusKm=35`;
+      }
+      const res = await api.get(url);
+      if (res.data?.recommendations) {
+        set({ recommendations: res.data.recommendations });
+      }
+    } catch (err) {
+      console.error("Lỗi lấy danh sách gợi ý bạn bè:", err);
+    } finally {
+      set({ isLoadingRecommendations: false });
+    }
+  },
+
+  updateLocation: async (latitude: number, longitude: number) => {
+    set({ isLocating: true });
+    try {
+      await api.post("/friends/location", { latitude, longitude });
+      set({ userLocation: { latitude, longitude } });
+      // Tải lại gợi ý dựa trên tọa độ mới
+      await get().fetchRecommendations({ latitude, longitude });
+      return true;
+    } catch (err) {
+      console.error("Lỗi cập nhật vị trí:", err);
+      return false;
+    } finally {
+      set({ isLocating: false });
+    }
+  },
+
   sendFriendRequest: async (recipientId: string) => {
     try {
       const res = await api.post("/friends/request", { recipientId });
-      // Cập nhật lại trạng thái trong searchResults
+      const nextStatus =
+        res.data?.request?.status === "accepted" ? "friends" : "pending_sent";
+      const reqId = res.data?.request?._id;
+
+      // Cập nhật lại trạng thái trong searchResults và recommendations
       set((state) => ({
         searchResults: state.searchResults.map((u) =>
           u._id === recipientId
             ? {
                 ...u,
-                relationStatus:
-                  res.data?.request?.status === "accepted"
-                    ? "friends"
-                    : "pending_sent",
-                requestId: res.data?.request?._id,
+                relationStatus: nextStatus,
+                requestId: reqId,
               }
             : u
+        ),
+        recommendations: state.recommendations.map((r) =>
+          r._id === recipientId
+            ? {
+                ...r,
+                relationStatus: nextStatus,
+                requestId: reqId,
+              }
+            : r
         ),
       }));
       // Tải lại lời mời và bạn bè nếu auto-accept
@@ -149,6 +219,15 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       // Xóa khỏi receivedRequests
       set((state) => ({
         receivedRequests: state.receivedRequests.filter((r) => r._id !== requestId),
+        recommendations: state.recommendations.map((r) =>
+          r.requestId === requestId
+            ? {
+                ...r,
+                relationStatus: action === "accept" ? "friends" : "none",
+                requestId: undefined,
+              }
+            : r
+        ),
       }));
       if (action === "accept") {
         get().fetchFriends();
@@ -170,6 +249,9 @@ export const useFriendStore = create<FriendState>((set, get) => ({
         searchResults: state.searchResults.map((u) =>
           u.requestId === requestId ? { ...u, relationStatus: "none", requestId: undefined } : u
         ),
+        recommendations: state.recommendations.map((r) =>
+          r.requestId === requestId ? { ...r, relationStatus: "none", requestId: undefined } : r
+        ),
       }));
       return { success: true, message: res.data?.message || "Đã hủy lời mời" };
     } catch (err: unknown) {
@@ -187,6 +269,9 @@ export const useFriendStore = create<FriendState>((set, get) => ({
         friends: state.friends.filter((f) => f.friend?._id !== friendId),
         searchResults: state.searchResults.map((u) =>
           u._id === friendId ? { ...u, relationStatus: "none" } : u
+        ),
+        recommendations: state.recommendations.map((r) =>
+          r._id === friendId ? { ...r, relationStatus: "none" } : r
         ),
       }));
       return { success: true, message: res.data?.message || "Đã hủy kết bạn" };

@@ -164,8 +164,6 @@ function Feed() {
     <Box
       sx={{
         flex: { xs: 1, md: 5, lg: 5 },
-        height: "100%",
-        overflowY: "auto",
         p: { xs: 2, sm: 3 },
         display: "flex",
         flexDirection: "column",

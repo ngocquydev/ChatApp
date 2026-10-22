@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, MouseEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
   AppBar,
@@ -31,6 +31,7 @@ import {
   CircularProgress,
   LinearProgress,
   Badge,
+  Chip,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import AdbIcon from "@mui/icons-material/Adb";
@@ -39,11 +40,11 @@ import FeedIcon from "@mui/icons-material/Feed";
 import ExploreIcon from "@mui/icons-material/Explore";
 import ChatIcon from "@mui/icons-material/Chat";
 import PersonIcon from "@mui/icons-material/Person";
-import { X, UserPlus, Clock, Check } from "lucide-react";
-import Message, { ChatFriend } from "../section/Message";
+import { X, UserPlus, Clock, Check, UserCheck, Users } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useFriendStore } from "../../store/useFriendStore";
 import { useChatStore } from "../../store/useChatStore";
+import { useChatBoxStore } from "../../store/useChatBoxStore";
 
 interface NavPage {
   id: string;
@@ -56,9 +57,11 @@ function ResponsiveAppBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [chatAnchorEl, setChatAnchorEl] = useState<null | HTMLElement>(null);
+  const [friendAnchorEl, setFriendAnchorEl] = useState<null | HTMLElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuthStore();
-  const [openChatBoxes, setOpenChatBoxes] = useState<ChatFriend[]>([]);
+  const { openChat } = useChatBoxStore();
 
   // State tìm kiếm người dùng toàn hệ thống
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,6 +75,9 @@ function ResponsiveAppBar() {
     sendFriendRequest,
     cancelRequest,
     respondToRequest,
+    receivedRequests,
+    isLoadingRequests,
+    fetchRequests,
   } = useFriendStore();
 
   const {
@@ -86,8 +92,9 @@ function ResponsiveAppBar() {
     if (user) {
       connectSocket();
       fetchConversations();
+      fetchRequests();
     }
-  }, [user, connectSocket, fetchConversations]);
+  }, [user, connectSocket, fetchConversations, fetchRequests]);
 
   // Debounced search khi gõ trên thanh tìm kiếm
   useEffect(() => {
@@ -118,11 +125,13 @@ function ResponsiveAppBar() {
   };
   const handleCloseChat = () => setChatAnchorEl(null);
 
-  const handleCloseChatBox = (userId: number | string) => {
-    setOpenChatBoxes((prev) =>
-      prev.filter((item) => String(item.id) !== String(userId))
-    );
+  const isFriendOpen = Boolean(friendAnchorEl);
+
+  const handleOpenFriend = (event: MouseEvent<HTMLElement>) => {
+    fetchRequests();
+    setFriendAnchorEl(event.currentTarget);
   };
+  const handleCloseFriend = () => setFriendAnchorEl(null);
 
   const handleLogout = async () => {
     try {
@@ -162,6 +171,11 @@ function ResponsiveAppBar() {
       label: "Khám phá",
       icon: <ExploreIcon />,
       href: "/explore",
+    },
+    {
+      id: "friends",
+      label: "Bạn bè",
+      icon: <UserPlus size={20} />,
     },
     { id: "chat", label: "Tin nhắn", icon: <ChatIcon />, href: "/chat" },
     { id: "profile", label: "Cá nhân", icon: <PersonIcon />, href: "/profile" },
@@ -512,6 +526,8 @@ function ResponsiveAppBar() {
                     onClick={(e) => {
                       if (page.id === "chat") {
                         handleOpenChat(e);
+                      } else if (page.id === "friends") {
+                        handleOpenFriend(e);
                       } else if (page.href) {
                         router.push(page.href);
                       }
@@ -532,16 +548,221 @@ function ResponsiveAppBar() {
                       >
                         {page.icon}
                       </Badge>
+                    ) : page.id === "friends" ? (
+                      <Badge
+                        color="error"
+                        badgeContent={receivedRequests.length}
+                        max={99}
+                        invisible={receivedRequests.length === 0}
+                      >
+                        {page.icon}
+                      </Badge>
                     ) : (
                       page.icon
                     )}
                   </Button>
+
+                  {/* Popover Lời mời kết bạn */}
+                  {page.id === "friends" && (
+                    <Popover
+                      open={isFriendOpen}
+                      anchorEl={friendAnchorEl}
+                      onClose={handleCloseFriend}
+                      disableScrollLock
+                      anchorOrigin={{
+                        vertical: "bottom",
+                        horizontal: "right",
+                      }}
+                      transformOrigin={{
+                        vertical: "top",
+                        horizontal: "right",
+                      }}
+                      slotProps={{
+                        paper: {
+                          sx: {
+                            width: { xs: 320, sm: 380 },
+                            maxHeight: 480,
+                            borderRadius: 2.5,
+                            boxShadow: "0px 12px 32px rgba(0, 0, 0, 0.18)",
+                            mt: 1,
+                            overflow: "hidden",
+                          },
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          p: 1.5,
+                          px: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          borderBottom: "1px solid #e2e8f0",
+                          bgcolor: "#f8fafc",
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.92rem" }}>
+                            Lời mời kết bạn
+                          </Typography>
+                          {receivedRequests.length > 0 && (
+                            <Chip
+                              label={receivedRequests.length}
+                              size="small"
+                              color="error"
+                              sx={{ height: 20, fontSize: "0.72rem", fontWeight: 700 }}
+                            />
+                          )}
+                        </Box>
+                        <Typography
+                          variant="caption"
+                          color="primary"
+                          onClick={() => {
+                            handleCloseFriend();
+                            router.push("/explore");
+                          }}
+                          sx={{
+                            cursor: "pointer",
+                            fontWeight: 600,
+                            "&:hover": { textDecoration: "underline" },
+                          }}
+                        >
+                          Xem tất cả
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ overflowY: "auto", maxHeight: 390, p: 0.5 }}>
+                        {isLoadingRequests && receivedRequests.length === 0 ? (
+                          <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
+                            <CircularProgress size={24} />
+                          </Box>
+                        ) : receivedRequests.length === 0 ? (
+                          <Box sx={{ textAlign: "center", py: 5, px: 3 }}>
+                            <UserCheck size={40} color="#94a3b8" style={{ marginBottom: 10 }} />
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: "#475569", mb: 0.5 }}>
+                              Không có lời mời kết bạn mới
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: "#94a3b8", display: "block" }}>
+                              Khi có người gửi lời mời kết bạn, thông báo sẽ hiển thị tại đây.
+                            </Typography>
+                          </Box>
+                        ) : (
+                          receivedRequests.map((req) => {
+                            const requester = req.requesterId;
+                            const timeAgo = req.createdAt
+                              ? new Date(req.createdAt).toLocaleDateString([], {
+                                  month: "numeric",
+                                  day: "numeric",
+                                })
+                              : "";
+
+                            return (
+                              <Box
+                                key={req._id}
+                                sx={{
+                                  p: 1.5,
+                                  borderRadius: "10px",
+                                  mb: 0.5,
+                                  display: "flex",
+                                  alignItems: "flex-start",
+                                  gap: 1.5,
+                                  transition: "all 0.15s ease",
+                                  "&:hover": { bgcolor: "#f1f5f9" },
+                                }}
+                              >
+                                <Avatar
+                                  src={requester?.avatar || ""}
+                                  sx={{ width: 44, height: 44, bgcolor: "#3b82f6", fontWeight: 700, mt: 0.2 }}
+                                >
+                                  {(requester?.name || "U")[0].toUpperCase()}
+                                </Avatar>
+
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", mb: 0.3 }}>
+                                    <Typography
+                                      variant="subtitle2"
+                                      noWrap
+                                      sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.88rem" }}
+                                    >
+                                      {requester?.name || "Người dùng"}
+                                    </Typography>
+                                    {timeAgo && (
+                                      <Typography variant="caption" sx={{ color: "#94a3b8", fontSize: "0.7rem", ml: 1 }}>
+                                        {timeAgo}
+                                      </Typography>
+                                    )}
+                                  </Box>
+
+                                  <Typography
+                                    variant="caption"
+                                    noWrap
+                                    sx={{ color: "#64748b", display: "block", fontSize: "0.74rem", mb: 1 }}
+                                  >
+                                    {requester?.email || "Đã gửi lời mời kết bạn"}
+                                  </Typography>
+
+                                  <Box sx={{ display: "flex", gap: 1 }}>
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      color="primary"
+                                      onClick={async () => {
+                                        await respondToRequest(req._id, "accept");
+                                      }}
+                                      startIcon={<Check size={13} />}
+                                      sx={{
+                                        textTransform: "none",
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600,
+                                        py: 0.4,
+                                        px: 1.2,
+                                        borderRadius: "8px",
+                                        boxShadow: "none",
+                                      }}
+                                    >
+                                      Xác nhận
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      variant="outlined"
+                                      color="inherit"
+                                      onClick={async () => {
+                                        await respondToRequest(req._id, "reject");
+                                      }}
+                                      startIcon={<X size={13} />}
+                                      sx={{
+                                        textTransform: "none",
+                                        fontSize: "0.75rem",
+                                        py: 0.4,
+                                        px: 1,
+                                        borderRadius: "8px",
+                                        color: "#64748b",
+                                        borderColor: "#cbd5e1",
+                                        "&:hover": {
+                                          bgcolor: "#fef2f2",
+                                          color: "#ef4444",
+                                          borderColor: "#fca5a5",
+                                        },
+                                      }}
+                                    >
+                                      Xóa
+                                    </Button>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            );
+                          })
+                        )}
+                      </Box>
+                    </Popover>
+                  )}
 
                   {page.id === "chat" && (
                     <Popover
                       open={isChatOpen}
                       anchorEl={chatAnchorEl}
                       onClose={handleCloseChat}
+                      disableScrollLock
                       anchorOrigin={{
                         vertical: "bottom",
                         horizontal: "right",
@@ -628,8 +849,16 @@ function ResponsiveAppBar() {
                                 key={conv._id}
                                 onClick={async () => {
                                   handleCloseChat();
-                                  await selectConversation(conv);
-                                  router.push("/chat");
+                                  if (pathname === "/chat") {
+                                    await selectConversation(conv);
+                                  } else {
+                                    if (other) {
+                                      openChat(other as any, conv._id);
+                                    } else {
+                                      await selectConversation(conv);
+                                      router.push("/chat");
+                                    }
+                                  }
                                 }}
                                 sx={{
                                   display: "flex",
@@ -702,6 +931,46 @@ function ResponsiveAppBar() {
               ))}
             </Box>
 
+            {/* Nút Lời mời kết bạn & Tin nhắn nhanh trên Mobile */}
+            <Box sx={{ display: { xs: "flex", md: "none" }, alignItems: "center", gap: 0.5, mr: 1 }}>
+              <IconButton
+                color="inherit"
+                size="small"
+                onClick={handleOpenFriend}
+                aria-label="friend requests"
+              >
+                <Badge
+                  color="error"
+                  badgeContent={receivedRequests.length}
+                  max={99}
+                  invisible={receivedRequests.length === 0}
+                >
+                  <UserPlus size={20} />
+                </Badge>
+              </IconButton>
+
+              <IconButton
+                color="inherit"
+                size="small"
+                onClick={handleOpenChat}
+                aria-label="chat messages"
+              >
+                <Badge
+                  color="error"
+                  variant="dot"
+                  invisible={
+                    !conversations.some(
+                      (c) =>
+                        c.unreadCounts &&
+                        Number(c.unreadCounts[String(user?.id || user?._id)] || 0) > 0
+                    )
+                  }
+                >
+                  <ChatIcon />
+                </Badge>
+              </IconButton>
+            </Box>
+
             {/* Avatar User */}
             <Box sx={{ flexGrow: 0 }}>
               <Tooltip title="Mở cài đặt">
@@ -720,6 +989,7 @@ function ResponsiveAppBar() {
                 anchorEl={anchorElUser}
                 anchorOrigin={{ vertical: "top", horizontal: "right" }}
                 keepMounted
+                disableScrollLock
                 transformOrigin={{ vertical: "top", horizontal: "right" }}
                 open={Boolean(anchorElUser)}
                 onClose={handleCloseUserMenu}
@@ -788,39 +1058,54 @@ function ResponsiveAppBar() {
 
                   if (page.id === "chat") {
                     handleOpenChat(e);
+                  } else if (page.id === "friends") {
+                    handleOpenFriend(e);
                   } else if (page.href) {
                     router.push(page.href);
                   }
                 }}
               >
-                <ListItemIcon>{page.icon}</ListItemIcon>
-                <ListItemText primary={page.label} />
+                <ListItemIcon>
+                  {page.id === "friends" ? (
+                    <Badge
+                      color="error"
+                      badgeContent={receivedRequests.length}
+                      max={99}
+                      invisible={receivedRequests.length === 0}
+                    >
+                      {page.icon}
+                    </Badge>
+                  ) : page.id === "chat" ? (
+                    <Badge
+                      color="error"
+                      variant="dot"
+                      invisible={
+                        !conversations.some(
+                          (c) =>
+                            c.unreadCounts &&
+                            Number(c.unreadCounts[String(user?.id || user?._id)] || 0) > 0
+                        )
+                      }
+                    >
+                      {page.icon}
+                    </Badge>
+                  ) : (
+                    page.icon
+                  )}
+                </ListItemIcon>
+                <ListItemText
+                  primary={page.label}
+                  secondary={
+                    page.id === "friends" && receivedRequests.length > 0
+                      ? `${receivedRequests.length} lời mời mới`
+                      : undefined
+                  }
+                />
               </ListItemButton>
             </ListItem>
           ))}
         </List>
       </Drawer>
-
-      <Box
-        sx={{
-          position: "fixed",
-          bottom: 0,
-          right: { xs: 16, sm: "10%" },
-          display: "flex",
-          flexDirection: "row-reverse",
-          alignItems: "flex-end",
-          gap: 2,
-          zIndex: 1300,
-        }}
-      >
-        {openChatBoxes.map((chatUser) => (
-          <Message
-            key={chatUser.id}
-            friend={chatUser}
-            onClose={() => handleCloseChatBox(chatUser.id)}
-          />
-        ))}
-      </Box>
     </>
   );
 }

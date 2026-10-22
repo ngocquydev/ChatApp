@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { FriendsService } from './friends.service.js';
 import { SendFriendRequestDto } from './dto/friend-request.dto.js';
 import { RespondFriendRequestDto } from './dto/respond-request.dto.js';
+import { UpdateLocationDto } from './dto/update-location.dto.js';
 import type { AuthenticatedRequest } from '../auth/types/auth.types.js';
 
 @ApiTags('Friends')
@@ -72,6 +73,47 @@ export class FriendsController {
     return {
       success: true,
       users,
+    };
+  }
+
+  @Post('location')
+  @ApiOperation({ summary: 'Cập nhật vị trí địa lý của người dùng vào Redis Geospatial' })
+  async updateLocation(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: UpdateLocationDto,
+  ) {
+    const userId = this.extractUserId(req);
+    return this.friendsService.updateUserLocation(
+      userId,
+      dto.latitude,
+      dto.longitude,
+    );
+  }
+
+  @Get('recommendations')
+  @ApiOperation({
+    summary: 'Gợi ý bạn bè thông minh (ưu tiên cùng nơi ở, bạn chung, lọc nick clone)',
+  })
+  async getRecommendations(
+    @Req() req: AuthenticatedRequest,
+    @Query('limit') limit?: string,
+    @Query('radiusKm') radiusKm?: string,
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
+  ) {
+    const userId = this.extractUserId(req);
+    const recommendations = await this.friendsService.getFriendRecommendations(
+      userId,
+      {
+        limit: limit ? Number(limit) : 20,
+        radiusKm: radiusKm ? Number(radiusKm) : 25,
+        lat: lat ? parseFloat(lat) : undefined,
+        lng: lng ? parseFloat(lng) : undefined,
+      },
+    );
+    return {
+      success: true,
+      recommendations,
     };
   }
 

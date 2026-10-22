@@ -167,6 +167,7 @@ export default function ChatApp() {
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTypingSentRef = useRef<number>(0);
 
   const currentUserId = (user?._id || user?.id)?.toString();
 
@@ -217,7 +218,12 @@ export default function ChatApp() {
     if (!inputText.trim()) return;
     const textToSend = inputText;
     setInputText("");
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
     sendTyping(false);
+    lastTypingSentRef.current = 0;
     await sendMessage(textToSend);
   };
 
@@ -232,14 +238,30 @@ export default function ChatApp() {
   const handleInputChange = (text: string) => {
     setInputText(text);
 
+    if (!text.trim()) {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      sendTyping(false);
+      lastTypingSentRef.current = 0;
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastTypingSentRef.current > 2500) {
+      sendTyping(true);
+      lastTypingSentRef.current = now;
+    }
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    sendTyping(true);
     typingTimeoutRef.current = setTimeout(() => {
       sendTyping(false);
-    }, 2000);
+      lastTypingSentRef.current = 0;
+    }, 5000);
   };
 
   // Tìm đối phương trong cuộc hội thoại hiện tại

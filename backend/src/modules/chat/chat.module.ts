@@ -6,6 +6,7 @@ import { Message, MessageSchema } from './schemas/message.schema.js';
 import { ChatService } from './chat.service.js';
 import { ChatController } from './chat.controller.js';
 import { ChatGateway } from './chat.gateway.js';
+import { MqttBrokerService } from './mqtt-broker.service.js';
 import { UsersModule } from '../users/users.module.js';
 import { RedisModule } from '../redis/redis/redis.module.js';
 
@@ -23,7 +24,7 @@ import { RedisModule } from '../redis/redis/redis.module.js';
     RedisModule,
   ],
   controllers: [ChatController],
-  providers: [ChatService, ChatGateway],
-  exports: [ChatService, ChatGateway],
+  providers: [ChatService, ChatGateway, MqttBrokerService],
+  exports: [ChatService, ChatGateway, MqttBrokerService],
 })
 export class ChatModule {}

@@ -195,4 +195,12 @@ export class ChatService {
       modifiedCount: updateResult.modifiedCount || 0,
     };
   }
+
+  async getConversationById(id: string): Promise<ConversationDocument | null> {
+    try {
+      return await this.conversationModel.findById(id).exec();
+    } catch {
+      return null;
+    }
+  }
 }

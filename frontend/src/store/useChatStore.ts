@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { io, Socket } from "socket.io-client";
 import api from "../services/api";
+import { mqttChatClient } from "../services/mqttClient";
+import { useAuthStore } from "./useAuthStore";
+import { useFriendStore } from "./useFriendStore";
 
 export interface ChatUser {
   _id: string;
@@ -14,6 +17,7 @@ export interface ChatUser {
 
 export interface ChatMessage {
   _id: string;
+  id?: string;
   conversationId: string;
   senderId: string | ChatUser;
   receiverId: string | ChatUser;
@@ -37,6 +41,7 @@ export interface ConversationItem {
 interface ChatState {
   socket: Socket | null;
   isConnected: boolean;
+  isMqttConnected: boolean;
   onlineUserIds: string[];
   conversations: ConversationItem[];
   activeConversation: ConversationItem | null;
@@ -59,9 +64,40 @@ const BACKEND_URL =
   process.env.VITE_BACKEND_URL ||
   "http://localhost:3000";
 
+const typingExpiryTimers = new Map<string, NodeJS.Timeout>();
+
+const updateStoreTyping = (
+  set: (fn: (state: ChatState) => Partial<ChatState>) => void,
+  conversationId: string,
+  isTyping: boolean
+) => {
+  if (typingExpiryTimers.has(conversationId)) {
+    clearTimeout(typingExpiryTimers.get(conversationId)!);
+    typingExpiryTimers.delete(conversationId);
+  }
+
+  if (isTyping) {
+    set((state) => ({
+      typingMap: { ...state.typingMap, [conversationId]: true },
+    }));
+    const timer = setTimeout(() => {
+      set((state) => ({
+        typingMap: { ...state.typingMap, [conversationId]: false },
+      }));
+      typingExpiryTimers.delete(conversationId);
+    }, 6500);
+    typingExpiryTimers.set(conversationId, timer);
+  } else {
+    set((state) => ({
+      typingMap: { ...state.typingMap, [conversationId]: false },
+    }));
+  }
+};
+
 export const useChatStore = create<ChatState>((set, get) => ({
   socket: null,
   isConnected: false,
+  isMqttConnected: false,
   onlineUserIds: [],
   conversations: [],
   activeConversation: null,
@@ -71,6 +107,90 @@ export const useChatStore = create<ChatState>((set, get) => ({
   typingMap: {},
 
   connectSocket: () => {
+    // 1. KẾT NỐI MQTT OVER WEBSOCKET BROKER (PROTOCOL BUFFERS BINARY CHAT)
+    const currentUser = useAuthStore.getState().user;
+    const currentUserId = String(currentUser?._id || currentUser?.id || "");
+    if (currentUserId) {
+      mqttChatClient.connect("", currentUserId);
+      set({ isMqttConnected: mqttChatClient.getIsConnected() });
+
+      // Lắng nghe tin nhắn mới nhị phân qua MQTT
+      mqttChatClient.onMessage((newMsg) => {
+        const active = get().activeConversation;
+        const convId = newMsg.conversationId;
+
+        if (active && active._id === convId) {
+          set((state) => {
+            const exists = state.messages.some(
+              (m) => m._id === newMsg._id || m.id === newMsg.id
+            );
+            return exists
+              ? state
+              : { messages: [...state.messages, newMsg as any] };
+          });
+
+          mqttChatClient.sendRead(convId, newMsg.senderId);
+        }
+
+        set((state) => {
+          const updated = state.conversations.map((c) => {
+            if (c._id === convId) {
+              return {
+                ...c,
+                lastMessage: {
+                  text: newMsg.text,
+                  senderId: newMsg.senderId,
+                  createdAt: newMsg.createdAt,
+                },
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return c;
+          });
+
+          updated.sort(
+            (a, b) =>
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          );
+
+          return { conversations: updated };
+        });
+      });
+
+      // Lắng nghe typing nhị phân
+      mqttChatClient.onTyping((data) => {
+        if (!data?.conversationId) return;
+        updateStoreTyping(set, data.conversationId, data.isTyping);
+      });
+
+      // Lắng nghe seen nhị phân
+      mqttChatClient.onSeen((data) => {
+        const active = get().activeConversation;
+        if (active && active._id === data.conversationId) {
+          set((state) => ({
+            messages: state.messages.map((m) => ({
+              ...m,
+              readAt: m.readAt || data.readAt,
+            })),
+          }));
+        }
+      });
+
+      // Lắng nghe presence nhị phân
+      mqttChatClient.onPresence((data) => {
+        if (data.onlineUserIds && data.onlineUserIds.length > 0) {
+          set({ onlineUserIds: data.onlineUserIds });
+        } else if (data.userId) {
+          set((state) => ({
+            onlineUserIds: data.isOnline
+              ? Array.from(new Set([...state.onlineUserIds, data.userId]))
+              : state.onlineUserIds.filter((id) => id !== data.userId),
+          }));
+        }
+      });
+    }
+
+    // 2. KẾT NỐI SOCKET.IO (DUAL HYBRID FALLBACK)
     const currentSocket = get().socket;
     if (currentSocket && currentSocket.connected) return;
 
@@ -112,16 +232,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const active = get().activeConversation;
       const convId = newMsg.conversationId;
 
-      // Nếu đang mở đúng cuộc trò chuyện này, thêm tin nhắn và báo đã xem
       if (active && active._id === convId) {
         set((state) => {
-          const exists = state.messages.some((m) => m._id === newMsg._id);
+          const exists = state.messages.some(
+            (m) => m._id === newMsg._id || m.id === newMsg.id
+          );
           return exists
             ? state
             : { messages: [...state.messages, newMsg] };
         });
 
-        // Báo đã đọc
         const senderId =
           typeof newMsg.senderId === "string"
             ? newMsg.senderId
@@ -132,7 +252,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
       }
 
-      // Cập nhật lastMessage trong danh sách hội thoại
       set((state) => {
         const updated = state.conversations.map((c) => {
           if (c._id === convId) {
@@ -153,7 +272,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
           return c;
         });
 
-        // Sắp xếp lại cuộc trò chuyện vừa có tin mới lên đầu
         updated.sort(
           (a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -165,16 +283,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     socket.on("typing:start", (data: { conversationId: string; userId: string }) => {
       if (!data?.conversationId) return;
-      set((state) => ({
-        typingMap: { ...state.typingMap, [data.conversationId]: true },
-      }));
+      updateStoreTyping(set, data.conversationId, true);
     });
 
     socket.on("typing:stop", (data: { conversationId: string; userId: string }) => {
       if (!data?.conversationId) return;
-      set((state) => ({
-        typingMap: { ...state.typingMap, [data.conversationId]: false },
-      }));
+      updateStoreTyping(set, data.conversationId, false);
     });
 
     socket.on(
@@ -192,26 +306,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     );
 
+    // Lắng nghe sự kiện lời mời kết bạn real-time
     socket.on("friend:request_received", () => {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("refresh_friend_requests"));
-      }
+      useFriendStore.getState().fetchRequests();
     });
 
     socket.on("friend:accepted", () => {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("refresh_friends_list"));
-      }
+      useFriendStore.getState().fetchFriends();
+      useFriendStore.getState().fetchRequests();
     });
 
     set({ socket });
   },
 
   disconnectSocket: () => {
+    mqttChatClient.disconnect();
     const socket = get().socket;
     if (socket) {
       socket.disconnect();
-      set({ socket: null, isConnected: false });
+      set({ socket: null, isConnected: false, isMqttConnected: false });
     }
   },
 
@@ -291,32 +404,38 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // Tìm người nhận trong participants
     const participants = active.participants;
-    // Lấy user khác mình
     const currentUserId = (api.defaults.headers as any)?.["X-User-Id"]; // fallback
     const socket = get().socket;
 
-    // Lấy partner
-    const otherParticipant = participants.find(
-      (p) => p._id !== currentUserId
-    ) || participants[0];
+    const otherParticipant =
+      participants.find((p) => p._id !== currentUserId) || participants[0];
 
     if (!otherParticipant?._id) return;
 
-    const payload = {
-      conversationId: active._id,
-      receiverId: otherParticipant._id,
-      text: text.trim(),
-    };
+    // 1. ƯU TIÊN GỬI QUA MQTT PROTOCOL BUFFERS NHỊ PHÂN (CHUẨN FACEBOOK MESSENGER)
+    const sentViaMqtt = mqttChatClient.sendMessage(
+      active._id,
+      otherParticipant._id,
+      text.trim()
+    );
 
-    if (socket && socket.connected) {
-      socket.emit("message:send", payload);
-    } else {
-      // Fallback qua REST API nếu socket chưa kết nối
-      const res = await api.post("/chat/messages", payload);
-      if (res.data?.message) {
-        set((state) => ({
-          messages: [...state.messages, res.data.message],
-        }));
+    if (!sentViaMqtt) {
+      const payload = {
+        conversationId: active._id,
+        receiverId: otherParticipant._id,
+        text: text.trim(),
+      };
+
+      if (socket && socket.connected) {
+        socket.emit("message:send", payload);
+      } else {
+        // Fallback qua REST API nếu socket chưa kết nối
+        const res = await api.post("/chat/messages", payload);
+        if (res.data?.message) {
+          set((state) => ({
+            messages: [...state.messages, res.data.message],
+          }));
+        }
       }
     }
   },
@@ -324,14 +443,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
   sendTyping: (isTyping: boolean) => {
     const active = get().activeConversation;
     const socket = get().socket;
-    if (!active || !socket || !socket.connected) return;
+    const currentUser = useAuthStore.getState().user;
+    const currentUserId = String(currentUser?._id || currentUser?.id || "");
+    if (!active) return;
 
-    const otherParticipant = active.participants[1] || active.participants[0];
-    if (!otherParticipant?._id) return;
+    const otherParticipant =
+      active.participants.find((p) => String(p._id || p.id) !== currentUserId) ||
+      active.participants[0];
+    if (!otherParticipant?._id && !(otherParticipant as any)?.id) return;
 
-    socket.emit(isTyping ? "typing:start" : "typing:stop", {
-      conversationId: active._id,
-      receiverId: otherParticipant._id,
-    });
+    const receiverId = String(otherParticipant._id || (otherParticipant as any).id);
+
+    // Bắn typing nhị phân qua MQTT
+    mqttChatClient.sendTyping(active._id, receiverId, isTyping);
+
+    // Bắn song song qua Socket.IO nếu có
+    if (socket && socket.connected) {
+      socket.emit(isTyping ? "typing:start" : "typing:stop", {
+        conversationId: active._id,
+        receiverId,
+      });
+    }
   },
 }));

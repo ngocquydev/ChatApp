@@ -17,6 +17,7 @@ import {
   CircularProgress,
   LinearProgress,
   Tooltip,
+  Chip,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
@@ -29,9 +30,18 @@ import {
   X,
   Clock,
   UserCheck,
+  MapPin,
+  Compass,
+  Sparkles,
+  ShieldCheck,
 } from "lucide-react";
-import { useFriendStore, UserRelationResult } from "../../store/useFriendStore";
+import {
+  useFriendStore,
+  UserRelationResult,
+  FriendRecommendationResult,
+} from "../../store/useFriendStore";
 import { useChatStore, ChatUser } from "../../store/useChatStore";
+import { useChatBoxStore } from "../../store/useChatBoxStore";
 
 export interface FriendContact {
   id: number | string;
@@ -86,13 +96,45 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
     cancelRequest,
     respondToRequest,
     clearSearchResults,
+    recommendations,
+    isLoadingRecommendations,
+    isLocating,
+    userLocation,
+    fetchRecommendations,
+    updateLocation,
   } = useFriendStore();
 
   const { onlineUserIds, startConversationWithUser } = useChatStore();
+  const { openChat } = useChatBoxStore();
 
   useEffect(() => {
     fetchFriends();
   }, [fetchFriends]);
+
+  // Tự động tải danh sách gợi ý bạn bè khi mở tab "Tìm bạn"
+  useEffect(() => {
+    if (activeTab === 1 && recommendations.length === 0) {
+      fetchRecommendations();
+    }
+  }, [activeTab, recommendations.length, fetchRecommendations]);
+
+  const handleRequestLocation = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      alert("Trình duyệt của bạn không hỗ trợ Geolocation API");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        await updateLocation(latitude, longitude);
+      },
+      (err) => {
+        console.warn("Không thể lấy tọa độ hiện tại:", err);
+        fetchRecommendations();
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
 
   // Debounced search khi gõ ở tab "Tìm bạn mới"
   useEffect(() => {
@@ -115,12 +157,12 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
     onlineUserIds.includes(f.friend?._id)
   ).length;
 
-  const handleStartChat = async (targetUser: ChatUser) => {
+  const handleStartChat = (targetUser: ChatUser) => {
     if (onSelectFriend) {
       onSelectFriend(targetUser);
     }
-    await startConversationWithUser(targetUser);
-    router.push("/chat");
+    // Mở hộp thoại tin nhắn nổi ở góc phải phong cách Facebook
+    openChat(targetUser);
   };
 
   const handleSendRequest = async (userId: string) => {
@@ -405,15 +447,234 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
             )}
 
             {!searchQuery.trim() && (
-              <Box sx={{ textAlign: "center", py: 4, px: 2 }}>
-                <Search size={32} color="#94a3b8" style={{ marginBottom: 8 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#475569", mb: 0.5 }}>
-                  Tìm bạn trên ChatApp
-                </Typography>
-                <Typography variant="caption" sx={{ color: "#94a3b8", display: "block" }}>
-                  Gõ tên hoặc địa chỉ email của người bạn muốn kết nối để gửi lời mời kết bạn!
-                </Typography>
-              </Box>
+              <>
+                {/* Khối định vị địa lý quanh đây */}
+                <Box
+                  sx={{
+                    p: 1.5,
+                    mb: 2,
+                    borderRadius: "12px",
+                    background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+                    border: "1px solid #bfdbfe",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1,
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Compass size={20} color="#2563eb" />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e3a8a", fontSize: "0.82rem" }}>
+                        Tìm bạn bè quanh đây
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "#475569", fontSize: "0.72rem", display: "block" }}>
+                        {userLocation ? "Đã định vị vị trí hiện tại của bạn" : "Ưu tiên người ở gần, có bạn chung & uy tín"}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Button
+                    size="small"
+                    variant="contained"
+                    disabled={isLocating}
+                    onClick={handleRequestLocation}
+                    startIcon={isLocating ? <CircularProgress size={13} color="inherit" /> : <MapPin size={13} />}
+                    sx={{
+                      textTransform: "none",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      py: 0.5,
+                      borderRadius: "8px",
+                      bgcolor: "#2563eb",
+                      boxShadow: "none",
+                      "&:hover": { bgcolor: "#1d4ed8" },
+                    }}
+                  >
+                    {isLocating ? "Đang định vị..." : (userLocation ? "Cập nhật lại vị trí" : "Bật định vị & Gợi ý quanh đây")}
+                  </Button>
+                </Box>
+
+                {/* Tiêu đề danh sách gợi ý */}
+                <Box sx={{ mb: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                    <Sparkles size={16} color="#3b82f6" />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.85rem" }}>
+                      Những người bạn có thể biết
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.72rem" }}>
+                    {recommendations.length} gợi ý
+                  </Typography>
+                </Box>
+
+                {isLoadingRecommendations && (
+                  <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                    <CircularProgress size={22} />
+                  </Box>
+                )}
+
+                {!isLoadingRecommendations && recommendations.length === 0 && (
+                  <Box sx={{ textAlign: "center", py: 3, px: 2 }}>
+                    <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                      Chưa có gợi ý nào mới. Hãy thử bật định vị hoặc tìm kiếm theo tên!
+                    </Typography>
+                  </Box>
+                )}
+
+                {!isLoadingRecommendations &&
+                  recommendations.map((rec) => (
+                    <Box
+                      key={rec._id}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        p: 1.2,
+                        borderRadius: "10px",
+                        bgcolor: "#ffffff",
+                        mb: 1,
+                        border: "1px solid #e2e8f0",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                        transition: "all 0.15s ease",
+                        "&:hover": {
+                          borderColor: "#93c5fd",
+                          bgcolor: "#f8fafc",
+                        },
+                      }}
+                    >
+                      <Avatar
+                        src={rec.avatar || ""}
+                        sx={{ width: 40, height: 40, bgcolor: "#3b82f6", fontWeight: 700 }}
+                      >
+                        {(rec.name || "U")[0].toUpperCase()}
+                      </Avatar>
+
+                      <Box sx={{ ml: 1.2, flex: 1, minWidth: 0 }}>
+                        <Typography
+                          variant="subtitle2"
+                          noWrap
+                          sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.85rem" }}
+                        >
+                          {rec.name}
+                        </Typography>
+
+                        {/* Badge lý do / bạn chung / khoảng cách */}
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.3 }}>
+                          {rec.mutualFriendsCount > 0 && (
+                            <Chip
+                              size="small"
+                              icon={<Users size={11} />}
+                              label={`${rec.mutualFriendsCount} bạn chung`}
+                              sx={{
+                                height: 18,
+                                fontSize: "0.68rem",
+                                bgcolor: "#eff6ff",
+                                color: "#2563eb",
+                                "& .MuiChip-icon": { color: "#2563eb" },
+                              }}
+                            />
+                          )}
+
+                          {rec.distanceKm !== undefined && (
+                            <Chip
+                              size="small"
+                              icon={<MapPin size={11} />}
+                              label={
+                                rec.distanceKm < 1
+                                  ? `${Math.round(rec.distanceKm * 1000)}m`
+                                  : `${rec.distanceKm.toFixed(1)} km`
+                              }
+                              sx={{
+                                height: 18,
+                                fontSize: "0.68rem",
+                                bgcolor: "#ecfdf5",
+                                color: "#059669",
+                                "& .MuiChip-icon": { color: "#059669" },
+                              }}
+                            />
+                          )}
+
+                          {rec.mutualFriendsCount === 0 && rec.distanceKm === undefined && rec.friendsCount >= 5 && (
+                            <Chip
+                              size="small"
+                              icon={<ShieldCheck size={11} />}
+                              label="Tài khoản uy tín"
+                              sx={{
+                                height: 18,
+                                fontSize: "0.68rem",
+                                bgcolor: "#f1f5f9",
+                                color: "#475569",
+                                "& .MuiChip-icon": { color: "#475569" },
+                              }}
+                            />
+                          )}
+                        </Box>
+                      </Box>
+
+                      {/* Hành động */}
+                      <Box sx={{ ml: 0.5 }}>
+                        {rec.relationStatus === "none" && (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => handleSendRequest(rec._id)}
+                            startIcon={<UserPlus size={13} />}
+                            sx={{
+                              textTransform: "none",
+                              fontSize: "0.74rem",
+                              py: 0.4,
+                              px: 1,
+                              borderRadius: "8px",
+                              boxShadow: "none",
+                            }}
+                          >
+                            Kết bạn
+                          </Button>
+                        )}
+
+                        {rec.relationStatus === "pending_sent" && (
+                          <Tooltip title="Nhấp để hủy lời mời">
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="inherit"
+                              onClick={() => handleCancelRequest(rec.requestId)}
+                              startIcon={<Clock size={13} />}
+                              sx={{
+                                textTransform: "none",
+                                fontSize: "0.72rem",
+                                py: 0.4,
+                                px: 0.8,
+                                borderRadius: "8px",
+                                color: "#64748b",
+                              }}
+                            >
+                              Đã gửi
+                            </Button>
+                          </Tooltip>
+                        )}
+
+                        {rec.relationStatus === "friends" && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => handleStartChat(rec as any)}
+                            startIcon={<MessageSquare size={13} />}
+                            sx={{
+                              textTransform: "none",
+                              fontSize: "0.74rem",
+                              py: 0.4,
+                              px: 0.8,
+                              borderRadius: "8px",
+                            }}
+                          >
+                            Nhắn tin
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
+                  ))}
+              </>
             )}
 
             {searchQuery.trim() && isSearching && searchResults.length === 0 && (
