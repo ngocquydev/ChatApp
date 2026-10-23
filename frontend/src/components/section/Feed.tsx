@@ -163,12 +163,13 @@ function Feed() {
   return (
     <Box
       sx={{
-        flex: { xs: 1, md: 5, lg: 5 },
+        flex: 1,
+        maxWidth: "760px",
+        width: "100%",
         p: { xs: 2, sm: 3 },
         display: "flex",
         flexDirection: "column",
         gap: 2.5,
-        borderRight: "1px solid #e2e8f0",
       }}
     >
       <Typography variant="h6" sx={{ fontWeight: 800, color: "#0f172a" }}>

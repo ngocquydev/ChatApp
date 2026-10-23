@@ -182,18 +182,18 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
   return (
     <Box
       sx={{
-        flex: { xs: 0, md: 3, lg: 3 },
         display: { xs: "none", md: "flex" },
         flexDirection: "column",
         height: "calc(100vh - 64px)",
         bgcolor: "#ffffff",
-        p: 2,
+        p: { md: 2, lg: 2.2 },
         position: "fixed",
         right: 0,
         top: "64px",
-        width: { md: "25%", lg: "20%" },
+        width: { md: 340, lg: 360, xl: 380 },
         borderLeft: "1px solid #e2e8f0",
         zIndex: 10,
+        boxShadow: "-2px 0 8px rgba(0, 0, 0, 0.02)",
       }}
     >
       {/* Header & Tabs */}
@@ -207,13 +207,19 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
           }}
           variant="fullWidth"
           sx={{
-            minHeight: 40,
+            minHeight: 42,
             "& .MuiTab-root": {
-              minHeight: 40,
+              minHeight: 42,
               textTransform: "none",
-              fontSize: "0.85rem",
+              fontSize: "0.86rem",
               fontWeight: 700,
-              p: 1,
+              py: 0.8,
+              px: 1.2,
+              gap: 0.8,
+            },
+            "& .MuiTabs-indicator": {
+              height: 3,
+              borderRadius: "3px 3px 0 0",
             },
           }}
         >
@@ -291,7 +297,26 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
 
           <Divider sx={{ mb: 1 }} />
 
-          <Box sx={{ flex: 1, overflowY: "auto", pr: 0.5 }}>
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto",
+              pr: 0.5,
+              "&::-webkit-scrollbar": {
+                width: "5px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "#cbd5e1",
+                borderRadius: "4px",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                background: "#94a3b8",
+              },
+            }}
+          >
             {isLoadingFriends && (
               <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
                 <CircularProgress size={24} />
@@ -441,7 +466,27 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
 
           <Divider sx={{ mb: 1.5 }} />
 
-          <Box sx={{ flex: 1, overflowY: "auto", pr: 0.5, position: "relative" }}>
+          <Box
+            sx={{
+              flex: 1,
+              overflowY: "auto",
+              pr: 0.5,
+              position: "relative",
+              "&::-webkit-scrollbar": {
+                width: "5px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "#cbd5e1",
+                borderRadius: "4px",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                background: "#94a3b8",
+              },
+            }}
+          >
             {isSearching && searchResults.length > 0 && (
               <LinearProgress sx={{ mb: 1, height: 2, borderRadius: 1 }} />
             )}
@@ -495,16 +540,38 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                 </Box>
 
                 {/* Tiêu đề danh sách gợi ý */}
-                <Box sx={{ mb: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
-                    <Sparkles size={16} color="#3b82f6" />
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.85rem" }}>
+                <Box
+                  sx={{
+                    mb: 1.2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 1,
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, minWidth: 0 }}>
+                    <Sparkles size={16} color="#3b82f6" style={{ flexShrink: 0 }} />
+                    <Typography
+                      variant="subtitle2"
+                      noWrap
+                      sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.85rem" }}
+                    >
                       Những người bạn có thể biết
                     </Typography>
                   </Box>
-                  <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.72rem" }}>
-                    {recommendations.length} gợi ý
-                  </Typography>
+                  <Chip
+                    label={`${recommendations.length} gợi ý`}
+                    size="small"
+                    sx={{
+                      height: 20,
+                      fontSize: "0.7rem",
+                      fontWeight: 700,
+                      bgcolor: "#eff6ff",
+                      color: "#2563eb",
+                      border: "1px solid #dbeafe",
+                      flexShrink: 0,
+                    }}
+                  />
                 </Box>
 
                 {isLoadingRecommendations && (
@@ -529,7 +596,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         display: "flex",
                         alignItems: "center",
                         p: 1.2,
-                        borderRadius: "10px",
+                        borderRadius: "12px",
                         bgcolor: "#ffffff",
                         mb: 1,
                         border: "1px solid #e2e8f0",
@@ -543,7 +610,13 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                     >
                       <Avatar
                         src={rec.avatar || ""}
-                        sx={{ width: 40, height: 40, bgcolor: "#3b82f6", fontWeight: 700 }}
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          bgcolor: "#3b82f6",
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
                       >
                         {(rec.name || "U")[0].toUpperCase()}
                       </Avatar>
@@ -552,66 +625,89 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         <Typography
                           variant="subtitle2"
                           noWrap
-                          sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.85rem" }}
+                          sx={{
+                            fontWeight: 700,
+                            color: "#1e293b",
+                            fontSize: "0.86rem",
+                            lineHeight: 1.3,
+                          }}
                         >
                           {rec.name}
                         </Typography>
 
                         {/* Badge lý do / bạn chung / khoảng cách */}
-                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.3 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0.5, mt: 0.3 }}>
                           {rec.mutualFriendsCount > 0 && (
-                            <Chip
-                              size="small"
-                              icon={<Users size={11} />}
-                              label={`${rec.mutualFriendsCount} bạn chung`}
+                            <Box
                               sx={{
-                                height: 18,
-                                fontSize: "0.68rem",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.4,
                                 bgcolor: "#eff6ff",
                                 color: "#2563eb",
-                                "& .MuiChip-icon": { color: "#2563eb" },
+                                px: 0.8,
+                                py: 0.2,
+                                borderRadius: "6px",
+                                fontSize: "0.72rem",
+                                fontWeight: 600,
+                                whiteSpace: "nowrap",
                               }}
-                            />
+                            >
+                              <Users size={12} />
+                              <span>{rec.mutualFriendsCount} bạn chung</span>
+                            </Box>
                           )}
 
                           {rec.distanceKm !== undefined && (
-                            <Chip
-                              size="small"
-                              icon={<MapPin size={11} />}
-                              label={
-                                rec.distanceKm < 1
-                                  ? `${Math.round(rec.distanceKm * 1000)}m`
-                                  : `${rec.distanceKm.toFixed(1)} km`
-                              }
+                            <Box
                               sx={{
-                                height: 18,
-                                fontSize: "0.68rem",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.4,
                                 bgcolor: "#ecfdf5",
                                 color: "#059669",
-                                "& .MuiChip-icon": { color: "#059669" },
+                                px: 0.8,
+                                py: 0.2,
+                                borderRadius: "6px",
+                                fontSize: "0.72rem",
+                                fontWeight: 600,
+                                whiteSpace: "nowrap",
                               }}
-                            />
+                            >
+                              <MapPin size={12} />
+                              <span>
+                                {rec.distanceKm < 1
+                                  ? `${Math.round(rec.distanceKm * 1000)}m`
+                                  : `${rec.distanceKm.toFixed(1)} km`}
+                              </span>
+                            </Box>
                           )}
 
                           {rec.mutualFriendsCount === 0 && rec.distanceKm === undefined && rec.friendsCount >= 5 && (
-                            <Chip
-                              size="small"
-                              icon={<ShieldCheck size={11} />}
-                              label="Tài khoản uy tín"
+                            <Box
                               sx={{
-                                height: 18,
-                                fontSize: "0.68rem",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.4,
                                 bgcolor: "#f1f5f9",
                                 color: "#475569",
-                                "& .MuiChip-icon": { color: "#475569" },
+                                px: 0.8,
+                                py: 0.2,
+                                borderRadius: "6px",
+                                fontSize: "0.72rem",
+                                fontWeight: 600,
+                                whiteSpace: "nowrap",
                               }}
-                            />
+                            >
+                              <ShieldCheck size={12} />
+                              <span>Tài khoản uy tín</span>
+                            </Box>
                           )}
                         </Box>
                       </Box>
 
                       {/* Hành động */}
-                      <Box sx={{ ml: 0.5 }}>
+                      <Box sx={{ ml: 1, flexShrink: 0 }}>
                         {rec.relationStatus === "none" && (
                           <Button
                             size="small"
@@ -620,11 +716,15 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                             startIcon={<UserPlus size={13} />}
                             sx={{
                               textTransform: "none",
-                              fontSize: "0.74rem",
-                              py: 0.4,
-                              px: 1,
+                              fontSize: "0.75rem",
+                              fontWeight: 700,
+                              py: 0.45,
+                              px: 1.2,
                               borderRadius: "8px",
                               boxShadow: "none",
+                              whiteSpace: "nowrap",
+                              bgcolor: "#2563eb",
+                              "&:hover": { bgcolor: "#1d4ed8" },
                             }}
                           >
                             Kết bạn
@@ -642,10 +742,12 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                               sx={{
                                 textTransform: "none",
                                 fontSize: "0.72rem",
-                                py: 0.4,
-                                px: 0.8,
+                                fontWeight: 600,
+                                py: 0.45,
+                                px: 1,
                                 borderRadius: "8px",
                                 color: "#64748b",
+                                whiteSpace: "nowrap",
                               }}
                             >
                               Đã gửi
@@ -663,9 +765,11 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                             sx={{
                               textTransform: "none",
                               fontSize: "0.74rem",
-                              py: 0.4,
-                              px: 0.8,
+                              fontWeight: 600,
+                              py: 0.45,
+                              px: 1,
                               borderRadius: "8px",
+                              whiteSpace: "nowrap",
                             }}
                           >
                             Nhắn tin
@@ -709,7 +813,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
               >
                 <Avatar
                   src={user.avatar || ""}
-                  sx={{ width: 38, height: 38, bgcolor: "#3b82f6", fontWeight: 700 }}
+                  sx={{ width: 40, height: 40, bgcolor: "#3b82f6", fontWeight: 700, flexShrink: 0 }}
                 >
                   {(user.name || "U")[0].toUpperCase()}
                 </Avatar>
@@ -718,21 +822,21 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   <Typography
                     variant="subtitle2"
                     noWrap
-                    sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.85rem" }}
+                    sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.86rem" }}
                   >
                     {user.name}
                   </Typography>
                   <Typography
                     variant="caption"
                     noWrap
-                    sx={{ color: "#64748b", display: "block", fontSize: "0.72rem" }}
+                    sx={{ color: "#64748b", display: "block", fontSize: "0.74rem" }}
                   >
                     {user.email}
                   </Typography>
                 </Box>
 
                 {/* Quan hệ & Hành động */}
-                <Box sx={{ ml: 0.5 }}>
+                <Box sx={{ ml: 1, flexShrink: 0 }}>
                   {user.relationStatus === "none" && (
                     <Button
                       size="small"
@@ -742,9 +846,14 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       sx={{
                         textTransform: "none",
                         fontSize: "0.75rem",
-                        py: 0.4,
-                        px: 1,
+                        fontWeight: 700,
+                        py: 0.45,
+                        px: 1.2,
                         borderRadius: "8px",
+                        boxShadow: "none",
+                        whiteSpace: "nowrap",
+                        bgcolor: "#2563eb",
+                        "&:hover": { bgcolor: "#1d4ed8" },
                       }}
                     >
                       Kết bạn

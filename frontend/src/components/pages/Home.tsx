@@ -10,12 +10,22 @@ export default function Home() {
       sx={{
         display: "flex",
         minHeight: "100vh",
-        width: { xs: "100%", md: "75%", lg: "80%" },
+        width: "100%",
         bgcolor: "#f1f5f9",
         pt: "64px",
       }}
     >
-      <Feed />
+      <Box
+        sx={{
+          flex: 1,
+          mr: { md: "340px", lg: "360px", xl: "380px" },
+          display: "flex",
+          justifyContent: "center",
+          minWidth: 0,
+        }}
+      >
+        <Feed />
+      </Box>
       <PersonCall />
     </Box>
   );
