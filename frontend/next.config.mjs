@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   agentRules: false,
+  experimental: {
+    agentUpgrade: "security",
+  },
   transpilePackages: ["@mui/material", "@mui/icons-material", "@mui/material-nextjs"],
   images: {
     remotePatterns: [
