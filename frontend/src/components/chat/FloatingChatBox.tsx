@@ -40,6 +40,7 @@ import { mqttChatClient } from "@/services/mqttClient";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore, ChatMessage, ChatUser } from "@/store/useChatStore";
 import { useChatBoxStore, ChatBoxSession } from "@/store/useChatBoxStore";
+import { soundNotification } from "@/utils/soundNotification";
 
 const POPULAR_EMOJIS = [
   "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
@@ -241,6 +242,10 @@ export default function FloatingChatBox({
     const unbindMqttMsg = mqttChatClient.onMessage((newMsg) => {
       if (newMsg.conversationId === convId) {
         setPartnerTypingInactive();
+        const myId = String(currentUser?._id || currentUser?.id || "");
+        if (newMsg.senderId && newMsg.senderId !== myId) {
+          soundNotification.playIncomingSound(newMsg._id || newMsg.id, session.user.name);
+        }
         setMessages((prev) => {
           const exists = prev.some(
             (m) => m._id === newMsg._id || (m as any).id === newMsg.id
@@ -279,6 +284,14 @@ export default function FloatingChatBox({
     const handleNewMessage = (newMsg: ChatMessage) => {
       if (newMsg.conversationId === convId) {
         setPartnerTypingInactive();
+        const myId = String(currentUser?._id || currentUser?.id || "");
+        const senderId =
+          typeof newMsg.senderId === "string"
+            ? newMsg.senderId
+            : String(newMsg.senderId?._id || (newMsg.senderId as any)?.id || "");
+        if (senderId && senderId !== myId) {
+          soundNotification.playIncomingSound(newMsg._id || newMsg.id, session.user.name);
+        }
         setMessages((prev) => {
           const exists = prev.some((m) => m._id === newMsg._id || m.id === newMsg.id);
           if (exists) return prev;

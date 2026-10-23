@@ -40,11 +40,12 @@ import FeedIcon from "@mui/icons-material/Feed";
 import ExploreIcon from "@mui/icons-material/Explore";
 import ChatIcon from "@mui/icons-material/Chat";
 import PersonIcon from "@mui/icons-material/Person";
-import { X, UserPlus, Clock, Check, UserCheck, Users } from "lucide-react";
+import { X, UserPlus, Clock, Check, UserCheck, Users, Volume2, VolumeX } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useFriendStore } from "../../store/useFriendStore";
 import { useChatStore } from "../../store/useChatStore";
 import { useChatBoxStore } from "../../store/useChatBoxStore";
+import { useSoundStore } from "../../store/useSoundStore";
 
 interface NavPage {
   id: string;
@@ -62,6 +63,7 @@ function ResponsiveAppBar() {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const { openChat } = useChatBoxStore();
+  const { isMuted, toggleMute } = useSoundStore();
 
   // State tìm kiếm người dùng toàn hệ thống
   const [searchQuery, setSearchQuery] = useState("");
@@ -798,21 +800,41 @@ function ResponsiveAppBar() {
                         <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                           Tin nhắn gần đây
                         </Typography>
-                        <Typography
-                          variant="caption"
-                          color="primary"
-                          onClick={() => {
-                            handleCloseChat();
-                            router.push("/chat");
-                          }}
-                          sx={{
-                            cursor: "pointer",
-                            fontWeight: 600,
-                            "&:hover": { textDecoration: "underline" },
-                          }}
-                        >
-                          Xem tất cả
-                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Tooltip
+                            title={
+                              isMuted
+                                ? "Bật âm thanh tin nhắn"
+                                : "Tắt âm thanh tin nhắn"
+                            }
+                          >
+                            <IconButton
+                              size="small"
+                              onClick={toggleMute}
+                              sx={{
+                                color: isMuted ? "#94a3b8" : "#2563eb",
+                                p: 0.5,
+                              }}
+                            >
+                              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                            </IconButton>
+                          </Tooltip>
+                          <Typography
+                            variant="caption"
+                            color="primary"
+                            onClick={() => {
+                              handleCloseChat();
+                              router.push("/chat");
+                            }}
+                            sx={{
+                              cursor: "pointer",
+                              fontWeight: 600,
+                              "&:hover": { textDecoration: "underline" },
+                            }}
+                          >
+                            Xem tất cả
+                          </Typography>
+                        </Box>
                       </Box>
 
                       <Box sx={{ overflowY: "auto", maxHeight: 320 }}>

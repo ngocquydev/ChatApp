@@ -49,8 +49,11 @@ import {
   UserX,
   Clock,
   Sparkles,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useSoundStore } from "../../store/useSoundStore";
 import {
   useChatStore,
   ConversationItem,
@@ -90,6 +93,7 @@ const StyledBadge = styled(Badge)<{ isonline?: string }>(({ theme, isonline }) =
 
 export default function ChatApp() {
   const { user } = useAuthStore();
+  const { isMuted, toggleMute } = useSoundStore();
   const {
     connectSocket,
     disconnectSocket,
@@ -983,6 +987,27 @@ export default function ChatApp() {
               </Box>
 
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Tooltip
+                  title={
+                    isMuted
+                      ? "Âm thanh thông báo: Đang tắt (Nhấp để bật)"
+                      : "Âm thanh thông báo: Đang bật (Nhấp để tắt)"
+                  }
+                >
+                  <IconButton
+                    onClick={toggleMute}
+                    sx={{
+                      color: isMuted ? "#94a3b8" : "#2563eb",
+                      bgcolor: isMuted ? "transparent" : "#eff6ff",
+                      "&:hover": {
+                        color: isMuted ? "#2563eb" : "#1d4ed8",
+                        bgcolor: "#eff6ff",
+                      },
+                    }}
+                  >
+                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                  </IconButton>
+                </Tooltip>
                 <Tooltip title="Gọi thoại">
                   <IconButton
                     sx={{

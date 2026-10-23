@@ -4,6 +4,7 @@ import api from "../services/api";
 import { mqttChatClient } from "../services/mqttClient";
 import { useAuthStore } from "./useAuthStore";
 import { useFriendStore } from "./useFriendStore";
+import { soundNotification } from "../utils/soundNotification";
 
 export interface ChatUser {
   _id: string;
@@ -65,6 +66,7 @@ const BACKEND_URL =
   "http://localhost:3000";
 
 const typingExpiryTimers = new Map<string, NodeJS.Timeout>();
+let mqttUnbinders: (() => void)[] = [];
 
 const updateStoreTyping = (
   set: (fn: (state: ChatState) => Partial<ChatState>) => void,
@@ -114,10 +116,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
       mqttChatClient.connect("", currentUserId);
       set({ isMqttConnected: mqttChatClient.getIsConnected() });
 
+      // Hủy các listener cũ trước khi đăng ký mới để tránh trùng lặp
+      mqttUnbinders.forEach((unsub) => unsub());
+      mqttUnbinders = [];
+
       // Lắng nghe tin nhắn mới nhị phân qua MQTT
-      mqttChatClient.onMessage((newMsg) => {
+      const unbindMsg = mqttChatClient.onMessage((newMsg) => {
         const active = get().activeConversation;
         const convId = newMsg.conversationId;
+        const myId = String(
+          useAuthStore.getState().user?._id ||
+            useAuthStore.getState().user?.id ||
+            ""
+        );
+        const senderId = String(newMsg.senderId || "");
+
+        // Phát âm thanh khi người khác nhắn tin cho mình
+        if (senderId && senderId !== myId) {
+          const conv = get().conversations.find((c) => c._id === convId);
+          const partner = conv?.participants?.find(
+            (p) => String(p._id || p.id) === senderId
+          );
+          soundNotification.playIncomingSound(
+            newMsg._id || newMsg.id,
+            partner?.name
+          );
+        }
 
         if (active && active._id === convId) {
           set((state) => {
@@ -135,6 +159,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set((state) => {
           const updated = state.conversations.map((c) => {
             if (c._id === convId) {
+              const currentUnread =
+                (c.unreadCounts && c.unreadCounts[myId]) || 0;
+              const isNotActive = !active || active._id !== convId;
               return {
                 ...c,
                 lastMessage: {
@@ -142,6 +169,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
                   senderId: newMsg.senderId,
                   createdAt: newMsg.createdAt,
                 },
+                unreadCounts:
+                  isNotActive && senderId !== myId
+                    ? { ...c.unreadCounts, [myId]: currentUnread + 1 }
+                    : c.unreadCounts,
                 updatedAt: new Date().toISOString(),
               };
             }
@@ -156,15 +187,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
           return { conversations: updated };
         });
       });
+      mqttUnbinders.push(unbindMsg);
 
       // Lắng nghe typing nhị phân
-      mqttChatClient.onTyping((data) => {
+      const unbindTyping = mqttChatClient.onTyping((data) => {
         if (!data?.conversationId) return;
         updateStoreTyping(set, data.conversationId, data.isTyping);
       });
+      mqttUnbinders.push(unbindTyping);
 
       // Lắng nghe seen nhị phân
-      mqttChatClient.onSeen((data) => {
+      const unbindSeen = mqttChatClient.onSeen((data) => {
         const active = get().activeConversation;
         if (active && active._id === data.conversationId) {
           set((state) => ({
@@ -175,9 +208,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }));
         }
       });
+      mqttUnbinders.push(unbindSeen);
 
       // Lắng nghe presence nhị phân
-      mqttChatClient.onPresence((data) => {
+      const unbindPresence = mqttChatClient.onPresence((data) => {
         if (data.onlineUserIds && data.onlineUserIds.length > 0) {
           set({ onlineUserIds: data.onlineUserIds });
         } else if (data.userId) {
@@ -188,6 +222,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }));
         }
       });
+      mqttUnbinders.push(unbindPresence);
     }
 
     // 2. KẾT NỐI SOCKET.IO (DUAL HYBRID FALLBACK)
@@ -217,7 +252,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     socket.on("user:online", (data: { userId: string }) => {
       if (!data?.userId) return;
       set((state) => ({
-        onlineUserIds: Array.from(new Set([...state.onlineUserIds, data.userId])),
+        onlineUserIds: Array.from(
+          new Set([...state.onlineUserIds, data.userId])
+        ),
       }));
     });
 
@@ -231,6 +268,30 @@ export const useChatStore = create<ChatState>((set, get) => ({
     socket.on("message:new", (newMsg: ChatMessage) => {
       const active = get().activeConversation;
       const convId = newMsg.conversationId;
+      const myId = String(
+        useAuthStore.getState().user?._id ||
+          useAuthStore.getState().user?.id ||
+          ""
+      );
+      const senderId =
+        typeof newMsg.senderId === "string"
+          ? newMsg.senderId
+          : String(newMsg.senderId?._id || (newMsg.senderId as any)?.id || "");
+
+      // Phát âm thanh khi người khác nhắn tin cho mình
+      if (senderId && senderId !== myId) {
+        const conv = get().conversations.find((c) => c._id === convId);
+        const partnerName =
+          typeof newMsg.senderId === "object" && newMsg.senderId?.name
+            ? newMsg.senderId.name
+            : conv?.participants?.find(
+                (p) => String(p._id || p.id) === senderId
+              )?.name;
+        soundNotification.playIncomingSound(
+          newMsg._id || newMsg.id,
+          partnerName
+        );
+      }
 
       if (active && active._id === convId) {
         set((state) => {
@@ -242,10 +303,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
             : { messages: [...state.messages, newMsg] };
         });
 
-        const senderId =
-          typeof newMsg.senderId === "string"
-            ? newMsg.senderId
-            : newMsg.senderId._id;
         socket.emit("message:read", {
           conversationId: convId,
           receiverId: senderId,
@@ -255,10 +312,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set((state) => {
         const updated = state.conversations.map((c) => {
           if (c._id === convId) {
-            const senderId =
-              typeof newMsg.senderId === "string"
-                ? newMsg.senderId
-                : newMsg.senderId._id;
+            const currentUnread =
+              (c.unreadCounts && c.unreadCounts[myId]) || 0;
+            const isNotActive = !active || active._id !== convId;
             return {
               ...c,
               lastMessage: {
@@ -266,6 +322,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 senderId,
                 createdAt: newMsg.createdAt,
               },
+              unreadCounts:
+                isNotActive && senderId !== myId
+                  ? { ...c.unreadCounts, [myId]: currentUnread + 1 }
+                  : c.unreadCounts,
               updatedAt: new Date().toISOString(),
             };
           }
@@ -320,6 +380,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   disconnectSocket: () => {
+    mqttUnbinders.forEach((unsub) => unsub());
+    mqttUnbinders = [];
     mqttChatClient.disconnect();
     const socket = get().socket;
     if (socket) {
@@ -343,7 +405,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   selectConversation: async (conversation: ConversationItem) => {
-    set({ activeConversation: conversation, isLoadingMessages: true });
+    const myId = String(
+      useAuthStore.getState().user?._id ||
+        useAuthStore.getState().user?.id ||
+        ""
+    );
+    set((state) => ({
+      activeConversation: conversation,
+      isLoadingMessages: true,
+      conversations: state.conversations.map((c) =>
+        c._id === conversation._id && myId
+          ? {
+              ...c,
+              unreadCounts: {
+                ...c.unreadCounts,
+                [myId]: 0,
+              },
+            }
+          : c
+      ),
+    }));
+
     try {
       const res = await api.get(`/chat/conversations/${conversation._id}/messages`);
       if (res.data?.messages) {
