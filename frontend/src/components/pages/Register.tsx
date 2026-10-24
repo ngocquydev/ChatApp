@@ -414,6 +414,7 @@ export default function Register() {
 
           <Typography
             variant="h3"
+            component="h2"
             sx={{
               fontWeight: 800,
               lineHeight: 1.2,
@@ -541,6 +542,7 @@ export default function Register() {
           <Box sx={{ mb: 3 }}>
             <Typography
               variant="h4"
+              component="h1"
               sx={{
                 fontWeight: 800,
                 color: "#0f172a",
