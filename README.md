@@ -420,6 +420,11 @@ npm run test:nplusone  # Chạy bộ test kiểm tra tối ưu hóa truy vấn N
 npm run test           # Chạy toàn bộ 54 Unit Tests với Vitest
 npm run build          # Build kiểm tra NestJS
 
+# Nạp dữ liệu mô phỏng (Mock Data Seeder):
+npm run seed:million        # Nạp 1.000.000 tài khoản ảo vào MongoDB (~25-30 giây)
+npm run seed:million:info   # Xem thống kê số lượng tài khoản (thật vs ảo)
+npm run seed:million:clean  # Xóa sạch toàn bộ tài khoản ảo mà không ảnh hưởng tài khoản thật
+
 # Frontend:
 cd frontend
 npm run typecheck      # Kiểm tra lỗi TypeScript (tsc --noEmit)

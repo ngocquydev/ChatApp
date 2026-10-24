@@ -23,7 +23,10 @@
     "test:nplusone": "vitest run src/test/n-plus-one.spec.ts",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:e2e": "cross-env NODE_ENV=test vitest run --config ./vitest.config.e2e.ts"
+    "test:e2e": "cross-env NODE_ENV=test vitest run --config ./vitest.config.e2e.ts",
+    "seed:million": "node scripts/seed-million-users.mjs",
+    "seed:million:clean": "node scripts/seed-million-users.mjs --clean",
+    "seed:million:info": "node scripts/seed-million-users.mjs --info"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^12.0.1",
