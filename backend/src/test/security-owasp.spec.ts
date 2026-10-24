@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as bcrypt from 'bcrypt';
-import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
-import { CreateUserData } from '../modules/users/types/user.types.js';
 
 describe('OWASP Security Test Suite', () => {
   describe('A02: Cryptographic Failures & Password Security', () => {
@@ -86,7 +83,7 @@ describe('OWASP Security Test Suite', () => {
   describe('A08: Software and Data Integrity Failures - Prototype Pollution', () => {
     it('phải miễn nhiễm trước tấn công Prototype Pollution', () => {
       const maliciousJson = '{"__proto__": {"polluted": true}}';
-      const parsed = JSON.parse(maliciousJson) as Record<string, unknown>;
+      JSON.parse(maliciousJson);
 
       // Object rỗng thông thường không được bị ô nhiễm thuộc tính
       const cleanObject: Record<string, unknown> = {};

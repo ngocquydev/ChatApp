@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { User } from '../modules/users/entities/user.entity.js';
 
 describe('Data Leakage Prevention Test Suite', () => {
   describe('User Serialization & Sensitive Field Stripping', () => {
@@ -21,7 +20,7 @@ describe('Data Leakage Prevention Test Suite', () => {
 
       // Giả lập hàm transform chuẩn bảo mật
       const sanitizeUser = (user: typeof rawUserDoc) => {
-        const { password, refreshToken, __v, ...safeUser } = user;
+        const { password: _p, refreshToken: _rt, __v: _v, ...safeUser } = user;
         return safeUser;
       };
 
