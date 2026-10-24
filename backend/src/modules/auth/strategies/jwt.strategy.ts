@@ -23,6 +23,7 @@ type SafeUserResponse = {
   firebaseUid?: string;
   avatar?: string;
   bio?: string;
+  dateOfBirth?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 };

@@ -6,4 +6,5 @@ export type CreateUserData = {
   role?: string;
   firebaseUid?: string;
   avatar?: string;
+  dateOfBirth?: string | Date;
 };

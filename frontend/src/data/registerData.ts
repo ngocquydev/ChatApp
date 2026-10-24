@@ -20,6 +20,10 @@ export interface RegisterFormFields {
     label: string;
     placeholder: string;
   };
+  dateOfBirth: {
+    label: string;
+    placeholder: string;
+  };
   password: {
     label: string;
     placeholder: string;
@@ -103,6 +107,11 @@ const register: RegisterData = {
     phone: {
       label: "Số điện thoại (tùy chọn)",
       placeholder: "0987654321",
+    },
+
+    dateOfBirth: {
+      label: "Ngày sinh (tùy chọn)",
+      placeholder: "YYYY-MM-DD",
     },
 
     password: {

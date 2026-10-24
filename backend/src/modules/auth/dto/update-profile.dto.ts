@@ -23,4 +23,9 @@ export class UpdateProfileDto {
   @IsString({ message: 'Tiểu sử phải là chuỗi ký tự' })
   @MaxLength(300, { message: 'Tiểu sử không được vượt quá 300 ký tự' })
   bio?: string;
+
+  @ApiPropertyOptional({ example: '2000-01-01', description: 'Ngày sinh (định dạng YYYY-MM-DD hoặc ISO)' })
+  @IsOptional()
+  @IsString({ message: 'Ngày sinh phải là chuỗi ký tự' })
+  dateOfBirth?: string;
 }

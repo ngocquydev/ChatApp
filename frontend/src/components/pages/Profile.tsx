@@ -125,6 +125,7 @@ function ProfileContent() {
   // Edit Profile Form State
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -182,6 +183,12 @@ function ProfileContent() {
     if (user) {
       setName(user.name || "");
       setPhone(user.phone || "");
+      if (user.dateOfBirth) {
+        const rawDob = String(user.dateOfBirth);
+        setDateOfBirth(rawDob.includes("T") ? rawDob.split("T")[0] : rawDob);
+      } else {
+        setDateOfBirth("");
+      }
       setBio((user.bio as string) || "");
       setAvatarUrl(user.avatar || "");
       setSelectedAvatarPreview(user.avatar || "");
@@ -234,6 +241,7 @@ function ProfileContent() {
       await updateProfile({
         name: name.trim(),
         phone: phone.trim(),
+        dateOfBirth: dateOfBirth ? dateOfBirth : undefined,
         bio: bio.trim(),
         avatar: avatarUrl.trim(),
       });
@@ -790,6 +798,16 @@ function ProfileContent() {
                   </Box>
                 )}
 
+                {user?.dateOfBirth && (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                    <Calendar size={15} />
+                    <span>
+                      Sinh nhật:{" "}
+                      {new Date(user.dateOfBirth as string).toLocaleDateString("vi-VN")}
+                    </span>
+                  </Box>
+                )}
+
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                   <Calendar size={15} />
                   <span>Tham gia: {joinDate}</span>
@@ -1165,6 +1183,44 @@ function ProfileContent() {
                       )}
                     </Box>
 
+                    {/* Item: Date of Birth */}
+                    <Box
+                      sx={{
+                        p: 2,
+                        borderRadius: "14px",
+                        bgcolor: "#f8fafc",
+                        border: "1px solid #f1f5f9",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <Box sx={{ color: "#64748b" }}>
+                          <Calendar size={20} />
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>
+                            Ngày sinh
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                            {user?.dateOfBirth
+                              ? new Date(user.dateOfBirth as string).toLocaleDateString("vi-VN")
+                              : "Chưa thiết lập"}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      {!user?.dateOfBirth && (
+                        <Button
+                          size="small"
+                          onClick={() => setActiveTab(1)}
+                          sx={{ textTransform: "none", fontWeight: 600 }}
+                        >
+                          Cập nhật
+                        </Button>
+                      )}
+                    </Box>
+
                     {/* Item: User ID */}
                     <Box
                       sx={{
@@ -1504,6 +1560,28 @@ function ProfileContent() {
                                 <Phone size={18} color="#64748b" />
                               </InputAdornment>
                             ),
+                          },
+                        }}
+                      />
+
+                      {/* Date of Birth input */}
+                      <TextField
+                        fullWidth
+                        label="Ngày sinh"
+                        type="date"
+                        value={dateOfBirth}
+                        onChange={(e) => setDateOfBirth(e.target.value)}
+                        slotProps={{
+                          inputLabel: { shrink: true },
+                          input: {
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Calendar size={18} color="#64748b" />
+                              </InputAdornment>
+                            ),
+                          },
+                          htmlInput: {
+                            max: new Date().toISOString().split("T")[0],
                           },
                         }}
                       />

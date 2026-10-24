@@ -27,6 +27,9 @@ export class User {
   @Prop({ required: false })
   bio?: string; // Giới thiệu bản thân
 
+  @Prop({ required: false, type: Date })
+  dateOfBirth?: Date; // Ngày sinh người dùng
+
   @Prop({ default: false })
   isDeleted: boolean;
 

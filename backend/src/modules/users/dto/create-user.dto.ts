@@ -8,6 +8,7 @@ import {
   IsIn,
   IsPhoneNumber,
   ValidateIf,
+  IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -29,6 +30,15 @@ export class CreateUserDto {
   @ValidateIf((o) => !!o.phone && String(o.phone).trim() !== '')
   @IsPhoneNumber('VN', { message: 'Số điện thoại không hợp lệ' })
   phone?: string;
+
+  @ApiPropertyOptional({
+    example: '2000-01-01',
+    description: 'Ngày sinh (định dạng YYYY-MM-DD hoặc ISO)',
+  })
+  @IsOptional()
+  @ValidateIf((o) => !!o.dateOfBirth && String(o.dateOfBirth).trim() !== '')
+  @IsDateString({}, { message: 'Ngày sinh phải đúng định dạng ngày hợp lệ (YYYY-MM-DD)' })
+  dateOfBirth?: string;
 
   @ApiProperty({
     example: 'user@example.com',

@@ -14,6 +14,7 @@ export interface UserProfile {
   email?: string;
   avatar?: string;
   phone?: string;
+  dateOfBirth?: string;
   bio?: string;
   role?: string;
   firebaseUid?: string;
@@ -39,6 +40,7 @@ export interface AuthState {
   updateProfile: (data: {
     name?: string;
     phone?: string;
+    dateOfBirth?: string;
     avatar?: string;
     bio?: string;
   }) => Promise<UserProfile>;

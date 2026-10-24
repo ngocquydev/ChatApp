@@ -13,7 +13,7 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserData) {
-    const { name, phone, email, password, role, firebaseUid, avatar } =
+    const { name, phone, email, password, role, firebaseUid, avatar, dateOfBirth } =
       createUserDto;
 
     const cleanEmail = email.trim().toLowerCase();
@@ -30,6 +30,14 @@ export class UsersService {
       }
     }
 
+    let parsedDob: Date | null = null;
+    if (dateOfBirth) {
+      const d = new Date(dateOfBirth);
+      if (!isNaN(d.getTime())) {
+        parsedDob = d;
+      }
+    }
+
     let hashedPassword = null;
     if (password) {
       const saltRounds = 10;
@@ -43,6 +51,7 @@ export class UsersService {
       password: hashedPassword,
       firebaseUid: firebaseUid || null,
       avatar: avatar || null,
+      dateOfBirth: parsedDob,
       role: role || 'user',
       isDeleted: false,
       isBan: false,
@@ -58,6 +67,7 @@ export class UsersService {
         name: newUser.name,
         email: newUser.email,
         phone: newUser.phone,
+        dateOfBirth: newUser.dateOfBirth,
         avatar: newUser.avatar,
         role: newUser.role,
         createdAt: newUser.createdAt,

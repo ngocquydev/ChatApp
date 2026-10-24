@@ -34,6 +34,7 @@ import {
   ArrowRight,
   User,
   Phone,
+  Calendar,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import useSocialAuth from "../../hooks/useSocialAuth";
@@ -58,6 +59,19 @@ const registerSchema = z
       .refine(
         (val) => !val || /^(0[3|5|7|8|9])+([0-9]{8})$/.test(val),
         "Số điện thoại không hợp lệ (Ví dụ: 0987654321)"
+      ),
+
+    dateOfBirth: z
+      .string()
+      .optional()
+      .refine(
+        (val) => {
+          if (!val) return true;
+          const date = new Date(val);
+          const now = new Date();
+          return !isNaN(date.getTime()) && date <= now;
+        },
+        "Ngày sinh không hợp lệ hoặc không thể ở tương lai"
       ),
 
     password: z
@@ -250,6 +264,9 @@ export default function Register() {
       };
       if (data.phone && data.phone.trim()) {
         payload.phone = data.phone.trim();
+      }
+      if (data.dateOfBirth && data.dateOfBirth.trim()) {
+        payload.dateOfBirth = data.dateOfBirth.trim();
       }
 
       await registerMe(payload);
@@ -699,6 +716,58 @@ export default function Register() {
                     startAdornment: (
                       <InputAdornment position="start" sx={{ ml: 0.5, mr: 1 }}>
                         <Phone size={20} color="#64748b" />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    height: 54,
+                    borderRadius: "12px",
+                    bgcolor: "#f8fafc",
+                    fontSize: "1rem",
+                    "& input": {
+                      height: "100%",
+                      boxSizing: "border-box",
+                      padding: "0 14px",
+                      fontSize: "1rem",
+                    },
+                    "&:hover": { bgcolor: "#f1f5f9" },
+                    "&.Mui-focused": {
+                      bgcolor: "#ffffff",
+                      boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+                    },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Ngày sinh */}
+            <Box sx={{ mb: 2.5 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  color: "#334155",
+                  mb: 0.75,
+                  fontSize: "0.875rem",
+                  display: "block",
+                }}
+              >
+                {registerData.form.dateOfBirth.label}
+              </Typography>
+              <TextField
+                fullWidth
+                type="date"
+                placeholder={registerData.form.dateOfBirth.placeholder}
+                {...register("dateOfBirth")}
+                error={Boolean(errors.dateOfBirth)}
+                helperText={errors.dateOfBirth?.message}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start" sx={{ ml: 0.5, mr: 1 }}>
+                        <Calendar size={20} color="#64748b" />
                       </InputAdornment>
                     ),
                   },

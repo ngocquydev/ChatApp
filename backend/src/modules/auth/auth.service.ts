@@ -224,7 +224,7 @@ export class AuthService {
 
   async updateProfile(
     userId: string,
-    data: { name?: string; phone?: string; avatar?: string; bio?: string },
+    data: { name?: string; phone?: string; avatar?: string; bio?: string; dateOfBirth?: string },
   ): Promise<UpdateProfileResponse> {
     const user = await this.userService.findById(userId);
     if (!user) {
@@ -236,6 +236,12 @@ export class AuthService {
     if (typeof data.phone === 'string') updatePayload.phone = data.phone.trim();
     if (typeof data.avatar === 'string') updatePayload.avatar = data.avatar.trim();
     if (typeof data.bio === 'string') updatePayload.bio = data.bio.trim();
+    if (typeof data.dateOfBirth === 'string' && data.dateOfBirth.trim()) {
+      const d = new Date(data.dateOfBirth);
+      if (!isNaN(d.getTime())) {
+        updatePayload.dateOfBirth = d;
+      }
+    }
 
     const updatedUser = await this.userService.findByIdAndUpdate(
       userId,

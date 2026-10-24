@@ -25,6 +25,7 @@ export interface AuthUser {
   firebaseUid?: string;
   avatar?: string;
   bio?: string;
+  dateOfBirth?: Date | string;
   createdAt?: Date;
   updatedAt?: Date;
 }
