@@ -1,4 +1,4 @@
-name: CI Quality Gate
+name: CI Quality & Security Gate
 
 on:
   push:
@@ -11,13 +11,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend-ci:
-    name: Backend CI (Lint, Test, Build)
+  # ============================================================================
+  # 1. KIỂM TRA LỖI CÚ PHÁP, LINTING VÀ STRICT TYPE SYSTEM
+  # ============================================================================
+  syntax-and-types:
+    name: 1. Syntax, Lint & Type Safety
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,43 +26,156 @@ jobs:
         with:
           node-version: 24
           cache: 'npm'
-          cache-dependency-path: './backend/package-lock.json'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install Backend Dependencies
+        working-directory: ./backend
         run: npm ci --legacy-peer-deps
 
-      - name: Run Linter (Oxlint)
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: [Backend] Kiểm tra Cú pháp & Lint (Oxlint)
+        working-directory: ./backend
         run: npm run lint
 
-      - name: Run Unit Tests (Vitest)
+      - name: [Backend] Kiểm tra Type System (TypeScript tsc)
+        working-directory: ./backend
+        run: npm run typecheck
+
+      - name: [Frontend] Kiểm tra Cú pháp & Lint (ESLint)
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: [Frontend] Kiểm tra Type System (TypeScript tsc)
+        working-directory: ./frontend
+        run: npm run typecheck
+
+  # ============================================================================
+  # 2. KIỂM TRA BẢO MẬT THEO OWASP TOP 10 & RÒ RỈ DỮ LIỆU
+  # ============================================================================
+  owasp-security:
+    name: 2. OWASP Top 10 & Data Leakage Protection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: Quét Rò rỉ Secret & Credentials (Gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Quét Lỗ hổng Mã nguồn Tĩnh (Semgrep SAST - OWASP Top 10)
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/owasp-top-ten
+            p/security-code-review
+            p/javascript
+            p/typescript
+        continue-on-error: true
+
+      - name: [Backend] Kiểm tra Lỗ hổng Thư viện (npm audit)
+        working-directory: ./backend
+        run: npm audit --omit=dev --audit-level=critical
+
+      - name: [Frontend] Kiểm tra Lỗ hổng Thư viện (npm audit)
+        working-directory: ./frontend
+        run: npm audit --omit=dev --audit-level=critical
+
+      - name: Chạy Bộ Test Bảo mật OWASP & Chống Rò rỉ Dữ liệu
+        working-directory: ./backend
+        run: npm run test:security
+
+  # ============================================================================
+  # 3. KIỂM TRA TRÀN BỘ NHỚ, RÒ RỈ RAM VÀ LỖI TRUY VẤN N+1
+  # ============================================================================
+  performance-and-memory:
+    name: 3. Memory Leaks, Buffer Overflow & N+1 Queries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci --legacy-peer-deps
+
+      - name: Quét Phân tích Tĩnh (CI Inspector: N+1 queries, dangerous buffers, memory leaks)
+        run: node scripts/ci-inspect.mjs
+
+      - name: Chạy Bộ Test Rò rỉ RAM & Tràn Bộ đệm (--expose-gc)
+        working-directory: ./backend
+        run: npm run test:memory
+
+      - name: Chạy Bộ Test Phòng chống Lỗi Truy vấn N+1
+        working-directory: ./backend
+        run: npm run test:nplusone
+
+  # ============================================================================
+  # 4. CHẠY TOÀN BỘ TEST SUITE VÀ KIỂM TRA BUILD SẢN PHẨM
+  # ============================================================================
+  test-and-build:
+    name: 4. Full Unit Tests & Production Build
+    runs-on: ubuntu-latest
+    needs: [syntax-and-types, owasp-security, performance-and-memory]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd backend && npm ci --legacy-peer-deps
+          cd ../frontend && npm ci --legacy-peer-deps
+
+      - name: [Backend] Chạy Toàn bộ Unit Tests
+        working-directory: ./backend
         run: npm run test
 
-      - name: Build Backend (NestJS)
+      - name: [Backend] Build NestJS Production Bundle
+        working-directory: ./backend
         run: npm run build
 
-  frontend-ci:
-    name: Frontend CI (Lint, Build)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
+      - name: [Frontend] Build Next.js Production Bundle
         working-directory: ./frontend
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'npm'
-          cache-dependency-path: './frontend/package-lock.json'
-
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Run Linter (ESLint)
-        run: npm run lint
-
-      - name: Build Frontend (Next.js)
         run: npm run build

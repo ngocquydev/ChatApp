@@ -15,8 +15,12 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "oxlint --type-aware src/ test/",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:security": "vitest run src/test/security-owasp.spec.ts src/test/data-leakage.spec.ts",
+    "test:memory": "node --expose-gc ./node_modules/vitest/vitest.mjs run src/test/memory-leak.spec.ts",
+    "test:nplusone": "vitest run src/test/n-plus-one.spec.ts",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "cross-env NODE_ENV=test vitest run --config ./vitest.config.e2e.ts"
