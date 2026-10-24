@@ -375,33 +375,56 @@ Khi Backend đang chạy, truy cập đường dẫn sau để xem và thử ngh
 
 ## 🧪 Kiểm thử & CI/CD Tự động (Testing & CI Quality Gate)
 
-Dự án được bảo vệ bởi hệ thống kiểm soát chất lượng **CI 2 lớp** (Local Git Hooks và GitHub Actions CI) nhằm đảm bảo không thể push mã nguồn lỗi lên nhánh `main`:
+Dự án được bảo vệ bởi hệ thống kiểm soát chất lượng **CI 2 tầng** (Local Git Hooks và GitHub Actions CI) nhằm đảm bảo không thể push mã nguồn lỗi, lộ bí mật hoặc kém bảo mật lên nhánh `main`:
 
-### 1. GitHub Actions CI (`.github/workflows/ci.yml`)
-Mỗi khi có commit được `push` hoặc tạo `pull_request` vào nhánh `main`, GitHub Actions sẽ tự động kích hoạt 2 pipeline độc lập:
-- **Backend CI**: Chạy linter (`oxlint --type-aware`), unit tests (`vitest run`), và build ứng dụng NestJS (`nest build`).
-- **Frontend CI**: Chạy linter (`eslint .`), và build ứng dụng Next.js (`next build`).
+### 1. GitHub Actions CI Pipeline (`.github/workflows/ci.yml`)
+Mỗi khi có commit được `push` hoặc tạo `pull_request` vào nhánh `main`, GitHub Actions sẽ tự động kích hoạt **4 Jobs song song**:
+- **Job 1: Cú pháp, Linting & Type System**: Chạy linter (`oxlint --type-aware`, `eslint .`) và biên dịch TypeScript ngầm (`tsc --noEmit`) trên cả Backend và Frontend.
+- **Job 2: Bảo mật OWASP Top 10 & Chống Rò rỉ Dữ liệu**:
+  - Tích hợp **Gitleaks**: Quét secret, token, private key vô tình commit vào kho mã nguồn.
+  - Tích hợp **Semgrep SAST**: Phân tích tĩnh lỗ hổng bảo mật theo bộ luật OWASP Top 10 (`p/owasp-top-ten`, `p/security-code-review`).
+  - Quét phụ thuộc an toàn: `npm audit --omit=dev --audit-level=critical`.
+  - Bộ test tự động bảo mật: Kiểm tra mã hóa bcrypt $\ge 10$ rounds, phòng chống NoSQL injection (`$gt`, `$where`), kiểm tra cờ HttpOnly/SameSite Cookie và lọc bỏ trường nhạy cảm (`password`, `refreshToken`).
+- **Job 3: Chống Tràn Bộ Nhớ, Rò rỉ RAM & Truy vấn N+1**:
+  - Script AST Static Scanner (`scripts/ci-inspect.mjs`): Quét toàn bộ mã nguồn phát hiện các vòng lặp chứa query DB lẻ, buffer không an toàn hoặc in mật khẩu ra log.
+  - Bộ test rò rỉ RAM: Chạy với Node `--expose-gc`, đo heap memory delta khi xử lý 10,000 tin nhắn realtime và kiểm tra dọn dẹp Event Listener khi ngắt kết nối.
+  - Bộ test N+1 Query: Kiểm chứng số lượng truy vấn DB duy trì $O(1)$ thay vì $O(N)$ bằng Mongoose `populate` & `$in`.
+- **Job 4: Toàn bộ Unit Tests & Production Build**: Chạy 14 bộ test (54/54 tests passed) và build bundle hoàn chỉnh của NestJS + Next.js Turbopack.
 
 ### 2. Git Pre-Push Hook (Kiểm tra cục bộ trước khi push)
 Tệp `.git/hooks/pre-push` tự động chạy 4 cổng kiểm soát chất lượng nghiêm ngặt trước mỗi lần `git push`:
 1. `➡️ [1/4] Backend Lint & Types` (`oxlint --type-aware`)
-2. `➡️ [2/4] Backend Unit Tests` (`vitest run` - 38/38 tests passed)
+2. `➡️ [2/4] Backend Unit Tests` (`vitest run` - 54/54 tests passed)
 3. `➡️ [3/4] Backend Build` (`nest build`)
 4. `➡️ [4/4] Frontend Lint & Build` (`eslint .` & `next build` với Turbopack)
 
-### 3. Lệnh kiểm thử thủ công từng phần:
+### 3. Công cụ kiểm tra nhanh Cục bộ (Local Scripts):
+```bash
+# Kiểm tra toàn diện 7 bước (Cú pháp, Phân tích tĩnh, OWASP, RAM, N+1, Tests, Build):
+bash scripts/check.sh        # Linux / MacOS / Git Bash
+.\scripts\check.ps1          # Windows PowerShell
+
+# Quét phân tích tĩnh phát hiện antipatterns (N+1 query, rò rỉ RAM, eval, lộ token):
+node scripts/ci-inspect.mjs
+```
+
+### 4. Lệnh kiểm thử thủ công chuyên biệt:
 ```bash
 # Backend:
 cd backend
-npm run lint      # Kiểm tra lỗi TypeScript & Linting với Oxlint
-npm run test      # Chạy 38 Unit Tests với Vitest
-npm run test:e2e  # Chạy E2E Tests
-npm run build     # Build kiểm tra NestJS
+npm run typecheck      # Kiểm tra lỗi TypeScript nghiêm ngặt (tsc --noEmit)
+npm run lint           # Kiểm tra cú pháp nhanh với Oxlint
+npm run test:security  # Chạy bộ test bảo mật OWASP Top 10 & chống rò rỉ dữ liệu
+npm run test:memory    # Chạy bộ test kiểm tra rò rỉ RAM & tràn bộ đệm (--expose-gc)
+npm run test:nplusone  # Chạy bộ test kiểm tra tối ưu hóa truy vấn N+1
+npm run test           # Chạy toàn bộ 54 Unit Tests với Vitest
+npm run build          # Build kiểm tra NestJS
 
 # Frontend:
 cd frontend
-npm run lint      # Kiểm tra ESLint
-npm run build     # Build kiểm tra Next.js Turbopack production bundle
+npm run typecheck      # Kiểm tra lỗi TypeScript (tsc --noEmit)
+npm run lint           # Kiểm tra ESLint
+npm run build          # Build kiểm tra Next.js Turbopack production bundle
 ```
 
 ---
@@ -454,6 +477,15 @@ npm run build     # Build kiểm tra Next.js Turbopack production bundle
    - [x] Chuẩn hóa phân cấp thẻ ngữ nghĩa Heading (`h1` duy nhất mỗi trang, `h2` rõ ràng).
    - [x] Tự động sinh `sitemap.xml` động qua Next.js `sitemap.ts`.
    - [x] Cấu hình `robots.txt` cho phép index các trang công khai (`/`, `/login`, `/register`), chặn truy cập dữ liệu chat (`/chat`, `/profile`, `/api`) và cấm tuyệt đối bot AI cào dữ liệu (`GPTBot`, `CCBot`, `Bytespider`...).
+
+8. **Hệ thống CI/CD & Kiểm soát Chất lượng Toàn diện (CI Quality & Security Gate)**:
+   - [x] Thiết lập GitHub Actions CI với 4 Jobs chạy song song tự động.
+   - [x] Quét lỗ hổng mã nguồn tĩnh SAST (Semgrep OWASP Top 10) và rò rỉ bí mật (Gitleaks).
+   - [x] Kiểm thử tự động phòng chống lỗi bảo mật OWASP: NoSQL injection, Cryptographic Failures, Prototype Pollution, HttpOnly Cookies.
+   - [x] Kiểm thử chống tràn bộ đệm (Buffer Overflow) và rò rỉ RAM (Memory Leak với Node `--expose-gc`).
+   - [x] Kiểm thử chống rò rỉ dữ liệu nhạy cảm (User Serialization, Mass Assignment whitelist, Log Sanitization).
+   - [x] Kiểm thử và công cụ phân tích AST tĩnh (`ci-inspect.mjs`) triệt tiêu lỗi truy vấn N+1 (N+1 Query Problem).
+   - [x] Tích hợp bộ script tự động hóa kiểm tra trước khi push (`check.sh` và `check.ps1`).
 
 ---
 

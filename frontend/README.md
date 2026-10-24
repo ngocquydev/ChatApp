@@ -146,6 +146,7 @@ NEXT_PUBLIC_SITE_KEY=your_cloudflare_turnstile_site_key
 | `npm run build` | Biên dịch bundle tối ưu hóa cho môi trường Production và sinh Static Pages |
 | `npm run start` | Khởi chạy ứng dụng Production sau khi đã build |
 | `npm run lint` | Chạy trình phân tích tĩnh ESLint kiểm tra chất lượng mã nguồn |
+| `npm run typecheck` | Kiểm tra chặt chẽ kiểu dữ liệu TypeScript (`tsc --noEmit`) |
 
 ---
 
