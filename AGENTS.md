@@ -20,8 +20,9 @@ Trước khi push: `scripts/check.ps1`. Với frontend tối thiểu: `npm run t
 1. Đọc `using-agent-skills` để chọn skill phù hợp, **kích hoạt skill trước khi làm** (xem bảng §3).
 2. Việc đụng ≥ 2 file → `incremental-implementation`; yêu cầu mơ hồ → `interview-me` / `spec-driven-development`.
 3. Sửa đúng phạm vi yêu cầu. Giữ nguyên comment/docstring không liên quan. Không tự ý đổi hành vi nghiệp vụ.
-4. Xong việc → chạy cổng kiểm tra (§5) và **báo cáo bằng bằng chứng**, không phỏng đoán.
-5. Không hạ chuẩn để qua cổng: cấm `@ts-ignore`, `eslint-disable`, xóa/skip test, `any` tràn lan (`constraint-driven-development`).
+4. **TỰ ĐỘNG KIỂM TRA & PUSH GIT:** Khi xong việc, AI **bắt buộc tự động** chạy toàn bộ Quality Gates (§5), tạo commit chuẩn và chạy `git push origin main`. **Tuyệt đối không dừng lại hỏi người dùng có muốn push hay không.**
+5. Nếu gặp lỗi khi kiểm tra hoặc push: tự động đọc log, sửa dứt điểm và chạy lại cho đến khi push thành công. Không hạ chuẩn để qua cổng: cấm `@ts-ignore`, `eslint-disable`, xóa/skip test, `any` tràn lan (`constraint-driven-development`).
+6. Sau khi đã push thành công lên `origin/main` mới báo cáo kết quả kèm bằng chứng cụ thể.
 
 ## 3. Chọn skill theo loại việc
 
