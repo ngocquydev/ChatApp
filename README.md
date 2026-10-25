@@ -402,6 +402,15 @@ Khi Backend đang chạy, truy cập đường dẫn sau để xem và thử ngh
 | `POST` | `/chat/messages` | Gửi tin nhắn qua REST API (fallback khi socket gián đoạn) | ✅ |
 | `PATCH` | `/chat/conversations/:id/read` | Đánh dấu các tin nhắn trong hội thoại là đã xem | ✅ |
 
+#### 5. Nhóm Thông báo (`/notifications`)
+| Phương thức | Endpoint | Mô tả | Xác thực |
+| :--- | :--- | :--- | :---: |
+| `GET` | `/notifications` | Lấy danh sách thông báo của người dùng (phân trang cursor `before`) | ✅ |
+| `GET` | `/notifications/unread-count` | Lấy số lượng thông báo chưa đọc cho huy hiệu chuông | ✅ |
+| `PATCH` | `/notifications/:id/read` | Đánh dấu một thông báo cụ thể là đã đọc | ✅ |
+| `PATCH` | `/notifications/read-all` | Đánh dấu tất cả thông báo của người dùng là đã đọc | ✅ |
+| `DELETE` | `/notifications/:id` | Xóa một thông báo | ✅ |
+
 ---
 
 ## 🧪 Kiểm thử & CI/CD Tự động (Testing & CI Quality Gate)
@@ -420,12 +429,12 @@ Mỗi khi có commit được `push` hoặc tạo `pull_request` vào nhánh `ma
   - Script AST Static Scanner (`scripts/ci-inspect.mjs`): Quét toàn bộ mã nguồn phát hiện các vòng lặp chứa query DB lẻ, buffer không an toàn hoặc in mật khẩu ra log.
   - Bộ test rò rỉ RAM: Chạy với Node `--expose-gc`, đo heap memory delta khi xử lý 10,000 tin nhắn realtime và kiểm tra dọn dẹp Event Listener khi ngắt kết nối.
   - Bộ test N+1 Query: Kiểm chứng số lượng truy vấn DB duy trì $O(1)$ thay vì $O(N)$ bằng Mongoose `populate` & `$in`.
-- **Job 4: Toàn bộ Unit Tests & Production Build**: Chạy 15 bộ test (82/82 tests passed) và build bundle hoàn chỉnh của NestJS + Next.js Turbopack.
+- **Job 4: Toàn bộ Unit Tests & Production Build**: Chạy 16 bộ test (91/91 tests passed) và build bundle hoàn chỉnh của NestJS + Next.js Turbopack.
 
 ### 2. Git Pre-Push Hook (Kiểm tra cục bộ trước khi push)
 Tệp `.git/hooks/pre-push` tự động chạy 4 cổng kiểm soát chất lượng nghiêm ngặt trước mỗi lần `git push`:
 1. `➡️ [1/4] Backend Lint & Types` (`oxlint --type-aware`)
-2. `➡️ [2/4] Backend Unit Tests` (`vitest run` - 82/82 tests passed)
+2. `➡️ [2/4] Backend Unit Tests` (`vitest run` - 91/91 tests passed)
 3. `➡️ [3/4] Backend Build` (`nest build`)
 4. `➡️ [4/4] Frontend Lint & Build` (`eslint .` & `next build` với Turbopack)
 
@@ -448,7 +457,7 @@ npm run lint           # Kiểm tra cú pháp nhanh với Oxlint
 npm run test:security  # Chạy bộ test bảo mật OWASP Top 10 & chống rò rỉ dữ liệu
 npm run test:memory    # Chạy bộ test kiểm tra rò rỉ RAM & tràn bộ đệm (--expose-gc)
 npm run test:nplusone  # Chạy bộ test kiểm tra tối ưu hóa truy vấn N+1
-npm run test           # Chạy toàn bộ 82 Unit Tests với Vitest
+npm run test           # Chạy toàn bộ 91 Unit Tests với Vitest
 npm run build          # Build kiểm tra NestJS
 
 # Nạp dữ liệu mô phỏng (Mock Data Seeder):
@@ -540,6 +549,13 @@ npm run build          # Build kiểm tra Next.js Turbopack production bundle
    - [x] Token màu tập trung (`frontend/src/theme/tokens.ts`), ESLint chặn mã màu hex trong `src/**`.
    - [x] Chế độ sáng/tối (mặc định theo hệ điều hành), nút `ColorModeToggle` ở AppBar.
    - [x] Bộ skill và quy tắc cho agent trong `AGENTS.md` và `.agents/skills/`.
+
+12. **Hệ thống Chuông thông báo lưu trữ bền vững (Persistent Notification System)**:
+   - [x] Module `notifications` (NestJS + MongoDB): lưu trữ thông báo bền vững (kể cả khi người dùng offline).
+   - [x] Tự động tạo thông báo khi người khác chấp nhận kết bạn hoặc gửi lời mời kết bạn mới.
+   - [x] Phát socket `notification:new` thời gian thực và cập nhật số lượng chưa đọc (`unreadCount`).
+   - [x] Chuông thông báo (`NotificationBell`) trên thanh Header (cả Desktop và Mobile) kèm huy hiệu đếm số chưa đọc.
+   - [x] Popover xem danh sách thông báo, phân trang, đánh dấu đã đọc một thông báo hoặc toàn bộ, và xóa thông báo.
 
 ---
 
