@@ -5,6 +5,7 @@ import { FriendsService } from './friends.service.js';
 import { FriendsController } from './friends.controller.js';
 import { UsersModule } from '../users/users.module.js';
 import { ChatModule } from '../chat/chat.module.js';
+import { NotificationsModule } from '../notifications/notifications.module.js';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ChatModule } from '../chat/chat.module.js';
     ]),
     UsersModule,
     ChatModule,
+    NotificationsModule,
   ],
   controllers: [FriendsController],
   providers: [FriendsService],

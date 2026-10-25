@@ -15,6 +15,7 @@ import {
 import { UsersService } from '../users/users.service.js';
 import { ChatGateway } from '../chat/chat.gateway.js';
 import { RedisService } from '../redis/redis/redis.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 
 export interface UserRelationResult {
   _id: string;
@@ -50,7 +51,49 @@ export class FriendsService {
     private readonly redisService: RedisService,
     @Optional()
     private readonly chatGateway?: ChatGateway,
+    @Optional()
+    private readonly notificationsService?: NotificationsService,
   ) {}
+
+  /**
+   * Gửi sự kiện realtime tới phòng cá nhân của một người dùng, kèm tên/avatar của người liên quan
+   * và lưu thông báo bền vững vào cơ sở dữ liệu để người dùng offline khi vào lại vẫn thấy.
+   */
+  private async emitFriendEvent(
+    toUserId: string,
+    event: 'friend:accepted' | 'friend:request_received',
+    actorId: string,
+    extra: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      const server = this.chatGateway?.server;
+      if (server) {
+        const actor = await this.usersService.findById(actorId);
+        server.to(`user:${toUserId}`).emit(event, {
+          ...extra,
+          user: { _id: actorId, name: actor?.name, avatar: actor?.avatar },
+        });
+      }
+    } catch {
+      // Bỏ qua nếu socket chưa sẵn sàng
+    }
+
+    // Lưu thông báo vào cơ sở dữ liệu (kể cả khi người nhận đang offline)
+    if (this.notificationsService) {
+      const isAccepted = event === 'friend:accepted';
+      this.notificationsService.createNotification({
+        recipientId: toUserId,
+        actorId,
+        type: isAccepted ? 'friend_accepted' : 'friend_request',
+        title: isAccepted ? 'Lời mời kết bạn đã được chấp nhận' : 'Lời mời kết bạn mới',
+        content: isAccepted
+          ? 'đã chấp nhận lời mời kết bạn của bạn.'
+          : 'đã gửi cho bạn một lời mời kết bạn.',
+        link: `/profile/${actorId}`,
+        metadata: extra,
+      }).catch(() => {});
+    }
+  }
 
   /**
    * Gửi lời mời kết bạn tới một người dùng
@@ -99,6 +142,15 @@ export class FriendsService {
       ) {
         existing.status = 'accepted';
         await existing.save();
+
+        // Đồng bộ bạn bè vào Redis Set cho cả 2 người
+        this.syncFriendsSet(requesterId).catch(() => {});
+        this.syncFriendsSet(recipientId).catch(() => {});
+
+        // Báo cho người đã gửi lời mời trước đó: lời mời của họ vừa được chấp nhận
+        this.emitFriendEvent(recipientId, 'friend:accepted', requesterId, {
+          friendshipId: existing._id,
+        }).catch(() => {});
         return existing;
       }
 
@@ -119,15 +171,9 @@ export class FriendsService {
       status: 'pending',
     });
 
-    try {
-      this.chatGateway?.server
-        ?.to(`user:${recipientId}`)
-        .emit('friend:request_received', {
-          request: created,
-        });
-    } catch {
-      // Bỏ qua nếu socket chưa sẵn sàng
-    }
+    this.emitFriendEvent(recipientId, 'friend:request_received', requesterId, {
+      request: created,
+    }).catch(() => {});
 
     return created;
   }
@@ -161,16 +207,13 @@ export class FriendsService {
       this.syncFriendsSet(userId).catch(() => {});
       this.syncFriendsSet(request.requesterId.toString()).catch(() => {});
 
-      try {
-        this.chatGateway?.server
-          ?.to(`user:${request.requesterId.toString()}`)
-          .emit('friend:accepted', {
-            friendshipId: request._id,
-            user: { _id: userId },
-          });
-      } catch {
-        // Bỏ qua
-      }
+      // Báo cho người đã gửi lời mời (kèm tên/avatar người chấp nhận)
+      this.emitFriendEvent(
+        request.requesterId.toString(),
+        'friend:accepted',
+        userId,
+        { friendshipId: request._id },
+      ).catch(() => {});
 
       return { success: true, message: 'Đã chấp nhận lời mời kết bạn' };
     } else {

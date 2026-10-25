@@ -168,6 +168,105 @@ describe('FriendsService', () => {
     });
   });
 
+  describe('realtime friend notifications', () => {
+    let emit: ReturnType<typeof vi.fn>;
+    let to: ReturnType<typeof vi.fn>;
+    let notifying: FriendsService;
+
+    beforeEach(() => {
+      emit = vi.fn();
+      to = vi.fn().mockReturnValue({ emit });
+      const redis = { client: { del: vi.fn(), sadd: vi.fn(), expire: vi.fn() } };
+      mockFriendshipModel.find.mockResolvedValue([]);
+      notifying = new FriendsService(
+        mockFriendshipModel as any,
+        mockUsersService as any,
+        redis as any,
+        { server: { to } } as any,
+      );
+    });
+
+    it('notifies the requester with the accepter name and avatar when a request is accepted', async () => {
+      mockUsersService.findById.mockResolvedValue({
+        _id: userBId,
+        name: 'User B',
+        avatar: 'b.png',
+      });
+      mockFriendshipModel.findById.mockResolvedValue({
+        _id: requestId,
+        requesterId: new Types.ObjectId(userAId),
+        recipientId: new Types.ObjectId(userBId),
+        status: 'pending',
+        save: vi.fn().mockResolvedValue(true),
+      });
+
+      await notifying.respondToRequest(requestId, userBId, 'accept');
+
+      await vi.waitFor(() => expect(emit).toHaveBeenCalled());
+      expect(to).toHaveBeenCalledWith(`user:${userAId}`);
+      expect(emit).toHaveBeenCalledWith('friend:accepted', {
+        friendshipId: requestId,
+        user: { _id: userBId, name: 'User B', avatar: 'b.png' },
+      });
+    });
+
+    it('notifies the original requester when the other side auto-accepts by sending a request', async () => {
+      mockUsersService.findById.mockResolvedValue({ _id: userAId, name: 'User A' });
+      // B đã gửi cho A trước; giờ A gửi cho B → tự động chấp nhận, B phải được báo
+      mockFriendshipModel.findOne.mockResolvedValue({
+        _id: requestId,
+        requesterId: new Types.ObjectId(userBId),
+        recipientId: new Types.ObjectId(userAId),
+        status: 'pending',
+        save: vi.fn().mockResolvedValue(true),
+      });
+
+      await notifying.sendFriendRequest(userAId, userBId);
+
+      await vi.waitFor(() => expect(emit).toHaveBeenCalled());
+      expect(to).toHaveBeenCalledWith(`user:${userBId}`);
+      expect(emit).toHaveBeenCalledWith(
+        'friend:accepted',
+        expect.objectContaining({ user: expect.objectContaining({ _id: userAId, name: 'User A' }) }),
+      );
+    });
+
+    it('tells the recipient who sent a new friend request', async () => {
+      mockUsersService.findById.mockResolvedValue({ _id: userAId, name: 'User A' });
+      mockFriendshipModel.findOne.mockResolvedValue(null);
+      mockFriendshipModel.create.mockResolvedValue({ _id: requestId, status: 'pending' });
+
+      await notifying.sendFriendRequest(userAId, userBId);
+
+      await vi.waitFor(() => expect(emit).toHaveBeenCalled());
+      expect(to).toHaveBeenCalledWith(`user:${userBId}`);
+      expect(emit).toHaveBeenCalledWith(
+        'friend:request_received',
+        expect.objectContaining({ user: expect.objectContaining({ name: 'User A' }) }),
+      );
+    });
+
+    it('still accepts the request when the socket emit fails', async () => {
+      mockUsersService.findById.mockResolvedValue({ _id: userBId, name: 'User B' });
+      emit.mockImplementation(() => {
+        throw new Error('socket down');
+      });
+      const mockReq = {
+        _id: requestId,
+        requesterId: new Types.ObjectId(userAId),
+        recipientId: new Types.ObjectId(userBId),
+        status: 'pending',
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockFriendshipModel.findById.mockResolvedValue(mockReq);
+
+      const result = await notifying.respondToRequest(requestId, userBId, 'accept');
+
+      expect(result.success).toBe(true);
+      expect(mockReq.status).toBe('accepted');
+    });
+  });
+
   describe('unfriend', () => {
     it('should delete accepted friendship', async () => {
       mockFriendshipModel.deleteOne.mockResolvedValue({ deletedCount: 1 });

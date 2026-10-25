@@ -10,6 +10,7 @@ import { RedisModule } from './modules/redis/redis/redis.module.js';
 import { ChatModule } from './modules/chat/chat.module.js';
 import { FriendsModule } from './modules/friends/friends.module.js';
 import { PostsModule } from './modules/posts/posts.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -49,6 +50,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     FriendsModule,
 
     PostsModule,
+
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
