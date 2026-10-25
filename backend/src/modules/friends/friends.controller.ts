@@ -17,6 +17,7 @@ import { FriendsService } from './friends.service.js';
 import { SendFriendRequestDto } from './dto/friend-request.dto.js';
 import { RespondFriendRequestDto } from './dto/respond-request.dto.js';
 import { UpdateLocationDto } from './dto/update-location.dto.js';
+import { SearchUsersQueryDto } from './dto/search-users-query.dto.js';
 import type { AuthenticatedRequest } from '../auth/types/auth.types.js';
 
 @ApiTags('Friends')
@@ -60,20 +61,39 @@ export class FriendsController {
   }
 
   @Get('search')
-  @ApiOperation({ summary: 'Tìm kiếm người dùng kèm trạng thái quan hệ bạn bè' })
+  @ApiOperation({
+    summary:
+      'Tìm kiếm người dùng kèm trạng thái quan hệ bạn bè (phân trang theo con trỏ cho infinite scroll)',
+  })
   async searchUsers(
     @Req() req: AuthenticatedRequest,
-    @Query('q') query?: string,
+    @Query() query: SearchUsersQueryDto,
   ) {
     const userId = this.extractUserId(req);
-    const users = await this.friendsService.searchUsersWithRelation(
-      query || '',
+    const page = await this.friendsService.searchUsersWithRelation(
+      query.q || '',
       userId,
+      { limit: query.limit, after: query.after },
     );
     return {
       success: true,
-      users,
+      ...page,
     };
+  }
+
+  @Get('profile/:userId')
+  @ApiOperation({
+    summary: 'Hồ sơ công khai của một người dùng kèm quan hệ bạn bè với người xem',
+  })
+  async getPublicProfile(
+    @Req() req: AuthenticatedRequest,
+    @Param('userId') targetId: string,
+  ) {
+    const profile = await this.friendsService.getPublicProfile(
+      this.extractUserId(req),
+      targetId,
+    );
+    return { success: true, ...profile };
   }
 
   @Post('location')

@@ -1,13 +1,15 @@
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule, ObserveInstrument } from './app.module.js';
 import { ErrorHandlerFilter } from './errorHandleer/index.js';
+import { UPLOAD_ROOT } from './modules/posts/post-image.util.js';
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     instrument: ObserveInstrument,
   });
 
@@ -15,6 +17,18 @@ async function bootstrap() {
   expressApp.set('trust proxy', 1);
 
   app.use(cookieParser());
+
+  // Ảnh bài viết: tên file là UUID ngẫu nhiên, chỉ phục vụ ảnh raster đã kiểm tra magic bytes
+  app.useStaticAssets(UPLOAD_ROOT, {
+    prefix: '/uploads/',
+    index: false,
+    dotfiles: 'deny',
+    setHeaders: (res) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
+  });
 
   app.enableCors({
     origin: [

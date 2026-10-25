@@ -287,9 +287,20 @@ export class FriendsService {
   async searchUsersWithRelation(
     keyword: string,
     currentUserId: string,
-  ): Promise<UserRelationResult[]> {
-    const users = await this.usersService.searchUsers(keyword, currentUserId);
-    if (!users || users.length === 0) return [];
+    options: { limit?: number; after?: string } = {},
+  ): Promise<{
+    users: UserRelationResult[];
+    hasMore: boolean;
+    nextCursor: string | null;
+  }> {
+    const { users, hasMore } = await this.usersService.searchUsersPage(
+      keyword,
+      currentUserId,
+      options,
+    );
+    if (!users || users.length === 0) {
+      return { users: [], hasMore: false, nextCursor: null };
+    }
 
     const userObjId = new Types.ObjectId(currentUserId);
     const targetIds = users.map((u) => new Types.ObjectId(u._id.toString()));
@@ -322,7 +333,7 @@ export class FriendsService {
       }
     }
 
-    return users.map((u) => {
+    const items = users.map((u) => {
       const uId = u._id.toString();
       const relInfo = relationMap.get(uId) || { status: 'none' };
       return {
@@ -333,8 +344,89 @@ export class FriendsService {
         bio: u.bio,
         relationStatus: relInfo.status,
         requestId: relInfo.requestId,
-      };
+      } as UserRelationResult;
     });
+    return {
+      users: items,
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1]._id : null,
+    };
+  }
+
+  /**
+   * Hồ sơ công khai của một người dùng: thông tin cơ bản, quan hệ với người xem,
+   * số bạn bè và vài bạn bè gần đây (cho cột "Bạn bè" ở trang hồ sơ).
+   */
+  async getPublicProfile(viewerId: string, targetId: string) {
+    if (!Types.ObjectId.isValid(targetId)) {
+      throw new BadRequestException('Mã người dùng không hợp lệ');
+    }
+    const target = await this.usersService.findById(targetId);
+    if (!target || target.isDeleted || target.isBan) {
+      throw new NotFoundException('Người dùng không tồn tại');
+    }
+
+    const targetObjId = new Types.ObjectId(targetId);
+    const viewerObjId = new Types.ObjectId(viewerId);
+    const acceptedFilter = {
+      status: 'accepted' as const,
+      $or: [{ requesterId: targetObjId }, { recipientId: targetObjId }],
+    };
+
+    const [relationRow, friendCount, previewRows] = await Promise.all([
+      viewerId === targetId
+        ? Promise.resolve(null)
+        : this.friendshipModel
+            .findOne({
+              $or: [
+                { requesterId: viewerObjId, recipientId: targetObjId },
+                { requesterId: targetObjId, recipientId: viewerObjId },
+              ],
+            })
+            .lean()
+            .exec(),
+      this.friendshipModel.countDocuments(acceptedFilter).exec(),
+      this.friendshipModel
+        .find(acceptedFilter)
+        .sort({ _id: -1 })
+        .limit(9)
+        .select('requesterId recipientId')
+        .lean()
+        .exec(),
+    ]);
+
+    let relationStatus: 'self' | 'none' | 'pending_sent' | 'pending_received' | 'friends' =
+      viewerId === targetId ? 'self' : 'none';
+    let requestId: string | undefined;
+    if (relationRow && relationRow.status !== 'rejected') {
+      requestId = relationRow._id.toString();
+      if (relationRow.status === 'accepted') relationStatus = 'friends';
+      else if (relationRow.requesterId.toString() === viewerId) relationStatus = 'pending_sent';
+      else relationStatus = 'pending_received';
+    }
+
+    const previewIds = previewRows.map((r) =>
+      r.requesterId.toString() === targetId ? r.recipientId : r.requesterId,
+    );
+    const previewUsers = previewIds.length ? await this.usersService.findByIds(previewIds) : [];
+
+    return {
+      user: {
+        _id: target._id.toString(),
+        name: target.name,
+        avatar: target.avatar ?? undefined,
+        bio: target.bio ?? undefined,
+        createdAt: target.createdAt,
+      },
+      relationStatus,
+      requestId,
+      friendCount,
+      friendsPreview: previewUsers.map((u) => ({
+        _id: u._id.toString(),
+        name: u.name,
+        avatar: u.avatar ?? undefined,
+      })),
+    };
   }
 
   /**

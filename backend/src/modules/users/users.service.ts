@@ -1,10 +1,17 @@
 // src/modules/users/users.service.ts
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  RequestTimeoutException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserRepository } from './entities/user.entity.js';
 import { CreateUserData } from './types/user.types.js';
+
+/** Trần thời gian cho truy vấn tìm kiếm regex (ms) — tránh một lần tìm làm nghẽn MongoDB */
+const SEARCH_MAX_TIME_MS = 8000;
 
 @Injectable()
 export class UsersService {
@@ -79,15 +86,31 @@ export class UsersService {
     return this.userModel.find({ isDeleted: false, isBan: false }).select('-password').exec();
   }
 
-  async searchUsers(keyword?: string, excludeUserId?: string) {
+  /**
+   * Tìm kiếm theo trang với con trỏ `_id` (cursor). Lấy dư 1 bản ghi để biết còn trang sau hay không.
+   * Dùng cursor thay vì skip: trang kế tiếp bắt đầu quét từ `after`, không quét lại phần đã trả.
+   */
+  async searchUsersPage(
+    keyword?: string,
+    excludeUserId?: string,
+    options: { limit?: number; after?: string } = {},
+  ) {
+    const limit = Math.min(Math.max(options.limit ?? 20, 1), 50);
     const query: Record<string, any> = {
       isDeleted: { $ne: true },
       isBan: { $ne: true },
     };
+    const idFilter: Record<string, any> = {};
     if (excludeUserId) {
-      query._id = Types.ObjectId.isValid(excludeUserId)
-        ? { $ne: new Types.ObjectId(excludeUserId) }
-        : { $ne: excludeUserId };
+      idFilter.$ne = Types.ObjectId.isValid(excludeUserId)
+        ? new Types.ObjectId(excludeUserId)
+        : excludeUserId;
+    }
+    if (options.after && Types.ObjectId.isValid(options.after)) {
+      idFilter.$gt = new Types.ObjectId(options.after);
+    }
+    if (Object.keys(idFilter).length > 0) {
+      query._id = idFilter;
     }
     if (keyword && keyword.trim()) {
       const escaped = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -96,11 +119,30 @@ export class UsersService {
         { email: { $regex: escaped, $options: 'i' } },
       ];
     }
-    return this.userModel
-      .find(query)
-      .select('name email avatar phone bio')
-      .limit(20)
-      .exec();
+    try {
+      const docs = await this.userModel
+        .find(query)
+        .select('name email avatar phone bio')
+        .sort({ _id: 1 })
+        .limit(limit + 1)
+        .maxTimeMS(SEARCH_MAX_TIME_MS)
+        .exec();
+      const hasMore = docs.length > limit;
+      return { users: hasMore ? docs.slice(0, limit) : docs, hasMore };
+    } catch (err: any) {
+      // Mã 50 = MaxTimeMSExpired: truy vấn regex phải quét quá nhiều bản ghi
+      if (err?.code === 50 || err?.codeName === 'MaxTimeMSExpired') {
+        throw new RequestTimeoutException(
+          'Tìm kiếm mất quá nhiều thời gian. Hãy nhập từ khóa cụ thể hơn.',
+        );
+      }
+      throw err;
+    }
+  }
+
+  async searchUsers(keyword?: string, excludeUserId?: string) {
+    const { users } = await this.searchUsersPage(keyword, excludeUserId);
+    return users;
   }
   async getStoredRefreshToken(userId: string) {
     const user = await this.userModel
