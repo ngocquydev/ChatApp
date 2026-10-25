@@ -61,6 +61,16 @@ Hệ thống ứng dụng trò chuyện và mạng xã hội thời gian thực 
   - Quản lý phiên qua cờ `has_session`, triệt tiêu lỗi 401 khi chưa đăng nhập.
   - In-flight Promise Deduplication (`checkAuthPromise`) loại bỏ việc gọi lặp API `/auth/profile` khi reload trang.
 
+### 5. Bài viết & Trang cá nhân (Posts & Profile)
+- **Đăng bài kiểu Facebook**: ô "Bạn đang nghĩ gì?", đính kèm tối đa 4 ảnh, chọn quyền riêng tư *Công khai / Bạn bè / Chỉ mình tôi*.
+- **Tương tác**: thích (cập nhật lạc quan), bình luận, chia sẻ lại và xóa bài (có hộp thoại xác nhận).
+- **Trang cá nhân**: tab "Bài viết" kèm cột Giới thiệu / Ảnh / Bạn bè; xem hồ sơ người khác tại `/profile/[id]`.
+- **Bảng tin thật**: bài của mình và bạn bè, cuộn vô hạn bằng phân trang cursor.
+
+### 6. Giao diện sáng/tối & Design System
+- Chế độ **sáng/tối** tự theo hệ điều hành, đổi nhanh bằng nút ở thanh điều hướng.
+- Toàn bộ màu đi qua token (`src/theme/tokens.ts`); ESLint chặn mã hex trực tiếp trong component.
+
 ---
 
 ## 🏗️ Kiến trúc hệ thống & Công nghệ
@@ -81,7 +91,8 @@ chat/
 ├── docker-compose.yml           # Khởi chạy container MongoDB & Redis
 ├── README.md                    # Tài liệu hướng dẫn dự án
 │
-├── backend/                     # Mã nguồn Backend (NestJS)
+├── AGENTS.md                    # Quy tắc & skill bắt buộc cho agent làm việc trong repo
+├── backend/                     # Mã nguồn Backend (NestJS; ảnh tải lên ở uploads/, đã gitignore)
 │   ├── src/
 │   │   ├── common/              # Guards, Interceptors, Filters dùng chung
 │   │   ├── errorHandleer/       # Exception Filter toàn cục chuẩn hóa response lỗi
@@ -102,6 +113,7 @@ chat/
 │   │   │   │   └── friends.service.spec.ts
 │   │   │   ├── mail/            # Module gửi email thông báo và OTP
 │   │   │   ├── redis/           # Module kết nối Redis, Blacklist & Session
+│   │   │   ├── posts/           # Bài viết, thích, bình luận, chia sẻ, tải ảnh (quyền riêng tư, phân trang cursor)
 │   │   │   └── users/           # Quản lý hồ sơ User & tìm kiếm người dùng
 │   │   ├── app.module.ts        # Module gốc của ứng dụng
 │   │   └── main.ts              # Entry point cấu hình CORS, Cookie, Swagger, Validation
@@ -118,20 +130,21 @@ chat/
     │   │   ├── login/           # Giao diện đăng nhập (/login)
     │   │   ├── register/        # Giao diện đăng ký (/register)
     │   │   ├── forgot-password/ # Giao diện khôi phục mật khẩu (/forgot-password)
-    │   │   ├── profile/         # Quản lý hồ sơ cá nhân (/profile)
+    │   │   ├── profile/         # Hồ sơ cá nhân (/profile) và hồ sơ người khác (/profile/[id])
     │   │   ├── layout.tsx       # Root Layout (EmotionCacheProvider, ThemeProvider, SEO)
     │   │   ├── providers.tsx    # Client Providers (Theme, Auth Init, React Query)
     │   │   ├── sitemap.ts       # Sinh XML Sitemap động theo chuẩn Next.js
     │   │   └── page.tsx         # Trang chủ kết nối bảng tin & danh bạ
     │   ├── components/
-    │   │   ├── common/          # Component dùng chung (AuthGuard, Turnstile, PasswordMeter)
+    │   │   ├── common/          # Component dùng chung (AuthGuard, BrandLogo, PresenceAvatar, EmptyState, ConfirmDialog, ColorModeToggle)
+    │   │   ├── posts/           # Bài viết: PostFeed, PostCard, PostComposer, PrivacyPicker, ProfileSidebar...
     │   │   ├── layout/          # AppBar với Search dropdown mượt mà, Drawer menu
     │   │   ├── pages/           # Login, Register, Home, ChatApp, ForgotPassword views
     │   │   └── section/         # Feed, FloatingChatBox, Radar, PersonCall (Sidebar)
-    │   ├── hooks/               # Custom Hooks (useSocialAuth, useDebounce...)
+    │   ├── hooks/               # Custom Hooks (useSocialAuth, usePagedList, useInfiniteSentinel, usePublicProfile...)
     │   ├── services/            # Axios API client, Socket.io & MQTT/Protobuf Client
     │   ├── store/               # Zustand Stores (useAuthStore, useChatStore, useFriendStore)
-    │   └── theme/               # Cấu hình Material UI Theme
+    │   └── theme/               # Material UI Theme + design tokens (sáng/tối)
     ├── next.config.mjs          # Cấu hình Next.js (port 5173, headers, remotePatterns)
     ├── package.json
     └── tsconfig.json
@@ -361,8 +374,26 @@ Khi Backend đang chạy, truy cập đường dẫn sau để xem và thử ngh
 | `PATCH` | `/friends/requests/:id/respond` | Chấp nhận (`accept`) hoặc từ chối (`reject`) lời mời kết bạn | ✅ |
 | `DELETE` | `/friends/requests/:id` | Hủy lời mời kết bạn đã gửi | ✅ |
 | `DELETE` | `/friends/:friendId` | Hủy kết bạn (Unfriend) | ✅ |
+| `GET` | `/friends/profile/:userId` | Hồ sơ công khai: thông tin cơ bản, `relationStatus`, số bạn bè, tối đa 9 bạn bè gần đây | ✅ |
 
-#### 3. Nhóm Tin nhắn & Hội thoại (`/chat`)
+> `GET /friends/search` nhận thêm `limit` và `after` (cursor), trả `{ users, hasMore, nextCursor }`.
+
+#### 3. Nhóm Bài viết (`/posts`)
+| Phương thức | Endpoint | Mô tả | Xác thực |
+| :--- | :--- | :--- | :---: |
+| `POST` | `/posts/images` | Tải 1 ảnh bài viết (jpg/png/webp/gif, ≤ 5MB), trả đường dẫn `/uploads/posts/<uuid>.<ext>` | ✅ |
+| `GET` | `/posts/feed` | Bảng tin: bài của mình + bài được phép xem của bạn bè (cursor `limit`/`after`) | ✅ |
+| `GET` | `/posts/user/:userId` | Bài viết của một người dùng, lọc theo quyền riêng tư | ✅ |
+| `GET` | `/posts/user/:userId/photos` | Ảnh đã đăng của một người dùng | ✅ |
+| `GET` | `/posts/:postId` | Xem chi tiết một bài viết | ✅ |
+| `POST` | `/posts` | Đăng bài (nội dung ≤ 5000 ký tự, ≤ 4 ảnh, `privacy`) | ✅ |
+| `DELETE` | `/posts/:postId` | Xóa mềm bài viết (chỉ tác giả) | ✅ |
+| `POST` | `/posts/:postId/share` | Chia sẻ lại bài viết | ✅ |
+| `POST` | `/posts/:postId/like` | Thích / bỏ thích (bật tắt) | ✅ |
+| `GET` / `POST` | `/posts/:postId/comments` | Danh sách / thêm bình luận | ✅ |
+| `DELETE` | `/posts/:postId/comments/:commentId` | Xóa bình luận (tác giả bình luận hoặc chủ bài) | ✅ |
+
+#### 4. Nhóm Tin nhắn & Hội thoại (`/chat`)
 | Phương thức | Endpoint | Mô tả | Xác thực |
 | :--- | :--- | :--- | :---: |
 | `GET` | `/chat/conversations` | Lấy danh sách các cuộc hội thoại gần nhất | ✅ |
@@ -389,12 +420,12 @@ Mỗi khi có commit được `push` hoặc tạo `pull_request` vào nhánh `ma
   - Script AST Static Scanner (`scripts/ci-inspect.mjs`): Quét toàn bộ mã nguồn phát hiện các vòng lặp chứa query DB lẻ, buffer không an toàn hoặc in mật khẩu ra log.
   - Bộ test rò rỉ RAM: Chạy với Node `--expose-gc`, đo heap memory delta khi xử lý 10,000 tin nhắn realtime và kiểm tra dọn dẹp Event Listener khi ngắt kết nối.
   - Bộ test N+1 Query: Kiểm chứng số lượng truy vấn DB duy trì $O(1)$ thay vì $O(N)$ bằng Mongoose `populate` & `$in`.
-- **Job 4: Toàn bộ Unit Tests & Production Build**: Chạy 14 bộ test (54/54 tests passed) và build bundle hoàn chỉnh của NestJS + Next.js Turbopack.
+- **Job 4: Toàn bộ Unit Tests & Production Build**: Chạy 15 bộ test (82/82 tests passed) và build bundle hoàn chỉnh của NestJS + Next.js Turbopack.
 
 ### 2. Git Pre-Push Hook (Kiểm tra cục bộ trước khi push)
 Tệp `.git/hooks/pre-push` tự động chạy 4 cổng kiểm soát chất lượng nghiêm ngặt trước mỗi lần `git push`:
 1. `➡️ [1/4] Backend Lint & Types` (`oxlint --type-aware`)
-2. `➡️ [2/4] Backend Unit Tests` (`vitest run` - 54/54 tests passed)
+2. `➡️ [2/4] Backend Unit Tests` (`vitest run` - 82/82 tests passed)
 3. `➡️ [3/4] Backend Build` (`nest build`)
 4. `➡️ [4/4] Frontend Lint & Build` (`eslint .` & `next build` với Turbopack)
 
@@ -417,7 +448,7 @@ npm run lint           # Kiểm tra cú pháp nhanh với Oxlint
 npm run test:security  # Chạy bộ test bảo mật OWASP Top 10 & chống rò rỉ dữ liệu
 npm run test:memory    # Chạy bộ test kiểm tra rò rỉ RAM & tràn bộ đệm (--expose-gc)
 npm run test:nplusone  # Chạy bộ test kiểm tra tối ưu hóa truy vấn N+1
-npm run test           # Chạy toàn bộ 54 Unit Tests với Vitest
+npm run test           # Chạy toàn bộ 82 Unit Tests với Vitest
 npm run build          # Build kiểm tra NestJS
 
 # Nạp dữ liệu mô phỏng (Mock Data Seeder):
@@ -492,15 +523,37 @@ npm run build          # Build kiểm tra Next.js Turbopack production bundle
    - [x] Kiểm thử và công cụ phân tích AST tĩnh (`ci-inspect.mjs`) triệt tiêu lỗi truy vấn N+1 (N+1 Query Problem).
    - [x] Tích hợp bộ script tự động hóa kiểm tra trước khi push (`check.sh` và `check.ps1`).
 
+9. **Bài viết & Trang cá nhân kiểu mạng xã hội (Posts & Profile)**:
+   - [x] Module `posts` (NestJS + MongoDB): đăng bài, xóa mềm, thích (unique index chống trùng), bình luận, chia sẻ lại; phân trang cursor.
+   - [x] Quyền riêng tư `public` / `friends` / `only_me`, kiểm tra ở backend cho cả bảng tin, trang cá nhân và từng bài.
+   - [x] Tải ảnh bài viết (tối đa 4 ảnh/bài, 5MB/ảnh) kèm kiểm tra magic-byte, lưu ở `backend/uploads/posts/`.
+   - [x] Tab "Bài viết" ở `/profile` với cột bên trái (Giới thiệu, Ảnh, Bạn bè) và ô đăng bài "Bạn đang nghĩ gì?".
+   - [x] Trang hồ sơ người khác `/profile/[id]` (kết bạn, nhắn tin, hủy kết bạn) chỉ hiện bài viết được phép xem.
+   - [x] Bảng tin `/` dùng dữ liệu thật, cuộn vô hạn (thay cho dữ liệu mẫu).
+
+10. **Tìm kiếm người dùng phân trang & Cuộn vô hạn**:
+   - [x] `/friends/search` hỗ trợ `limit`, `after` (cursor), trả `hasMore` / `nextCursor`; giới hạn `maxTimeMS` 8 giây (HTTP 408 khi quá hạn).
+   - [x] Dropdown tìm kiếm hiện trước 5 kết quả, "Xem tất cả kết quả" mở rộng và tự tải thêm khi cuộn.
+   - [x] Bấm avatar/tên trong kết quả để mở trang cá nhân.
+
+11. **Design System & Dark mode**:
+   - [x] Token màu tập trung (`frontend/src/theme/tokens.ts`), ESLint chặn mã màu hex trong `src/**`.
+   - [x] Chế độ sáng/tối (mặc định theo hệ điều hành), nút `ColorModeToggle` ở AppBar.
+   - [x] Bộ skill và quy tắc cho agent trong `AGENTS.md` và `.agents/skills/`.
+
 ---
 
 ### 📌 Lộ trình phát triển tiếp theo (Roadmap)
+- [ ] **Bài viết nâng cao**:
+  - [ ] Cập nhật thời gian thực (like/bình luận/bài mới) qua Socket.IO/MQTT.
+  - [ ] Giới hạn tần suất (rate limit) đăng bài và tải ảnh.
+- [ ] **Tối ưu tìm kiếm**: dùng khớp tiền tố hoặc `$text` index để giảm thời gian trường hợp xấu nhất (~6,9 giây ở 1 triệu người dùng).
 - [ ] **Nhóm chat (Group Chat)**:
   - [ ] Tạo nhóm chat, thêm/xóa thành viên và chỉ định quyền nhóm trưởng / phó nhóm.
   - [ ] Đổi tên nhóm và ảnh đại diện nhóm.
 - [ ] **Đa phương tiện & Tệp đính kèm**:
   - [ ] Hỗ trợ gửi hình ảnh, video, âm thanh và tệp đính kèm trong tin nhắn.
-  - [ ] Tích hợp dịch vụ lưu trữ đám mây (Cloudinary / AWS S3 / Firebase Storage).
+  - [ ] Chuyển lưu trữ ảnh bài viết từ ổ đĩa sang dịch vụ đám mây (Cloudinary / AWS S3 / Firebase Storage) kèm kiểm soát quyền truy cập ảnh theo quyền riêng tư bài viết.
 - [ ] **Thông báo đẩy (Push Notifications)**:
   - [ ] Web Push Notifications khi người dùng không mở tab trình duyệt.
 - [ ] **Cập nhật Hồ sơ cá nhân**:
