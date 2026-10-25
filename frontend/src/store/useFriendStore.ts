@@ -36,6 +36,21 @@ export interface FriendRecommendationResult {
   requestId?: string;
 }
 
+/** Thông báo realtime về bạn bè, hiển thị bằng toast toàn cục. `id` tăng dần để cùng một người vẫn kích hoạt lại toast. */
+export interface FriendNotice {
+  id: number;
+  type: "accepted" | "request_received";
+  userId: string;
+  name: string;
+  avatar?: string;
+}
+
+/** Dữ liệu server gửi kèm sự kiện friend:accepted / friend:request_received */
+export interface FriendRealtimePayload {
+  user?: { _id?: string; name?: string; avatar?: string };
+  request?: { _id?: string };
+}
+
 interface FriendState {
   friends: FriendItem[];
   receivedRequests: FriendRequestItem[];
@@ -59,6 +74,12 @@ interface FriendState {
   searchError: string | null;
   searchSeq?: number;
   userLocation: { latitude: number; longitude: number } | null;
+  /** Thông báo bạn bè mới nhất chưa bị đóng (null = không có) */
+  notice: FriendNotice | null;
+
+  /** Xử lý sự kiện socket: làm mới dữ liệu, cập nhật trạng thái đang hiển thị và bật thông báo */
+  handleRealtimeEvent: (type: FriendNotice["type"], payload?: FriendRealtimePayload) => void;
+  dismissNotice: () => void;
 
   fetchFriends: () => Promise<void>;
   fetchRequests: () => Promise<void>;
@@ -105,6 +126,38 @@ export const useFriendStore = create<FriendState>((set, get) => ({
   searchError: null,
   searchSeq: 0,
   userLocation: null,
+  notice: null,
+
+  dismissNotice: () => set({ notice: null }),
+
+  handleRealtimeEvent: (type, payload) => {
+    const otherId = payload?.user?._id;
+
+    if (type === "accepted") get().fetchFriends();
+    get().fetchRequests();
+
+    // Cập nhật ngay các danh sách đang hiển thị (tìm kiếm, gợi ý) thay vì đợi người dùng tải lại
+    if (otherId) {
+      const next =
+        type === "accepted"
+          ? { relationStatus: "friends" as const, requestId: undefined }
+          : { relationStatus: "pending_received" as const, requestId: payload?.request?._id };
+      set((state) => ({
+        searchResults: state.searchResults.map((u) => (u._id === otherId ? { ...u, ...next } : u)),
+        recommendations: state.recommendations.map((r) => (r._id === otherId ? { ...r, ...next } : r)),
+      }));
+    }
+
+    set({
+      notice: {
+        id: Date.now(),
+        type,
+        userId: otherId ?? "",
+        name: payload?.user?.name || "Một người dùng",
+        avatar: payload?.user?.avatar,
+      },
+    });
+  },
 
   clearSearchResults: () => {
     // Tăng searchSeq để mọi request đang bay bị bỏ qua khi về

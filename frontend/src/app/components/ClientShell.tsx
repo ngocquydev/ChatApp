@@ -6,7 +6,9 @@ import ResponsiveAppBar from "@/components/layout/AppBar";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
 import { useFriendStore } from "@/store/useFriendStore";
+import { useNotificationStore } from "@/store/useNotificationStore";
 import FloatingChatDock from "@/components/chat/FloatingChatDock";
+import FriendNoticeToast from "@/components/common/FriendNoticeToast";
 
 interface ClientShellProps {
   children: ReactNode;
@@ -17,6 +19,7 @@ export default function ClientShell({ children }: ClientShellProps) {
   const { isAuthenticated, user, checkAuth } = useAuthStore();
   const { connectSocket } = useChatStore();
   const { fetchFriends, fetchRequests } = useFriendStore();
+  const { fetchUnreadCount } = useNotificationStore();
 
   const hideAppBarRoutes = ["/login", "/register", "/forgot-password"];
   const shouldHideAppBar = hideAppBarRoutes.some(
@@ -32,8 +35,9 @@ export default function ClientShell({ children }: ClientShellProps) {
       connectSocket();
       fetchFriends();
       fetchRequests();
+      fetchUnreadCount();
     }
-  }, [isAuthenticated, user, connectSocket, fetchFriends, fetchRequests]);
+  }, [isAuthenticated, user, connectSocket, fetchFriends, fetchRequests, fetchUnreadCount]);
 
   return (
     <>
@@ -45,6 +49,7 @@ export default function ClientShell({ children }: ClientShellProps) {
         {children}
       </main>
       <FloatingChatDock />
+      {isAuthenticated && <FriendNoticeToast />}
     </>
   );
 }

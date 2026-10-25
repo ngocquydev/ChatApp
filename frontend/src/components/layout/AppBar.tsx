@@ -47,6 +47,7 @@ import { useChatBoxStore } from "../../store/useChatBoxStore";
 import { useSoundStore } from "../../store/useSoundStore";
 import BrandLogo from "../common/BrandLogo";
 import ColorModeToggle from "../common/ColorModeToggle";
+import NotificationBell from "../notifications/NotificationBell";
 import UserSearchResults, { SEARCH_PREVIEW_COUNT } from "./UserSearchResults";
 
 /** Số kết quả mỗi trang khi "Xem tất cả" / cuộn vô hạn */
@@ -810,8 +811,10 @@ function ResponsiveAppBar() {
               })}
             </Box>
 
-            {/* Nút Lời mời kết bạn & Tin nhắn nhanh trên Mobile */}
+            {/* Nút Lời mời kết bạn, Tin nhắn & Thông báo nhanh trên Mobile */}
             <Box sx={{ display: { xs: "flex", md: "none" }, alignItems: "center", gap: 0.5, mr: 1 }}>
+              <NotificationBell />
+
               <IconButton
                 color="inherit"
                 size="small"
@@ -848,6 +851,11 @@ function ResponsiveAppBar() {
                   <ChatIcon />
                 </Badge>
               </IconButton>
+            </Box>
+
+            {/* Chuông thông báo trên Desktop */}
+            <Box sx={{ display: { xs: "none", md: "flex" }, mr: 0.5 }}>
+              <NotificationBell />
             </Box>
 
             {/* Đổi giao diện sáng/tối (mobile: nằm trong Drawer) */}

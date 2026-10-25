@@ -23,6 +23,7 @@ function UserProfileContent({ userId }: { userId: string }) {
   const myId = (me?._id || me?.id) as string | undefined;
   const { profile, status, error, notFound, reload, refresh } = usePublicProfile(userId);
   const { sendFriendRequest, cancelRequest, respondToRequest, unfriend } = useFriendStore();
+  const notice = useFriendStore((s) => s.notice);
   const { startConversationWithUser } = useChatStore();
 
   const [pending, setPending] = useState(false);
@@ -33,6 +34,13 @@ function UserProfileContent({ userId }: { userId: string }) {
   useEffect(() => {
     if (myId && myId === userId) router.replace("/profile");
   }, [myId, userId, router]);
+
+  // Người đang xem vừa chấp nhận / gửi lời mời cho mình → cập nhật nút quan hệ ngay
+  const noticeUserId = notice?.userId;
+  const noticeId = notice?.id;
+  useEffect(() => {
+    if (noticeId && noticeUserId === userId) void refresh();
+  }, [noticeId, noticeUserId, userId, refresh]);
 
   const runAction = async (action: () => Promise<{ success: boolean; message: string }>) => {
     setPending(true);

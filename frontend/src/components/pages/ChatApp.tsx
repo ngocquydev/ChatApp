@@ -79,31 +79,17 @@ export default function ChatApp() {
 
   const currentUserId = (user?._id || user?.id)?.toString();
 
-  // Kết nối realtime và tải dữ liệu ban đầu
+  // Kết nối realtime và tải dữ liệu ban đầu (thông báo bạn bè do FriendNoticeToast toàn cục xử lý)
   useEffect(() => {
     connectSocket();
     fetchConversations();
     fetchFriends();
     fetchRequests();
 
-    const handleRefreshRequests = () => {
-      fetchRequests();
-      showToast("Bạn có lời mời kết bạn mới!", "info");
-    };
-    const handleRefreshFriends = () => {
-      fetchFriends();
-      showToast("Lời mời kết bạn đã được chấp nhận!", "success");
-    };
-
-    window.addEventListener("refresh_friend_requests", handleRefreshRequests);
-    window.addEventListener("refresh_friends_list", handleRefreshFriends);
-
     return () => {
-      window.removeEventListener("refresh_friend_requests", handleRefreshRequests);
-      window.removeEventListener("refresh_friends_list", handleRefreshFriends);
       disconnectSocket();
     };
-  }, [connectSocket, disconnectSocket, fetchConversations, fetchFriends, fetchRequests, showToast]);
+  }, [connectSocket, disconnectSocket, fetchConversations, fetchFriends, fetchRequests]);
 
   const partner = useMemo<ChatUser | null>(() => {
     if (!activeConversation) return null;

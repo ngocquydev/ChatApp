@@ -3,7 +3,7 @@ import { io, Socket } from "socket.io-client";
 import api from "../services/api";
 import { mqttChatClient } from "../services/mqttClient";
 import { useAuthStore } from "./useAuthStore";
-import { useFriendStore } from "./useFriendStore";
+import { useFriendStore, type FriendRealtimePayload } from "./useFriendStore";
 import { soundNotification } from "../utils/soundNotification";
 
 export interface ChatUser {
@@ -367,14 +367,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     );
 
-    // Lắng nghe sự kiện lời mời kết bạn real-time
-    socket.on("friend:request_received", () => {
-      useFriendStore.getState().fetchRequests();
+    // Lắng nghe sự kiện lời mời kết bạn real-time (toast hiện ở FriendNoticeToast toàn cục)
+    socket.on("friend:request_received", (data?: FriendRealtimePayload) => {
+      useFriendStore.getState().handleRealtimeEvent("request_received", data);
     });
 
-    socket.on("friend:accepted", () => {
-      useFriendStore.getState().fetchFriends();
-      useFriendStore.getState().fetchRequests();
+    socket.on("friend:accepted", (data?: FriendRealtimePayload) => {
+      useFriendStore.getState().handleRealtimeEvent("accepted", data);
     });
 
     set({ socket });
