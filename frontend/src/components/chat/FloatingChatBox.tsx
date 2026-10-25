@@ -49,11 +49,11 @@ const POPULAR_EMOJIS = [
 ];
 
 // Styled online badge with pulsing ripple effect
-const OnlineBadge = styled(Badge)<{ isonline?: string }>(({ theme, isonline }) => ({
+const OnlineBadge = styled(Badge)<{ isonline?: string }>(({ isonline }) => ({
   "& .MuiBadge-badge": {
-    backgroundColor: isonline === "true" ? "#22c55e" : "#94a3b8",
-    color: isonline === "true" ? "#22c55e" : "#94a3b8",
-    boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+    backgroundColor: isonline === "true" ? "var(--mui-palette-tone-22c55e)" : "var(--mui-palette-neutral-400)",
+    color: isonline === "true" ? "var(--mui-palette-tone-22c55e)" : "var(--mui-palette-neutral-400)",
+    boxShadow: `0 0 0 2px var(--mui-palette-background-paper)`,
     width: 10,
     height: 10,
     borderRadius: "50%",
@@ -438,6 +438,7 @@ export default function FloatingChatBox({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.nativeEvent.isComposing) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -494,10 +495,10 @@ export default function FloatingChatBox({
         flexDirection: "column",
         borderRadius: "14px 14px 0 0",
         overflow: "hidden",
-        border: "1px solid #cbd5e1",
+        border: "1px solid var(--mui-palette-neutral-300)",
         boxShadow: "0 8px 30px rgba(0, 0, 0, 0.16)",
         transition: "height 0.22s cubic-bezier(0.4, 0, 0.2, 1)",
-        bgcolor: "#ffffff",
+        bgcolor: "var(--mui-palette-background-paper)",
         pointerEvents: "auto",
       }}
     >
@@ -507,15 +508,15 @@ export default function FloatingChatBox({
         sx={{
           height: 46,
           px: 1.5,
-          bgcolor: "#ffffff",
-          borderBottom: session.isMinimized ? "none" : "1px solid #e2e8f0",
+          bgcolor: "var(--mui-palette-background-paper)",
+          borderBottom: session.isMinimized ? "none" : "1px solid var(--mui-palette-neutral-200)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           cursor: session.isMinimized ? "pointer" : "default",
           userSelect: "none",
           transition: "background-color 0.15s",
-          "&:hover": session.isMinimized ? { bgcolor: "#f1f5f9" } : {},
+          "&:hover": session.isMinimized ? { bgcolor: "var(--mui-palette-neutral-100)" } : {},
         }}
       >
         {/* Avatar & Tên */}
@@ -541,7 +542,7 @@ export default function FloatingChatBox({
               sx={{
                 width: 32,
                 height: 32,
-                bgcolor: "#2563eb",
+                bgcolor: "var(--mui-palette-brand-600)",
                 fontWeight: 700,
                 fontSize: "0.85rem",
               }}
@@ -558,7 +559,7 @@ export default function FloatingChatBox({
                 sx={{
                   fontWeight: 700,
                   fontSize: "0.88rem",
-                  color: "#0f172a",
+                  color: "var(--mui-palette-neutral-900)",
                   lineHeight: 1.2,
                 }}
               >
@@ -568,7 +569,7 @@ export default function FloatingChatBox({
               {session.isMinimized && session.unreadCount > 0 && (
                 <Box
                   sx={{
-                    bgcolor: "#ef4444",
+                    bgcolor: "var(--mui-palette-tone-ef4444)",
                     color: "white",
                     borderRadius: "10px",
                     px: 0.7,
@@ -591,7 +592,7 @@ export default function FloatingChatBox({
                   alignItems: "center",
                   gap: 0.5,
                   fontSize: "0.72rem",
-                  color: isOnline ? "#16a34a" : "#64748b",
+                  color: isOnline ? "var(--mui-palette-tone-16a34a)" : "var(--mui-palette-neutral-500)",
                   fontWeight: isOnline ? 600 : 400,
                   lineHeight: 1,
                 }}
@@ -612,9 +613,9 @@ export default function FloatingChatBox({
                 onToggleMinimize();
               }}
               sx={{
-                color: "#64748b",
+                color: "var(--mui-palette-neutral-500)",
                 p: 0.6,
-                "&:hover": { bgcolor: "#f1f5f9", color: "#0f172a" },
+                "&:hover": { bgcolor: "var(--mui-palette-neutral-100)", color: "var(--mui-palette-neutral-900)" },
               }}
             >
               {session.isMinimized ? <ChevronUp size={16} /> : <Minus size={16} />}
@@ -629,9 +630,9 @@ export default function FloatingChatBox({
                 handleOpenFullChat();
               }}
               sx={{
-                color: "#64748b",
+                color: "var(--mui-palette-neutral-500)",
                 p: 0.6,
-                "&:hover": { bgcolor: "#f1f5f9", color: "#2563eb" },
+                "&:hover": { bgcolor: "var(--mui-palette-neutral-100)", color: "var(--mui-palette-brand-600)" },
               }}
             >
               <Maximize2 size={15} />
@@ -646,9 +647,9 @@ export default function FloatingChatBox({
                 onClose();
               }}
               sx={{
-                color: "#64748b",
+                color: "var(--mui-palette-neutral-500)",
                 p: 0.6,
-                "&:hover": { bgcolor: "#fee2e2", color: "#ef4444" },
+                "&:hover": { bgcolor: "var(--mui-palette-tone-fee2e2)", color: "var(--mui-palette-tone-ef4444)" },
               }}
             >
               <X size={16} />
@@ -666,7 +667,7 @@ export default function FloatingChatBox({
               flex: 1,
               overflowY: "auto",
               p: 1.5,
-              bgcolor: "#ffffff",
+              bgcolor: "var(--mui-palette-background-paper)",
               display: "flex",
               flexDirection: "column",
               gap: 1,
@@ -682,7 +683,7 @@ export default function FloatingChatBox({
                   justifyContent: "center",
                   height: "100%",
                   gap: 1.5,
-                  color: "#94a3b8",
+                  color: "var(--mui-palette-neutral-400)",
                 }}
               >
                 <CircularProgress size={24} />
@@ -708,7 +709,7 @@ export default function FloatingChatBox({
                     width: 58,
                     height: 58,
                     mb: 1.2,
-                    bgcolor: "#2563eb",
+                    bgcolor: "var(--mui-palette-brand-600)",
                     fontSize: "1.4rem",
                     fontWeight: 700,
                     boxShadow: "0 4px 12px rgba(37, 99, 235, 0.2)",
@@ -716,12 +717,12 @@ export default function FloatingChatBox({
                 >
                   {(targetUser.name || "U")[0].toUpperCase()}
                 </Avatar>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                   {targetUser.name}
                 </Typography>
                 <Typography
                   variant="caption"
-                  sx={{ color: "#64748b", mb: 2, display: "block", maxWidth: 200 }}
+                  sx={{ color: "var(--mui-palette-neutral-500)", mb: 2, display: "block", maxWidth: 200 }}
                 >
                   Các bạn đã kết nối trên ChatApp. Hãy bắt đầu cuộc trò chuyện!
                 </Typography>
@@ -732,9 +733,9 @@ export default function FloatingChatBox({
                     display: "flex",
                     alignItems: "center",
                     gap: 0.8,
-                    bgcolor: "#eff6ff",
-                    color: "#2563eb",
-                    border: "1px solid #bfdbfe",
+                    bgcolor: "var(--mui-palette-brand-50)",
+                    color: "var(--mui-palette-brand-600)",
+                    border: "1px solid var(--mui-palette-brand-200)",
                     borderRadius: "20px",
                     px: 2,
                     py: 0.7,
@@ -743,7 +744,7 @@ export default function FloatingChatBox({
                     cursor: "pointer",
                     transition: "all 0.15s ease",
                     "&:hover": {
-                      bgcolor: "#dbeafe",
+                      bgcolor: "var(--mui-palette-brand-100)",
                       transform: "translateY(-1px)",
                     },
                   }}
@@ -783,7 +784,7 @@ export default function FloatingChatBox({
                             width: 24,
                             height: 24,
                             fontSize: "0.65rem",
-                            bgcolor: "#3b82f6",
+                            bgcolor: "var(--mui-palette-brand-500)",
                           }}
                         >
                           {(targetUser.name || "U")[0].toUpperCase()}
@@ -797,8 +798,8 @@ export default function FloatingChatBox({
                           borderRadius: isMe
                             ? "18px 18px 4px 18px"
                             : "18px 18px 18px 4px",
-                          bgcolor: isMe ? "#2563eb" : "#f1f5f9",
-                          color: isMe ? "#ffffff" : "#0f172a",
+                          bgcolor: isMe ? "var(--mui-palette-brand-600)" : "var(--mui-palette-neutral-100)",
+                          color: isMe ? "var(--mui-palette-common-white)" : "var(--mui-palette-neutral-900)",
                           fontSize: "0.86rem",
                           lineHeight: 1.38,
                           wordBreak: "break-word",
@@ -820,13 +821,13 @@ export default function FloatingChatBox({
                         mt: 0.2,
                         px: 0.5,
                         fontSize: "0.66rem",
-                        color: "#94a3b8",
+                        color: "var(--mui-palette-neutral-400)",
                       }}
                     >
                       <span>{formatTime(msg.createdAt)}</span>
                       {isMe && isLastMsg && isSeen && (
                         <Tooltip title="Đã xem">
-                          <CheckCheck size={12} color="#2563eb" style={{ marginLeft: 2 }} />
+                          <CheckCheck size={12} color="var(--mui-palette-brand-600)" style={{ marginLeft: 2 }} />
                         </Tooltip>
                       )}
                     </Box>
@@ -840,7 +841,7 @@ export default function FloatingChatBox({
               <Box sx={{ display: "flex", alignItems: "flex-end", gap: 0.8 }}>
                 <Avatar
                   src={targetUser.avatar || ""}
-                  sx={{ width: 22, height: 22, fontSize: "0.65rem", bgcolor: "#3b82f6" }}
+                  sx={{ width: 22, height: 22, fontSize: "0.65rem", bgcolor: "var(--mui-palette-brand-500)" }}
                 >
                   {(targetUser.name || "U")[0].toUpperCase()}
                 </Avatar>
@@ -852,8 +853,8 @@ export default function FloatingChatBox({
                     px: 1.4,
                     py: 0.9,
                     borderRadius: "16px",
-                    bgcolor: "#f1f5f9",
-                    color: "#64748b",
+                    bgcolor: "var(--mui-palette-neutral-100)",
+                    color: "var(--mui-palette-neutral-500)",
                   }}
                 >
                   <Box
@@ -861,7 +862,7 @@ export default function FloatingChatBox({
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      bgcolor: "#94a3b8",
+                      bgcolor: "var(--mui-palette-neutral-400)",
                       animation: "typingBounce 1.2s infinite ease-in-out",
                       animationDelay: "0ms",
                     }}
@@ -871,7 +872,7 @@ export default function FloatingChatBox({
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      bgcolor: "#94a3b8",
+                      bgcolor: "var(--mui-palette-neutral-400)",
                       animation: "typingBounce 1.2s infinite ease-in-out",
                       animationDelay: "200ms",
                     }}
@@ -881,7 +882,7 @@ export default function FloatingChatBox({
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      bgcolor: "#94a3b8",
+                      bgcolor: "var(--mui-palette-neutral-400)",
                       animation: "typingBounce 1.2s infinite ease-in-out",
                       animationDelay: "400ms",
                     }}
@@ -898,8 +899,8 @@ export default function FloatingChatBox({
             sx={{
               p: 1,
               px: 1.2,
-              borderTop: "1px solid #e2e8f0",
-              bgcolor: "#ffffff",
+              borderTop: "1px solid var(--mui-palette-neutral-200)",
+              bgcolor: "var(--mui-palette-background-paper)",
               display: "flex",
               alignItems: "center",
               gap: 0.8,
@@ -911,9 +912,9 @@ export default function FloatingChatBox({
                 size="small"
                 onClick={handleOpenEmoji}
                 sx={{
-                  color: "#64748b",
+                  color: "var(--mui-palette-neutral-500)",
                   p: 0.6,
-                  "&:hover": { color: "#2563eb", bgcolor: "#eff6ff" },
+                  "&:hover": { color: "var(--mui-palette-brand-600)", bgcolor: "var(--mui-palette-brand-50)" },
                 }}
               >
                 <Smile size={19} />
@@ -931,13 +932,13 @@ export default function FloatingChatBox({
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "20px",
-                  bgcolor: "#f1f5f9",
+                  bgcolor: "var(--mui-palette-neutral-100)",
                   fontSize: "0.85rem",
                   py: 0.2,
                   px: 1.2,
                   "& fieldset": { borderColor: "transparent" },
-                  "&:hover fieldset": { borderColor: "#cbd5e1" },
-                  "&.Mui-focused fieldset": { borderColor: "#2563eb" },
+                  "&:hover fieldset": { borderColor: "var(--mui-palette-neutral-300)" },
+                  "&.Mui-focused fieldset": { borderColor: "var(--mui-palette-brand-600)" },
                 },
                 "& .MuiInputBase-input": {
                   py: 0.6,
@@ -952,10 +953,10 @@ export default function FloatingChatBox({
                   size="small"
                   onClick={() => handleSendMessage()}
                   sx={{
-                    bgcolor: "#2563eb",
+                    bgcolor: "var(--mui-palette-brand-600)",
                     color: "white",
                     p: 0.7,
-                    "&:hover": { bgcolor: "#1d4ed8" },
+                    "&:hover": { bgcolor: "var(--mui-palette-brand-700)" },
                   }}
                 >
                   <Send size={15} />
@@ -967,9 +968,9 @@ export default function FloatingChatBox({
                   size="small"
                   onClick={() => handleSendMessage("👍")}
                   sx={{
-                    color: "#2563eb",
+                    color: "var(--mui-palette-brand-600)",
                     p: 0.7,
-                    "&:hover": { bgcolor: "#eff6ff", transform: "scale(1.1)" },
+                    "&:hover": { bgcolor: "var(--mui-palette-brand-50)", transform: "scale(1.1)" },
                     transition: "all 0.15s ease",
                   }}
                 >
@@ -998,7 +999,7 @@ export default function FloatingChatBox({
               },
             }}
           >
-            <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 700, mb: 1, display: "block" }}>
+            <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 700, mb: 1, display: "block" }}>
               Biểu tượng cảm xúc
             </Typography>
             <Box
@@ -1022,7 +1023,7 @@ export default function FloatingChatBox({
                     borderRadius: "6px",
                     transition: "transform 0.1s, background-color 0.1s",
                     "&:hover": {
-                      bgcolor: "#f1f5f9",
+                      bgcolor: "var(--mui-palette-neutral-100)",
                       transform: "scale(1.2)",
                     },
                   }}

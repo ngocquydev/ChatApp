@@ -217,11 +217,11 @@ export default function ForgotPassword() {
   const passwordScore = calculatePasswordStrength(newPassword);
 
   const getStrengthLabel = (score: number) => {
-    if (score === 0) return { label: "Chưa nhập", color: "#94a3b8" };
-    if (score <= 25) return { label: "Yếu", color: "#ef4444" };
-    if (score <= 50) return { label: "Trung bình", color: "#f59e0b" };
-    if (score <= 75) return { label: "Mạnh", color: "#3b82f6" };
-    return { label: "Rất an toàn", color: "#10b981" };
+    if (score === 0) return { label: "Chưa nhập", color: "var(--mui-palette-neutral-400)" };
+    if (score <= 25) return { label: "Yếu", color: "var(--mui-palette-tone-ef4444)" };
+    if (score <= 50) return { label: "Trung bình", color: "var(--mui-palette-tone-f59e0b)" };
+    if (score <= 75) return { label: "Mạnh", color: "var(--mui-palette-brand-500)" };
+    return { label: "Rất an toàn", color: "var(--mui-palette-tone-10b981)" };
   };
 
   // STEP 3: Handle Reset Password
@@ -257,13 +257,15 @@ export default function ForgotPassword() {
   };
 
   return (
+    // Trang này luôn dùng nền tối (glass card) → ghim scheme sáng (data-light) để token không đảo
     <Box
+      data-light=""
       sx={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "#090d16",
+        bgcolor: "var(--mui-palette-tone-090d16)",
         backgroundImage: `
           radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.18) 0px, transparent 50%),
           radial-gradient(at 100% 100%, rgba(124, 58, 237, 0.18) 0px, transparent 50%),
@@ -289,7 +291,7 @@ export default function ForgotPassword() {
           border: "1px solid rgba(255, 255, 255, 0.1)",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
           p: { xs: 3.5, sm: 4.5 },
-          color: "#ffffff",
+          color: "var(--mui-palette-common-white)",
           position: "relative",
           overflow: "hidden",
         }}
@@ -303,7 +305,7 @@ export default function ForgotPassword() {
             width: 140,
             height: 140,
             borderRadius: "50%",
-            background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+            background: "linear-gradient(135deg, var(--mui-palette-brand-500) 0%, var(--mui-palette-tone-8b5cf6) 100%)",
             filter: "blur(50px)",
             opacity: 0.35,
           }}
@@ -319,18 +321,18 @@ export default function ForgotPassword() {
               width: 56,
               height: 56,
               borderRadius: "18px",
-              background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
-              color: "#ffffff",
+              background: "linear-gradient(135deg, var(--mui-palette-brand-600) 0%, var(--mui-palette-tone-7c3aed) 100%)",
+              color: "var(--mui-palette-common-white)",
               boxShadow: "0 10px 25px -5px rgba(37, 99, 235, 0.45)",
               mb: 2,
             }}
           >
             <KeyRound size={28} />
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em" }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--mui-palette-common-white)", letterSpacing: "-0.02em" }}>
             Khôi phục mật khẩu
           </Typography>
-          <Typography variant="body2" sx={{ color: "#94a3b8", mt: 0.5 }}>
+          <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-400)", mt: 0.5 }}>
             {step === 1 && "Nhập email tài khoản của bạn để nhận mã xác thực"}
             {step === 2 && "Nhập mã OTP 6 chữ số đã được gửi tới email"}
             {step === 3 && "Thiết lập mật khẩu bảo mật mới cho tài khoản"}
@@ -348,7 +350,7 @@ export default function ForgotPassword() {
                   width: step === s ? 32 : 10,
                   height: 10,
                   borderRadius: "5px",
-                  bgcolor: step === s ? "#3b82f6" : step > s ? "#10b981" : "rgba(255, 255, 255, 0.15)",
+                  bgcolor: step === s ? "var(--mui-palette-brand-500)" : step > s ? "var(--mui-palette-tone-10b981)" : "rgba(255, 255, 255, 0.15)",
                   transition: "all 0.3s ease",
                 }}
               />
@@ -372,7 +374,7 @@ export default function ForgotPassword() {
                     input: {
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Mail size={18} color="#94a3b8" />
+                          <Mail size={18} color="var(--mui-palette-neutral-400)" />
                         </InputAdornment>
                       ),
                     },
@@ -380,13 +382,13 @@ export default function ForgotPassword() {
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       bgcolor: "rgba(30, 41, 59, 0.6)",
-                      color: "#ffffff",
+                      color: "var(--mui-palette-common-white)",
                       "& fieldset": { borderColor: "rgba(255, 255, 255, 0.15)" },
-                      "&:hover fieldset": { borderColor: "#3b82f6" },
-                      "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
+                      "&:hover fieldset": { borderColor: "var(--mui-palette-brand-500)" },
+                      "&.Mui-focused fieldset": { borderColor: "var(--mui-palette-brand-500)" },
                     },
-                    "& .MuiInputLabel-root": { color: "#94a3b8" },
-                    "& .MuiInputLabel-root.Mui-focused": { color: "#3b82f6" },
+                    "& .MuiInputLabel-root": { color: "var(--mui-palette-neutral-400)" },
+                    "& .MuiInputLabel-root.Mui-focused": { color: "var(--mui-palette-brand-500)" },
                   }}
                 />
 
@@ -401,8 +403,8 @@ export default function ForgotPassword() {
                     alignItems: "flex-start",
                   }}
                 >
-                  <Sparkles size={18} color="#3b82f6" style={{ marginTop: 2, flexShrink: 0 }} />
-                  <Typography variant="caption" sx={{ color: "#93c5fd", lineHeight: 1.5 }}>
+                  <Sparkles size={18} color="var(--mui-palette-brand-500)" style={{ marginTop: 2, flexShrink: 0 }} />
+                  <Typography variant="caption" sx={{ color: "var(--mui-palette-brand-300)", lineHeight: 1.5 }}>
                     Mã xác thực gồm 6 chữ số sẽ được gửi tới email của bạn. Mã có hiệu lực trong 5 phút.
                   </Typography>
                 </Box>
@@ -418,7 +420,7 @@ export default function ForgotPassword() {
                     borderRadius: "14px",
                     fontWeight: 700,
                     fontSize: "0.95rem",
-                    background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                    background: "linear-gradient(135deg, var(--mui-palette-brand-600) 0%, var(--mui-palette-brand-700) 100%)",
                     boxShadow: "0 8px 20px -4px rgba(37, 99, 235, 0.5)",
                   }}
                 >
@@ -429,7 +431,7 @@ export default function ForgotPassword() {
                   <Link
                     href="/login"
                     style={{
-                      color: "#94a3b8",
+                      color: "var(--mui-palette-neutral-400)",
                       textDecoration: "none",
                       fontSize: "0.875rem",
                       display: "inline-flex",
@@ -463,13 +465,13 @@ export default function ForgotPassword() {
                     justifyContent: "space-between",
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: "#cbd5e1", fontWeight: 600 }}>
+                  <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-300)", fontWeight: 600 }}>
                     {email}
                   </Typography>
                   <Button
                     size="small"
                     onClick={() => setStep(1)}
-                    sx={{ textTransform: "none", fontSize: "0.75rem", color: "#3b82f6", p: 0.5 }}
+                    sx={{ textTransform: "none", fontSize: "0.75rem", color: "var(--mui-palette-brand-500)", p: 0.5 }}
                   >
                     Đổi email
                   </Button>
@@ -494,7 +496,7 @@ export default function ForgotPassword() {
                             textAlign: "center",
                             fontSize: "1.5rem",
                             fontWeight: 800,
-                            color: "#ffffff",
+                            color: "var(--mui-palette-common-white)",
                             padding: "12px 0",
                           },
                         },
@@ -505,10 +507,10 @@ export default function ForgotPassword() {
                           bgcolor: "rgba(30, 41, 59, 0.8)",
                           borderRadius: "14px",
                           "& fieldset": {
-                            borderColor: digit ? "#3b82f6" : "rgba(255, 255, 255, 0.15)",
+                            borderColor: digit ? "var(--mui-palette-brand-500)" : "rgba(255, 255, 255, 0.15)",
                           },
-                          "&:hover fieldset": { borderColor: "#3b82f6" },
-                          "&.Mui-focused fieldset": { borderColor: "#3b82f6", borderWidth: "2px" },
+                          "&:hover fieldset": { borderColor: "var(--mui-palette-brand-500)" },
+                          "&.Mui-focused fieldset": { borderColor: "var(--mui-palette-brand-500)", borderWidth: "2px" },
                         },
                       }}
                     />
@@ -518,9 +520,9 @@ export default function ForgotPassword() {
                 {/* Resend Cooldown Countdown */}
                 <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 1 }}>
                   {isCounting ? (
-                    <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                    <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                       Chưa nhận được mã? Gửi lại sau{" "}
-                      <strong style={{ color: "#3b82f6" }}>{countdown}s</strong>
+                      <strong style={{ color: "var(--mui-palette-brand-500)" }}>{countdown}s</strong>
                     </Typography>
                   ) : (
                     <Button
@@ -529,7 +531,7 @@ export default function ForgotPassword() {
                       disabled={isLoading}
                       startIcon={<RotateCcw size={14} />}
                       sx={{
-                        color: "#3b82f6",
+                        color: "var(--mui-palette-brand-500)",
                         textTransform: "none",
                         fontWeight: 700,
                         fontSize: "0.8125rem",
@@ -551,7 +553,7 @@ export default function ForgotPassword() {
                     borderRadius: "14px",
                     fontWeight: 700,
                     fontSize: "0.95rem",
-                    background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                    background: "linear-gradient(135deg, var(--mui-palette-brand-600) 0%, var(--mui-palette-brand-700) 100%)",
                     boxShadow: "0 8px 20px -4px rgba(37, 99, 235, 0.5)",
                   }}
                 >
@@ -562,7 +564,7 @@ export default function ForgotPassword() {
                   <Button
                     onClick={() => setStep(1)}
                     startIcon={<ArrowLeft size={16} />}
-                    sx={{ color: "#94a3b8", textTransform: "none", fontSize: "0.875rem", fontWeight: 600 }}
+                    sx={{ color: "var(--mui-palette-neutral-400)", textTransform: "none", fontSize: "0.875rem", fontWeight: 600 }}
                   >
                     Quay lại bước trước
                   </Button>
@@ -590,7 +592,7 @@ export default function ForgotPassword() {
                       input: {
                         startAdornment: (
                           <InputAdornment position="start">
-                            <Lock size={18} color="#94a3b8" />
+                            <Lock size={18} color="var(--mui-palette-neutral-400)" />
                           </InputAdornment>
                         ),
                         endAdornment: (
@@ -599,7 +601,7 @@ export default function ForgotPassword() {
                               onClick={() => setShowNewPassword(!showNewPassword)}
                               edge="end"
                               size="small"
-                              sx={{ color: "#94a3b8" }}
+                              sx={{ color: "var(--mui-palette-neutral-400)" }}
                             >
                               {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                             </IconButton>
@@ -610,13 +612,13 @@ export default function ForgotPassword() {
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         bgcolor: "rgba(30, 41, 59, 0.6)",
-                        color: "#ffffff",
+                        color: "var(--mui-palette-common-white)",
                         "& fieldset": { borderColor: "rgba(255, 255, 255, 0.15)" },
-                        "&:hover fieldset": { borderColor: "#3b82f6" },
-                        "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
+                        "&:hover fieldset": { borderColor: "var(--mui-palette-brand-500)" },
+                        "&.Mui-focused fieldset": { borderColor: "var(--mui-palette-brand-500)" },
                       },
-                      "& .MuiInputLabel-root": { color: "#94a3b8" },
-                      "& .MuiInputLabel-root.Mui-focused": { color: "#3b82f6" },
+                      "& .MuiInputLabel-root": { color: "var(--mui-palette-neutral-400)" },
+                      "& .MuiInputLabel-root.Mui-focused": { color: "var(--mui-palette-brand-500)" },
                     }}
                   />
 
@@ -624,7 +626,7 @@ export default function ForgotPassword() {
                   {newPassword && (
                     <Box sx={{ mt: 1.5, px: 0.5 }}>
                       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-                        <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                        <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                           Độ mạnh:
                         </Typography>
                         <Typography
@@ -667,7 +669,7 @@ export default function ForgotPassword() {
                     input: {
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Lock size={18} color="#94a3b8" />
+                          <Lock size={18} color="var(--mui-palette-neutral-400)" />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -676,7 +678,7 @@ export default function ForgotPassword() {
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             edge="end"
                             size="small"
-                            sx={{ color: "#94a3b8" }}
+                            sx={{ color: "var(--mui-palette-neutral-400)" }}
                           >
                             {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                           </IconButton>
@@ -687,32 +689,32 @@ export default function ForgotPassword() {
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       bgcolor: "rgba(30, 41, 59, 0.6)",
-                      color: "#ffffff",
+                      color: "var(--mui-palette-common-white)",
                       "& fieldset": { borderColor: "rgba(255, 255, 255, 0.15)" },
-                      "&:hover fieldset": { borderColor: "#3b82f6" },
-                      "&.Mui-focused fieldset": { borderColor: "#3b82f6" },
+                      "&:hover fieldset": { borderColor: "var(--mui-palette-brand-500)" },
+                      "&.Mui-focused fieldset": { borderColor: "var(--mui-palette-brand-500)" },
                     },
-                    "& .MuiInputLabel-root": { color: "#94a3b8" },
-                    "& .MuiInputLabel-root.Mui-focused": { color: "#3b82f6" },
+                    "& .MuiInputLabel-root": { color: "var(--mui-palette-neutral-400)" },
+                    "& .MuiInputLabel-root.Mui-focused": { color: "var(--mui-palette-brand-500)" },
                   }}
                 />
 
                 {/* Checklist */}
                 <Box sx={{ p: 1.5, borderRadius: "12px", bgcolor: "rgba(30, 41, 59, 0.5)", fontSize: "0.75rem" }}>
-                  <Typography variant="caption" sx={{ color: "#94a3b8", display: "block", mb: 0.5, fontWeight: 700 }}>
+                  <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", display: "block", mb: 0.5, fontWeight: 700 }}>
                     Yêu cầu mật khẩu:
                   </Typography>
                   <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0.5 }}>
-                    <Box sx={{ color: newPassword.length >= 8 ? "#10b981" : "#64748b" }}>
+                    <Box sx={{ color: newPassword.length >= 8 ? "var(--mui-palette-tone-10b981)" : "var(--mui-palette-neutral-500)" }}>
                       ● Tối thiểu 8 ký tự
                     </Box>
-                    <Box sx={{ color: /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword) ? "#10b981" : "#64748b" }}>
+                    <Box sx={{ color: /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword) ? "var(--mui-palette-tone-10b981)" : "var(--mui-palette-neutral-500)" }}>
                       ● Chữ hoa và chữ thường
                     </Box>
-                    <Box sx={{ color: /\d/.test(newPassword) ? "#10b981" : "#64748b" }}>
+                    <Box sx={{ color: /\d/.test(newPassword) ? "var(--mui-palette-tone-10b981)" : "var(--mui-palette-neutral-500)" }}>
                       ● Ít nhất một chữ số
                     </Box>
-                    <Box sx={{ color: /[^a-zA-Z0-9]/.test(newPassword) ? "#10b981" : "#64748b" }}>
+                    <Box sx={{ color: /[^a-zA-Z0-9]/.test(newPassword) ? "var(--mui-palette-tone-10b981)" : "var(--mui-palette-neutral-500)" }}>
                       ● Ký tự đặc biệt (@, #, $...)
                     </Box>
                   </Box>
@@ -729,7 +731,7 @@ export default function ForgotPassword() {
                     borderRadius: "14px",
                     fontWeight: 700,
                     fontSize: "0.95rem",
-                    background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                    background: "linear-gradient(135deg, var(--mui-palette-tone-10b981) 0%, var(--mui-palette-tone-fx-059669) 100%)",
                     boxShadow: "0 8px 20px -4px rgba(16, 185, 129, 0.5)",
                   }}
                 >
@@ -750,7 +752,7 @@ export default function ForgotPassword() {
                   height: 72,
                   borderRadius: "50%",
                   bgcolor: "rgba(16, 185, 129, 0.15)",
-                  color: "#10b981",
+                  color: "var(--mui-palette-tone-10b981)",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -760,10 +762,10 @@ export default function ForgotPassword() {
                 <CheckCircle2 size={44} />
               </Box>
 
-              <Typography variant="h6" sx={{ fontWeight: 800, color: "#ffffff", mb: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-common-white)", mb: 1 }}>
                 Đổi mật khẩu thành công!
               </Typography>
-              <Typography variant="body2" sx={{ color: "#94a3b8", mb: 3.5, lineHeight: 1.6 }}>
+              <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-400)", mb: 3.5, lineHeight: 1.6 }}>
                 Mật khẩu tài khoản của bạn đã được cập nhật an toàn. Mọi phiên đăng nhập cũ đã được thu hồi.
               </Typography>
 
@@ -776,7 +778,7 @@ export default function ForgotPassword() {
                   borderRadius: "14px",
                   fontWeight: 700,
                   fontSize: "0.95rem",
-                  background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                  background: "linear-gradient(135deg, var(--mui-palette-brand-600) 0%, var(--mui-palette-brand-700) 100%)",
                 }}
               >
                 Đăng nhập ngay ({redirectCount}s)

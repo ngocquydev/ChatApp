@@ -39,6 +39,8 @@ import {
 import { useAuthStore } from "../../store/useAuthStore";
 import useSocialAuth from "../../hooks/useSocialAuth";
 import registerData from "@/data/registerData";
+import { GoogleIcon, FacebookIcon } from "../common/SocialIcons";
+import ColorModeToggle from "../common/ColorModeToggle";
 
 const registerSchema = z
   .object({
@@ -95,40 +97,6 @@ const registerSchema = z
   });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
-
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24">
-      <path
-        fill="#4285F4"
-        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.41 7.34 24 12 24z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.92 0 12s.45 3.85 1.24 5.42l4.04-3.15z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.59 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-      />
-    </svg>
-  );
-}
-
-function FacebookIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24">
-      <path
-        fill="#1877F2"
-        d="M24 12a12 12 0 1 0-13.875 11.85v-8.38H7.078V12h3.047V9.413c0-3.007 1.792-4.672 4.533-4.672 1.312 0 2.686.234 2.686.234v2.953h-1.514c-1.49 0-1.955.925-1.955 1.875V12h3.328l-.532 3.47h-2.796v8.38A12.003 12.003 0 0 0 24 12Z"
-      />
-    </svg>
-  );
-}
 
 function SmoothTypewriter({
   words = ["Bắt đầu hành trình mới!"],
@@ -240,9 +208,9 @@ export default function Register() {
     if (/[0-9]/.test(pwd)) score += 20;
     if (/[^a-zA-Z0-9]/.test(pwd)) score += 20;
 
-    if (score <= 40) return { score, label: "Yếu", color: "#ef4444" };
-    if (score <= 80) return { score, label: "Trung bình", color: "#f59e0b" };
-    return { score, label: "Rất mạnh", color: "#10b981" };
+    if (score <= 40) return { score, label: "Yếu", color: "var(--mui-palette-tone-ef4444)" };
+    if (score <= 80) return { score, label: "Trung bình", color: "var(--mui-palette-tone-f59e0b)" };
+    return { score, label: "Rất mạnh", color: "var(--mui-palette-tone-10b981)" };
   };
 
   const strength = calculatePasswordStrength(watchedPassword || "");
@@ -318,24 +286,25 @@ export default function Register() {
     <Box
       sx={{
         display: "flex",
-        minHeight: "100vh",
+        minHeight: "100dvh",
         width: "100%",
         overflowX: "hidden",
-        bgcolor: "#ffffff",
+        bgcolor: "var(--mui-palette-background-paper)",
       }}
     >
       <CssBaseline />
 
-      {/* Cột trái: Hero & Feature Showcase */}
+      {/* Cột trái: Hero & Feature Showcase — luôn tối → ghim scheme sáng (data-light) */}
       <Box
+        data-light=""
         sx={{
           flex: 1,
           display: { xs: "none", md: "flex" },
           position: "relative",
           overflow: "hidden",
           background:
-            "linear-gradient(135deg, #090d16 0%, #0f172a 40%, #1e1b4b 100%)",
-          color: "#ffffff",
+            "linear-gradient(135deg, var(--mui-palette-tone-090d16) 0%, var(--mui-palette-tone-0f172a) 40%, var(--mui-palette-tone-1e1b4b) 100%)",
+          color: "var(--mui-palette-common-white)",
           p: { md: 6, lg: 8 },
           flexDirection: "column",
           justifyContent: "space-between",
@@ -380,21 +349,21 @@ export default function Register() {
                 height: 44,
                 borderRadius: "14px",
                 background:
-                  "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+                  "linear-gradient(135deg, var(--mui-palette-tone-6366f1) 0%, var(--mui-palette-tone-a855f7) 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 boxShadow: "0 8px 24px rgba(99, 102, 241, 0.4)",
               }}
             >
-              <Sparkles size={22} color="#ffffff" />
+              <Sparkles size={22} color="var(--mui-palette-common-white)" />
             </Box>
             <Typography
               variant="h5"
               sx={{
                 fontWeight: 800,
                 letterSpacing: "-0.5px",
-                background: "linear-gradient(to right, #ffffff, #cbd5e1)",
+                background: "linear-gradient(to right, var(--mui-palette-background-paper), var(--mui-palette-neutral-300))",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -420,10 +389,10 @@ export default function Register() {
               mb: 3,
             }}
           >
-            <Sparkles size={16} color="#a855f7" />
+            <Sparkles size={16} color="var(--mui-palette-tone-a855f7)" />
             <Typography
               variant="caption"
-              sx={{ fontWeight: 600, color: "#e2e8f0", letterSpacing: "0.2px" }}
+              sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-200)", letterSpacing: "0.2px" }}
             >
               {registerData.badge}
             </Typography>
@@ -437,7 +406,7 @@ export default function Register() {
               lineHeight: 1.2,
               letterSpacing: "-1px",
               mb: 2,
-              color: "#ffffff",
+              color: "var(--mui-palette-common-white)",
             }}
           >
             {registerData.title}
@@ -447,7 +416,7 @@ export default function Register() {
             sx={{
               fontSize: "1.2rem",
               fontWeight: 500,
-              color: "#93c5fd",
+              color: "var(--mui-palette-brand-300)",
               mb: 3,
               minHeight: "36px",
               display: "flex",
@@ -460,7 +429,7 @@ export default function Register() {
           <Typography
             variant="body1"
             sx={{
-              color: "#94a3b8",
+              color: "var(--mui-palette-neutral-400)",
               lineHeight: 1.7,
               maxWidth: 500,
               mb: 4,
@@ -495,11 +464,11 @@ export default function Register() {
                       flexShrink: 0,
                     }}
                   >
-                    <IconComp size={18} color="#818cf8" />
+                    <IconComp size={18} color="var(--mui-palette-tone-818cf8)" />
                   </Box>
                   <Typography
                     variant="body2"
-                    sx={{ color: "#cbd5e1", fontWeight: 500 }}
+                    sx={{ color: "var(--mui-palette-neutral-300)", fontWeight: 500 }}
                   >
                     {feature.text}
                   </Typography>
@@ -531,10 +500,10 @@ export default function Register() {
               <Avatar src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop" />
             </AvatarGroup>
             <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700, color: "#ffffff" }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--mui-palette-common-white)" }}>
                 {registerData.position}
               </Typography>
-              <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+              <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                 Gia nhập ngay để trải nghiệm nền tảng
               </Typography>
             </Box>
@@ -552,8 +521,12 @@ export default function Register() {
           alignItems: "center",
           p: { xs: 3, sm: 5, md: 6 },
           overflowY: "auto",
+          position: "relative",
         }}
       >
+        <ColorModeToggle
+          sx={{ position: "absolute", top: 12, right: 12, color: "text.secondary" }}
+        />
         <Box sx={{ width: "100%", maxWidth: { xs: "100%", sm: 480 } }}>
           {/* Header form */}
           <Box sx={{ mb: 3 }}>
@@ -562,14 +535,14 @@ export default function Register() {
               component="h1"
               sx={{
                 fontWeight: 800,
-                color: "#0f172a",
+                color: "var(--mui-palette-neutral-900)",
                 letterSpacing: "-0.5px",
                 mb: 1,
               }}
             >
               {registerData.form.title}
             </Typography>
-            <Typography variant="body2" sx={{ color: "#64748b" }}>
+            <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-500)" }}>
               {registerData.form.description}
             </Typography>
           </Box>
@@ -593,7 +566,7 @@ export default function Register() {
                 variant="body2"
                 sx={{
                   fontWeight: 600,
-                  color: "#334155",
+                  color: "var(--mui-palette-neutral-700)",
                   mb: 0.75,
                   fontSize: "0.875rem",
                   display: "block",
@@ -611,7 +584,7 @@ export default function Register() {
                   input: {
                     startAdornment: (
                       <InputAdornment position="start" sx={{ ml: 0.5, mr: 1 }}>
-                        <User size={20} color="#64748b" />
+                        <User size={20} color="var(--mui-palette-neutral-500)" />
                       </InputAdornment>
                     ),
                   },
@@ -620,7 +593,7 @@ export default function Register() {
                   "& .MuiOutlinedInput-root": {
                     height: 54,
                     borderRadius: "12px",
-                    bgcolor: "#f8fafc",
+                    bgcolor: "var(--mui-palette-neutral-50)",
                     fontSize: "1rem",
                     "& input": {
                       height: "100%",
@@ -628,9 +601,9 @@ export default function Register() {
                       padding: "0 14px",
                       fontSize: "1rem",
                     },
-                    "&:hover": { bgcolor: "#f1f5f9" },
+                    "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
-                      bgcolor: "#ffffff",
+                      bgcolor: "var(--mui-palette-background-paper)",
                       boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
                     },
                   },
@@ -644,7 +617,7 @@ export default function Register() {
                 variant="body2"
                 sx={{
                   fontWeight: 600,
-                  color: "#334155",
+                  color: "var(--mui-palette-neutral-700)",
                   mb: 0.75,
                   fontSize: "0.875rem",
                   display: "block",
@@ -663,7 +636,7 @@ export default function Register() {
                   input: {
                     startAdornment: (
                       <InputAdornment position="start" sx={{ ml: 0.5, mr: 1 }}>
-                        <Mail size={20} color="#64748b" />
+                        <Mail size={20} color="var(--mui-palette-neutral-500)" />
                       </InputAdornment>
                     ),
                   },
@@ -672,7 +645,7 @@ export default function Register() {
                   "& .MuiOutlinedInput-root": {
                     height: 54,
                     borderRadius: "12px",
-                    bgcolor: "#f8fafc",
+                    bgcolor: "var(--mui-palette-neutral-50)",
                     fontSize: "1rem",
                     "& input": {
                       height: "100%",
@@ -680,9 +653,9 @@ export default function Register() {
                       padding: "0 14px",
                       fontSize: "1rem",
                     },
-                    "&:hover": { bgcolor: "#f1f5f9" },
+                    "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
-                      bgcolor: "#ffffff",
+                      bgcolor: "var(--mui-palette-background-paper)",
                       boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
                     },
                   },
@@ -696,7 +669,7 @@ export default function Register() {
                 variant="body2"
                 sx={{
                   fontWeight: 600,
-                  color: "#334155",
+                  color: "var(--mui-palette-neutral-700)",
                   mb: 0.75,
                   fontSize: "0.875rem",
                   display: "block",
@@ -715,7 +688,7 @@ export default function Register() {
                   input: {
                     startAdornment: (
                       <InputAdornment position="start" sx={{ ml: 0.5, mr: 1 }}>
-                        <Phone size={20} color="#64748b" />
+                        <Phone size={20} color="var(--mui-palette-neutral-500)" />
                       </InputAdornment>
                     ),
                   },
@@ -724,7 +697,7 @@ export default function Register() {
                   "& .MuiOutlinedInput-root": {
                     height: 54,
                     borderRadius: "12px",
-                    bgcolor: "#f8fafc",
+                    bgcolor: "var(--mui-palette-neutral-50)",
                     fontSize: "1rem",
                     "& input": {
                       height: "100%",
@@ -732,9 +705,9 @@ export default function Register() {
                       padding: "0 14px",
                       fontSize: "1rem",
                     },
-                    "&:hover": { bgcolor: "#f1f5f9" },
+                    "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
-                      bgcolor: "#ffffff",
+                      bgcolor: "var(--mui-palette-background-paper)",
                       boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
                     },
                   },
@@ -748,7 +721,7 @@ export default function Register() {
                 variant="body2"
                 sx={{
                   fontWeight: 600,
-                  color: "#334155",
+                  color: "var(--mui-palette-neutral-700)",
                   mb: 0.75,
                   fontSize: "0.875rem",
                   display: "block",
@@ -767,7 +740,7 @@ export default function Register() {
                   input: {
                     startAdornment: (
                       <InputAdornment position="start" sx={{ ml: 0.5, mr: 1 }}>
-                        <Calendar size={20} color="#64748b" />
+                        <Calendar size={20} color="var(--mui-palette-neutral-500)" />
                       </InputAdornment>
                     ),
                   },
@@ -776,7 +749,7 @@ export default function Register() {
                   "& .MuiOutlinedInput-root": {
                     height: 54,
                     borderRadius: "12px",
-                    bgcolor: "#f8fafc",
+                    bgcolor: "var(--mui-palette-neutral-50)",
                     fontSize: "1rem",
                     "& input": {
                       height: "100%",
@@ -784,9 +757,9 @@ export default function Register() {
                       padding: "0 14px",
                       fontSize: "1rem",
                     },
-                    "&:hover": { bgcolor: "#f1f5f9" },
+                    "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
-                      bgcolor: "#ffffff",
+                      bgcolor: "var(--mui-palette-background-paper)",
                       boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
                     },
                   },
@@ -800,7 +773,7 @@ export default function Register() {
                 variant="body2"
                 sx={{
                   fontWeight: 600,
-                  color: "#334155",
+                  color: "var(--mui-palette-neutral-700)",
                   mb: 0.75,
                   fontSize: "0.875rem",
                   display: "block",
@@ -819,7 +792,7 @@ export default function Register() {
                   input: {
                     startAdornment: (
                       <InputAdornment position="start" sx={{ ml: 0.5, mr: 1 }}>
-                        <Lock size={20} color="#64748b" />
+                        <Lock size={20} color="var(--mui-palette-neutral-500)" />
                       </InputAdornment>
                     ),
                     endAdornment: (
@@ -834,9 +807,9 @@ export default function Register() {
                           }
                         >
                           {showPassword ? (
-                            <EyeOff size={20} color="#64748b" />
+                            <EyeOff size={20} color="var(--mui-palette-neutral-500)" />
                           ) : (
-                            <Eye size={20} color="#64748b" />
+                            <Eye size={20} color="var(--mui-palette-neutral-500)" />
                           )}
                         </IconButton>
                       </InputAdornment>
@@ -847,7 +820,7 @@ export default function Register() {
                   "& .MuiOutlinedInput-root": {
                     height: 54,
                     borderRadius: "12px",
-                    bgcolor: "#f8fafc",
+                    bgcolor: "var(--mui-palette-neutral-50)",
                     fontSize: "1rem",
                     "& input": {
                       height: "100%",
@@ -855,9 +828,9 @@ export default function Register() {
                       padding: "0 14px",
                       fontSize: "1rem",
                     },
-                    "&:hover": { bgcolor: "#f1f5f9" },
+                    "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
-                      bgcolor: "#ffffff",
+                      bgcolor: "var(--mui-palette-background-paper)",
                       boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
                     },
                   },
@@ -875,7 +848,7 @@ export default function Register() {
                       mb: 0.5,
                     }}
                   >
-                    <Typography variant="caption" sx={{ color: "#64748b" }}>
+                    <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
                       Độ mạnh:
                     </Typography>
                     <Typography
@@ -891,7 +864,7 @@ export default function Register() {
                     sx={{
                       height: 6,
                       borderRadius: 3,
-                      bgcolor: "#e2e8f0",
+                      bgcolor: "var(--mui-palette-neutral-200)",
                       "& .MuiLinearProgress-bar": {
                         bgcolor: strength.color,
                         borderRadius: 3,
@@ -908,7 +881,7 @@ export default function Register() {
                 variant="body2"
                 sx={{
                   fontWeight: 600,
-                  color: "#334155",
+                  color: "var(--mui-palette-neutral-700)",
                   mb: 0.75,
                   fontSize: "0.875rem",
                   display: "block",
@@ -927,7 +900,7 @@ export default function Register() {
                   input: {
                     startAdornment: (
                       <InputAdornment position="start" sx={{ ml: 0.5, mr: 1 }}>
-                        <Lock size={20} color="#64748b" />
+                        <Lock size={20} color="var(--mui-palette-neutral-500)" />
                       </InputAdornment>
                     ),
                     endAdornment: (
@@ -944,9 +917,9 @@ export default function Register() {
                           }
                         >
                           {showConfirmPassword ? (
-                            <EyeOff size={20} color="#64748b" />
+                            <EyeOff size={20} color="var(--mui-palette-neutral-500)" />
                           ) : (
-                            <Eye size={20} color="#64748b" />
+                            <Eye size={20} color="var(--mui-palette-neutral-500)" />
                           )}
                         </IconButton>
                       </InputAdornment>
@@ -957,7 +930,7 @@ export default function Register() {
                   "& .MuiOutlinedInput-root": {
                     height: 54,
                     borderRadius: "12px",
-                    bgcolor: "#f8fafc",
+                    bgcolor: "var(--mui-palette-neutral-50)",
                     fontSize: "1rem",
                     "& input": {
                       height: "100%",
@@ -965,9 +938,9 @@ export default function Register() {
                       padding: "0 14px",
                       fontSize: "1rem",
                     },
-                    "&:hover": { bgcolor: "#f1f5f9" },
+                    "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
-                      bgcolor: "#ffffff",
+                      bgcolor: "var(--mui-palette-background-paper)",
                       boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
                     },
                   },
@@ -983,13 +956,13 @@ export default function Register() {
                     size="small"
                     {...register("terms")}
                     sx={{
-                      color: "#94a3b8",
-                      "&.Mui-checked": { color: "#6366f1" },
+                      color: "var(--mui-palette-neutral-400)",
+                      "&.Mui-checked": { color: "var(--mui-palette-tone-6366f1)" },
                     }}
                   />
                 }
                 label={
-                  <Typography variant="caption" sx={{ color: "#64748b" }}>
+                  <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
                     {registerData.form.termsText}{" "}
                     <Typography
                       component="span"
@@ -1038,11 +1011,11 @@ export default function Register() {
                 fontSize: "1rem",
                 fontWeight: 700,
                 background:
-                  "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                  "linear-gradient(135deg, var(--mui-palette-tone-fx-4f46e5) 0%, var(--mui-palette-tone-7c3aed) 100%)",
                 boxShadow: "0 6px 20px rgba(99, 102, 241, 0.35)",
                 "&:hover": {
                   background:
-                    "linear-gradient(135deg, #4338ca 0%, #6d28d9 100%)",
+                    "linear-gradient(135deg, var(--mui-palette-tone-fx-4338ca) 0%, var(--mui-palette-tone-fx-6d28d9) 100%)",
                   boxShadow: "0 8px 24px rgba(99, 102, 241, 0.45)",
                 },
               }}
@@ -1057,7 +1030,7 @@ export default function Register() {
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#94a3b8",
+                  color: "var(--mui-palette-neutral-400)",
                   fontWeight: 600,
                   letterSpacing: "0.5px",
                 }}
@@ -1084,15 +1057,15 @@ export default function Register() {
                   flex: 1,
                   height: 48,
                   borderRadius: "12px",
-                  borderColor: "#e2e8f0",
-                  color: "#1e293b",
+                  borderColor: "var(--mui-palette-neutral-200)",
+                  color: "var(--mui-palette-neutral-800)",
                   textTransform: "none",
                   fontWeight: 600,
                   fontSize: "0.95rem",
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--mui-palette-background-paper)",
                   "&:hover": {
-                    borderColor: "#cbd5e1",
-                    backgroundColor: "#f8fafc",
+                    borderColor: "var(--mui-palette-neutral-300)",
+                    backgroundColor: "var(--mui-palette-neutral-50)",
                   },
                 }}
               >
@@ -1115,15 +1088,15 @@ export default function Register() {
                   flex: 1,
                   height: 48,
                   borderRadius: "12px",
-                  borderColor: "#e2e8f0",
-                  color: "#1e293b",
+                  borderColor: "var(--mui-palette-neutral-200)",
+                  color: "var(--mui-palette-neutral-800)",
                   textTransform: "none",
                   fontWeight: 600,
                   fontSize: "0.95rem",
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--mui-palette-background-paper)",
                   "&:hover": {
-                    borderColor: "#cbd5e1",
-                    backgroundColor: "#f8fafc",
+                    borderColor: "var(--mui-palette-neutral-300)",
+                    backgroundColor: "var(--mui-palette-neutral-50)",
                   },
                 }}
               >
@@ -1133,13 +1106,13 @@ export default function Register() {
 
             {/* Chuyển sang Đăng nhập */}
             <Box sx={{ textAlign: "center", mt: 3.5 }}>
-              <Typography variant="body2" sx={{ color: "#64748b" }}>
+              <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-500)" }}>
                 {registerData.form.loginText}{" "}
                 <Link
                   href="/login"
                   style={{
                     fontWeight: 700,
-                    color: "#2563eb",
+                    color: "var(--mui-palette-brand-600)",
                     marginLeft: 4,
                     textDecoration: "none",
                   }}

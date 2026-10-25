@@ -46,11 +46,11 @@ export interface MessageProps {
   onClose: () => void;
 }
 
-const OnlineBadge = styled(Badge)<{ isonline?: string }>(({ theme, isonline }) => ({
+const OnlineBadge = styled(Badge)<{ isonline?: string }>(({ isonline }) => ({
   "& .MuiBadge-badge": {
-    backgroundColor: isonline === "true" ? "#22c55e" : "#94a3b8",
-    color: isonline === "true" ? "#22c55e" : "#94a3b8",
-    boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+    backgroundColor: isonline === "true" ? "var(--mui-palette-tone-22c55e)" : "var(--mui-palette-neutral-400)",
+    color: isonline === "true" ? "var(--mui-palette-tone-22c55e)" : "var(--mui-palette-neutral-400)",
+    boxShadow: `0 0 0 2px var(--mui-palette-background-paper)`,
   },
 }));
 
@@ -153,9 +153,9 @@ function Message({ friend, onClose }: MessageProps) {
         flexDirection: "column",
         borderRadius: "12px 12px 0 0",
         overflow: "hidden",
-        border: "1px solid #e2e8f0",
+        border: "1px solid var(--mui-palette-neutral-200)",
         transition: "height 0.2s ease-in-out",
-        bgcolor: "#ffffff",
+        bgcolor: "var(--mui-palette-background-paper)",
       }}
     >
       {/* Header Hộp Chat */}
@@ -163,7 +163,7 @@ function Message({ friend, onClose }: MessageProps) {
         sx={{
           p: 1.2,
           px: 1.8,
-          bgcolor: "#1e293b",
+          bgcolor: "var(--mui-palette-tone-1e293b)",
           color: "white",
           display: "flex",
           alignItems: "flex-end",
@@ -225,7 +225,7 @@ function Message({ friend, onClose }: MessageProps) {
 
       {!isMinimized && (
         <>
-          <Box sx={{ flex: 1, overflowY: "auto", p: 1.5, bgcolor: "#f8fafc" }}>
+          <Box sx={{ flex: 1, overflowY: "auto", p: 1.5, bgcolor: "var(--mui-palette-neutral-50)" }}>
             {messages.map((msg) => {
               const isMe = msg.sender === "me";
               return (
@@ -246,8 +246,8 @@ function Message({ friend, onClose }: MessageProps) {
                       borderRadius: isMe
                         ? "14px 14px 2px 14px"
                         : "14px 14px 14px 2px",
-                      bgcolor: isMe ? "#2563eb" : "#ffffff",
-                      color: isMe ? "#ffffff" : "#0f172a",
+                      bgcolor: isMe ? "var(--mui-palette-brand-600)" : "var(--mui-palette-background-paper)",
+                      color: isMe ? "var(--mui-palette-common-white)" : "var(--mui-palette-neutral-900)",
                       boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                     }}
                   >
@@ -301,7 +301,7 @@ function Message({ friend, onClose }: MessageProps) {
               sx={{
                 p: 1,
                 px: 1.5,
-                bgcolor: "#f1f5f9",
+                bgcolor: "var(--mui-palette-neutral-100)",
                 display: "flex",
                 alignItems: "center",
                 gap: 1,
@@ -322,7 +322,7 @@ function Message({ friend, onClose }: MessageProps) {
                       position: "absolute",
                       top: -6,
                       right: -6,
-                      bgcolor: "#ef4444",
+                      bgcolor: "var(--mui-palette-tone-ef4444)",
                       color: "white",
                       p: 0.2,
                     }}
@@ -352,7 +352,7 @@ function Message({ friend, onClose }: MessageProps) {
             sx={{
               p: 1,
               px: 1.5,
-              borderTop: "1px solid #e2e8f0",
+              borderTop: "1px solid var(--mui-palette-neutral-200)",
               display: "flex",
               alignItems: "center",
               gap: 0.5,
@@ -399,7 +399,7 @@ function Message({ friend, onClose }: MessageProps) {
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "18px",
-                  bgcolor: "#f8fafc",
+                  bgcolor: "var(--mui-palette-neutral-50)",
                 },
               }}
             />

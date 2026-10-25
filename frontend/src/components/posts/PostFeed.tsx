@@ -1,0 +1,236 @@
+"use client";
+
+import { ReactNode, useState } from "react";
+import { Alert, Box, Button, Skeleton, Snackbar, Typography } from "@mui/material";
+import { Newspaper } from "lucide-react";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
+import EmptyState from "@/components/common/EmptyState";
+import { useInfiniteSentinel } from "@/hooks/useInfiniteSentinel";
+import { usePagedList } from "@/hooks/usePagedList";
+import {
+  apiErrorMessage,
+  deletePost,
+  toggleLike,
+  type CursorPage,
+  type PostView,
+} from "@/services/postsApi";
+import { useAuthStore } from "@/store/useAuthStore";
+import PostCard from "./PostCard";
+import PostComposer from "./PostComposer";
+import SharePostDialog from "./SharePostDialog";
+
+interface PostFeedProps {
+  loadPage: (after: string | null) => Promise<CursorPage<PostView>>;
+  /** true: hiện ô soạn bài và chèn bài mới/bài chia sẻ của mình vào đầu danh sách */
+  canCompose: boolean;
+  emptyTitle: string;
+  emptyDescription?: ReactNode;
+  emptyAction?: ReactNode;
+  /** Gọi khi dữ liệu bài viết của mình thay đổi (đăng/xóa/chia sẻ) — vd. làm mới khung "Ảnh" */
+  onOwnPostsChanged?: () => void;
+}
+
+type Toast = { message: string; severity: "success" | "error" } | null;
+
+function PostSkeleton() {
+  return (
+    <Box sx={{ p: 2, borderRadius: "16px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
+      <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", mb: 1.5 }}>
+        <Skeleton variant="circular" width={40} height={40} />
+        <Box sx={{ flex: 1 }}>
+          <Skeleton width="35%" height={18} />
+          <Skeleton width="20%" height={14} />
+        </Box>
+      </Box>
+      <Skeleton width="95%" />
+      <Skeleton width="80%" />
+      <Skeleton variant="rounded" height={160} sx={{ mt: 1.5 }} />
+    </Box>
+  );
+}
+
+/** Bảng bài viết dùng chung (Bảng tin và Hồ sơ): soạn bài, danh sách, cuộn vô hạn, thích/bình luận/chia sẻ/xóa. */
+export default function PostFeed({
+  loadPage,
+  canCompose,
+  emptyTitle,
+  emptyDescription,
+  emptyAction,
+  onOwnPostsChanged,
+}: PostFeedProps) {
+  const { user } = useAuthStore();
+  const currentUserId = (user?._id || user?.id) as string | undefined;
+
+  const list = usePagedList<PostView>(loadPage, (err) => apiErrorMessage(err, "Không tải được bài viết."));
+  const [toast, setToast] = useState<Toast>(null);
+  const [toDelete, setToDelete] = useState<PostView | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [toShare, setToShare] = useState<PostView | null>(null);
+
+  const sentinelRef = useInfiniteSentinel(
+    list.loadMore,
+    list.status === "ready" && list.hasMore && !list.isLoadingMore && !list.loadMoreError,
+    list.items.length,
+  );
+
+  const handleToggleLike = async (post: PostView) => {
+    const optimistic = !post.likedByMe;
+    list.patch(post._id, (p) => ({
+      ...p,
+      likedByMe: optimistic,
+      likeCount: Math.max(0, p.likeCount + (optimistic ? 1 : -1)),
+    }));
+    try {
+      const result = await toggleLike(post._id);
+      list.patch(post._id, (p) => ({ ...p, likedByMe: result.liked, likeCount: result.likeCount }));
+    } catch (err) {
+      // Hoàn tác khi lỗi
+      list.patch(post._id, (p) => ({ ...p, likedByMe: post.likedByMe, likeCount: post.likeCount }));
+      setToast({ message: apiErrorMessage(err, "Không thể thích bài viết."), severity: "error" });
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!toDelete) return;
+    setDeleting(true);
+    try {
+      await deletePost(toDelete._id);
+      list.remove(toDelete._id);
+      setToast({ message: "Đã xóa bài viết.", severity: "success" });
+      onOwnPostsChanged?.();
+    } catch (err) {
+      setToast({ message: apiErrorMessage(err, "Không xóa được bài viết."), severity: "error" });
+    } finally {
+      setDeleting(false);
+      setToDelete(null);
+    }
+  };
+
+  const handleCreated = (post: PostView) => {
+    list.prepend(post);
+    setToast({ message: "Đã đăng bài viết.", severity: "success" });
+    onOwnPostsChanged?.();
+  };
+
+  const handleShared = (original: PostView, created: PostView) => {
+    // Chia sẻ một bài chia sẻ → server tăng đếm của bài gốc, không phải của thẻ đang bấm
+    if (!original.sharedPost) list.patch(original._id, (p) => ({ ...p, shareCount: p.shareCount + 1 }));
+    if (canCompose) list.prepend(created);
+    setToShare(null);
+    setToast({ message: "Đã chia sẻ lên dòng thời gian của bạn.", severity: "success" });
+  };
+
+  const handleCommentCountChange = (postId: string, delta: number) => {
+    list.patch(postId, (p) => ({ ...p, commentCount: Math.max(0, p.commentCount + delta) }));
+  };
+
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {canCompose && (
+        <PostComposer userName={user?.name} userAvatar={user?.avatar} onCreated={handleCreated} />
+      )}
+
+      <Box component="section" aria-label="Bài viết" aria-busy={list.status === "loading"} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {list.status === "loading" && (
+          <>
+            <PostSkeleton />
+            <PostSkeleton />
+          </>
+        )}
+
+        {list.status === "error" && (
+          <Alert
+            severity="error"
+            action={
+              <Button color="inherit" size="small" onClick={list.reload}>
+                Thử lại
+              </Button>
+            }
+          >
+            {list.error}
+          </Alert>
+        )}
+
+        {list.status === "ready" && list.items.length === 0 && (
+          <Box sx={{ borderRadius: "16px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
+            <EmptyState
+              icon={<Newspaper size={26} />}
+              title={emptyTitle}
+              description={emptyDescription}
+              action={emptyAction}
+            />
+          </Box>
+        )}
+
+        {list.items.map((post) => (
+          <PostCard
+            key={post._id}
+            post={post}
+            currentUserId={currentUserId}
+            onToggleLike={(p) => void handleToggleLike(p)}
+            onRequestDelete={setToDelete}
+            onRequestShare={setToShare}
+            onCommentCountChange={handleCommentCountChange}
+          />
+        ))}
+
+        {list.status === "ready" && list.items.length > 0 && (
+          <>
+            {/* Mốc cuối danh sách: chạm tới là tải trang kế (cuộn vô hạn) */}
+            <Box ref={sentinelRef} aria-hidden sx={{ height: 1 }} />
+            {list.isLoadingMore && <PostSkeleton />}
+            {list.loadMoreError && (
+              <Alert
+                severity="error"
+                action={
+                  <Button color="inherit" size="small" onClick={list.loadMore}>
+                    Thử lại
+                  </Button>
+                }
+              >
+                {list.loadMoreError}
+              </Alert>
+            )}
+            {!list.hasMore && !list.isLoadingMore && (
+              <Typography variant="caption" color="text.secondary" sx={{ textAlign: "center", py: 1 }}>
+                Bạn đã xem hết bài viết.
+              </Typography>
+            )}
+          </>
+        )}
+      </Box>
+
+      <SharePostDialog
+        // Remount theo bài để xóa nháp lời bình khi mở bài khác
+        key={toShare?._id ?? "closed"}
+        post={toShare}
+        currentUserId={currentUserId}
+        onClose={() => setToShare(null)}
+        onShared={handleShared}
+      />
+
+      <ConfirmDialog
+        open={!!toDelete}
+        title="Xóa bài viết?"
+        description="Bài viết sẽ bị xóa khỏi dòng thời gian của bạn. Các bài chia sẻ lại bài này sẽ hiển thị “nội dung không khả dụng”."
+        confirmLabel="Xóa bài viết"
+        pending={deleting}
+        onConfirm={() => void confirmDelete()}
+        onClose={() => setToDelete(null)}
+      />
+
+      <Snackbar
+        open={!!toast}
+        autoHideDuration={3500}
+        onClose={() => setToast(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        {toast ? (
+          <Alert severity={toast.severity} variant="filled" onClose={() => setToast(null)} sx={{ width: "100%" }}>
+            {toast.message}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
+    </Box>
+  );
+}

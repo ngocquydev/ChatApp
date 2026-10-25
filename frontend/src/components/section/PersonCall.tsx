@@ -55,11 +55,11 @@ export interface PersonCallProps {
   onSelectFriend?: (friend: ChatUser) => void;
 }
 
-const OnlineBadge = styled(Badge)<{ isonline?: string }>(({ theme, isonline }) => ({
+const OnlineBadge = styled(Badge)<{ isonline?: string }>(({ isonline }) => ({
   "& .MuiBadge-badge": {
-    backgroundColor: isonline === "true" ? "#22c55e" : "#94a3b8",
-    color: isonline === "true" ? "#22c55e" : "#94a3b8",
-    boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+    backgroundColor: isonline === "true" ? "var(--mui-palette-tone-22c55e)" : "var(--mui-palette-neutral-400)",
+    color: isonline === "true" ? "var(--mui-palette-tone-22c55e)" : "var(--mui-palette-neutral-400)",
+    boxShadow: `0 0 0 2px var(--mui-palette-background-paper)`,
     "&::after": {
       position: "absolute",
       top: 0,
@@ -184,14 +184,14 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
       sx={{
         display: { xs: "none", md: "flex" },
         flexDirection: "column",
-        height: "calc(100vh - 64px)",
-        bgcolor: "#ffffff",
+        height: "calc(100dvh - 64px)",
+        bgcolor: "var(--mui-palette-background-paper)",
         p: { md: 2, lg: 2.2 },
         position: "fixed",
         right: 0,
         top: "64px",
         width: { md: 340, lg: 360, xl: 380 },
-        borderLeft: "1px solid #e2e8f0",
+        borderLeft: "1px solid var(--mui-palette-neutral-200)",
         zIndex: 10,
         boxShadow: "-2px 0 8px rgba(0, 0, 0, 0.02)",
       }}
@@ -248,7 +248,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
               px: 0.5,
             }}
           >
-            <Typography variant="caption" sx={{ fontWeight: 700, color: "#64748b" }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-500)" }}>
               NGƯỜI LIÊN HỆ
             </Typography>
             <Box
@@ -256,8 +256,8 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                 display: "flex",
                 alignItems: "center",
                 gap: 0.6,
-                bgcolor: "#f0fdf4",
-                color: "#166534",
+                bgcolor: "var(--mui-palette-tone-f0fdf4)",
+                color: "var(--mui-palette-tone-166534)",
                 px: 1,
                 py: 0.25,
                 borderRadius: "20px",
@@ -265,7 +265,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                 fontWeight: 700,
               }}
             >
-              <Circle size={7} fill="#22c55e" color="#22c55e" />
+              <Circle size={7} fill="var(--mui-palette-tone-22c55e)" color="var(--mui-palette-tone-22c55e)" />
               {onlineFriendsCount} Online
             </Box>
           </Box>
@@ -280,7 +280,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
               mb: 1.5,
               "& .MuiOutlinedInput-root": {
                 borderRadius: "10px",
-                bgcolor: "#f8fafc",
+                bgcolor: "var(--mui-palette-neutral-50)",
                 fontSize: "0.85rem",
               },
             }}
@@ -288,7 +288,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Search size={15} color="#94a3b8" />
+                    <Search size={15} color="var(--mui-palette-neutral-400)" />
                   </InputAdornment>
                 ),
               },
@@ -309,11 +309,11 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                 background: "transparent",
               },
               "&::-webkit-scrollbar-thumb": {
-                background: "#cbd5e1",
+                background: "var(--mui-palette-neutral-300)",
                 borderRadius: "4px",
               },
               "&::-webkit-scrollbar-thumb:hover": {
-                background: "#94a3b8",
+                background: "var(--mui-palette-neutral-400)",
               },
             }}
           >
@@ -325,11 +325,11 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
 
             {!isLoadingFriends && friends.length === 0 && (
               <Box sx={{ textAlign: "center", py: 4, px: 2 }}>
-                <Users size={36} color="#94a3b8" style={{ marginBottom: 8 }} />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#475569", mb: 0.5 }}>
+                <Users size={36} color="var(--mui-palette-neutral-400)" style={{ marginBottom: 8 }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-600)", mb: 0.5 }}>
                   Chưa có bạn bè nào
                 </Typography>
-                <Typography variant="caption" sx={{ color: "#94a3b8", display: "block", mb: 2 }}>
+                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", display: "block", mb: 2 }}>
                   Hãy tìm kiếm bạn bè trên hệ thống để kết nối và trò chuyện!
                 </Typography>
                 <Button
@@ -346,7 +346,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
 
             {!isLoadingFriends && friends.length > 0 && filteredFriends.length === 0 && (
               <Box sx={{ textAlign: "center", py: 3 }}>
-                <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                   Không tìm thấy bạn bè khớp với &quot;{searchFriend}&quot;
                 </Typography>
               </Box>
@@ -371,7 +371,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       transition: "all 0.15s ease",
                       mb: 0.5,
                       "&:hover": {
-                        bgcolor: "#eff6ff",
+                        bgcolor: "var(--mui-palette-brand-50)",
                       },
                     }}
                   >
@@ -383,7 +383,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                     >
                       <Avatar
                         src={friend.avatar || ""}
-                        sx={{ width: 38, height: 38, bgcolor: "#3b82f6", fontWeight: 700 }}
+                        sx={{ width: 38, height: 38, bgcolor: "var(--mui-palette-brand-500)", fontWeight: 700 }}
                       >
                         {(friend.name || "U")[0].toUpperCase()}
                       </Avatar>
@@ -393,7 +393,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       <Typography
                         variant="subtitle2"
                         noWrap
-                        sx={{ fontWeight: 600, color: "#1e293b", fontSize: "0.85rem" }}
+                        sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-800)", fontSize: "0.85rem" }}
                       >
                         {friend.name}
                       </Typography>
@@ -401,7 +401,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         variant="caption"
                         noWrap
                         sx={{
-                          color: isOnline ? "#22c55e" : "#94a3b8",
+                          color: isOnline ? "var(--mui-palette-tone-22c55e)" : "var(--mui-palette-neutral-400)",
                           display: "block",
                           fontSize: "0.75rem",
                           fontWeight: isOnline ? 600 : 400,
@@ -414,7 +414,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                     <Tooltip title="Nhắn tin">
                       <IconButton
                         size="small"
-                        sx={{ color: "#3b82f6" }}
+                        sx={{ color: "var(--mui-palette-brand-500)" }}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleStartChat(friend);
@@ -443,7 +443,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: "10px",
-                  bgcolor: "#f8fafc",
+                  bgcolor: "var(--mui-palette-neutral-50)",
                   fontSize: "0.85rem",
                 },
               }}
@@ -451,7 +451,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                 input: {
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Search size={15} color="#3b82f6" />
+                      <Search size={15} color="var(--mui-palette-brand-500)" />
                     </InputAdornment>
                   ),
                   endAdornment: isSearching ? (
@@ -479,11 +479,11 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                 background: "transparent",
               },
               "&::-webkit-scrollbar-thumb": {
-                background: "#cbd5e1",
+                background: "var(--mui-palette-neutral-300)",
                 borderRadius: "4px",
               },
               "&::-webkit-scrollbar-thumb:hover": {
-                background: "#94a3b8",
+                background: "var(--mui-palette-neutral-400)",
               },
             }}
           >
@@ -499,20 +499,20 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                     p: 1.5,
                     mb: 2,
                     borderRadius: "12px",
-                    background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
-                    border: "1px solid #bfdbfe",
+                    background: "linear-gradient(135deg, var(--mui-palette-brand-50) 0%, var(--mui-palette-brand-100) 100%)",
+                    border: "1px solid var(--mui-palette-brand-200)",
                     display: "flex",
                     flexDirection: "column",
                     gap: 1,
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Compass size={20} color="#2563eb" />
+                    <Compass size={20} color="var(--mui-palette-brand-600)" />
                     <Box sx={{ flex: 1 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e3a8a", fontSize: "0.82rem" }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--mui-palette-brand-900)", fontSize: "0.82rem" }}>
                         Tìm bạn bè quanh đây
                       </Typography>
-                      <Typography variant="caption" sx={{ color: "#475569", fontSize: "0.72rem", display: "block" }}>
+                      <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-600)", fontSize: "0.72rem", display: "block" }}>
                         {userLocation ? "Đã định vị vị trí hiện tại của bạn" : "Ưu tiên người ở gần, có bạn chung & uy tín"}
                       </Typography>
                     </Box>
@@ -530,9 +530,9 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       fontWeight: 600,
                       py: 0.5,
                       borderRadius: "8px",
-                      bgcolor: "#2563eb",
+                      bgcolor: "var(--mui-palette-brand-600)",
                       boxShadow: "none",
-                      "&:hover": { bgcolor: "#1d4ed8" },
+                      "&:hover": { bgcolor: "var(--mui-palette-brand-700)" },
                     }}
                   >
                     {isLocating ? "Đang định vị..." : (userLocation ? "Cập nhật lại vị trí" : "Bật định vị & Gợi ý quanh đây")}
@@ -550,11 +550,11 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, minWidth: 0 }}>
-                    <Sparkles size={16} color="#3b82f6" style={{ flexShrink: 0 }} />
+                    <Sparkles size={16} color="var(--mui-palette-brand-500)" style={{ flexShrink: 0 }} />
                     <Typography
                       variant="subtitle2"
                       noWrap
-                      sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.85rem" }}
+                      sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.85rem" }}
                     >
                       Những người bạn có thể biết
                     </Typography>
@@ -566,9 +566,9 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       height: 20,
                       fontSize: "0.7rem",
                       fontWeight: 700,
-                      bgcolor: "#eff6ff",
-                      color: "#2563eb",
-                      border: "1px solid #dbeafe",
+                      bgcolor: "var(--mui-palette-brand-50)",
+                      color: "var(--mui-palette-brand-600)",
+                      border: "1px solid var(--mui-palette-brand-100)",
                       flexShrink: 0,
                     }}
                   />
@@ -582,7 +582,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
 
                 {!isLoadingRecommendations && recommendations.length === 0 && (
                   <Box sx={{ textAlign: "center", py: 3, px: 2 }}>
-                    <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                    <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                       Chưa có gợi ý nào mới. Hãy thử bật định vị hoặc tìm kiếm theo tên!
                     </Typography>
                   </Box>
@@ -597,14 +597,14 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         alignItems: "center",
                         p: 1.2,
                         borderRadius: "12px",
-                        bgcolor: "#ffffff",
+                        bgcolor: "var(--mui-palette-background-paper)",
                         mb: 1,
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid var(--mui-palette-neutral-200)",
                         boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
                         transition: "all 0.15s ease",
                         "&:hover": {
-                          borderColor: "#93c5fd",
-                          bgcolor: "#f8fafc",
+                          borderColor: "var(--mui-palette-brand-300)",
+                          bgcolor: "var(--mui-palette-neutral-50)",
                         },
                       }}
                     >
@@ -613,7 +613,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         sx={{
                           width: 40,
                           height: 40,
-                          bgcolor: "#3b82f6",
+                          bgcolor: "var(--mui-palette-brand-500)",
                           fontWeight: 700,
                           flexShrink: 0,
                         }}
@@ -627,7 +627,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                           noWrap
                           sx={{
                             fontWeight: 700,
-                            color: "#1e293b",
+                            color: "var(--mui-palette-neutral-800)",
                             fontSize: "0.86rem",
                             lineHeight: 1.3,
                           }}
@@ -643,8 +643,8 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: 0.4,
-                                bgcolor: "#eff6ff",
-                                color: "#2563eb",
+                                bgcolor: "var(--mui-palette-brand-50)",
+                                color: "var(--mui-palette-brand-600)",
                                 px: 0.8,
                                 py: 0.2,
                                 borderRadius: "6px",
@@ -664,8 +664,8 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: 0.4,
-                                bgcolor: "#ecfdf5",
-                                color: "#059669",
+                                bgcolor: "var(--mui-palette-tone-ecfdf5)",
+                                color: "var(--mui-palette-tone-059669)",
                                 px: 0.8,
                                 py: 0.2,
                                 borderRadius: "6px",
@@ -689,8 +689,8 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: 0.4,
-                                bgcolor: "#f1f5f9",
-                                color: "#475569",
+                                bgcolor: "var(--mui-palette-neutral-100)",
+                                color: "var(--mui-palette-neutral-600)",
                                 px: 0.8,
                                 py: 0.2,
                                 borderRadius: "6px",
@@ -723,8 +723,8 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                               borderRadius: "8px",
                               boxShadow: "none",
                               whiteSpace: "nowrap",
-                              bgcolor: "#2563eb",
-                              "&:hover": { bgcolor: "#1d4ed8" },
+                              bgcolor: "var(--mui-palette-brand-600)",
+                              "&:hover": { bgcolor: "var(--mui-palette-brand-700)" },
                             }}
                           >
                             Kết bạn
@@ -746,7 +746,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                                 py: 0.45,
                                 px: 1,
                                 borderRadius: "8px",
-                                color: "#64748b",
+                                color: "var(--mui-palette-neutral-500)",
                                 whiteSpace: "nowrap",
                               }}
                             >
@@ -784,7 +784,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
             {searchQuery.trim() && isSearching && searchResults.length === 0 && (
               <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 4, gap: 1 }}>
                 <CircularProgress size={20} />
-                <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                   Đang tìm kiếm người dùng...
                 </Typography>
               </Box>
@@ -792,7 +792,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
 
             {searchQuery.trim() && !isSearching && searchResults.length === 0 && (
               <Box sx={{ textAlign: "center", py: 4 }}>
-                <Typography variant="body2" sx={{ color: "#94a3b8" }}>
+                <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                   Không tìm thấy người dùng nào phù hợp với &quot;{searchQuery}&quot;
                 </Typography>
               </Box>
@@ -806,14 +806,14 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   alignItems: "center",
                   p: 1,
                   borderRadius: "10px",
-                  bgcolor: "#f8fafc",
+                  bgcolor: "var(--mui-palette-neutral-50)",
                   mb: 1,
-                  border: "1px solid #e2e8f0",
+                  border: "1px solid var(--mui-palette-neutral-200)",
                 }}
               >
                 <Avatar
                   src={user.avatar || ""}
-                  sx={{ width: 40, height: 40, bgcolor: "#3b82f6", fontWeight: 700, flexShrink: 0 }}
+                  sx={{ width: 40, height: 40, bgcolor: "var(--mui-palette-brand-500)", fontWeight: 700, flexShrink: 0 }}
                 >
                   {(user.name || "U")[0].toUpperCase()}
                 </Avatar>
@@ -822,14 +822,14 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   <Typography
                     variant="subtitle2"
                     noWrap
-                    sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.86rem" }}
+                    sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.86rem" }}
                   >
                     {user.name}
                   </Typography>
                   <Typography
                     variant="caption"
                     noWrap
-                    sx={{ color: "#64748b", display: "block", fontSize: "0.74rem" }}
+                    sx={{ color: "var(--mui-palette-neutral-500)", display: "block", fontSize: "0.74rem" }}
                   >
                     {user.email}
                   </Typography>
@@ -852,8 +852,8 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         borderRadius: "8px",
                         boxShadow: "none",
                         whiteSpace: "nowrap",
-                        bgcolor: "#2563eb",
-                        "&:hover": { bgcolor: "#1d4ed8" },
+                        bgcolor: "var(--mui-palette-brand-600)",
+                        "&:hover": { bgcolor: "var(--mui-palette-brand-700)" },
                       }}
                     >
                       Kết bạn
@@ -874,7 +874,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                           py: 0.4,
                           px: 0.8,
                           borderRadius: "8px",
-                          color: "#64748b",
+                          color: "var(--mui-palette-neutral-500)",
                         }}
                       >
                         Đã gửi
@@ -888,7 +888,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         size="small"
                         color="primary"
                         onClick={() => handleRespond(user.requestId || "", "accept")}
-                        sx={{ bgcolor: "#eff6ff", p: 0.5 }}
+                        sx={{ bgcolor: "var(--mui-palette-brand-50)", p: 0.5 }}
                       >
                         <Check size={14} />
                       </IconButton>
@@ -896,7 +896,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         size="small"
                         color="error"
                         onClick={() => handleRespond(user.requestId || "", "reject")}
-                        sx={{ bgcolor: "#fef2f2", p: 0.5 }}
+                        sx={{ bgcolor: "var(--mui-palette-tone-fef2f2)", p: 0.5 }}
                       >
                         <X size={14} />
                       </IconButton>

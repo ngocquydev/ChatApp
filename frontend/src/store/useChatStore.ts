@@ -55,6 +55,7 @@ interface ChatState {
   disconnectSocket: () => void;
   fetchConversations: () => Promise<void>;
   selectConversation: (conversation: ConversationItem) => Promise<void>;
+  clearActiveConversation: () => void;
   startConversationWithUser: (user: ChatUser) => Promise<ConversationItem>;
   sendMessage: (text: string) => Promise<void>;
   sendTyping: (isTyping: boolean) => void;
@@ -404,6 +405,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  clearActiveConversation: () => {
+    set({ activeConversation: null, messages: [], isLoadingMessages: false });
+  },
+
   selectConversation: async (conversation: ConversationItem) => {
     const myId = String(
       useAuthStore.getState().user?._id ||
@@ -412,6 +417,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     );
     set((state) => ({
       activeConversation: conversation,
+      // Xóa tin nhắn cũ khi đổi sang hội thoại khác để tránh nhấp nháy nội dung sai
+      messages: state.activeConversation?._id === conversation._id ? state.messages : [],
       isLoadingMessages: true,
       conversations: state.conversations.map((c) =>
         c._id === conversation._id && myId

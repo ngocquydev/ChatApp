@@ -64,11 +64,20 @@ import {
   Palette,
   ExternalLink,
   ShieldCheck,
+  Newspaper,
   Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuthStore } from "../../store/useAuthStore";
 import AuthGuard from "../common/AuthGuard";
+import MyPostsTab from "../posts/MyPostsTab";
+
+// Thứ tự các tab (khớp với thứ tự <Tab> bên dưới)
+const TAB_POSTS = 0;
+const TAB_OVERVIEW = 1;
+const TAB_EDIT = 2;
+const TAB_SECURITY = 3;
+const TAB_SETTINGS = 4;
 
 const PRESET_AVATARS = [
   { id: "1", label: "Felix", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=Felix" },
@@ -85,32 +94,32 @@ const COVER_THEMES = [
   {
     id: "sunset",
     name: "Hoàng Hôn Tím",
-    gradient: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 45%, #db2777 80%, #f97316 100%)",
-    accent: "#7c3aed",
+    gradient: "linear-gradient(135deg, var(--mui-palette-tone-fx-4f46e5) 0%, var(--mui-palette-tone-7c3aed) 45%, var(--mui-palette-tone-db2777) 80%, var(--mui-palette-tone-f97316) 100%)",
+    accent: "var(--mui-palette-tone-7c3aed)",
   },
   {
     id: "aurora",
     name: "Cực Quang Xanh",
-    gradient: "linear-gradient(135deg, #0284c7 0%, #06b6d4 45%, #10b981 85%, #34d399 100%)",
-    accent: "#06b6d4",
+    gradient: "linear-gradient(135deg, var(--mui-palette-tone-fx-0284c7) 0%, var(--mui-palette-tone-06b6d4) 45%, var(--mui-palette-tone-10b981) 85%, var(--mui-palette-tone-34d399) 100%)",
+    accent: "var(--mui-palette-tone-06b6d4)",
   },
   {
     id: "midnight",
     name: "Dạ Khúc Huyền Bí",
-    gradient: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%)",
-    accent: "#6366f1",
+    gradient: "linear-gradient(135deg, var(--mui-palette-tone-0f172a) 0%, var(--mui-palette-tone-1e1b4b) 50%, var(--mui-palette-tone-312e81) 100%)",
+    accent: "var(--mui-palette-tone-6366f1)",
   },
   {
     id: "emerald",
     name: "Ngọc Lục Bảo",
-    gradient: "linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%)",
-    accent: "#10b981",
+    gradient: "linear-gradient(135deg, var(--mui-palette-tone-fx-065f46) 0%, var(--mui-palette-tone-fx-059669) 50%, var(--mui-palette-tone-10b981) 100%)",
+    accent: "var(--mui-palette-tone-10b981)",
   },
   {
     id: "crimson",
     name: "Hồng Ruby",
-    gradient: "linear-gradient(135deg, #881337 0%, #be123c 50%, #f43f5e 100%)",
-    accent: "#f43f5e",
+    gradient: "linear-gradient(135deg, var(--mui-palette-tone-881337) 0%, var(--mui-palette-tone-fx-be123c) 50%, var(--mui-palette-tone-f43f5e) 100%)",
+    accent: "var(--mui-palette-tone-f43f5e)",
   },
 ];
 
@@ -120,7 +129,7 @@ function ProfileContent() {
   const { user, updateProfile, changePassword, logout } = useAuthStore();
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(TAB_POSTS);
 
   // Edit Profile Form State
   const [name, setName] = useState("");
@@ -316,11 +325,11 @@ function ProfileContent() {
   const passwordStrength = calculatePasswordStrength(newPassword);
 
   const getPasswordStrengthLabel = (score: number) => {
-    if (score === 0) return { label: "Chưa nhập", color: "#94a3b8" };
-    if (score <= 25) return { label: "Yếu", color: "#ef4444" };
-    if (score <= 50) return { label: "Trung bình", color: "#f59e0b" };
-    if (score <= 75) return { label: "Mạnh", color: "#3b82f6" };
-    return { label: "Rất an toàn", color: "#10b981" };
+    if (score === 0) return { label: "Chưa nhập", color: "var(--mui-palette-neutral-400)" };
+    if (score <= 25) return { label: "Yếu", color: "var(--mui-palette-tone-ef4444)" };
+    if (score <= 50) return { label: "Trung bình", color: "var(--mui-palette-tone-f59e0b)" };
+    if (score <= 75) return { label: "Mạnh", color: "var(--mui-palette-brand-500)" };
+    return { label: "Rất an toàn", color: "var(--mui-palette-tone-10b981)" };
   };
 
   // Handle Change Password
@@ -396,8 +405,8 @@ function ProfileContent() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
-        bgcolor: "#f8fafc",
+        minHeight: "100dvh",
+        bgcolor: "var(--mui-palette-neutral-50)",
         pt: { xs: 9, sm: 10, md: 11 },
         pb: 8,
       }}
@@ -411,7 +420,7 @@ function ProfileContent() {
             overflow: "hidden",
             boxShadow: "0 20px 40px -15px rgba(0,0,0,0.07)",
             border: "1px solid rgba(226, 232, 240, 0.8)",
-            bgcolor: "#ffffff",
+            bgcolor: "var(--mui-palette-background-paper)",
             mb: 4,
           }}
         >
@@ -432,7 +441,7 @@ function ProfileContent() {
                 inset: 0,
                 opacity: 0.12,
                 backgroundImage:
-                  "radial-gradient(#ffffff 2px, transparent 2px), radial-gradient(#ffffff 2px, transparent 2px)",
+                  "radial-gradient(var(--mui-palette-background-paper) 2px, transparent 2px), radial-gradient(var(--mui-palette-background-paper) 2px, transparent 2px)",
                 backgroundSize: "32px 32px",
                 backgroundPosition: "0 0, 16px 16px",
               }}
@@ -470,7 +479,7 @@ function ProfileContent() {
                 sx={{
                   bgcolor: "rgba(255, 255, 255, 0.22)",
                   backdropFilter: "blur(12px)",
-                  color: "#ffffff",
+                  color: "var(--mui-palette-common-white)",
                   border: "1px solid rgba(255, 255, 255, 0.3)",
                   boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                   fontWeight: 600,
@@ -500,7 +509,7 @@ function ProfileContent() {
               >
                 <Typography
                   variant="caption"
-                  sx={{ px: 2, py: 1, fontWeight: 700, color: "#64748b", display: "block" }}
+                  sx={{ px: 2, py: 1, fontWeight: 700, color: "var(--mui-palette-neutral-500)", display: "block" }}
                 >
                   CHỦ ĐỀ ẢNH BÌA
                 </Typography>
@@ -524,7 +533,7 @@ function ProfileContent() {
                         height: 20,
                         borderRadius: "50%",
                         background: theme.gradient,
-                        border: "2px solid #ffffff",
+                        border: "2px solid var(--mui-palette-background-paper)",
                         boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
                       }}
                     />
@@ -565,7 +574,7 @@ function ProfileContent() {
                     height: { xs: 110, sm: 130, md: 140 },
                     borderRadius: "50%",
                     p: "5px",
-                    bgcolor: "#ffffff",
+                    bgcolor: "var(--mui-palette-background-paper)",
                     boxShadow: "0 12px 28px rgba(0,0,0,0.12)",
                     cursor: "pointer",
                     "&:hover .avatar-overlay": {
@@ -601,7 +610,7 @@ function ProfileContent() {
                       flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "center",
-                      color: "#ffffff",
+                      color: "var(--mui-palette-common-white)",
                       opacity: 0,
                       transition: "opacity 0.25s ease",
                     }}
@@ -623,15 +632,15 @@ function ProfileContent() {
                       width: 22,
                       height: 22,
                       borderRadius: "50%",
-                      bgcolor: "#10b981",
-                      border: "3.5px solid #ffffff",
+                      bgcolor: "var(--mui-palette-tone-10b981)",
+                      border: "3.5px solid var(--mui-palette-background-paper)",
                       boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
                       "&::after": {
                         content: '""',
                         position: "absolute",
                         inset: -3.5,
                         borderRadius: "50%",
-                        border: "2px solid #10b981",
+                        border: "2px solid var(--mui-palette-tone-10b981)",
                         animation: "pulse 2s infinite ease-in-out",
                       },
                       "@keyframes pulse": {
@@ -661,14 +670,14 @@ function ProfileContent() {
                   startIcon={<Share2 size={16} />}
                   sx={{
                     borderRadius: "12px",
-                    borderColor: "#e2e8f0",
-                    color: "#475569",
+                    borderColor: "var(--mui-palette-neutral-200)",
+                    color: "var(--mui-palette-neutral-600)",
                     fontWeight: 600,
                     px: 2,
                     py: 1,
                     "&:hover": {
-                      borderColor: "#cbd5e1",
-                      bgcolor: "#f1f5f9",
+                      borderColor: "var(--mui-palette-neutral-300)",
+                      bgcolor: "var(--mui-palette-neutral-100)",
                     },
                   }}
                 >
@@ -677,17 +686,17 @@ function ProfileContent() {
 
                 <Button
                   variant="contained"
-                  onClick={() => setActiveTab(1)}
+                  onClick={() => setActiveTab(TAB_EDIT)}
                   startIcon={<Edit3 size={16} />}
                   sx={{
                     borderRadius: "12px",
-                    background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                    background: "linear-gradient(135deg, var(--mui-palette-brand-600) 0%, var(--mui-palette-brand-700) 100%)",
                     fontWeight: 600,
                     px: 2.5,
                     py: 1,
                     boxShadow: "0 8px 16px -4px rgba(37, 99, 235, 0.35)",
                     "&:hover": {
-                      background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)",
+                      background: "linear-gradient(135deg, var(--mui-palette-brand-700) 0%, var(--mui-palette-tone-1e40af) 100%)",
                     },
                   }}
                 >
@@ -730,7 +739,7 @@ function ProfileContent() {
                   variant="h4"
                   sx={{
                     fontWeight: 800,
-                    color: "#0f172a",
+                    color: "var(--mui-palette-neutral-900)",
                     letterSpacing: "-0.02em",
                     fontSize: { xs: "1.65rem", sm: "2rem" },
                   }}
@@ -739,19 +748,19 @@ function ProfileContent() {
                 </Typography>
 
                 <Tooltip title="Tài khoản đã xác thực" arrow>
-                  <Box sx={{ display: "inline-flex", color: "#2563eb" }}>
-                    <CheckCircle2 size={24} fill="#2563eb" color="#ffffff" />
+                  <Box sx={{ display: "inline-flex", color: "var(--mui-palette-brand-600)" }}>
+                    <CheckCircle2 size={24} fill="var(--mui-palette-brand-600)" color="var(--mui-palette-common-white)" />
                   </Box>
                 </Tooltip>
 
                 {user?.role === "admin" ? (
                   <Chip
-                    icon={<Sparkles size={14} color="#ffffff" />}
+                    icon={<Sparkles size={14} color="var(--mui-palette-common-white)" />}
                     label="Quản trị viên"
                     size="small"
                     sx={{
-                      background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                      color: "#ffffff",
+                      background: "linear-gradient(135deg, var(--mui-palette-tone-f59e0b) 0%, var(--mui-palette-tone-fx-d97706) 100%)",
+                      color: "var(--mui-palette-common-white)",
                       fontWeight: 700,
                       borderRadius: "8px",
                       px: 0.5,
@@ -759,12 +768,12 @@ function ProfileContent() {
                   />
                 ) : (
                   <Chip
-                    icon={<BadgeCheck size={14} color="#ffffff" />}
+                    icon={<BadgeCheck size={14} color="var(--mui-palette-common-white)" />}
                     label="Thành viên chính thức"
                     size="small"
                     sx={{
-                      background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
-                      color: "#ffffff",
+                      background: "linear-gradient(135deg, var(--mui-palette-brand-500) 0%, var(--mui-palette-brand-700) 100%)",
+                      color: "var(--mui-palette-common-white)",
                       fontWeight: 700,
                       borderRadius: "8px",
                       px: 0.5,
@@ -781,7 +790,7 @@ function ProfileContent() {
                   justifyContent: { xs: "center", sm: "flex-start" },
                   gap: 2,
                   flexWrap: "wrap",
-                  color: "#64748b",
+                  color: "var(--mui-palette-neutral-500)",
                   fontSize: "0.875rem",
                   mb: 2,
                 }}
@@ -819,8 +828,8 @@ function ProfileContent() {
                 sx={{
                   p: 2,
                   borderRadius: "14px",
-                  bgcolor: "#f8fafc",
-                  border: "1px dashed #cbd5e1",
+                  bgcolor: "var(--mui-palette-neutral-50)",
+                  border: "1px dashed var(--mui-palette-neutral-300)",
                   maxWidth: { xs: "100%", md: 780 },
                   display: "flex",
                   alignItems: "flex-start",
@@ -830,7 +839,7 @@ function ProfileContent() {
                 <Typography
                   variant="body2"
                   sx={{
-                    color: user?.bio ? "#334155" : "#94a3b8",
+                    color: user?.bio ? "var(--mui-palette-neutral-700)" : "var(--mui-palette-neutral-400)",
                     fontStyle: user?.bio ? "normal" : "italic",
                     lineHeight: 1.6,
                   }}
@@ -853,7 +862,7 @@ function ProfileContent() {
                 p: 2.5,
                 borderRadius: "18px",
                 border: "1px solid rgba(226, 232, 240, 0.9)",
-                bgcolor: "#ffffff",
+                bgcolor: "var(--mui-palette-background-paper)",
                 boxShadow: "0 8px 20px -8px rgba(0,0,0,0.04)",
                 display: "flex",
                 alignItems: "center",
@@ -873,17 +882,17 @@ function ProfileContent() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
-                  color: "#ffffff",
+                  background: "linear-gradient(135deg, var(--mui-palette-brand-500) 0%, var(--mui-palette-brand-700) 100%)",
+                  color: "var(--mui-palette-common-white)",
                 }}
               >
                 <MessageSquare size={24} />
               </Box>
               <Box>
-                <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
                   Tin nhắn realtime
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: "#0f172a" }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
                   1,420+
                 </Typography>
               </Box>
@@ -897,7 +906,7 @@ function ProfileContent() {
                 p: 2.5,
                 borderRadius: "18px",
                 border: "1px solid rgba(226, 232, 240, 0.9)",
-                bgcolor: "#ffffff",
+                bgcolor: "var(--mui-palette-background-paper)",
                 boxShadow: "0 8px 20px -8px rgba(0,0,0,0.04)",
                 display: "flex",
                 alignItems: "center",
@@ -917,17 +926,17 @@ function ProfileContent() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                  color: "#ffffff",
+                  background: "linear-gradient(135deg, var(--mui-palette-tone-10b981) 0%, var(--mui-palette-tone-fx-059669) 100%)",
+                  color: "var(--mui-palette-common-white)",
                 }}
               >
                 <Users size={24} />
               </Box>
               <Box>
-                <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
                   Bạn bè kết nối
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: "#0f172a" }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
                   48 bạn bè
                 </Typography>
               </Box>
@@ -941,7 +950,7 @@ function ProfileContent() {
                 p: 2.5,
                 borderRadius: "18px",
                 border: "1px solid rgba(226, 232, 240, 0.9)",
-                bgcolor: "#ffffff",
+                bgcolor: "var(--mui-palette-background-paper)",
                 boxShadow: "0 8px 20px -8px rgba(0,0,0,0.04)",
                 display: "flex",
                 alignItems: "center",
@@ -961,17 +970,17 @@ function ProfileContent() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
-                  color: "#ffffff",
+                  background: "linear-gradient(135deg, var(--mui-palette-tone-8b5cf6) 0%, var(--mui-palette-tone-fx-6d28d9) 100%)",
+                  color: "var(--mui-palette-common-white)",
                 }}
               >
                 <ShieldCheck size={24} />
               </Box>
               <Box>
-                <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
                   Độ bảo mật
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: "#0f172a" }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
                   98% Rất cao
                 </Typography>
               </Box>
@@ -985,7 +994,7 @@ function ProfileContent() {
                 p: 2.5,
                 borderRadius: "18px",
                 border: "1px solid rgba(226, 232, 240, 0.9)",
-                bgcolor: "#ffffff",
+                bgcolor: "var(--mui-palette-background-paper)",
                 boxShadow: "0 8px 20px -8px rgba(0,0,0,0.04)",
                 display: "flex",
                 alignItems: "center",
@@ -1005,17 +1014,17 @@ function ProfileContent() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                  color: "#ffffff",
+                  background: "linear-gradient(135deg, var(--mui-palette-tone-f59e0b) 0%, var(--mui-palette-tone-fx-d97706) 100%)",
+                  color: "var(--mui-palette-common-white)",
                 }}
               >
                 <Zap size={24} />
               </Box>
               <Box>
-                <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
                   Trạng thái
                 </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: "#10b981" }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-tone-10b981)" }}>
                   Trực tuyến
                 </Typography>
               </Box>
@@ -1029,13 +1038,13 @@ function ProfileContent() {
           sx={{
             borderRadius: "24px",
             border: "1px solid rgba(226, 232, 240, 0.9)",
-            bgcolor: "#ffffff",
+            bgcolor: "var(--mui-palette-background-paper)",
             overflow: "hidden",
             boxShadow: "0 15px 35px -15px rgba(0,0,0,0.05)",
           }}
         >
           {/* Tabs Header */}
-          <Box sx={{ borderBottom: 1, borderColor: "divider", px: 3, pt: 1.5, bgcolor: "#fafafa" }}>
+          <Box sx={{ borderBottom: 1, borderColor: "divider", px: 3, pt: 1.5, bgcolor: "var(--mui-palette-neutral-50)" }}>
             <Tabs
               value={activeTab}
               onChange={(_, val) => setActiveTab(val)}
@@ -1048,19 +1057,20 @@ function ProfileContent() {
                   fontSize: "0.9375rem",
                   minHeight: 52,
                   px: 2.5,
-                  color: "#64748b",
+                  color: "var(--mui-palette-neutral-500)",
                   "&.Mui-selected": {
-                    color: "#2563eb",
+                    color: "var(--mui-palette-brand-600)",
                     fontWeight: 700,
                   },
                 },
                 "& .MuiTabs-indicator": {
                   height: 3,
                   borderRadius: "3px 3px 0 0",
-                  backgroundColor: "#2563eb",
+                  backgroundColor: "var(--mui-palette-brand-600)",
                 },
               }}
             >
+              <Tab icon={<Newspaper size={18} />} iconPosition="start" label="Bài viết" />
               <Tab icon={<UserIcon size={18} />} iconPosition="start" label="Tổng quan" />
               <Tab icon={<Edit3 size={18} />} iconPosition="start" label="Chỉnh sửa thông tin" />
               <Tab icon={<Shield size={18} />} iconPosition="start" label="Bảo mật & Mật khẩu" />
@@ -1068,13 +1078,20 @@ function ProfileContent() {
             </Tabs>
           </Box>
 
-          {/* TAB 0: TỔNG QUAN HỒ SƠ */}
-          {activeTab === 0 && (
+          {/* TAB 0: BÀI VIẾT (DÒNG THỜI GIAN) */}
+          {activeTab === TAB_POSTS && (
+            <Box sx={{ p: { xs: 1.5, sm: 3 }, bgcolor: "background.default" }}>
+              <MyPostsTab />
+            </Box>
+          )}
+
+          {/* TAB 1: TỔNG QUAN HỒ SƠ */}
+          {activeTab === TAB_OVERVIEW && (
             <Box sx={{ p: { xs: 2.5, sm: 4 } }}>
               <Grid container spacing={3}>
                 {/* Left: Chi tiết tài khoản */}
                 <Grid size={{ xs: 12, md: 7 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", mb: 2.5 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 2.5 }}>
                     Thông tin định danh
                   </Typography>
 
@@ -1090,27 +1107,27 @@ function ProfileContent() {
                       sx={{
                         p: 2,
                         borderRadius: "14px",
-                        bgcolor: "#f8fafc",
-                        border: "1px solid #f1f5f9",
+                        bgcolor: "var(--mui-palette-neutral-50)",
+                        border: "1px solid var(--mui-palette-neutral-100)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                       }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Box sx={{ color: "#64748b" }}>
+                        <Box sx={{ color: "var(--mui-palette-neutral-500)" }}>
                           <UserIcon size={20} />
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>
+                          <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
                             Họ và tên
                           </Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                          <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                             {user?.name || "Chưa cập nhật"}
                           </Typography>
                         </Box>
                       </Box>
-                      <Chip label="Hiển thị công khai" size="small" sx={{ bgcolor: "#e2e8f0", fontSize: "0.75rem" }} />
+                      <Chip label="Hiển thị công khai" size="small" sx={{ bgcolor: "var(--mui-palette-neutral-200)", fontSize: "0.75rem" }} />
                     </Box>
 
                     {/* Item: Email */}
@@ -1118,22 +1135,22 @@ function ProfileContent() {
                       sx={{
                         p: 2,
                         borderRadius: "14px",
-                        bgcolor: "#f8fafc",
-                        border: "1px solid #f1f5f9",
+                        bgcolor: "var(--mui-palette-neutral-50)",
+                        border: "1px solid var(--mui-palette-neutral-100)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                       }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Box sx={{ color: "#64748b" }}>
+                        <Box sx={{ color: "var(--mui-palette-neutral-500)" }}>
                           <Mail size={20} />
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>
+                          <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
                             Địa chỉ Email
                           </Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                          <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                             {user?.email || "Chưa có"}
                           </Typography>
                         </Box>
@@ -1152,22 +1169,22 @@ function ProfileContent() {
                       sx={{
                         p: 2,
                         borderRadius: "14px",
-                        bgcolor: "#f8fafc",
-                        border: "1px solid #f1f5f9",
+                        bgcolor: "var(--mui-palette-neutral-50)",
+                        border: "1px solid var(--mui-palette-neutral-100)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                       }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Box sx={{ color: "#64748b" }}>
+                        <Box sx={{ color: "var(--mui-palette-neutral-500)" }}>
                           <Phone size={20} />
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>
+                          <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
                             Số điện thoại
                           </Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                          <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                             {user?.phone ? (user.phone as string) : "Chưa thiết lập"}
                           </Typography>
                         </Box>
@@ -1175,7 +1192,7 @@ function ProfileContent() {
                       {!user?.phone && (
                         <Button
                           size="small"
-                          onClick={() => setActiveTab(1)}
+                          onClick={() => setActiveTab(TAB_EDIT)}
                           sx={{ textTransform: "none", fontWeight: 600 }}
                         >
                           Thêm số
@@ -1188,22 +1205,22 @@ function ProfileContent() {
                       sx={{
                         p: 2,
                         borderRadius: "14px",
-                        bgcolor: "#f8fafc",
-                        border: "1px solid #f1f5f9",
+                        bgcolor: "var(--mui-palette-neutral-50)",
+                        border: "1px solid var(--mui-palette-neutral-100)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                       }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Box sx={{ color: "#64748b" }}>
+                        <Box sx={{ color: "var(--mui-palette-neutral-500)" }}>
                           <Calendar size={20} />
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>
+                          <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
                             Ngày sinh
                           </Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                          <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                             {user?.dateOfBirth
                               ? new Date(user.dateOfBirth as string).toLocaleDateString("vi-VN")
                               : "Chưa thiết lập"}
@@ -1213,7 +1230,7 @@ function ProfileContent() {
                       {!user?.dateOfBirth && (
                         <Button
                           size="small"
-                          onClick={() => setActiveTab(1)}
+                          onClick={() => setActiveTab(TAB_EDIT)}
                           sx={{ textTransform: "none", fontWeight: 600 }}
                         >
                           Cập nhật
@@ -1226,19 +1243,19 @@ function ProfileContent() {
                       sx={{
                         p: 2,
                         borderRadius: "14px",
-                        bgcolor: "#f8fafc",
-                        border: "1px solid #f1f5f9",
+                        bgcolor: "var(--mui-palette-neutral-50)",
+                        border: "1px solid var(--mui-palette-neutral-100)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                       }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Box sx={{ color: "#64748b" }}>
+                        <Box sx={{ color: "var(--mui-palette-neutral-500)" }}>
                           <Key size={20} />
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>
+                          <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
                             Mã định danh (User ID)
                           </Typography>
                           <Typography
@@ -1246,7 +1263,7 @@ function ProfileContent() {
                             sx={{
                               fontFamily: "monospace",
                               fontWeight: 600,
-                              color: "#475569",
+                              color: "var(--mui-palette-neutral-600)",
                             }}
                           >
                             {(user?._id || user?.id || "N/A") as string}
@@ -1259,7 +1276,7 @@ function ProfileContent() {
                           onClick={() =>
                             handleCopyText(String(user?._id || user?.id || ""), "Mã định danh")
                           }
-                          sx={{ color: "#64748b" }}
+                          sx={{ color: "var(--mui-palette-neutral-500)" }}
                         >
                           <Copy size={16} />
                         </IconButton>
@@ -1271,22 +1288,22 @@ function ProfileContent() {
                       sx={{
                         p: 2,
                         borderRadius: "14px",
-                        bgcolor: "#f8fafc",
-                        border: "1px solid #f1f5f9",
+                        bgcolor: "var(--mui-palette-neutral-50)",
+                        border: "1px solid var(--mui-palette-neutral-100)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                       }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Box sx={{ color: "#64748b" }}>
+                        <Box sx={{ color: "var(--mui-palette-neutral-500)" }}>
                           <Globe size={20} />
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 500 }}>
+                          <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
                             Phương thức đăng nhập
                           </Typography>
-                          <Typography variant="body1" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                          <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                             {isGoogleLinked ? "Google Account (Firebase OAuth)" : "Mật khẩu hệ thống ChatApp"}
                           </Typography>
                         </Box>
@@ -1303,7 +1320,7 @@ function ProfileContent() {
 
                 {/* Right: Huy hiệu & Hoạt động gần đây */}
                 <Grid size={{ xs: 12, md: 5 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", mb: 2.5 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 2.5 }}>
                     Huy hiệu danh dự
                   </Typography>
 
@@ -1313,17 +1330,17 @@ function ProfileContent() {
                         sx={{
                           p: 2,
                           borderRadius: "16px",
-                          border: "1px solid #e2e8f0",
-                          bgcolor: "#ffffff",
+                          border: "1px solid var(--mui-palette-neutral-200)",
+                          bgcolor: "var(--mui-palette-background-paper)",
                           textAlign: "center",
                           boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
                         }}
                       >
                         <Typography sx={{ fontSize: "1.75rem", mb: 0.5 }}>🚀</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                           Tiên Phong
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "#64748b", display: "block" }}>
+                        <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", display: "block" }}>
                           Thành viên mùa 1
                         </Typography>
                       </Box>
@@ -1334,17 +1351,17 @@ function ProfileContent() {
                         sx={{
                           p: 2,
                           borderRadius: "16px",
-                          border: "1px solid #e2e8f0",
-                          bgcolor: "#ffffff",
+                          border: "1px solid var(--mui-palette-neutral-200)",
+                          bgcolor: "var(--mui-palette-background-paper)",
                           textAlign: "center",
                           boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
                         }}
                       >
                         <Typography sx={{ fontSize: "1.75rem", mb: 0.5 }}>🛡️</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                           Bảo Mật Cao
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "#64748b", display: "block" }}>
+                        <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", display: "block" }}>
                           Email & Token hợp lệ
                         </Typography>
                       </Box>
@@ -1355,17 +1372,17 @@ function ProfileContent() {
                         sx={{
                           p: 2,
                           borderRadius: "16px",
-                          border: "1px solid #e2e8f0",
-                          bgcolor: "#ffffff",
+                          border: "1px solid var(--mui-palette-neutral-200)",
+                          bgcolor: "var(--mui-palette-background-paper)",
                           textAlign: "center",
                           boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
                         }}
                       >
                         <Typography sx={{ fontSize: "1.75rem", mb: 0.5 }}>💬</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                           Sôi Nổi
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "#64748b", display: "block" }}>
+                        <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", display: "block" }}>
                           Hoạt động tích cực
                         </Typography>
                       </Box>
@@ -1376,17 +1393,17 @@ function ProfileContent() {
                         sx={{
                           p: 2,
                           borderRadius: "16px",
-                          border: "1px solid #e2e8f0",
-                          bgcolor: "#ffffff",
+                          border: "1px solid var(--mui-palette-neutral-200)",
+                          bgcolor: "var(--mui-palette-background-paper)",
                           textAlign: "center",
                           boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
                         }}
                       >
                         <Typography sx={{ fontSize: "1.75rem", mb: 0.5 }}>⭐</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                           VIP ChatApp
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "#64748b", display: "block" }}>
+                        <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", display: "block" }}>
                           Được chứng thực
                         </Typography>
                       </Box>
@@ -1394,7 +1411,7 @@ function ProfileContent() {
                   </Grid>
 
                   {/* Hoạt động gần đây */}
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 2 }}>
                     Hoạt động gần đây
                   </Typography>
 
@@ -1405,15 +1422,15 @@ function ProfileContent() {
                           width: 10,
                           height: 10,
                           borderRadius: "50%",
-                          bgcolor: "#10b981",
+                          bgcolor: "var(--mui-palette-tone-10b981)",
                           mt: 0.75,
                         }}
                       />
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-800)" }}>
                           Đăng nhập phiên làm việc hiện tại
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                        <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                           Vừa xong • Trình duyệt web
                         </Typography>
                       </Box>
@@ -1425,15 +1442,15 @@ function ProfileContent() {
                           width: 10,
                           height: 10,
                           borderRadius: "50%",
-                          bgcolor: "#3b82f6",
+                          bgcolor: "var(--mui-palette-brand-500)",
                           mt: 0.75,
                         }}
                       />
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-800)" }}>
                           Đồng bộ trạng thái hồ sơ cá nhân
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                        <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                           Hôm nay
                         </Typography>
                       </Box>
@@ -1445,15 +1462,15 @@ function ProfileContent() {
                           width: 10,
                           height: 10,
                           borderRadius: "50%",
-                          bgcolor: "#8b5cf6",
+                          bgcolor: "var(--mui-palette-tone-8b5cf6)",
                           mt: 0.75,
                         }}
                       />
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-800)" }}>
                           Kết nối máy chủ Realtime Chat
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                        <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                           Sẵn sàng trò chuyện
                         </Typography>
                       </Box>
@@ -1464,8 +1481,8 @@ function ProfileContent() {
             </Box>
           )}
 
-          {/* TAB 1: CHỈNH SỬA THÔNG TIN */}
-          {activeTab === 1 && (
+          {/* TAB 2: CHỈNH SỬA THÔNG TIN */}
+          {activeTab === TAB_EDIT && (
             <Box sx={{ p: { xs: 2.5, sm: 4 } }}>
               <form onSubmit={handleSaveProfile}>
                 <Grid container spacing={3}>
@@ -1475,8 +1492,8 @@ function ProfileContent() {
                       sx={{
                         p: 3,
                         borderRadius: "18px",
-                        bgcolor: "#f8fafc",
-                        border: "1px solid #e2e8f0",
+                        bgcolor: "var(--mui-palette-neutral-50)",
+                        border: "1px solid var(--mui-palette-neutral-200)",
                         textAlign: "center",
                         display: "flex",
                         flexDirection: "column",
@@ -1498,10 +1515,10 @@ function ProfileContent() {
                         {(name || "U").charAt(0).toUpperCase()}
                       </Avatar>
 
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                         {name || "Họ và tên"}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: "#64748b", mb: 2.5 }}>
+                      <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", mb: 2.5 }}>
                         {user?.email}
                       </Typography>
 
@@ -1523,7 +1540,7 @@ function ProfileContent() {
 
                   {/* Right Column: Fields */}
                   <Grid size={{ xs: 12, md: 8 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", mb: 2.5 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 2.5 }}>
                       Cập nhật hồ sơ
                     </Typography>
 
@@ -1539,7 +1556,7 @@ function ProfileContent() {
                           input: {
                             startAdornment: (
                               <InputAdornment position="start">
-                                <UserIcon size={18} color="#64748b" />
+                                <UserIcon size={18} color="var(--mui-palette-neutral-500)" />
                               </InputAdornment>
                             ),
                           },
@@ -1557,7 +1574,7 @@ function ProfileContent() {
                           input: {
                             startAdornment: (
                               <InputAdornment position="start">
-                                <Phone size={18} color="#64748b" />
+                                <Phone size={18} color="var(--mui-palette-neutral-500)" />
                               </InputAdornment>
                             ),
                           },
@@ -1576,7 +1593,7 @@ function ProfileContent() {
                           input: {
                             startAdornment: (
                               <InputAdornment position="start">
-                                <Calendar size={18} color="#64748b" />
+                                <Calendar size={18} color="var(--mui-palette-neutral-500)" />
                               </InputAdornment>
                             ),
                           },
@@ -1617,7 +1634,7 @@ function ProfileContent() {
                             px: 3,
                             py: 1.2,
                             fontWeight: 700,
-                            background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                            background: "linear-gradient(135deg, var(--mui-palette-brand-600) 0%, var(--mui-palette-brand-700) 100%)",
                             boxShadow: "0 8px 16px -4px rgba(37, 99, 235, 0.4)",
                           }}
                         >
@@ -1641,8 +1658,8 @@ function ProfileContent() {
                             borderRadius: "12px",
                             px: 2.5,
                             fontWeight: 600,
-                            borderColor: "#cbd5e1",
-                            color: "#64748b",
+                            borderColor: "var(--mui-palette-neutral-300)",
+                            color: "var(--mui-palette-neutral-500)",
                           }}
                         >
                           Khôi phục ban đầu
@@ -1655,16 +1672,16 @@ function ProfileContent() {
             </Box>
           )}
 
-          {/* TAB 2: BẢO MẬT & MẬT KHẨU */}
-          {activeTab === 2 && (
+          {/* TAB 3: BẢO MẬT & MẬT KHẨU */}
+          {activeTab === TAB_SECURITY && (
             <Box sx={{ p: { xs: 2.5, sm: 4 } }}>
               <Grid container spacing={4}>
                 {/* Đổi mật khẩu nếu là tài khoản thường */}
                 <Grid size={{ xs: 12, md: 7 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", mb: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 1 }}>
                     Bảo mật tài khoản & Đổi mật khẩu
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#64748b", mb: 3 }}>
+                  <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-500)", mb: 3 }}>
                     Để bảo vệ an toàn cho tài khoản, hãy sử dụng mật khẩu mạnh kết hợp chữ hoa, chữ thường, số và ký tự đặc biệt.
                   </Typography>
 
@@ -1675,27 +1692,27 @@ function ProfileContent() {
                       sx={{
                         p: 3,
                         borderRadius: "16px",
-                        bgcolor: "#eff6ff",
-                        border: "1px solid #bfdbfe",
+                        bgcolor: "var(--mui-palette-brand-50)",
+                        border: "1px solid var(--mui-palette-brand-200)",
                         display: "flex",
                         flexDirection: "column",
                         gap: 2,
                       }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Box sx={{ color: "#2563eb" }}>
+                        <Box sx={{ color: "var(--mui-palette-brand-600)" }}>
                           <ShieldCheck size={28} />
                         </Box>
                         <Box>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e3a8a" }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--mui-palette-brand-900)" }}>
                             Tài khoản liên kết an toàn qua Google Firebase
                           </Typography>
-                          <Typography variant="body2" sx={{ color: "#3b82f6" }}>
+                          <Typography variant="body2" sx={{ color: "var(--mui-palette-brand-500)" }}>
                             Tài khoản của bạn được chứng thực và bảo vệ trực tiếp bởi hệ thống Google Security.
                           </Typography>
                         </Box>
                       </Box>
-                      <Typography variant="caption" sx={{ color: "#475569" }}>
+                      <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-600)" }}>
                         Bạn không cần đổi mật khẩu tại đây. Mật khẩu và bảo mật 2 lớp của bạn được quản lý an toàn trên tài khoản Google của bạn.
                       </Typography>
                     </Paper>
@@ -1714,7 +1731,7 @@ function ProfileContent() {
                             input: {
                               startAdornment: (
                                 <InputAdornment position="start">
-                                  <Lock size={18} color="#64748b" />
+                                  <Lock size={18} color="var(--mui-palette-neutral-500)" />
                                 </InputAdornment>
                               ),
                               endAdornment: (
@@ -1744,7 +1761,7 @@ function ProfileContent() {
                               input: {
                                 startAdornment: (
                                   <InputAdornment position="start">
-                                    <Key size={18} color="#64748b" />
+                                    <Key size={18} color="var(--mui-palette-neutral-500)" />
                                   </InputAdornment>
                                 ),
                                 endAdornment: (
@@ -1766,7 +1783,7 @@ function ProfileContent() {
                           {newPassword && (
                             <Box sx={{ mt: 1.5, px: 0.5 }}>
                               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-                                <Typography variant="caption" sx={{ fontWeight: 600, color: "#64748b" }}>
+                                <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-500)" }}>
                                   Độ an toàn mật khẩu:
                                 </Typography>
                                 <Typography
@@ -1785,7 +1802,7 @@ function ProfileContent() {
                                 sx={{
                                   height: 6,
                                   borderRadius: 3,
-                                  bgcolor: "#e2e8f0",
+                                  bgcolor: "var(--mui-palette-neutral-200)",
                                   "& .MuiLinearProgress-bar": {
                                     bgcolor: getPasswordStrengthLabel(passwordStrength).color,
                                     borderRadius: 3,
@@ -1813,7 +1830,7 @@ function ProfileContent() {
                             input: {
                               startAdornment: (
                                 <InputAdornment position="start">
-                                  <Key size={18} color="#64748b" />
+                                  <Key size={18} color="var(--mui-palette-neutral-500)" />
                                 </InputAdornment>
                               ),
                               endAdornment: (
@@ -1848,7 +1865,7 @@ function ProfileContent() {
                               px: 3,
                               py: 1.2,
                               fontWeight: 700,
-                              background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                              background: "linear-gradient(135deg, var(--mui-palette-tone-10b981) 0%, var(--mui-palette-tone-fx-059669) 100%)",
                               boxShadow: "0 8px 16px -4px rgba(16, 185, 129, 0.4)",
                             }}
                           >
@@ -1862,7 +1879,7 @@ function ProfileContent() {
 
                 {/* Right Column: Security Sessions */}
                 <Grid size={{ xs: 12, md: 5 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 2 }}>
                     Phiên đăng nhập & Thiết bị
                   </Typography>
 
@@ -1871,8 +1888,8 @@ function ProfileContent() {
                     sx={{
                       p: 2.5,
                       borderRadius: "18px",
-                      bgcolor: "#f8fafc",
-                      border: "1px solid #e2e8f0",
+                      bgcolor: "var(--mui-palette-neutral-50)",
+                      border: "1px solid var(--mui-palette-neutral-200)",
                       display: "flex",
                       flexDirection: "column",
                       gap: 2,
@@ -1884,8 +1901,8 @@ function ProfileContent() {
                           width: 44,
                           height: 44,
                           borderRadius: "12px",
-                          bgcolor: "#e0f2fe",
-                          color: "#0284c7",
+                          bgcolor: "var(--mui-palette-tone-e0f2fe)",
+                          color: "var(--mui-palette-tone-0284c7)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -1894,10 +1911,10 @@ function ProfileContent() {
                         <Laptop size={22} />
                       </Box>
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: "#0f172a" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)" }}>
                           Windows PC • Trình duyệt hiện tại
                         </Typography>
-                        <Typography variant="caption" sx={{ color: "#10b981", fontWeight: 600 }}>
+                        <Typography variant="caption" sx={{ color: "var(--mui-palette-tone-10b981)", fontWeight: 600 }}>
                           ● Đang hoạt động
                         </Typography>
                       </Box>
@@ -1906,7 +1923,7 @@ function ProfileContent() {
                     <Divider />
 
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Typography variant="caption" sx={{ color: "#64748b" }}>
+                      <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
                         Địa chỉ IP kết nối:
                       </Typography>
                       <Typography variant="caption" sx={{ fontFamily: "monospace", fontWeight: 600 }}>
@@ -1915,10 +1932,10 @@ function ProfileContent() {
                     </Box>
 
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <Typography variant="caption" sx={{ color: "#64748b" }}>
+                      <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
                         Thời gian hết hạn phiên:
                       </Typography>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: "#475569" }}>
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-600)" }}>
                         7 ngày (Tự động gia hạn)
                       </Typography>
                     </Box>
@@ -1944,10 +1961,10 @@ function ProfileContent() {
             </Box>
           )}
 
-          {/* TAB 3: CÀI ĐẶT & TÙY CHỌN */}
-          {activeTab === 3 && (
+          {/* TAB 4: CÀI ĐẶT & TÙY CHỌN */}
+          {activeTab === TAB_SETTINGS && (
             <Box sx={{ p: { xs: 2.5, sm: 4 } }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: "#0f172a", mb: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 3 }}>
                 Cài đặt & Tùy chọn trải nghiệm
               </Typography>
 
@@ -1959,13 +1976,13 @@ function ProfileContent() {
                     sx={{
                       p: 3,
                       borderRadius: "18px",
-                      bgcolor: "#f8fafc",
-                      border: "1px solid #e2e8f0",
+                      bgcolor: "var(--mui-palette-neutral-50)",
+                      border: "1px solid var(--mui-palette-neutral-200)",
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-                      <Bell size={20} color="#2563eb" />
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                      <Bell size={20} color="var(--mui-palette-brand-600)" />
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                         Thông báo & Âm thanh
                       </Typography>
                     </Box>
@@ -1984,7 +2001,7 @@ function ProfileContent() {
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
                               Âm thanh tin nhắn đến
                             </Typography>
-                            <Typography variant="caption" sx={{ color: "#64748b" }}>
+                            <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
                               Phát âm thanh thông báo mỗi khi có tin nhắn mới
                             </Typography>
                           </Box>
@@ -2006,7 +2023,7 @@ function ProfileContent() {
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
                               Thông báo đẩy trên trình duyệt
                             </Typography>
-                            <Typography variant="caption" sx={{ color: "#64748b" }}>
+                            <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
                               Nhận thông báo kể cả khi bạn không mở tab chat
                             </Typography>
                           </Box>
@@ -2028,7 +2045,7 @@ function ProfileContent() {
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
                               Xem trước nội dung tin nhắn
                             </Typography>
-                            <Typography variant="caption" sx={{ color: "#64748b" }}>
+                            <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
                               Hiển thị nội dung chi tiết trong popup thông báo
                             </Typography>
                           </Box>
@@ -2045,13 +2062,13 @@ function ProfileContent() {
                     sx={{
                       p: 3,
                       borderRadius: "18px",
-                      bgcolor: "#f8fafc",
-                      border: "1px solid #e2e8f0",
+                      bgcolor: "var(--mui-palette-neutral-50)",
+                      border: "1px solid var(--mui-palette-neutral-200)",
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-                      <Shield size={20} color="#10b981" />
-                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                      <Shield size={20} color="var(--mui-palette-tone-10b981)" />
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                         Quyền riêng tư
                       </Typography>
                     </Box>
@@ -2070,7 +2087,7 @@ function ProfileContent() {
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
                               Hiển thị trạng thái Đang hoạt động
                             </Typography>
-                            <Typography variant="caption" sx={{ color: "#64748b" }}>
+                            <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
                               Cho phép bạn bè biết khi bạn đang trực tuyến
                             </Typography>
                           </Box>
@@ -2092,7 +2109,7 @@ function ProfileContent() {
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
                               Cho phép tìm kiếm qua số điện thoại
                             </Typography>
-                            <Typography variant="caption" sx={{ color: "#64748b" }}>
+                            <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
                               Bạn bè có thể tìm thấy bạn bằng số điện thoại
                             </Typography>
                           </Box>
@@ -2121,7 +2138,7 @@ function ProfileContent() {
             },
           }}
         >
-          <DialogTitle sx={{ fontWeight: 800, color: "#0f172a" }}>
+          <DialogTitle sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
             Thay đổi ảnh đại diện
           </DialogTitle>
           <DialogContent>
@@ -2140,7 +2157,7 @@ function ProfileContent() {
               >
                 {(name || "U").charAt(0).toUpperCase()}
               </Avatar>
-              <Typography variant="caption" sx={{ mt: 1, color: "#64748b", fontWeight: 600 }}>
+              <Typography variant="caption" sx={{ mt: 1, color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
                 Xem trước ảnh đại diện
               </Typography>
             </Box>
@@ -2176,8 +2193,8 @@ function ProfileContent() {
                         sx={{
                           p: 1,
                           borderRadius: "16px",
-                          border: isSelected ? "2.5px solid #2563eb" : "1.5px solid #e2e8f0",
-                          bgcolor: isSelected ? "#eff6ff" : "#ffffff",
+                          border: isSelected ? "2.5px solid var(--mui-palette-brand-600)" : "1.5px solid var(--mui-palette-neutral-200)",
+                          bgcolor: isSelected ? "var(--mui-palette-brand-50)" : "var(--mui-palette-background-paper)",
                           cursor: "pointer",
                           display: "flex",
                           flexDirection: "column",
@@ -2185,7 +2202,7 @@ function ProfileContent() {
                           transition: "all 0.2s ease",
                           "&:hover": {
                             transform: "scale(1.05)",
-                            borderColor: "#93c5fd",
+                            borderColor: "var(--mui-palette-brand-300)",
                           },
                         }}
                       >
@@ -2194,7 +2211,7 @@ function ProfileContent() {
                           variant="caption"
                           sx={{
                             fontWeight: isSelected ? 700 : 500,
-                            color: isSelected ? "#1d4ed8" : "#475569",
+                            color: isSelected ? "var(--mui-palette-brand-700)" : "var(--mui-palette-neutral-600)",
                             fontSize: "0.7rem",
                             textAlign: "center",
                           }}
@@ -2215,13 +2232,13 @@ function ProfileContent() {
                   sx={{
                     p: 3,
                     borderRadius: "16px",
-                    border: "2px dashed #cbd5e1",
-                    bgcolor: "#f8fafc",
+                    border: "2px dashed var(--mui-palette-neutral-300)",
+                    bgcolor: "var(--mui-palette-neutral-50)",
                     textAlign: "center",
                     cursor: "pointer",
                     "&:hover": {
-                      borderColor: "#2563eb",
-                      bgcolor: "#eff6ff",
+                      borderColor: "var(--mui-palette-brand-600)",
+                      bgcolor: "var(--mui-palette-brand-50)",
                     },
                   }}
                   component="label"
@@ -2234,17 +2251,17 @@ function ProfileContent() {
                     accept="image/*"
                     onChange={handleFileUpload}
                   />
-                  <Camera size={32} color="#64748b" style={{ margin: "0 auto 8px" }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: "#1e293b" }}>
+                  <Camera size={32} color="var(--mui-palette-neutral-500)" style={{ margin: "0 auto 8px" }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-800)" }}>
                     Nhấn vào đây để tải ảnh từ máy tính
                   </Typography>
-                  <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                  <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                     PNG, JPG, WEBP tối đa 2MB
                   </Typography>
                 </Box>
 
                 <Divider>
-                  <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                  <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
                     HOẶC
                   </Typography>
                 </Divider>
@@ -2263,7 +2280,7 @@ function ProfileContent() {
           <DialogActions sx={{ px: 3, pb: 2.5 }}>
             <Button
               onClick={() => setIsAvatarDialogOpen(false)}
-              sx={{ color: "#64748b", fontWeight: 600 }}
+              sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}
             >
               Hủy
             </Button>
@@ -2296,11 +2313,11 @@ function ProfileContent() {
             },
           }}
         >
-          <DialogTitle sx={{ fontWeight: 800, color: "#0f172a" }}>
+          <DialogTitle sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
             Xác nhận đăng xuất
           </DialogTitle>
           <DialogContent>
-            <Typography variant="body2" sx={{ color: "#64748b", lineHeight: 1.6 }}>
+            <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-500)", lineHeight: 1.6 }}>
               Bạn có chắc chắn muốn đăng xuất khỏi tài khoản{" "}
               <strong>{user?.name || user?.email}</strong>? Bạn sẽ cần đăng nhập lại để tiếp tục trò chuyện.
             </Typography>
@@ -2309,7 +2326,7 @@ function ProfileContent() {
             <Button
               disabled={isLoggingOut}
               onClick={() => setIsLogoutDialogOpen(false)}
-              sx={{ color: "#64748b", fontWeight: 600 }}
+              sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}
             >
               Ở lại
             </Button>

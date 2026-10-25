@@ -30,6 +30,8 @@ import login from "@/data/loginData";
 import { useAuthStore } from "../../store/useAuthStore";
 import useSocialAuth from "../../hooks/useSocialAuth";
 import TurnstileWidget, { TurnstileRef } from "../common/TurnstileWidget";
+import { GoogleIcon, FacebookIcon } from "../common/SocialIcons";
+import ColorModeToggle from "../common/ColorModeToggle";
 
 const loginSchema = z.object({
   email: z
@@ -48,40 +50,6 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
-
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24">
-      <path
-        fill="#4285F4"
-        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.41 7.34 24 12 24z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.92 0 12s.45 3.85 1.24 5.42l4.04-3.15z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.59 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-      />
-    </svg>
-  );
-}
-
-function FacebookIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24">
-      <path
-        fill="#1877F2"
-        d="M24 12a12 12 0 1 0-13.875 11.85v-8.38H7.078V12h3.047V9.413c0-3.007 1.792-4.672 4.533-4.672 1.312 0 2.686.234 2.686.234v2.953h-1.514c-1.49 0-1.955.925-1.955 1.875V12h3.328l-.532 3.47h-2.796v8.38A12.003 12.003 0 0 0 24 12Z"
-      />
-    </svg>
-  );
-}
 
 function SmoothTypewriter({
   words = ["Chào mừng bạn!", "Hôm nay thế nào?"],
@@ -139,7 +107,7 @@ function SmoothTypewriter({
   return (
     <span
       style={{
-        borderRight: "2px solid #60a5fa",
+        borderRight: "2px solid var(--mui-palette-brand-400)",
         paddingRight: "2px",
         animation: "blink 0.8s infinite",
       }}
@@ -284,14 +252,16 @@ export default function Login() {
     <Box
       sx={{
         display: "flex",
-        minHeight: "100vh",
+        minHeight: "100dvh",
         width: "100%",
         overflowX: "hidden",
-        bgcolor: "#ffffff",
+        bgcolor: "var(--mui-palette-background-paper)",
       }}
     >
       <CssBaseline />
+      {/* Hero luôn tối → ghim scheme sáng (data-light) để token không đảo ở dark mode */}
       <Box
+        data-light=""
         sx={{
           flex: 1,
           display: {
@@ -307,8 +277,8 @@ export default function Login() {
           position: "relative",
           overflow: "hidden",
           background:
-            "linear-gradient(135deg, #090d16 0%, #171836 50%, #1e40af 100%)",
-          color: "#ffffff",
+            "linear-gradient(135deg, var(--mui-palette-tone-090d16) 0%, var(--mui-palette-tone-171836) 50%, var(--mui-palette-tone-1e40af) 100%)",
+          color: "var(--mui-palette-common-white)",
         }}
       >
         <Box
@@ -339,14 +309,14 @@ export default function Login() {
               width: 42,
               height: 42,
               borderRadius: "12px",
-              bgcolor: "#2563eb",
+              bgcolor: "var(--mui-palette-brand-600)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               boxShadow: "0 8px 18px rgba(37,99,235,0.45)",
             }}
           >
-            <Sparkles size={22} color="#ffffff" />
+            <Sparkles size={22} color="var(--mui-palette-common-white)" />
           </Box>
 
           <Typography
@@ -380,12 +350,12 @@ export default function Login() {
               border: "1px solid rgba(59, 130, 246, 0.3)",
             }}
           >
-            <Sparkles size={14} color="#60a5fa" />
+            <Sparkles size={14} color="var(--mui-palette-brand-400)" />
 
             <Typography
               variant="caption"
               sx={{
-                color: "#93c5fd",
+                color: "var(--mui-palette-brand-300)",
                 fontWeight: 600,
               }}
             >
@@ -403,7 +373,7 @@ export default function Login() {
               },
               lineHeight: 1.2,
               mb: 2.5,
-              background: "linear-gradient(180deg, #FFFFFF 0%, #cbd5e1 100%)",
+              background: "linear-gradient(180deg, var(--mui-palette-background-paper) 0%, var(--mui-palette-neutral-300) 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
@@ -443,12 +413,12 @@ export default function Login() {
                     gap: 1.5,
                   }}
                 >
-                  <Icon size={18} color="#4ade80" />
+                  <Icon size={18} color="var(--mui-palette-tone-4ade80)" />
 
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#e2e8f0",
+                      color: "var(--mui-palette-neutral-200)",
                     }}
                   >
                     {item.text}
@@ -471,7 +441,7 @@ export default function Login() {
             <Typography
               variant="body2"
               sx={{
-                color: "#f1f5f9",
+                color: "var(--mui-palette-neutral-100)",
                 fontStyle: "italic",
                 mb: 2,
               }}
@@ -497,7 +467,7 @@ export default function Login() {
                   sx={{
                     width: 36,
                     height: 36,
-                    bgcolor: "#3b82f6",
+                    bgcolor: "var(--mui-palette-brand-500)",
                     fontSize: "0.85rem",
                   }}
                 >
@@ -512,7 +482,7 @@ export default function Login() {
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "#94a3b8",
+                      color: "var(--mui-palette-neutral-400)",
                     }}
                   >
                     {login.position}
@@ -541,7 +511,7 @@ export default function Login() {
         <Typography
           variant="caption"
           sx={{
-            color: "#64748b",
+            color: "var(--mui-palette-neutral-500)",
             zIndex: 1,
           }}
         >
@@ -564,9 +534,13 @@ export default function Login() {
             sm: 6,
             md: 8,
           },
-          backgroundColor: "#ffffff",
+          position: "relative",
+          backgroundColor: "var(--mui-palette-background-paper)",
         }}
       >
+        <ColorModeToggle
+          sx={{ position: "absolute", top: 12, right: 12, color: "text.secondary" }}
+        />
         <Box
           sx={{
             width: "100%",
@@ -576,8 +550,8 @@ export default function Login() {
               sm: 5,
             },
             borderRadius: "16px",
-            border: "1px solid #e2e8f0",
-            bgcolor: "#ffffff",
+            border: "1px solid var(--mui-palette-neutral-200)",
+            bgcolor: "var(--mui-palette-background-paper)",
             boxShadow:
               "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)",
           }}
@@ -592,7 +566,7 @@ export default function Login() {
               variant="h4"
               sx={{
                 fontWeight: 800,
-                color: "#0f172a",
+                color: "var(--mui-palette-neutral-900)",
                 letterSpacing: "-0.5px",
                 mb: 1,
               }}
@@ -603,7 +577,7 @@ export default function Login() {
             <Typography
               variant="body2"
               sx={{
-                color: "#64748b",
+                color: "var(--mui-palette-neutral-500)",
               }}
             >
               {login.form.description}
@@ -633,7 +607,7 @@ export default function Login() {
               variant="body2"
               sx={{
                 fontWeight: 600,
-                color: "#334155",
+                color: "var(--mui-palette-neutral-700)",
                 fontSize: "0.875rem",
                 mb: 0.75,
                 display: "block",
@@ -657,7 +631,7 @@ export default function Login() {
                 "& .MuiOutlinedInput-root": {
                   height: 54,
                   borderRadius: "12px",
-                  backgroundColor: "#f8fafc",
+                  backgroundColor: "var(--mui-palette-neutral-50)",
                   fontSize: "1rem",
                   "& input": {
                     height: "100%",
@@ -666,10 +640,10 @@ export default function Login() {
                     fontSize: "1rem",
                   },
                   "&:hover fieldset": {
-                    borderColor: "#94a3b8",
+                    borderColor: "var(--mui-palette-neutral-400)",
                   },
                   "&.Mui-focused": {
-                    backgroundColor: "#ffffff",
+                    backgroundColor: "var(--mui-palette-background-paper)",
                     boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.12)",
                   },
                 },
@@ -678,7 +652,7 @@ export default function Login() {
                 input: {
                   startAdornment: (
                     <InputAdornment position="start" sx={{ ml: 0.5, mr: 1 }}>
-                      <Mail size={20} color="#64748b" />
+                      <Mail size={20} color="var(--mui-palette-neutral-500)" />
                     </InputAdornment>
                   ),
                 },
@@ -689,7 +663,7 @@ export default function Login() {
               variant="body2"
               sx={{
                 fontWeight: 600,
-                color: "#334155",
+                color: "var(--mui-palette-neutral-700)",
                 fontSize: "0.875rem",
                 mb: 0.75,
                 display: "block",
@@ -713,7 +687,7 @@ export default function Login() {
                 "& .MuiOutlinedInput-root": {
                   height: 54,
                   borderRadius: "12px",
-                  backgroundColor: "#f8fafc",
+                  backgroundColor: "var(--mui-palette-neutral-50)",
                   fontSize: "1rem",
                   "& input": {
                     height: "100%",
@@ -722,10 +696,10 @@ export default function Login() {
                     fontSize: "1rem",
                   },
                   "&:hover fieldset": {
-                    borderColor: "#94a3b8",
+                    borderColor: "var(--mui-palette-neutral-400)",
                   },
                   "&.Mui-focused": {
-                    backgroundColor: "#ffffff",
+                    backgroundColor: "var(--mui-palette-background-paper)",
                     boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.12)",
                   },
                 },
@@ -734,7 +708,7 @@ export default function Login() {
                 input: {
                   startAdornment: (
                     <InputAdornment position="start" sx={{ ml: 0.5, mr: 1 }}>
-                      <Lock size={20} color="#64748b" />
+                      <Lock size={20} color="var(--mui-palette-neutral-500)" />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -749,9 +723,9 @@ export default function Login() {
                         type="button"
                       >
                         {showPassword ? (
-                          <EyeOff size={20} color="#64748b" />
+                          <EyeOff size={20} color="var(--mui-palette-neutral-500)" />
                         ) : (
-                          <Eye size={20} color="#64748b" />
+                          <Eye size={20} color="var(--mui-palette-neutral-500)" />
                         )}
                       </IconButton>
                     </InputAdornment>
@@ -774,7 +748,7 @@ export default function Login() {
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
                     sx={{
-                      color: "#cbd5e1",
+                      color: "var(--mui-palette-neutral-300)",
                       "&.Mui-checked": {
                         color: "primary.main",
                       },
@@ -785,7 +759,7 @@ export default function Login() {
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "#475569",
+                      color: "var(--mui-palette-neutral-600)",
                       fontSize: "0.875rem",
                     }}
                   >
@@ -801,7 +775,7 @@ export default function Login() {
                 href="/forgot-password"
                 style={{
                   fontWeight: 600,
-                  color: "#2563eb",
+                  color: "var(--mui-palette-brand-600)",
                   fontSize: "0.875rem",
                   textDecoration: "none",
                 }}
@@ -838,7 +812,7 @@ export default function Login() {
                 textTransform: "none",
                 fontSize: "1rem",
                 fontWeight: 600,
-                background: "linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)",
+                background: "linear-gradient(180deg, var(--mui-palette-brand-600) 0%, var(--mui-palette-brand-700) 100%)",
                 boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)",
                 transition: "all 0.2s ease-in-out",
 
@@ -872,7 +846,7 @@ export default function Login() {
               <Typography
                 variant="caption"
                 sx={{
-                  color: "#94a3b8",
+                  color: "var(--mui-palette-neutral-400)",
                   px: 1,
                   fontWeight: 500,
                 }}
@@ -909,17 +883,17 @@ export default function Login() {
                   flex: 1,
                   height: 48,
                   borderRadius: "12px",
-                  borderColor: "#e2e8f0",
-                  color: "#1e293b",
+                  borderColor: "var(--mui-palette-neutral-200)",
+                  color: "var(--mui-palette-neutral-800)",
                   textTransform: "none",
                   fontWeight: 600,
                   fontSize: "0.95rem",
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--mui-palette-background-paper)",
                   transition: "all 0.15s ease",
 
                   "&:hover": {
-                    borderColor: "#cbd5e1",
-                    backgroundColor: "#f8fafc",
+                    borderColor: "var(--mui-palette-neutral-300)",
+                    backgroundColor: "var(--mui-palette-neutral-50)",
                   },
                 }}
               >
@@ -947,17 +921,17 @@ export default function Login() {
                   flex: 1,
                   height: 48,
                   borderRadius: "12px",
-                  borderColor: "#e2e8f0",
-                  color: "#1e293b",
+                  borderColor: "var(--mui-palette-neutral-200)",
+                  color: "var(--mui-palette-neutral-800)",
                   textTransform: "none",
                   fontWeight: 600,
                   fontSize: "0.95rem",
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "var(--mui-palette-background-paper)",
                   transition: "all 0.15s ease",
 
                   "&:hover": {
-                    borderColor: "#cbd5e1",
-                    backgroundColor: "#f8fafc",
+                    borderColor: "var(--mui-palette-neutral-300)",
+                    backgroundColor: "var(--mui-palette-neutral-50)",
                   },
                 }}
               >
@@ -974,7 +948,7 @@ export default function Login() {
               <Typography
                 variant="body2"
                 sx={{
-                  color: "#64748b",
+                  color: "var(--mui-palette-neutral-500)",
                 }}
               >
                 {login.form.registerText}
@@ -983,7 +957,7 @@ export default function Login() {
                   href="/register"
                   style={{
                     fontWeight: 700,
-                    color: "#2563eb",
+                    color: "var(--mui-palette-brand-600)",
                     marginLeft: 4,
                     textDecoration: "none",
                   }}

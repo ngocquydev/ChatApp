@@ -1,7 +1,16 @@
-@import "@fontsource/roboto/300.css";
-@import "@fontsource/roboto/400.css";
-@import "@fontsource/roboto/500.css";
-@import "@fontsource/roboto/700.css";
+@import "@fontsource-variable/inter/index.css";
+
+/* Màu lấy từ biến CSS do MUI theme sinh ra → tự đổi theo light/dark (xem src/theme/theme.ts) */
+:root {
+  --color-bg: var(--mui-palette-background-default, #f1f5f9);
+  --color-surface: var(--mui-palette-background-paper, #ffffff);
+  --color-border: var(--mui-palette-divider, #e2e8f0);
+  --color-text: var(--mui-palette-text-primary, #0f172a);
+  --color-text-muted: var(--mui-palette-text-secondary, #64748b);
+  --color-primary: var(--mui-palette-primary-main, #2563eb);
+  --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.35);
+  --app-bar-height: 64px;
+}
 
 * {
   box-sizing: border-box;
@@ -11,37 +20,80 @@ html,
 body {
   margin: 0;
   padding: 0;
-  font-family: "Roboto", sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  font-family: "Inter Variable", "Inter", "Segoe UI", system-ui, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-/* Thanh cuộn hiện đại phong cách Facebook/macOS */
+::selection {
+  background: rgba(37, 99, 235, 0.2);
+}
+
+/* Focus ring thống nhất cho điều hướng bàn phím (WCAG 2.4.7) */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Ô nhập liệu đã có vòng focus riêng từ MUI theme */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+}
+
+/* Skip link: nhảy thẳng tới nội dung chính */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 2000;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: #ffffff;
+  font-weight: 600;
+  transform: translateY(-200%);
+  transition: transform 0.15s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* Thanh cuộn hiện đại */
 ::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--mui-palette-neutral-300, #cbd5e1);
   border-radius: 9999px;
-  border: 2px solid #f1f5f9;
+  border: 3px solid transparent;
+  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--mui-palette-neutral-400, #94a3b8);
+  background-clip: content-box;
+  border: 3px solid transparent;
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 #f1f5f9;
+  scrollbar-color: var(--mui-palette-neutral-300, #cbd5e1) transparent;
 }
 
 a {
@@ -49,3 +101,46 @@ a {
   text-decoration: none;
 }
 
+/* Keyframes dùng chung (trước đây `blink` được tham chiếu nhưng chưa định nghĩa) */
+@keyframes blink {
+  50%,
+  100% {
+    border-right-color: transparent;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes typingDot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* Tôn trọng người dùng giảm chuyển động (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

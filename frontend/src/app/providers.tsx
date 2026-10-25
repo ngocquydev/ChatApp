@@ -42,8 +42,8 @@ export default function Providers({ children }: ProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+      <ThemeProvider theme={theme} defaultMode="system">
+        <CssBaseline enableColorScheme />
         <AuthInitializer>{children}</AuthInitializer>
       </ThemeProvider>
     </QueryClientProvider>

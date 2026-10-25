@@ -1,10 +1,21 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
+import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
 import Providers from "./providers";
 import ClientShell from "./components/ClientShell";
 import "./globals.css";
+import { neutralScale } from "@/theme/tokens";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://chatapp.vn";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: neutralScale.light[900] },
+    { media: "(prefers-color-scheme: dark)", color: neutralScale.dark[100] },
+  ],
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -70,8 +81,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi">
+    <html lang="vi" suppressHydrationWarning>
       <body>
+        {/* Phải khớp cssVariables.colorSchemeSelector = "data" trong theme.ts */}
+        <InitColorSchemeScript attribute="data" defaultMode="system" />
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <Providers>
             <ClientShell>{children}</ClientShell>

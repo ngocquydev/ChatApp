@@ -174,7 +174,7 @@ const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(
 
     if (!cleanSiteKey) {
       return (
-        <Box sx={{ my: 1.5, p: 1, border: "1px dashed #cbd5e1", borderRadius: 1.5 }}>
+        <Box sx={{ my: 1.5, p: 1, border: "1px dashed var(--mui-palette-neutral-300)", borderRadius: 1.5 }}>
           <Typography variant="caption" color="text.secondary">
             Vui lòng thêm NEXT_PUBLIC_TURNSTILE_SITE_KEY trong file .env để kích hoạt Turnstile.
           </Typography>

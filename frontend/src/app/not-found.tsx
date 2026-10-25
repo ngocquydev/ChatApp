@@ -5,12 +5,12 @@ export default function NotFound() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "#f8fafc",
+        bgcolor: "var(--mui-palette-neutral-50)",
         gap: 2,
         p: 3,
         textAlign: "center",
@@ -20,7 +20,7 @@ export default function NotFound() {
         variant="h1"
         sx={{
           fontWeight: 800,
-          color: "#2563eb",
+          color: "var(--mui-palette-brand-600)",
           fontSize: { xs: "3.5rem", md: "5rem" },
         }}
       >
@@ -30,12 +30,12 @@ export default function NotFound() {
         variant="h5"
         sx={{
           fontWeight: 700,
-          color: "#0f172a",
+          color: "var(--mui-palette-neutral-900)",
         }}
       >
         Trang không tồn tại
       </Typography>
-      <Typography variant="body1" sx={{ color: "#64748b", maxWidth: 460 }}>
+      <Typography variant="body1" sx={{ color: "var(--mui-palette-neutral-500)", maxWidth: 460 }}>
         Địa chỉ bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển sang đường
         dẫn khác.
       </Typography>
@@ -47,7 +47,7 @@ export default function NotFound() {
             borderRadius: "10px",
             px: 3,
             py: 1.2,
-            bgcolor: "#2563eb",
+            bgcolor: "var(--mui-palette-brand-600)",
             textTransform: "none",
             fontWeight: 600,
           }}

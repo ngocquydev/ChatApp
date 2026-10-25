@@ -23,17 +23,17 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     return (
       <Box
         sx={{
-          minHeight: "100vh",
+          minHeight: "100dvh",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          bgcolor: "#f8fafc",
+          bgcolor: "var(--mui-palette-neutral-50)",
           gap: 2,
         }}
       >
-        <CircularProgress size={42} thickness={4} sx={{ color: "#2563eb" }} />
-        <Typography variant="body2" sx={{ color: "#64748b", fontWeight: 500 }}>
+        <CircularProgress size={42} thickness={4} sx={{ color: "var(--mui-palette-brand-600)" }} />
+        <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
           Đang xác thực phiên làm việc...
         </Typography>
       </Box>

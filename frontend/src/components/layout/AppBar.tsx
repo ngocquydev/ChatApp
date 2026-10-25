@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, MouseEvent } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import Link from "next/link";
 import {
   AppBar,
   Box,
@@ -32,9 +31,9 @@ import {
   LinearProgress,
   Badge,
   Chip,
+  ButtonBase,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
-import AdbIcon from "@mui/icons-material/Adb";
 import SearchIcon from "@mui/icons-material/Search";
 import FeedIcon from "@mui/icons-material/Feed";
 import ExploreIcon from "@mui/icons-material/Explore";
@@ -46,6 +45,12 @@ import { useFriendStore } from "../../store/useFriendStore";
 import { useChatStore } from "../../store/useChatStore";
 import { useChatBoxStore } from "../../store/useChatBoxStore";
 import { useSoundStore } from "../../store/useSoundStore";
+import BrandLogo from "../common/BrandLogo";
+import ColorModeToggle from "../common/ColorModeToggle";
+import UserSearchResults, { SEARCH_PREVIEW_COUNT } from "./UserSearchResults";
+
+/** Số kết quả mỗi trang khi "Xem tất cả" / cuộn vô hạn */
+const SEARCH_PAGE_SIZE = 20;
 
 interface NavPage {
   id: string;
@@ -68,12 +73,19 @@ function ResponsiveAppBar() {
   // State tìm kiếm người dùng toàn hệ thống
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // false = chỉ xem trước vài kết quả; true = đã bấm "Xem tất cả" (cuộn vô hạn)
+  const [searchExpanded, setSearchExpanded] = useState(false);
   const searchAnchorRef = useRef<HTMLDivElement | null>(null);
 
   const {
     searchResults,
     isSearching,
+    isSearchingMore,
+    searchHasMore,
+    searchError,
     searchUsers,
+    loadMoreSearchResults,
+    clearSearchResults,
     sendFriendRequest,
     cancelRequest,
     respondToRequest,
@@ -106,7 +118,8 @@ function ResponsiveAppBar() {
     }
     setIsSearchOpen(true);
     const timer = setTimeout(() => {
-      searchUsers(searchQuery);
+      // Trang đầu chỉ lấy vài kết quả cho nhanh; phần còn lại tải khi người dùng bấm "Xem tất cả"
+      searchUsers(searchQuery, { limit: SEARCH_PREVIEW_COUNT });
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery, searchUsers]);
@@ -185,41 +198,21 @@ function ResponsiveAppBar() {
 
   return (
     <>
-      <AppBar position="fixed">
+      {/* AppBar luôn tối ở cả hai scheme → ghim biến màu về scheme sáng (data-light) */}
+      <AppBar position="fixed" data-light="">
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ gap: 2 }}>
             {/* Logo Desktop */}
-            <Link
-              href="/"
-              style={{
-                textDecoration: "none",
-                color: "inherit",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <AdbIcon sx={{ display: { xs: "none", md: "flex" }, mr: 1 }} />
-              <Typography
-                variant="h6"
-                noWrap
-                sx={{
-                  mr: 2,
-                  display: { xs: "none", md: "flex" },
-                  fontFamily: "monospace",
-                  fontWeight: 700,
-                  letterSpacing: ".3rem",
-                  color: "inherit",
-                }}
-              >
-                CHATAPP
-              </Typography>
-            </Link>
+            <Box sx={{ display: { xs: "none", md: "flex" }, mr: 2 }}>
+              <BrandLogo />
+            </Box>
 
             {/* Nút Hamburger bật Drawer trên Mobile */}
             <Box sx={{ display: { xs: "flex", md: "none" } }}>
               <IconButton
                 size="large"
-                aria-label="open drawer"
+                aria-label="Mở menu điều hướng"
+                aria-expanded={mobileOpen}
                 onClick={handleDrawerToggle}
                 color="inherit"
               >
@@ -227,32 +220,10 @@ function ResponsiveAppBar() {
               </IconButton>
             </Box>
 
-            {/* Logo Mobile */}
-            <Link
-              href="/"
-              style={{
-                textDecoration: "none",
-                color: "inherit",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <AdbIcon sx={{ display: { xs: "flex", md: "none" }, mr: 1 }} />
-              <Typography
-                variant="h6"
-                noWrap
-                sx={{
-                  mr: 1,
-                  display: { xs: "flex", md: "none" },
-                  fontFamily: "monospace",
-                  fontWeight: 700,
-                  letterSpacing: ".1rem",
-                  color: "inherit",
-                }}
-              >
-                CHATAPP
-              </Typography>
-            </Link>
+            {/* Logo Mobile (chỉ biểu tượng để nhường chỗ cho ô tìm kiếm) */}
+            <Box sx={{ display: { xs: "flex", md: "none" } }}>
+              <BrandLogo iconOnly size={34} />
+            </Box>
 
             {/* Thanh Search Real-Time Toàn Hệ Thống */}
             <Box
@@ -262,14 +233,18 @@ function ResponsiveAppBar() {
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Tìm bạn bè, đồng nghiệp..."
+                placeholder="Tìm bạn bè, đồng nghiệp…"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSearchExpanded(false);
+                }}
                 onFocus={() => {
                   if (searchQuery.trim()) setIsSearchOpen(true);
                 }}
                 variant="outlined"
                 slotProps={{
+                  htmlInput: { "aria-label": "Tìm kiếm người dùng" },
                   input: {
                     startAdornment: (
                       <InputAdornment position="start">
@@ -282,9 +257,12 @@ function ResponsiveAppBar() {
                       <InputAdornment position="end">
                         <IconButton
                           size="small"
+                          aria-label="Xóa nội dung tìm kiếm"
                           onClick={() => {
                             setSearchQuery("");
+                            setSearchExpanded(false);
                             setIsSearchOpen(false);
+                            clearSearchResults();
                           }}
                           sx={{ color: "rgba(255, 255, 255, 0.8)", p: 0.5 }}
                         >
@@ -307,7 +285,7 @@ function ResponsiveAppBar() {
                 }}
               />
 
-              {/* Popper Dropdown Hiển Thị Kết Quả Tìm Kiếm Thật */}
+              {/* Dropdown kết quả: xem trước vài kết quả; "Xem tất cả" → hiện hết + cuộn vô hạn */}
               <Popper
                 open={isSearchOpen}
                 anchorEl={searchAnchorRef.current}
@@ -319,196 +297,46 @@ function ResponsiveAppBar() {
                     elevation={8}
                     sx={{
                       mt: 1,
-                      p: 1.5,
-                      maxHeight: 400,
-                      overflowY: "auto",
                       borderRadius: 2,
-                      bgcolor: "#ffffff",
-                      border: "1px solid #e2e8f0",
-                      position: "relative",
+                      overflow: "hidden",
+                      bgcolor: "background.paper",
+                      border: "1px solid",
+                      borderColor: "divider",
                     }}
                   >
-                    {isSearching && (
-                      <LinearProgress
-                        sx={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: 3,
-                          borderTopLeftRadius: 8,
-                          borderTopRightRadius: 8,
-                        }}
-                      />
-                    )}
-
-                    {searchResults.length === 0 ? (
-                      isSearching ? (
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", py: 3, gap: 1.5 }}>
-                          <CircularProgress size={20} />
-                          <Typography variant="body2" sx={{ color: "#64748b" }}>
-                            Đang tìm kiếm người dùng...
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <Box sx={{ textAlign: "center", py: 3 }}>
-                          <Typography variant="body2" sx={{ color: "#64748b" }}>
-                            Không tìm thấy người dùng nào khớp với &quot;{searchQuery}&quot;
-                          </Typography>
-                        </Box>
-                      )
-                    ) : (
-                      <>
-                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1, mb: 1 }}>
-                          <Typography
-                            variant="caption"
-                            sx={{ fontWeight: 700, color: "#64748b", display: "block" }}
-                          >
-                            KẾT QUẢ TÌM KIẾM ({searchResults.length})
-                          </Typography>
-                          {isSearching && (
-                            <Typography variant="caption" sx={{ color: "#94a3b8", fontStyle: "italic" }}>
-                              Đang cập nhật...
-                            </Typography>
-                          )}
-                        </Box>
-                        <List disablePadding>
-                          {searchResults.map((userItem) => (
-                            <ListItem
-                              key={userItem._id}
-                              sx={{
-                                px: 1,
-                                py: 1,
-                                borderRadius: 1.5,
-                                "&:hover": { bgcolor: "#f8fafc" },
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                mb: 0.5,
-                              }}
-                            >
-                              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0, flex: 1 }}>
-                                <Avatar
-                                  src={userItem.avatar || ""}
-                                  sx={{ width: 38, height: 38, bgcolor: "#3b82f6", fontWeight: 700 }}
-                                >
-                                  {(userItem.name || "U")[0].toUpperCase()}
-                                </Avatar>
-                                <Box sx={{ minWidth: 0, flex: 1 }}>
-                                  <Typography
-                                    variant="subtitle2"
-                                    noWrap
-                                    sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.875rem" }}
-                                  >
-                                    {userItem.name}
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    noWrap
-                                    sx={{ color: "#64748b", display: "block", fontSize: "0.75rem" }}
-                                  >
-                                    {userItem.email}
-                                  </Typography>
-                                </Box>
-                              </Box>
-
-                              <Box sx={{ ml: 1, flexShrink: 0 }}>
-                                {userItem.relationStatus === "none" && (
-                                  <Button
-                                    size="small"
-                                    variant="contained"
-                                    startIcon={<UserPlus size={14} />}
-                                    onClick={async () => {
-                                      await sendFriendRequest(userItem._id);
-                                    }}
-                                    sx={{
-                                      textTransform: "none",
-                                      fontSize: "0.75rem",
-                                      borderRadius: 1.5,
-                                      py: 0.4,
-                                    }}
-                                  >
-                                    Kết bạn
-                                  </Button>
-                                )}
-
-                                {userItem.relationStatus === "pending_sent" && (
-                                  <Button
-                                    size="small"
-                                    variant="outlined"
-                                    color="inherit"
-                                    startIcon={<Clock size={13} />}
-                                    onClick={async () => {
-                                      if (userItem.requestId) await cancelRequest(userItem.requestId);
-                                    }}
-                                    sx={{
-                                      textTransform: "none",
-                                      fontSize: "0.72rem",
-                                      borderRadius: 1.5,
-                                      py: 0.4,
-                                      color: "#64748b",
-                                    }}
-                                  >
-                                    Đã gửi (Hủy)
-                                  </Button>
-                                )}
-
-                                {userItem.relationStatus === "pending_received" && (
-                                  <Box sx={{ display: "flex", gap: 0.5 }}>
-                                    <Button
-                                      size="small"
-                                      variant="contained"
-                                      color="primary"
-                                      startIcon={<Check size={13} />}
-                                      onClick={async () => {
-                                        if (userItem.requestId)
-                                          await respondToRequest(userItem.requestId, "accept");
-                                      }}
-                                      sx={{ textTransform: "none", fontSize: "0.72rem", py: 0.3, px: 1 }}
-                                    >
-                                      Chấp nhận
-                                    </Button>
-                                    <Button
-                                      size="small"
-                                      variant="outlined"
-                                      color="error"
-                                      onClick={async () => {
-                                        if (userItem.requestId)
-                                          await respondToRequest(userItem.requestId, "reject");
-                                      }}
-                                      sx={{ textTransform: "none", fontSize: "0.72rem", py: 0.3, px: 0.8 }}
-                                    >
-                                      Từ chối
-                                    </Button>
-                                  </Box>
-                                )}
-
-                                {userItem.relationStatus === "friends" && (
-                                  <Button
-                                    size="small"
-                                    variant="outlined"
-                                    color="primary"
-                                    onClick={async () => {
-                                      setIsSearchOpen(false);
-                                      await startConversationWithUser(userItem);
-                                      router.push("/chat");
-                                    }}
-                                    sx={{
-                                      textTransform: "none",
-                                      fontSize: "0.75rem",
-                                      borderRadius: 1.5,
-                                      py: 0.4,
-                                    }}
-                                  >
-                                    Nhắn tin
-                                  </Button>
-                                )}
-                              </Box>
-                            </ListItem>
-                          ))}
-                        </List>
-                      </>
-                    )}
+                    <UserSearchResults
+                      query={searchQuery}
+                      results={searchResults}
+                      isSearching={isSearching}
+                      isSearchingMore={isSearchingMore}
+                      hasMore={searchHasMore}
+                      error={searchError}
+                      expanded={searchExpanded}
+                      onExpand={() => {
+                        setSearchExpanded(true);
+                        loadMoreSearchResults(SEARCH_PAGE_SIZE);
+                      }}
+                      onLoadMore={() => loadMoreSearchResults(SEARCH_PAGE_SIZE)}
+                      onRetry={() =>
+                        searchResults.length > 0
+                          ? loadMoreSearchResults(SEARCH_PAGE_SIZE)
+                          : searchUsers(searchQuery, { limit: SEARCH_PREVIEW_COUNT })
+                      }
+                      onSendRequest={(id) => {
+                        void sendFriendRequest(id);
+                      }}
+                      onCancelRequest={(requestId) => {
+                        void cancelRequest(requestId);
+                      }}
+                      onRespond={(requestId, action) => {
+                        void respondToRequest(requestId, action);
+                      }}
+                      onMessage={async (target) => {
+                        setIsSearchOpen(false);
+                        await startConversationWithUser(target);
+                        router.push("/chat");
+                      }}
+                    />
                   </Paper>
                 </ClickAwayListener>
               </Popper>
@@ -522,9 +350,16 @@ function ResponsiveAppBar() {
                 justifyContent: "flex-end",
               }}
             >
-              {pages.map((page) => (
-                <Box key={page.id} sx={{ position: "relative" }}>
+              {pages.map((page) => {
+                const isActive = Boolean(
+                  page.href &&
+                    (page.href === "/" ? pathname === "/" : pathname?.startsWith(page.href))
+                );
+                return (
+                <Box key={page.id} sx={{ position: "relative", display: "flex", alignItems: "center" }}>
                   <Button
+                    aria-label={page.label}
+                    aria-current={isActive ? "page" : undefined}
                     onClick={(e) => {
                       if (page.id === "chat") {
                         handleOpenChat(e);
@@ -534,7 +369,16 @@ function ResponsiveAppBar() {
                         router.push(page.href);
                       }
                     }}
-                    sx={{ my: 2, color: "white", display: "flex", gap: 1 }}
+                    sx={{
+                      color: "white",
+                      display: "flex",
+                      gap: 1,
+                      px: 1.5,
+                      minHeight: 42,
+                      borderRadius: 3,
+                      bgcolor: isActive ? "rgba(255, 255, 255, 0.14)" : "transparent",
+                      "&:hover": { bgcolor: "rgba(255, 255, 255, 0.2)" },
+                    }}
                   >
                     {page.id === "chat" ? (
                       <Badge
@@ -562,6 +406,9 @@ function ResponsiveAppBar() {
                     ) : (
                       page.icon
                     )}
+                    <Box component="span" sx={{ display: { md: "none", lg: "inline" }, fontSize: "0.875rem" }}>
+                      {page.label}
+                    </Box>
                   </Button>
 
                   {/* Popover Lời mời kết bạn */}
@@ -599,12 +446,12 @@ function ResponsiveAppBar() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
-                          borderBottom: "1px solid #e2e8f0",
-                          bgcolor: "#f8fafc",
+                          borderBottom: "1px solid var(--mui-palette-neutral-200)",
+                          bgcolor: "var(--mui-palette-neutral-50)",
                         }}
                       >
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.92rem" }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.92rem" }}>
                             Lời mời kết bạn
                           </Typography>
                           {receivedRequests.length > 0 && (
@@ -616,21 +463,22 @@ function ResponsiveAppBar() {
                             />
                           )}
                         </Box>
-                        <Typography
-                          variant="caption"
-                          color="primary"
+                        <ButtonBase
                           onClick={() => {
                             handleCloseFriend();
                             router.push("/explore");
                           }}
                           sx={{
-                            cursor: "pointer",
+                            color: "primary.main",
+                            fontSize: "0.75rem",
                             fontWeight: 600,
+                            borderRadius: 1,
+                            px: 0.5,
                             "&:hover": { textDecoration: "underline" },
                           }}
                         >
                           Xem tất cả
-                        </Typography>
+                        </ButtonBase>
                       </Box>
 
                       <Box sx={{ overflowY: "auto", maxHeight: 390, p: 0.5 }}>
@@ -640,11 +488,11 @@ function ResponsiveAppBar() {
                           </Box>
                         ) : receivedRequests.length === 0 ? (
                           <Box sx={{ textAlign: "center", py: 5, px: 3 }}>
-                            <UserCheck size={40} color="#94a3b8" style={{ marginBottom: 10 }} />
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: "#475569", mb: 0.5 }}>
+                            <UserCheck size={40} color="var(--mui-palette-neutral-400)" style={{ marginBottom: 10 }} />
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-600)", mb: 0.5 }}>
                               Không có lời mời kết bạn mới
                             </Typography>
-                            <Typography variant="caption" sx={{ color: "#94a3b8", display: "block" }}>
+                            <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", display: "block" }}>
                               Khi có người gửi lời mời kết bạn, thông báo sẽ hiển thị tại đây.
                             </Typography>
                           </Box>
@@ -669,12 +517,12 @@ function ResponsiveAppBar() {
                                   alignItems: "flex-start",
                                   gap: 1.5,
                                   transition: "all 0.15s ease",
-                                  "&:hover": { bgcolor: "#f1f5f9" },
+                                  "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                                 }}
                               >
                                 <Avatar
                                   src={requester?.avatar || ""}
-                                  sx={{ width: 44, height: 44, bgcolor: "#3b82f6", fontWeight: 700, mt: 0.2 }}
+                                  sx={{ width: 44, height: 44, bgcolor: "var(--mui-palette-brand-500)", fontWeight: 700, mt: 0.2 }}
                                 >
                                   {(requester?.name || "U")[0].toUpperCase()}
                                 </Avatar>
@@ -684,12 +532,12 @@ function ResponsiveAppBar() {
                                     <Typography
                                       variant="subtitle2"
                                       noWrap
-                                      sx={{ fontWeight: 700, color: "#1e293b", fontSize: "0.88rem" }}
+                                      sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.88rem" }}
                                     >
                                       {requester?.name || "Người dùng"}
                                     </Typography>
                                     {timeAgo && (
-                                      <Typography variant="caption" sx={{ color: "#94a3b8", fontSize: "0.7rem", ml: 1 }}>
+                                      <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", fontSize: "0.7rem", ml: 1 }}>
                                         {timeAgo}
                                       </Typography>
                                     )}
@@ -698,7 +546,7 @@ function ResponsiveAppBar() {
                                   <Typography
                                     variant="caption"
                                     noWrap
-                                    sx={{ color: "#64748b", display: "block", fontSize: "0.74rem", mb: 1 }}
+                                    sx={{ color: "var(--mui-palette-neutral-500)", display: "block", fontSize: "0.74rem", mb: 1 }}
                                   >
                                     {requester?.email || "Đã gửi lời mời kết bạn"}
                                   </Typography>
@@ -738,12 +586,12 @@ function ResponsiveAppBar() {
                                         py: 0.4,
                                         px: 1,
                                         borderRadius: "8px",
-                                        color: "#64748b",
-                                        borderColor: "#cbd5e1",
+                                        color: "var(--mui-palette-neutral-500)",
+                                        borderColor: "var(--mui-palette-neutral-300)",
                                         "&:hover": {
-                                          bgcolor: "#fef2f2",
-                                          color: "#ef4444",
-                                          borderColor: "#fca5a5",
+                                          bgcolor: "var(--mui-palette-tone-fef2f2)",
+                                          color: "var(--mui-palette-tone-ef4444)",
+                                          borderColor: "var(--mui-palette-tone-fca5a5)",
                                         },
                                       }}
                                     >
@@ -794,7 +642,7 @@ function ResponsiveAppBar() {
                           justifyContent: "space-between",
                           borderBottom: "1px solid",
                           borderColor: "divider",
-                          bgcolor: "#f8fafc",
+                          bgcolor: "var(--mui-palette-neutral-50)",
                         }}
                       >
                         <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
@@ -811,36 +659,39 @@ function ResponsiveAppBar() {
                             <IconButton
                               size="small"
                               onClick={toggleMute}
+                              aria-label={isMuted ? "Bật âm thanh tin nhắn" : "Tắt âm thanh tin nhắn"}
+                              aria-pressed={!isMuted}
                               sx={{
-                                color: isMuted ? "#94a3b8" : "#2563eb",
+                                color: isMuted ? "text.secondary" : "primary.main",
                                 p: 0.5,
                               }}
                             >
                               {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
                             </IconButton>
                           </Tooltip>
-                          <Typography
-                            variant="caption"
-                            color="primary"
+                          <ButtonBase
                             onClick={() => {
                               handleCloseChat();
                               router.push("/chat");
                             }}
                             sx={{
-                              cursor: "pointer",
+                              color: "primary.main",
+                              fontSize: "0.75rem",
                               fontWeight: 600,
+                              borderRadius: 1,
+                              px: 0.5,
                               "&:hover": { textDecoration: "underline" },
                             }}
                           >
                             Xem tất cả
-                          </Typography>
+                          </ButtonBase>
                         </Box>
                       </Box>
 
                       <Box sx={{ overflowY: "auto", maxHeight: 320 }}>
                         {conversations.length === 0 ? (
                           <Box sx={{ textAlign: "center", py: 4, px: 2 }}>
-                            <Typography variant="body2" sx={{ color: "#64748b", mb: 1 }}>
+                            <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-500)", mb: 1 }}>
                               Chưa có cuộc trò chuyện nào
                             </Typography>
                             <Button
@@ -867,8 +718,10 @@ function ResponsiveAppBar() {
                               : false;
 
                             return (
-                              <Box
+                              <ButtonBase
+                                component="div"
                                 key={conv._id}
+                                aria-label={`Mở hội thoại với ${other?.name || "người dùng"}${unread ? " (có tin chưa đọc)" : ""}`}
                                 onClick={async () => {
                                   handleCloseChat();
                                   if (pathname === "/chat") {
@@ -884,6 +737,9 @@ function ResponsiveAppBar() {
                                 }}
                                 sx={{
                                   display: "flex",
+                                  width: "100%",
+                                  textAlign: "left",
+                                  justifyContent: "flex-start",
                                   alignItems: "center",
                                   gap: 1.5,
                                   p: 1.5,
@@ -891,13 +747,13 @@ function ResponsiveAppBar() {
                                   cursor: "pointer",
                                   bgcolor: unread ? "rgba(59, 130, 246, 0.05)" : "transparent",
                                   transition: "background-color 0.2s",
-                                  "&:hover": { bgcolor: "#f1f5f9" },
-                                  borderBottom: "1px solid #f1f5f9",
+                                  "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
+                                  borderBottom: "1px solid var(--mui-palette-neutral-100)",
                                 }}
                               >
                                 <Avatar
                                   src={other?.avatar || ""}
-                                  sx={{ width: 40, height: 40, bgcolor: "#3b82f6", fontWeight: 700 }}
+                                  sx={{ width: 40, height: 40, bgcolor: "var(--mui-palette-brand-500)", fontWeight: 700 }}
                                 >
                                   {(other?.name || "U")[0].toUpperCase()}
                                 </Avatar>
@@ -913,7 +769,7 @@ function ResponsiveAppBar() {
                                     <Typography
                                       variant="subtitle2"
                                       noWrap
-                                      sx={{ fontWeight: unread ? 700 : 600, color: "#1e293b", fontSize: "0.85rem" }}
+                                      sx={{ fontWeight: unread ? 700 : 600, color: "var(--mui-palette-neutral-800)", fontSize: "0.85rem" }}
                                     >
                                       {other?.name || "Người dùng"}
                                     </Typography>
@@ -942,7 +798,7 @@ function ResponsiveAppBar() {
                                     {conv.lastMessage?.text || "Chưa có tin nhắn"}
                                   </Typography>
                                 </Box>
-                              </Box>
+                              </ButtonBase>
                             );
                           })
                         )}
@@ -950,7 +806,8 @@ function ResponsiveAppBar() {
                     </Popover>
                   )}
                 </Box>
-              ))}
+                );
+              })}
             </Box>
 
             {/* Nút Lời mời kết bạn & Tin nhắn nhanh trên Mobile */}
@@ -959,7 +816,7 @@ function ResponsiveAppBar() {
                 color="inherit"
                 size="small"
                 onClick={handleOpenFriend}
-                aria-label="friend requests"
+                aria-label="Lời mời kết bạn"
               >
                 <Badge
                   color="error"
@@ -975,7 +832,7 @@ function ResponsiveAppBar() {
                 color="inherit"
                 size="small"
                 onClick={handleOpenChat}
-                aria-label="chat messages"
+                aria-label="Tin nhắn"
               >
                 <Badge
                   color="error"
@@ -993,10 +850,21 @@ function ResponsiveAppBar() {
               </IconButton>
             </Box>
 
+            {/* Đổi giao diện sáng/tối (mobile: nằm trong Drawer) */}
+            <Box sx={{ display: { xs: "none", md: "flex" }, mr: 0.5 }}>
+              <ColorModeToggle />
+            </Box>
+
             {/* Avatar User */}
             <Box sx={{ flexGrow: 0 }}>
               <Tooltip title="Mở cài đặt">
-                <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                <IconButton
+                  onClick={handleOpenUserMenu}
+                  aria-label="Mở menu tài khoản"
+                  aria-haspopup="menu"
+                  aria-controls="menu-appbar-user"
+                  sx={{ p: 0 }}
+                >
                   <Avatar
                     alt={user?.name || "User Avatar"}
                     src={user?.avatar || ""}
@@ -1051,24 +919,23 @@ function ResponsiveAppBar() {
         }}
       >
         <Box
+          data-light=""
           sx={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             p: 2,
-            bgcolor: "primary.main",
-            color: "white",
+            bgcolor: "var(--mui-palette-tone-0f172a)",
+            color: "var(--mui-palette-common-white)",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <AdbIcon />
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              MENU
-            </Typography>
+          <BrandLogo href="" size={32} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <ColorModeToggle />
+            <IconButton onClick={handleDrawerToggle} aria-label="Đóng menu" sx={{ color: "inherit" }}>
+              <X size={20} />
+            </IconButton>
           </Box>
-          <IconButton onClick={handleDrawerToggle} sx={{ color: "white" }}>
-            <X size={20} />
-          </IconButton>
         </Box>
         <Divider />
         <List>

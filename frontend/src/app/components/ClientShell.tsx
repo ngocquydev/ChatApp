@@ -37,8 +37,13 @@ export default function ClientShell({ children }: ClientShellProps) {
 
   return (
     <>
+      <a href="#main-content" className="skip-link">
+        Bỏ qua điều hướng, tới nội dung chính
+      </a>
       {!shouldHideAppBar && <ResponsiveAppBar />}
-      {children}
+      <main id="main-content" tabIndex={-1} style={{ outline: "none" }}>
+        {children}
+      </main>
       <FloatingChatDock />
     </>
   );

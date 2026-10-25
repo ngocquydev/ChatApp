@@ -47,6 +47,16 @@ interface FriendState {
   isLoadingRecommendations: boolean;
   isLocating: boolean;
   isSearching: boolean;
+  /** Đang tải trang tiếp theo (infinite scroll) */
+  isSearchingMore: boolean;
+  /** Còn trang kết quả tiếp theo không */
+  searchHasMore: boolean;
+  /** Con trỏ trang tiếp theo (nextCursor của server) */
+  searchCursor: string | null;
+  /** Từ khóa của phiên tìm kiếm hiện tại — dùng khi tải thêm */
+  searchTerm: string;
+  /** Thông báo lỗi tìm kiếm (hết thời gian, mất mạng…) */
+  searchError: string | null;
   searchSeq?: number;
   userLocation: { latitude: number; longitude: number } | null;
 
@@ -54,7 +64,10 @@ interface FriendState {
   fetchRequests: () => Promise<void>;
   fetchRecommendations: (coords?: { latitude: number; longitude: number }) => Promise<void>;
   updateLocation: (latitude: number, longitude: number) => Promise<boolean>;
-  searchUsers: (query: string) => Promise<void>;
+  /** `limit`: số kết quả trang đầu (mặc định server = 20) */
+  searchUsers: (query: string, options?: { limit?: number }) => Promise<void>;
+  /** Tải trang kết quả kế tiếp của phiên tìm kiếm hiện tại */
+  loadMoreSearchResults: (limit?: number) => Promise<void>;
   sendFriendRequest: (recipientId: string) => Promise<{ success: boolean; message: string }>;
   respondToRequest: (
     requestId: string,
@@ -63,6 +76,15 @@ interface FriendState {
   cancelRequest: (requestId: string) => Promise<{ success: boolean; message: string }>;
   unfriend: (friendId: string) => Promise<{ success: boolean; message: string }>;
   clearSearchResults: () => void;
+}
+
+/** Chuyển lỗi axios thành câu tiếng Việt ngắn gọn cho người dùng */
+function searchErrorMessage(err: unknown): string {
+  const e = err as { response?: { status?: number; data?: { message?: string } } };
+  if (e.response?.status === 408) {
+    return e.response.data?.message || "Tìm kiếm mất quá nhiều thời gian. Hãy nhập từ khóa cụ thể hơn.";
+  }
+  return "Không thể tìm kiếm lúc này. Vui lòng thử lại.";
 }
 
 export const useFriendStore = create<FriendState>((set, get) => ({
@@ -76,11 +98,26 @@ export const useFriendStore = create<FriendState>((set, get) => ({
   isLoadingRecommendations: false,
   isLocating: false,
   isSearching: false,
+  isSearchingMore: false,
+  searchHasMore: false,
+  searchCursor: null,
+  searchTerm: "",
+  searchError: null,
   searchSeq: 0,
   userLocation: null,
 
   clearSearchResults: () => {
-    set({ searchResults: [], isSearching: false });
+    // Tăng searchSeq để mọi request đang bay bị bỏ qua khi về
+    set({
+      searchResults: [],
+      isSearching: false,
+      isSearchingMore: false,
+      searchHasMore: false,
+      searchCursor: null,
+      searchTerm: "",
+      searchError: null,
+      searchSeq: (get().searchSeq || 0) + 1,
+    });
   },
 
   fetchFriends: async () => {
@@ -112,24 +149,71 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     }
   },
 
-  searchUsers: async (query: string) => {
+  searchUsers: async (query: string, options?: { limit?: number }) => {
     const trimmed = query.trim();
     if (!trimmed) {
-      set({ searchResults: [], isSearching: false });
+      get().clearSearchResults();
       return;
     }
     const nextSeq = (get().searchSeq || 0) + 1;
-    set({ isSearching: true, searchSeq: nextSeq });
+    set({
+      isSearching: true,
+      isSearchingMore: false,
+      searchError: null,
+      searchTerm: trimmed,
+      searchSeq: nextSeq,
+    });
     try {
-      const res = await api.get(`/friends/search?q=${encodeURIComponent(trimmed)}`);
+      const params = new URLSearchParams({ q: trimmed });
+      if (options?.limit) params.set("limit", String(options.limit));
+      const res = await api.get(`/friends/search?${params.toString()}`);
       // Chỉ cập nhật nếu request này là mới nhất (tránh race condition giữa các phím gõ nhanh)
       if (get().searchSeq === nextSeq) {
-        set({ searchResults: res.data?.users || [], isSearching: false });
+        set({
+          searchResults: res.data?.users || [],
+          searchHasMore: Boolean(res.data?.hasMore),
+          searchCursor: res.data?.nextCursor ?? null,
+          isSearching: false,
+        });
       }
     } catch (err) {
       console.error("Lỗi tìm kiếm bạn bè:", err);
       if (get().searchSeq === nextSeq) {
-        set({ isSearching: false });
+        set({
+          isSearching: false,
+          searchHasMore: false,
+          searchCursor: null,
+          searchError: searchErrorMessage(err),
+        });
+      }
+    }
+  },
+
+  loadMoreSearchResults: async (limit = 20) => {
+    const { searchHasMore, searchCursor, searchTerm, isSearching, isSearchingMore, searchSeq } = get();
+    // Chặn gọi chồng: đang tải trang đầu/trang kế, hết dữ liệu hoặc chưa có con trỏ
+    if (!searchHasMore || !searchCursor || !searchTerm || isSearching || isSearchingMore) return;
+    const seq = searchSeq || 0;
+    set({ isSearchingMore: true, searchError: null });
+    try {
+      const params = new URLSearchParams({ q: searchTerm, limit: String(limit), after: searchCursor });
+      const res = await api.get(`/friends/search?${params.toString()}`);
+      // Từ khóa đã đổi trong lúc chờ → bỏ kết quả cũ
+      if (get().searchSeq !== seq) return;
+      const incoming: UserRelationResult[] = res.data?.users || [];
+      set((state) => {
+        const seen = new Set(state.searchResults.map((u) => u._id));
+        return {
+          searchResults: [...state.searchResults, ...incoming.filter((u) => !seen.has(u._id))],
+          searchHasMore: Boolean(res.data?.hasMore),
+          searchCursor: res.data?.nextCursor ?? null,
+          isSearchingMore: false,
+        };
+      });
+    } catch (err) {
+      console.error("Lỗi tải thêm kết quả tìm kiếm:", err);
+      if (get().searchSeq === seq) {
+        set({ isSearchingMore: false, searchError: searchErrorMessage(err) });
       }
     }
   },

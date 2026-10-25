@@ -1,0 +1,179 @@
+import axios from "axios";
+import api from "./api";
+
+export type PostPrivacy = "public" | "friends" | "only_me";
+
+export interface PostAuthor {
+  _id: string;
+  name: string;
+  avatar?: string;
+}
+
+export interface SharedPostView {
+  _id: string;
+  author: PostAuthor;
+  content: string;
+  images: string[];
+  privacy: PostPrivacy;
+  createdAt?: string;
+}
+
+export interface PostView {
+  _id: string;
+  author: PostAuthor;
+  content: string;
+  images: string[];
+  privacy: PostPrivacy;
+  createdAt?: string;
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
+  likedByMe: boolean;
+  /** null = bài thường; { unavailable } = bài gốc đã xóa / không còn quyền xem */
+  sharedPost: SharedPostView | { unavailable: true } | null;
+}
+
+export interface CommentView {
+  _id: string;
+  postId: string;
+  author: PostAuthor;
+  content: string;
+  createdAt?: string;
+}
+
+export interface CursorPage<T> {
+  items: T[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
+export interface PublicProfile {
+  user: { _id: string; name: string; avatar?: string; bio?: string; createdAt?: string };
+  relationStatus: "self" | "none" | "pending_sent" | "pending_received" | "friends";
+  requestId?: string;
+  friendCount: number;
+  friendsPreview: PostAuthor[];
+}
+
+export interface PhotoItem {
+  postId: string;
+  url: string;
+}
+
+export const MAX_POST_IMAGES = 4;
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const POST_MAX_LENGTH = 5000;
+export const COMMENT_MAX_LENGTH = 1000;
+
+/** Đường dẫn ảnh server trả về là tương đối (/uploads/...) → ghép với địa chỉ backend. */
+export function mediaUrl(path: string): string {
+  if (/^https?:\/\//i.test(path)) return path;
+  const base = (api.defaults.baseURL ?? "").replace(/\/$/, "");
+  return `${base}${path}`;
+}
+
+export function isSharedPostAvailable(
+  shared: PostView["sharedPost"],
+): shared is SharedPostView {
+  return !!shared && !("unavailable" in shared);
+}
+
+/** Lấy thông báo lỗi tiếng Việt từ phản hồi của server, nếu có. */
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    if (!err.response) return "Không kết nối được máy chủ. Hãy kiểm tra mạng rồi thử lại.";
+    const message = (err.response.data as { message?: string | string[] } | undefined)?.message;
+    if (typeof message === "string" && message) return message;
+    if (Array.isArray(message) && message[0]) return message[0];
+    if (err.response.status === 413) return "Tệp quá lớn.";
+  }
+  return fallback;
+}
+
+interface PageOptions {
+  limit?: number;
+  after?: string | null;
+}
+
+const pageParams = ({ limit, after }: PageOptions) => ({
+  ...(limit ? { limit } : {}),
+  ...(after ? { after } : {}),
+});
+
+export async function fetchFeed(options: PageOptions = {}): Promise<CursorPage<PostView>> {
+  const { data } = await api.get("/posts/feed", { params: pageParams(options) });
+  return data;
+}
+
+export async function fetchUserPosts(
+  userId: string,
+  options: PageOptions = {},
+): Promise<CursorPage<PostView>> {
+  const { data } = await api.get(`/posts/user/${userId}`, { params: pageParams(options) });
+  return data;
+}
+
+export async function fetchUserPhotos(userId: string, limit = 9): Promise<PhotoItem[]> {
+  const { data } = await api.get(`/posts/user/${userId}/photos`, { params: { limit } });
+  return data.photos ?? [];
+}
+
+export async function fetchPublicProfile(userId: string): Promise<PublicProfile> {
+  const { data } = await api.get(`/friends/profile/${userId}`);
+  return data;
+}
+
+export async function uploadPostImage(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  // Instance mặc định gửi JSON; với FormData phải đổi sang multipart (trình duyệt tự thêm boundary)
+  const { data } = await api.post("/posts/images", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data.url as string;
+}
+
+export async function createPost(input: {
+  content: string;
+  images: string[];
+  privacy: PostPrivacy;
+}): Promise<PostView> {
+  const { data } = await api.post("/posts", input);
+  return data.post;
+}
+
+export async function deletePost(postId: string): Promise<void> {
+  await api.delete(`/posts/${postId}`);
+}
+
+export async function sharePost(
+  postId: string,
+  input: { content?: string; privacy: PostPrivacy },
+): Promise<PostView> {
+  const { data } = await api.post(`/posts/${postId}/share`, input);
+  return data.post;
+}
+
+export async function toggleLike(
+  postId: string,
+): Promise<{ liked: boolean; likeCount: number }> {
+  const { data } = await api.post(`/posts/${postId}/like`);
+  return { liked: data.liked, likeCount: data.likeCount };
+}
+
+export async function fetchComments(
+  postId: string,
+  options: PageOptions = {},
+): Promise<CursorPage<CommentView>> {
+  const { data } = await api.get(`/posts/${postId}/comments`, { params: pageParams(options) });
+  return data;
+}
+
+export async function addComment(postId: string, content: string): Promise<CommentView> {
+  const { data } = await api.post(`/posts/${postId}/comments`, { content });
+  return data.comment;
+}
+
+export async function deleteComment(postId: string, commentId: string): Promise<void> {
+  await api.delete(`/posts/${postId}/comments/${commentId}`);
+}
