@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Box, Typography } from "@mui/material";
-import { Sparkles } from "lucide-react";
-import { colors } from "@/theme/tokens";
+import logoImg from "@/assets/logo/Logo.png";
 
 interface BrandLogoProps {
   /** Ẩn chữ, chỉ hiển thị biểu tượng (dùng cho sidebar thu gọn). */
@@ -13,7 +13,7 @@ interface BrandLogoProps {
   size?: number;
 }
 
-/** Logo thương hiệu duy nhất của ứng dụng — KHÔNG dùng icon Android/monospace nữa. */
+/** Logo thương hiệu duy nhất của ứng dụng — sử dụng assets/logo/Logo.png. */
 export default function BrandLogo({ iconOnly = false, href = "/", size = 36 }: BrandLogoProps) {
   const content = (
     <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1.25 }}>
@@ -22,17 +22,28 @@ export default function BrandLogo({ iconOnly = false, href = "/", size = 36 }: B
         sx={{
           width: size,
           height: size,
-          borderRadius: `${Math.round(size * 0.3)}px`,
-          bgcolor: "primary.main",
-          color: "primary.contrastText",
+          borderRadius: `${Math.round(size * 0.28)}px`,
+          overflow: "hidden",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: `0 6px 14px -4px ${colors.brand[600]}99`,
+          bgcolor: "common.white",
+          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.16)",
           flexShrink: 0,
         }}
       >
-        <Sparkles size={Math.round(size * 0.55)} color="currentColor" />
+        <Image
+          src={logoImg}
+          alt="ChatApp Logo"
+          width={size}
+          height={size}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+          }}
+          priority
+        />
       </Box>
       {!iconOnly && (
         <Typography

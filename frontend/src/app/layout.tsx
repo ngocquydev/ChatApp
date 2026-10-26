@@ -36,9 +36,9 @@ export const metadata: Metadata = {
     "chatapp",
   ],
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
   },
   openGraph: {
     type: "website",
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     description: "Giao thức nhắn tin thế hệ mới, trò chuyện tức thì, kết nối đa nền tảng.",
     images: [
       {
-        url: "/favicon.svg",
+        url: "/logo.png",
         width: 512,
         height: 512,
         alt: "ChatApp Logo",
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "ChatApp - Realtime Chat & Social Platform",
     description: "Giao thức nhắn tin thế hệ mới, trò chuyện tức thì, kết nối đa nền tảng.",
-    images: ["/favicon.svg"],
+    images: ["/logo.png"],
   },
   robots: {
     index: true,
