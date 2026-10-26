@@ -1,0 +1,224 @@
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import neo4j, { Driver, Session } from 'neo4j-driver';
+
+export interface Neo4jFriendSuggestion {
+  id: string;
+  name: string;
+  avatar?: string;
+  mutualFriendsCount: number;
+  mutualFriendNames: string[];
+  score: number;
+  reason: string;
+}
+
+@Injectable()
+export class Neo4jService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(Neo4jService.name);
+  private driver: Driver | null = null;
+  private connected = false;
+
+  constructor(private readonly configService: ConfigService) {}
+
+  async onModuleInit() {
+    const uri = this.configService.get<string>('NEO4J_URI') || 'bolt://localhost:7687';
+    const user = this.configService.get<string>('NEO4J_USER') || 'neo4j';
+    const password = this.configService.get<string>('NEO4J_PASSWORD') || 'password123';
+
+    try {
+      this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password), {
+        maxConnectionLifetime: 3 * 60 * 60 * 1000,
+        maxConnectionPoolSize: 50,
+        connectionAcquisitionTimeout: 2000,
+      });
+
+      await this.driver.verifyConnectivity();
+      this.connected = true;
+      this.logger.log(`Kết nối Neo4j thành công tại ${uri}`);
+
+      // Tạo ràng buộc unique cho User.id
+      await this.initSchema();
+    } catch (err: unknown) {
+      this.connected = false;
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Không thể kết nối tới Neo4j (${msg}). Hệ thống sẽ chuyển sang chế độ dự phòng.`);
+    }
+  }
+
+  async onModuleDestroy() {
+    if (this.driver) {
+      await this.driver.close();
+    }
+  }
+
+  isAvailable(): boolean {
+    return this.connected && this.driver !== null;
+  }
+
+  private async initSchema() {
+    if (!this.isAvailable()) return;
+    const session = this.getSession();
+    try {
+      await session.run(`
+        CREATE CONSTRAINT user_id_unique IF NOT EXISTS
+        FOR (u:User) REQUIRE u.id IS UNIQUE
+      `);
+    } catch (err) {
+      this.logger.debug(`Khởi tạo schema Neo4j: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      await session.close();
+    }
+  }
+
+  getSession(): Session {
+    if (!this.driver) {
+      throw new Error('Neo4j driver chưa được khởi tạo');
+    }
+    return this.driver.session();
+  }
+
+  /**
+   * Đồng bộ nút User vào Neo4j
+   */
+  async syncUser(user: { id: string; name: string; avatar?: string }): Promise<void> {
+    if (!this.isAvailable()) return;
+    const session = this.getSession();
+    try {
+      await session.run(
+        `
+        MERGE (u:User {id: $id})
+        SET u.name = $name,
+            u.avatar = $avatar
+        `,
+        {
+          id: user.id,
+          name: user.name,
+          avatar: user.avatar || '',
+        },
+      );
+    } catch (err) {
+      this.logger.warn(`Lỗi syncUser Neo4j: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      await session.close();
+    }
+  }
+
+  /**
+   * Tạo quan hệ bạn bè 2 chiều [:FRIEND] giữa 2 người dùng
+   */
+  async addFriendship(userId1: string, userId2: string): Promise<void> {
+    if (!this.isAvailable()) return;
+    const session = this.getSession();
+    try {
+      await session.run(
+        `
+        MATCH (u1:User {id: $u1})
+        MATCH (u2:User {id: $u2})
+        MERGE (u1)-[:FRIEND]-(u2)
+        `,
+        { u1: userId1, u2: userId2 },
+      );
+    } catch (err) {
+      this.logger.warn(`Lỗi addFriendship Neo4j: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      await session.close();
+    }
+  }
+
+  /**
+   * Xóa quan hệ bạn bè [:FRIEND]
+   */
+  async removeFriendship(userId1: string, userId2: string): Promise<void> {
+    if (!this.isAvailable()) return;
+    const session = this.getSession();
+    try {
+      await session.run(
+        `
+        MATCH (u1:User {id: $u1})-[r:FRIEND]-(u2:User {id: $u2})
+        DELETE r
+        `,
+        { u1: userId1, u2: userId2 },
+      );
+    } catch (err) {
+      this.logger.warn(`Lỗi removeFriendship Neo4j: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      await session.close();
+    }
+  }
+
+  /**
+   * Tạo quan hệ chặn [:BLOCK]
+   */
+  async blockUser(userId: string, targetId: string): Promise<void> {
+    if (!this.isAvailable()) return;
+    const session = this.getSession();
+    try {
+      await session.run(
+        `
+        MATCH (u1:User {id: $u1})
+        MATCH (u2:User {id: $u2})
+        MERGE (u1)-[:BLOCK]->(u2)
+        `,
+        { u1: userId, u2: targetId },
+      );
+    } catch (err) {
+      this.logger.warn(`Lỗi blockUser Neo4j: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      await session.close();
+    }
+  }
+
+  /**
+   * Gợi ý kết bạn bằng đồ thị Neo4j (Friends of Friends - Bạn của bạn)
+   * Thuật toán: Tìm những người có bạn chung với $userId nhưng chưa kết bạn và không bị chặn.
+   */
+  async getFriendSuggestions(userId: string, limit = 10): Promise<Neo4jFriendSuggestion[]> {
+    if (!this.isAvailable()) return [];
+    const session = this.getSession();
+    try {
+      const result = await session.run(
+        `
+        MATCH (u:User {id: $userId})-[:FRIEND]-(mutual:User)-[:FRIEND]-(suggested:User)
+        WHERE NOT (u)-[:FRIEND]-(suggested)
+          AND NOT (u)-[:BLOCK]-(suggested)
+          AND u.id <> suggested.id
+        WITH suggested, count(DISTINCT mutual) AS mutualCount, collect(DISTINCT mutual.name) AS mutualNames
+        RETURN suggested.id AS id,
+               suggested.name AS name,
+               suggested.avatar AS avatar,
+               mutualCount AS mutualFriendsCount,
+               mutualNames[0..3] AS mutualFriendNames
+        ORDER BY mutualCount DESC, suggested.name ASC
+        LIMIT $limit
+        `,
+        { userId, limit: neo4j.int(limit) },
+      );
+
+      return result.records.map((record) => {
+        const mutualCount = typeof record.get('mutualFriendsCount').toInt === 'function'
+          ? record.get('mutualFriendsCount').toInt()
+          : Number(record.get('mutualFriendsCount'));
+
+        const mutualNames: string[] = record.get('mutualFriendNames') || [];
+        const reason = mutualCount > 0
+          ? `Có ${mutualCount} bạn chung (${mutualNames.join(', ')})`
+          : 'Gợi ý từ mạng lưới kết nối';
+
+        return {
+          id: record.get('id'),
+          name: record.get('name'),
+          avatar: record.get('avatar') || undefined,
+          mutualFriendsCount: mutualCount,
+          mutualFriendNames: mutualNames,
+          score: mutualCount * 10,
+          reason,
+        };
+      });
+    } catch (err) {
+      this.logger.warn(`Lỗi getFriendSuggestions Neo4j: ${err instanceof Error ? err.message : String(err)}`);
+      return [];
+    } finally {
+      await session.close();
+    }
+  }
+}

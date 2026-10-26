@@ -13,6 +13,8 @@ import { PostsModule } from './modules/posts/posts.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module.js';
 import { UploadModule } from './modules/upload/upload.module.js';
+import { Neo4jModule } from './modules/neo4j/neo4j.module.js';
+import { AppGraphqlModule } from './modules/graphql/app-graphql.module.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -58,6 +60,10 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     CloudinaryModule,
 
     UploadModule,
+
+    Neo4jModule,
+
+    AppGraphqlModule,
   ],
   controllers: [AppController],
   providers: [AppService],

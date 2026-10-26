@@ -3,12 +3,14 @@ import {
   Injectable,
   BadRequestException,
   RequestTimeoutException,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserRepository } from './entities/user.entity.js';
 import { CreateUserData } from './types/user.types.js';
+import { Neo4jService } from '../neo4j/neo4j.service.js';
 
 /** Trần thời gian cho truy vấn tìm kiếm regex (ms) — tránh một lần tìm làm nghẽn MongoDB */
 const SEARCH_MAX_TIME_MS = 8000;
@@ -17,6 +19,7 @@ const SEARCH_MAX_TIME_MS = 8000;
 export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserRepository>,
+    @Optional() private readonly neo4jService?: Neo4jService,
   ) {}
 
   async create(createUserDto: CreateUserData) {
@@ -65,6 +68,13 @@ export class UsersService {
     });
 
     await newUser.save();
+    this.neo4jService
+      ?.syncUser({
+        id: newUser._id.toString(),
+        name: newUser.name,
+        avatar: newUser.avatar || undefined,
+      })
+      .catch(() => {});
 
     return {
       success: true,
@@ -114,15 +124,12 @@ export class UsersService {
     }
     if (keyword && keyword.trim()) {
       const escaped = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      query.$or = [
-        { name: { $regex: escaped, $options: 'i' } },
-        { email: { $regex: escaped, $options: 'i' } },
-      ];
+      query.name = { $regex: escaped, $options: 'i' };
     }
     try {
       const docs = await this.userModel
         .find(query)
-        .select('name email avatar phone bio')
+        .select('name avatar phone bio')
         .sort({ _id: 1 })
         .limit(limit + 1)
         .maxTimeMS(SEARCH_MAX_TIME_MS)
@@ -158,9 +165,19 @@ export class UsersService {
     };
   }
   async findByIdAndUpdate(userId: string, updateData: Partial<User>) {
-    return this.userModel
+    const updated = await this.userModel
       .findByIdAndUpdate(userId, updateData, { new: true })
       .exec();
+    if (updated?.name) {
+      this.neo4jService
+        ?.syncUser({
+          id: userId,
+          name: updated.name,
+          avatar: updated.avatar || undefined,
+        })
+        .catch(() => {});
+    }
+    return updated;
   }
   async findOne(email: string) {
     const user = await this.userModel.findOne({ email }).exec();

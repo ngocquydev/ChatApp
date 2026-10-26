@@ -229,7 +229,7 @@ export default function FriendsPanel({
                           {requester.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
-                          {requester.email}
+                          {requester.bio || "Thành viên"}
                         </Typography>
                       </Box>
                     </Box>

@@ -16,11 +16,12 @@ import { UsersService } from '../users/users.service.js';
 import { ChatGateway } from '../chat/chat.gateway.js';
 import { RedisService } from '../redis/redis/redis.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { Neo4jService } from '../neo4j/neo4j.service.js';
 
 export interface UserRelationResult {
   _id: string;
   name: string;
-  email: string;
+  email?: string;
   avatar?: string;
   bio?: string;
   relationStatus: 'none' | 'pending_sent' | 'pending_received' | 'friends';
@@ -30,7 +31,7 @@ export interface UserRelationResult {
 export interface FriendRecommendationResult {
   _id: string;
   name: string;
-  email: string;
+  email?: string;
   avatar?: string;
   bio?: string;
   distanceKm?: number;
@@ -66,6 +67,8 @@ export class FriendsService {
     private readonly chatGateway?: ChatGateway,
     @Optional()
     private readonly notificationsService?: NotificationsService,
+    @Optional()
+    private readonly neo4jService?: Neo4jService,
   ) {}
 
   /**
@@ -159,6 +162,7 @@ export class FriendsService {
         // Đồng bộ bạn bè vào Redis Set cho cả 2 người
         this.syncFriendsSet(requesterId).catch(() => {});
         this.syncFriendsSet(recipientId).catch(() => {});
+        this.neo4jService?.addFriendship(requesterId, recipientId).catch(() => {});
 
         // Báo cho người đã gửi lời mời trước đó: lời mời của họ vừa được chấp nhận
         this.emitFriendEvent(recipientId, 'friend:accepted', requesterId, {
@@ -219,6 +223,7 @@ export class FriendsService {
       // Đồng bộ bạn bè vào Redis Set cho cả 2 người
       this.syncFriendsSet(userId).catch(() => {});
       this.syncFriendsSet(request.requesterId.toString()).catch(() => {});
+      this.neo4jService?.addFriendship(userId, request.requesterId.toString()).catch(() => {});
 
       // Báo cho người đã gửi lời mời (kèm tên/avatar người chấp nhận)
       this.emitFriendEvent(
@@ -280,6 +285,7 @@ export class FriendsService {
     // Cập nhật lại Redis Set bạn bè
     this.syncFriendsSet(userId).catch(() => {});
     this.syncFriendsSet(friendId).catch(() => {});
+    this.neo4jService?.removeFriendship(userId, friendId).catch(() => {});
 
     return { success: true, message: 'Đã hủy kết bạn thành công' };
   }
@@ -395,7 +401,6 @@ export class FriendsService {
       return {
         _id: uId,
         name: u.name,
-        email: u.email,
         avatar: u.avatar,
         bio: u.bio,
         relationStatus: relInfo.status,
@@ -630,7 +635,20 @@ export class FriendsService {
       }
     }
 
-    // 4.2. Nguồn 2: Bạn của bạn bè (Mutual Friends Candidates - 2nd degree network)
+    // 4.2. Nguồn 2: Bạn của bạn bè (từ Neo4j Graph DB và Redis Set - 2nd degree network)
+    if (this.neo4jService) {
+      try {
+        const neoSuggestions = await this.neo4jService.getFriendSuggestions(currentUserId, 30);
+        for (const ns of neoSuggestions) {
+          if (!excludedIds.has(ns.id) && !candidateMap.has(ns.id)) {
+            candidateMap.set(ns.id, {});
+          }
+        }
+      } catch {
+        // Fallback Redis
+      }
+    }
+
     for (const friendId of myFriendIds.slice(0, 15)) {
       let fofIds = await this.redisService.client.smembers(`user:${friendId}:friends`);
       if (!fofIds || fofIds.length === 0) {

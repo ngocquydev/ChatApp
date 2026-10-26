@@ -99,7 +99,7 @@ export default function AddFriendDialog({
         <TextField
           fullWidth
           type="search"
-          placeholder="Nhập tên, email hoặc số điện thoại…"
+          placeholder="Nhập tên người dùng cần tìm…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           slotProps={{
@@ -163,7 +163,7 @@ export default function AddFriendDialog({
                         {u.name}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
-                        {u.email}
+                        {u.bio || "Thành viên"}
                       </Typography>
                     </Box>
 

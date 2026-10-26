@@ -145,12 +145,11 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
     return () => clearTimeout(timer);
   }, [searchQuery, activeTab, searchUsers]);
 
-  // Danh sách bạn bè thật đã lọc theo từ khóa
+  // Danh sách bạn bè thật đã lọc theo từ khóa (chỉ theo tên)
   const filteredFriends = friends.filter((f) => {
     const name = f.friend?.name || "";
-    const email = f.friend?.email || "";
     const q = searchFriend.toLowerCase().trim();
-    return name.toLowerCase().includes(q) || email.toLowerCase().includes(q);
+    return name.toLowerCase().includes(q);
   });
 
   const onlineFriendsCount = friends.filter((f) =>
@@ -437,7 +436,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
             <TextField
               fullWidth
               size="small"
-              placeholder="Nhập tên hoặc email..."
+              placeholder="Nhập tên người dùng cần tìm…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
@@ -831,7 +830,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                     noWrap
                     sx={{ color: "var(--mui-palette-neutral-500)", display: "block", fontSize: "0.74rem" }}
                   >
-                    {user.email}
+                    {user.bio || "Thành viên"}
                   </Typography>
                 </Box>
 

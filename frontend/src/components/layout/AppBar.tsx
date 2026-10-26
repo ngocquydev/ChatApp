@@ -588,7 +588,7 @@ function ResponsiveAppBar() {
                                     noWrap
                                     sx={{ color: "var(--mui-palette-neutral-500)", display: "block", fontSize: "0.74rem", mb: 1 }}
                                   >
-                                    {requester?.email || "Đã gửi lời mời kết bạn"}
+                                    {requester?.bio || "Đã gửi lời mời kết bạn"}
                                   </Typography>
 
                                   <Box sx={{ display: "flex", gap: 1 }}>

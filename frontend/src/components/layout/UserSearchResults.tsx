@@ -65,7 +65,7 @@ function ResultRow({
             {user.name}
           </Typography>
           <Typography variant="caption" noWrap color="text.secondary" sx={{ display: "block" }}>
-            {user.email}
+            {user.bio || "Thành viên"}
           </Typography>
         </Box>
       </Link>

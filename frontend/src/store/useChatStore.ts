@@ -10,7 +10,7 @@ export interface ChatUser {
   _id: string;
   id?: string;
   name: string;
-  email: string;
+  email?: string;
   avatar?: string;
   bio?: string;
   [key: string]: unknown;

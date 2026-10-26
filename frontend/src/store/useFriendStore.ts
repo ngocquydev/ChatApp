@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import api from "../services/api";
 import { ChatUser } from "./useChatStore";
+import { fetchSuggestedFriendsGql } from "../services/graphqlApi";
 
 export interface FriendItem {
   friendshipId: string;
@@ -24,7 +25,7 @@ export interface UserRelationResult extends ChatUser {
 export interface FriendRecommendationResult {
   _id: string;
   name: string;
-  email: string;
+  email?: string;
   avatar?: string;
   bio?: string;
   distanceKm?: number;
@@ -274,6 +275,37 @@ export const useFriendStore = create<FriendState>((set, get) => ({
   fetchRecommendations: async (coords?: { latitude: number; longitude: number }) => {
     set({ isLoadingRecommendations: true });
     try {
+      // 1. Ưu tiên lấy gợi ý kết bạn thông minh qua GraphQL Gateway (Neo4j Graph Database)
+      let gqlRecommendations: FriendRecommendationResult[] = [];
+      try {
+        const gqlData = await fetchSuggestedFriendsGql(25);
+        if (Array.isArray(gqlData) && gqlData.length > 0) {
+          gqlRecommendations = gqlData.map((item) => ({
+            _id: item._id,
+            name: item.name,
+            avatar: item.avatar,
+            bio: item.bio,
+            mutualFriendsCount: item.mutualFriendsCount || 0,
+            friendsCount: 0,
+            score: item.score ?? (item.mutualFriendsCount ? item.mutualFriendsCount * 30 : 10),
+            recommendationReason:
+              item.reason ||
+              (item.mutualFriendsCount > 0
+                ? `${item.mutualFriendsCount} bạn chung (Đồ thị bạn bè)`
+                : "Gợi ý kết bạn"),
+            relationStatus: "none" as const,
+          }));
+        }
+      } catch (gqlErr) {
+        console.warn("GraphQL suggestion fallback to REST:", gqlErr);
+      }
+
+      if (gqlRecommendations.length > 0) {
+        set({ recommendations: gqlRecommendations });
+        return;
+      }
+
+      // 2. Dự phòng: lấy qua REST API
       let url = "/friends/recommendations?limit=25";
       const targetCoords = coords || get().userLocation;
       if (targetCoords) {

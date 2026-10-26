@@ -98,8 +98,7 @@ describe('UsersService.searchUsersPage (phân trang theo con trỏ)', () => {
   it('ký tự đặc biệt regex trong từ khóa được escape', async () => {
     const { service, calls } = makeService([]);
     await service.searchUsersPage('a.*(b');
-    const query = calls.query as { $or: Array<{ name: { $regex: string } }> };
-    const first = query.$or[0].name.$regex;
-    expect(first).toBe('a\\.\\*\\(b');
+    const query = calls.query as { name: { $regex: string } };
+    expect(query.name.$regex).toBe('a\\.\\*\\(b');
   });
 });
