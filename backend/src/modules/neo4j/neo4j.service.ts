@@ -27,6 +27,7 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
 
     try {
       this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password), {
+        encrypted: 'ENCRYPTION_OFF',
         maxConnectionLifetime: 3 * 60 * 60 * 1000,
         maxConnectionPoolSize: 50,
         connectionAcquisitionTimeout: 2000,
