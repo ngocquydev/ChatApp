@@ -6,6 +6,7 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  Optional,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -13,6 +14,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Response as ExpressResponse } from 'express';
 import { UsersService } from '../users/users.service.js';
+import { CloudinaryService } from '../cloudinary/cloudinary.service.js';
 import { RedisService } from '../redis/redis/redis.service.js';
 import { MailService } from '../mail/mail.service.js';
 import type { JwtSignOptions } from '@nestjs/jwt';
@@ -34,6 +36,7 @@ export class AuthService {
     private readonly userService: UsersService,
     private readonly redisService: RedisService,
     private readonly mailService: MailService,
+    @Optional() private readonly cloudinaryService?: CloudinaryService,
   ) {}
   setTokenCookie(
     res: ExpressResponse,
@@ -234,7 +237,21 @@ export class AuthService {
     const updatePayload: Record<string, unknown> = {};
     if (typeof data.name === 'string') updatePayload.name = data.name.trim();
     if (typeof data.phone === 'string') updatePayload.phone = data.phone.trim();
-    if (typeof data.avatar === 'string') updatePayload.avatar = data.avatar.trim();
+    if (typeof data.avatar === 'string') {
+      const trimmedAvatar = data.avatar.trim();
+      if (trimmedAvatar.startsWith('data:image/') && this.cloudinaryService?.isConfigured()) {
+        try {
+          const res = await this.cloudinaryService.uploadBase64(trimmedAvatar, {
+            folder: 'chatapp/avatars',
+          });
+          updatePayload.avatar = res.secure_url;
+        } catch {
+          updatePayload.avatar = trimmedAvatar;
+        }
+      } else {
+        updatePayload.avatar = trimmedAvatar;
+      }
+    }
     if (typeof data.bio === 'string') updatePayload.bio = data.bio.trim();
     if (typeof data.dateOfBirth === 'string' && data.dateOfBirth.trim()) {
       const d = new Date(data.dateOfBirth);

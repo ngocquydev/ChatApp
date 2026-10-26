@@ -11,12 +11,15 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Optional,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import type { AuthenticatedRequest } from '../auth/types/auth.types.js';
 import { PostsService } from './posts.service.js';
+import { CloudinaryService } from '../cloudinary/cloudinary.service.js';
 import {
   CreateCommentDto,
   CreatePostDto,
@@ -24,14 +27,19 @@ import {
   PhotosQueryDto,
   SharePostDto,
 } from './dto/posts.dto.js';
-import { POST_IMAGE_MAX_BYTES, savePostImage } from './post-image.util.js';
+import { savePostImage } from './post-image.util.js';
+
+const POST_MEDIA_MAX_BYTES = 50 * 1024 * 1024; // 50MB (ảnh/video)
 
 @ApiTags('Posts')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) {}
+  constructor(
+    private readonly postsService: PostsService,
+    @Optional() private readonly cloudinaryService?: CloudinaryService,
+  ) {}
 
   private extractUserId(req: AuthenticatedRequest): string {
     const userId =
@@ -45,16 +53,40 @@ export class PostsController {
   }
 
   @Post('images')
-  @ApiOperation({ summary: 'Tải một ảnh lên cho bài viết (JPG/PNG/WEBP/GIF, tối đa 5MB)' })
+  @ApiOperation({ summary: 'Tải một ảnh hoặc video lên cho bài viết (tối đa 50MB)' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
-    // Không đặt dest/storage → multer giữ file trong RAM (tối đa 5MB), sau đó tự kiểm tra magic bytes rồi mới ghi đĩa
     FileInterceptor('file', {
-      limits: { fileSize: POST_IMAGE_MAX_BYTES, files: 1 },
+      limits: { fileSize: POST_MEDIA_MAX_BYTES, files: 1 },
     }),
   )
-  async uploadImage(@UploadedFile() file?: { buffer: Buffer }) {
-    const url = await savePostImage(file?.buffer);
+  async uploadImage(
+    @UploadedFile()
+    file?: {
+      buffer: Buffer;
+      mimetype?: string;
+      originalname?: string;
+    },
+  ) {
+    if (!file?.buffer || file.buffer.length === 0) {
+      throw new BadRequestException('Chưa chọn ảnh hoặc video để tải lên');
+    }
+
+    if (this.cloudinaryService?.isConfigured()) {
+      const isVideo = file.mimetype?.startsWith('video/') || false;
+      const res = await this.cloudinaryService.uploadBuffer(file.buffer, {
+        folder: 'chatapp/posts',
+        resource_type: isVideo ? 'video' : 'auto',
+        filename: file.originalname,
+      });
+      return {
+        success: true,
+        url: res.secure_url,
+        resource_type: res.resource_type,
+      };
+    }
+
+    const url = await savePostImage(file.buffer);
     return { success: true, url };
   }
 

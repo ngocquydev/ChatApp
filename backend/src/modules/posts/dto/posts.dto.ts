@@ -16,9 +16,9 @@ import {
 import { POST_PRIVACIES } from '../schemas/post.schema.js';
 import type { PostPrivacy } from '../schemas/post.schema.js';
 
-/** Chỉ nhận đường dẫn ảnh do chính endpoint upload sinh ra — chặn URL ngoài/đường dẫn tùy ý. */
+/** Chỉ nhận đường dẫn ảnh/video do Cloudinary hoặc chính endpoint upload sinh ra — chặn URL ngoài/đường dẫn tùy ý. */
 export const POST_IMAGE_PATH_REGEX =
-  /^\/uploads\/posts\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|gif)$/;
+  /^(https:\/\/res\.cloudinary\.com\/[a-zA-Z0-9_\-./%]+|\/uploads\/posts\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp|gif))$/i;
 
 export const POST_MAX_IMAGES = 4;
 

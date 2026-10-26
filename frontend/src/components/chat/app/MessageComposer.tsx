@@ -1,8 +1,9 @@
 "use client";
 
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
-import { Box, IconButton, TextField, Tooltip, Typography } from "@mui/material";
+import { Box, CircularProgress, IconButton, TextField, Tooltip, Typography } from "@mui/material";
 import { Image as ImageIcon, Paperclip, Send, Smile } from "lucide-react";
+import { uploadMedia } from "@/services/postsApi";
 
 const TYPING_THROTTLE_MS = 2500;
 const TYPING_IDLE_MS = 5000;
@@ -26,9 +27,28 @@ function ComingSoonButton({ label, children }: { label: string; children: React.
 
 export default function MessageComposer({ onSend, onTyping }: MessageComposerProps) {
   const [text, setText] = useState("");
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSentRef = useRef(0);
   const canSend = text.trim().length > 0;
+
+  const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setUploadingMedia(true);
+    try {
+      const res = await uploadMedia(file);
+      if (res?.url) {
+        await onSend(res.url);
+      }
+    } catch {
+      // lỗi khi tải lên
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
 
   const stopTyping = () => {
     if (idleTimerRef.current) {
@@ -110,12 +130,29 @@ export default function MessageComposer({ onSend, onTyping }: MessageComposerPro
           },
         }}
       >
-        <Box sx={{ display: { xs: "none", sm: "flex" }, pb: 0.25 }}>
-          <ComingSoonButton label="Đính kèm tệp">
+        <Box sx={{ display: { xs: "none", sm: "flex" }, pb: 0.25, alignItems: "center" }}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*"
+            hidden
+            onChange={handleMediaSelect}
+            aria-label="Chọn ảnh hoặc video để gửi"
+          />
+          <Tooltip title={uploadingMedia ? "Đang tải tệp lên Cloudinary…" : "Gửi ảnh hoặc video"}>
+            <span>
+              <IconButton
+                size="small"
+                disabled={uploadingMedia}
+                aria-label="Gửi ảnh hoặc video qua Cloudinary"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploadingMedia ? <CircularProgress size={18} /> : <ImageIcon size={19} />}
+              </IconButton>
+            </span>
+          </Tooltip>
+          <ComingSoonButton label="Đính kèm tệp khác">
             <Paperclip size={19} />
-          </ComingSoonButton>
-          <ComingSoonButton label="Gửi hình ảnh">
-            <ImageIcon size={19} />
           </ComingSoonButton>
         </Box>
 

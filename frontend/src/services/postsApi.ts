@@ -61,9 +61,15 @@ export interface PhotoItem {
 }
 
 export const MAX_POST_IMAGES = 4;
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 50 * 1024 * 1024;
 export const POST_MAX_LENGTH = 5000;
 export const COMMENT_MAX_LENGTH = 1000;
+
+/** Kiểm tra xem URL tệp có phải là video hay không (Cloudinary video hoặc phần mở rộng video) */
+export function isVideoUrl(url?: string | null): boolean {
+  if (!url) return false;
+  return /\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i.test(url) || url.includes("/video/upload/");
+}
 
 /** Đường dẫn ảnh server trả về là tương đối (/uploads/...) → ghép với địa chỉ backend. */
 export function mediaUrl(path: string): string {
@@ -128,6 +134,24 @@ export async function uploadPostImage(file: File): Promise<string> {
   form.append("file", file);
   // Instance mặc định gửi JSON; với FormData phải đổi sang multipart (trình duyệt tự thêm boundary)
   const { data } = await api.post("/posts/images", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data.url as string;
+}
+
+export async function uploadMedia(file: File): Promise<{ url: string; resource_type?: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await api.post("/upload", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return { url: data.url, resource_type: data.resource_type };
+}
+
+export async function uploadAvatar(file: File): Promise<string> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await api.post("/upload/avatar", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return data.url as string;

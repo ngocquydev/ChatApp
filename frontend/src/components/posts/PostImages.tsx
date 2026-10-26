@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Box, ButtonBase } from "@mui/material";
-import { mediaUrl } from "@/services/postsApi";
+import { mediaUrl, isVideoUrl } from "@/services/postsApi";
 import ImageLightbox from "./ImageLightbox";
 
 interface PostImagesProps {
@@ -11,7 +11,7 @@ interface PostImagesProps {
   altPrefix: string;
 }
 
-/** Lưới 1–4 ảnh của bài viết; bấm để xem ảnh lớn. */
+/** Lưới 1–4 ảnh/video của bài viết; bấm để xem ảnh lớn hoặc phát video. */
 export default function PostImages({ images, altPrefix }: PostImagesProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   if (images.length === 0) return null;
@@ -29,35 +29,65 @@ export default function PostImages({ images, altPrefix }: PostImagesProps) {
           mt: 1,
         }}
       >
-        {images.map((src, index) => (
-          <ButtonBase
-            key={src}
-            onClick={() => setOpenIndex(index)}
-            aria-label={`Xem ảnh ${index + 1} trên ${images.length} của ${altPrefix}`}
-            sx={{
-              display: "block",
-              overflow: "hidden",
-              bgcolor: "action.hover",
-              // Bộ 3 ảnh: ảnh đầu trải rộng hai cột cho cân đối
-              gridColumn: images.length === 3 && index === 0 ? "1 / -1" : undefined,
-              aspectRatio: single ? "auto" : images.length === 3 && index === 0 ? "16 / 9" : "1 / 1",
-            }}
-          >
-            <Box
-              component="img"
-              src={mediaUrl(src)}
-              alt={`Ảnh ${index + 1} của ${altPrefix}`}
-              loading="lazy"
+        {images.map((src, index) => {
+          const isVideo = isVideoUrl(src);
+          if (isVideo) {
+            return (
+              <Box
+                key={src}
+                sx={{
+                  display: "block",
+                  overflow: "hidden",
+                  bgcolor: "black",
+                  borderRadius: "8px",
+                  gridColumn: images.length === 3 && index === 0 ? "1 / -1" : undefined,
+                }}
+              >
+                <Box
+                  component="video"
+                  controls
+                  preload="metadata"
+                  src={mediaUrl(src)}
+                  sx={{
+                    width: "100%",
+                    maxHeight: single ? 520 : 320,
+                    display: "block",
+                  }}
+                />
+              </Box>
+            );
+          }
+
+          return (
+            <ButtonBase
+              key={src}
+              onClick={() => setOpenIndex(index)}
+              aria-label={`Xem ảnh ${index + 1} trên ${images.length} của ${altPrefix}`}
               sx={{
-                width: "100%",
-                height: single ? "auto" : "100%",
-                maxHeight: single ? 520 : undefined,
-                objectFit: single ? "contain" : "cover",
                 display: "block",
+                overflow: "hidden",
+                bgcolor: "action.hover",
+                // Bộ 3 ảnh: ảnh đầu trải rộng hai cột cho cân đối
+                gridColumn: images.length === 3 && index === 0 ? "1 / -1" : undefined,
+                aspectRatio: single ? "auto" : images.length === 3 && index === 0 ? "16 / 9" : "1 / 1",
               }}
-            />
-          </ButtonBase>
-        ))}
+            >
+              <Box
+                component="img"
+                src={mediaUrl(src)}
+                alt={`Ảnh ${index + 1} của ${altPrefix}`}
+                loading="lazy"
+                sx={{
+                  width: "100%",
+                  height: single ? "auto" : "100%",
+                  maxHeight: single ? 520 : undefined,
+                  objectFit: single ? "contain" : "cover",
+                  display: "block",
+                }}
+              />
+            </ButtonBase>
+          );
+        })}
       </Box>
 
       <ImageLightbox

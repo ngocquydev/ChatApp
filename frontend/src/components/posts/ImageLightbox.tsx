@@ -2,16 +2,19 @@
 
 import { Box, Dialog, IconButton } from "@mui/material";
 import { X } from "lucide-react";
+import { isVideoUrl } from "@/services/postsApi";
 
 interface ImageLightboxProps {
-  /** URL đầy đủ của ảnh; null = đóng */
+  /** URL đầy đủ của ảnh/video; null = đóng */
   src: string | null;
   alt: string;
   onClose: () => void;
 }
 
-/** Xem ảnh lớn trong hộp thoại nền đen. */
+/** Xem ảnh/video lớn trong hộp thoại nền đen. */
 export default function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
+  const isVideo = isVideoUrl(src);
+
   return (
     <Dialog
       open={!!src}
@@ -21,9 +24,19 @@ export default function ImageLightbox({ src, alt, onClose }: ImageLightboxProps)
     >
       {src && (
         <Box sx={{ position: "relative", display: "flex", justifyContent: "center" }}>
-          <Box component="img" src={src} alt={alt} sx={{ maxWidth: "100%", maxHeight: "90dvh", objectFit: "contain" }} />
+          {isVideo ? (
+            <Box
+              component="video"
+              controls
+              autoPlay
+              src={src}
+              sx={{ maxWidth: "100%", maxHeight: "90dvh" }}
+            />
+          ) : (
+            <Box component="img" src={src} alt={alt} sx={{ maxWidth: "100%", maxHeight: "90dvh", objectFit: "contain" }} />
+          )}
           <IconButton
-            aria-label="Đóng ảnh"
+            aria-label="Đóng"
             onClick={onClose}
             sx={{ position: "absolute", top: 8, right: 8, bgcolor: "common.black", color: "common.white", "&:hover": { bgcolor: "grey.800" } }}
           >

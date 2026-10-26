@@ -311,6 +311,8 @@ describe('tải ảnh lên', () => {
   it('chỉ chấp nhận đường dẫn ảnh do server sinh ra', () => {
     const uuid = '123e4567-e89b-12d3-a456-426614174000';
     expect(POST_IMAGE_PATH_REGEX.test(`/uploads/posts/${uuid}.jpg`)).toBe(true);
+    expect(POST_IMAGE_PATH_REGEX.test('https://res.cloudinary.com/rjkxi7lw/image/upload/v123/chatapp/posts/test.jpg')).toBe(true);
+    expect(POST_IMAGE_PATH_REGEX.test('https://res.cloudinary.com/rjkxi7lw/video/upload/v123/chatapp/posts/test.mp4')).toBe(true);
     expect(POST_IMAGE_PATH_REGEX.test('https://evil.example/x.jpg')).toBe(false);
     expect(POST_IMAGE_PATH_REGEX.test(`/uploads/posts/../../etc/passwd`)).toBe(false);
     expect(POST_IMAGE_PATH_REGEX.test(`/uploads/posts/${uuid}.svg`)).toBe(false);

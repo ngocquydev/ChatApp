@@ -19,6 +19,7 @@ import {
   PhoneCall,
   Video,
 } from "lucide-react";
+import { uploadMedia } from "@/services/postsApi";
 
 export interface ChatFriend {
   id: number | string;
@@ -88,9 +89,17 @@ function Message({ friend, onClose }: MessageProps) {
     }
   }, [messages, isMinimized]);
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setSelectedImage(URL.createObjectURL(file));
+    if (!file) return;
+    try {
+      const res = await uploadMedia(file);
+      if (res?.url) {
+        setSelectedImage(res.url);
+      }
+    } catch {
+      setSelectedImage(URL.createObjectURL(file));
+    }
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {

@@ -19,6 +19,7 @@ import PrivacyPicker from "./PrivacyPicker";
 interface Attachment {
   key: string;
   preview: string;
+  isVideo?: boolean;
   /** Đường dẫn trên server sau khi tải xong */
   url?: string;
 }
@@ -30,7 +31,7 @@ interface PostComposerProps {
   onCreated: (post: PostView) => void;
 }
 
-const ACCEPT = "image/png,image/jpeg,image/webp,image/gif";
+const ACCEPT = "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime";
 
 /** Ô soạn bài: chữ + tối đa 4 ảnh + quyền riêng tư. Ảnh được tải lên ngay khi chọn. */
 export default function PostComposer({
@@ -67,30 +68,32 @@ export default function PostComposer({
 
     const room = MAX_POST_IMAGES - attachments.length;
     if (files.length > room) {
-      setError(`Mỗi bài viết chỉ đính kèm tối đa ${MAX_POST_IMAGES} ảnh.`);
+      setError(`Mỗi bài viết chỉ đính kèm tối đa ${MAX_POST_IMAGES} ảnh hoặc video.`);
     }
     const accepted = files.slice(0, Math.max(room, 0));
 
     for (const file of accepted) {
-      if (!file.type.startsWith("image/")) {
-        setError("Chỉ hỗ trợ tệp ảnh (JPG, PNG, WEBP, GIF).");
+      const isVideo = file.type.startsWith("video/");
+      const isImage = file.type.startsWith("image/");
+      if (!isImage && !isVideo) {
+        setError("Chỉ hỗ trợ tệp ảnh (JPG, PNG, WEBP, GIF) hoặc video (MP4, WEBM, MOV).");
         continue;
       }
       if (file.size > MAX_IMAGE_BYTES) {
-        setError(`Ảnh “${file.name}” vượt quá 5MB.`);
+        setError(`Tệp “${file.name}” vượt quá 50MB.`);
         continue;
       }
       const preview = URL.createObjectURL(file);
       previewsRef.current.push(preview);
       const key = `${preview}`;
-      setAttachments((prev) => [...prev, { key, preview }]);
+      setAttachments((prev) => [...prev, { key, preview, isVideo }]);
       setUploading((n) => n + 1);
       try {
         const url = await uploadPostImage(file);
         setAttachments((prev) => prev.map((a) => (a.key === key ? { ...a, url } : a)));
       } catch (err) {
         setAttachments((prev) => prev.filter((a) => a.key !== key));
-        setError(apiErrorMessage(err, "Không tải được ảnh lên."));
+        setError(apiErrorMessage(err, "Không tải được tệp lên."));
       } finally {
         setUploading((n) => n - 1);
       }
@@ -152,26 +155,35 @@ export default function PostComposer({
       )}
 
       {attachments.length > 0 && (
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 1.5 }} aria-label="Ảnh đính kèm">
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 1.5 }} aria-label="Tệp đính kèm">
           {attachments.map((a, i) => (
             <Box
               key={a.key}
               sx={{ position: "relative", width: 88, height: 88, borderRadius: "12px", overflow: "hidden", bgcolor: "action.hover" }}
             >
-              <Box
-                component="img"
-                src={a.preview}
-                alt={`Ảnh đính kèm ${i + 1}`}
-                sx={{ width: "100%", height: "100%", objectFit: "cover", opacity: a.url ? 1 : 0.5 }}
-              />
+              {a.isVideo ? (
+                <Box
+                  component="video"
+                  src={a.preview}
+                  muted
+                  sx={{ width: "100%", height: "100%", objectFit: "cover", opacity: a.url ? 1 : 0.5 }}
+                />
+              ) : (
+                <Box
+                  component="img"
+                  src={a.preview}
+                  alt={`Tệp đính kèm ${i + 1}`}
+                  sx={{ width: "100%", height: "100%", objectFit: "cover", opacity: a.url ? 1 : 0.5 }}
+                />
+              )}
               {!a.url && (
                 <Box sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <CircularProgress size={22} aria-label="Đang tải ảnh lên" />
+                  <CircularProgress size={22} aria-label="Đang tải tệp lên" />
                 </Box>
               )}
               <IconButton
                 size="small"
-                aria-label={`Gỡ ảnh đính kèm ${i + 1}`}
+                aria-label={`Gỡ tệp đính kèm ${i + 1}`}
                 onClick={() => removeAttachment(a.key)}
                 disabled={posting}
                 sx={{ position: "absolute", top: 2, right: 2, p: 0.25, bgcolor: "common.black", color: "common.white", "&:hover": { bgcolor: "grey.800" } }}
@@ -201,13 +213,13 @@ export default function PostComposer({
             startIcon={<ImagePlus size={18} aria-hidden />}
             sx={{ fontWeight: 600, color: "text.secondary" }}
           >
-            Ảnh
-            <input hidden type="file" accept={ACCEPT} multiple onChange={handleFiles} aria-label="Chọn ảnh đính kèm" />
+            Ảnh / Video
+            <input hidden type="file" accept={ACCEPT} multiple onChange={handleFiles} aria-label="Chọn ảnh hoặc video đính kèm" />
           </Button>
           <PrivacyPicker value={privacy} onChange={setPrivacy} disabled={posting} labelId={`${uid}-privacy`} />
         </Box>
         <Button variant="contained" disabled={!canPost} onClick={() => void submit()}>
-          {posting ? "Đang đăng…" : uploading > 0 ? "Đang tải ảnh…" : "Đăng"}
+          {posting ? "Đang đăng…" : uploading > 0 ? "Đang tải lên…" : "Đăng"}
         </Button>
       </Box>
     </Paper>

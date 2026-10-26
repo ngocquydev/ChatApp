@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar, Box, Skeleton, Typography } from "@mui/material";
 import { Check, CheckCheck } from "lucide-react";
 import EmptyState from "@/components/common/EmptyState";
 import { ChatMessage, ChatUser } from "@/store/useChatStore";
 import { dayKey, formatClockTime, formatDaySeparator } from "@/utils/formatTime";
+import { isVideoUrl } from "@/services/postsApi";
+import ImageLightbox from "../../posts/ImageLightbox";
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
 
@@ -129,6 +131,7 @@ export default function MessageList({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
   const lastConversationRef = useRef<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const rows = useMemo(() => buildRows(messages, currentUserId), [messages, currentUserId]);
 
@@ -238,27 +241,80 @@ export default function MessageList({
                   alignItems: isMe ? "flex-end" : "flex-start",
                 }}
               >
-                <Box
-                  sx={{
-                    px: 1.75,
-                    py: 1,
-                    bgcolor: isMe ? "primary.main" : "background.paper",
-                    color: isMe ? "primary.contrastText" : "text.primary",
-                    border: isMe ? "none" : "1px solid",
-                    borderColor: "divider",
-                    // Góc phía người gửi nhỏ lại để các bubble liền nhau "dính" vào nhau; bubble cuối có đuôi.
-                    borderRadius: isMe
-                      ? `${radius}px ${isFirst ? radius : tail}px ${tail}px ${radius}px`
-                      : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${tail}px`,
-                  }}
-                >
-                  <Typography
-                    variant="body2"
-                    sx={{ fontSize: "0.9375rem", lineHeight: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
-                  >
-                    {msg.text}
-                  </Typography>
-                </Box>
+                {(() => {
+                  const trimmed = msg.text?.trim() || "";
+                  const isMedia = /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);
+                  const isVideo = isMedia && isVideoUrl(trimmed);
+
+                  if (isMedia) {
+                    return (
+                      <Box
+                        sx={{
+                          overflow: "hidden",
+                          borderRadius: isMe
+                            ? `${radius}px ${isFirst ? radius : tail}px ${tail}px ${radius}px`
+                            : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${tail}px`,
+                          maxWidth: "100%",
+                        }}
+                      >
+                        {isVideo ? (
+                          <Box
+                            component="video"
+                            controls
+                            preload="metadata"
+                            src={trimmed}
+                            sx={{
+                              maxWidth: "100%",
+                              maxHeight: 280,
+                              display: "block",
+                              bgcolor: "common.black",
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            component="img"
+                            src={trimmed}
+                            alt="Ảnh trong tin nhắn"
+                            loading="lazy"
+                            onClick={() => setLightboxUrl(trimmed)}
+                            sx={{
+                              maxWidth: "100%",
+                              maxHeight: 280,
+                              display: "block",
+                              cursor: "pointer",
+                              transition: "opacity 150ms",
+                              "&:hover": { opacity: 0.9 },
+                            }}
+                          />
+                        )}
+                      </Box>
+                    );
+                  }
+
+                  return (
+                    <Box
+                      sx={{
+                        px: 1.75,
+                        py: 1,
+                        bgcolor: isMe ? "primary.main" : "background.paper",
+                        color: isMe ? "primary.contrastText" : "text.primary",
+                        border: isMe ? "none" : "1px solid",
+                        borderColor: "divider",
+                        // Góc phía người gửi nhỏ lại để các bubble liền nhau "dính" vào nhau; bubble cuối có đuôi.
+                        borderRadius: isMe
+                          ? `${radius}px ${isFirst ? radius : tail}px ${tail}px ${radius}px`
+                          : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${tail}px`,
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{ fontSize: "0.9375rem", lineHeight: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+                      >
+                        {msg.text}
+                      </Typography>
+                    </Box>
+                  );
+                })()}
 
                 {isLast && (
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4, px: 0.5 }}>
@@ -285,6 +341,12 @@ export default function MessageList({
       )}
 
       {isPartnerTyping && <TypingIndicator partner={partner} />}
+
+      <ImageLightbox
+        src={lightboxUrl}
+        alt="Ảnh trong tin nhắn"
+        onClose={() => setLightboxUrl(null)}
+      />
     </Box>
   );
 }

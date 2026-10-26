@@ -11,6 +11,8 @@ import { ChatModule } from './modules/chat/chat.module.js';
 import { FriendsModule } from './modules/friends/friends.module.js';
 import { PostsModule } from './modules/posts/posts.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { CloudinaryModule } from './modules/cloudinary/cloudinary.module.js';
+import { UploadModule } from './modules/upload/upload.module.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -52,6 +54,10 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     PostsModule,
 
     NotificationsModule,
+
+    CloudinaryModule,
+
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

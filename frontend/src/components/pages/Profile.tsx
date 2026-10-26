@@ -69,6 +69,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuthStore } from "../../store/useAuthStore";
+import { uploadAvatar } from "@/services/postsApi";
 import AuthGuard from "../common/AuthGuard";
 import MyPostsTab from "../posts/MyPostsTab";
 
@@ -290,7 +291,7 @@ function ProfileContent() {
   };
 
   // Handle File Upload for Avatar
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -299,17 +300,22 @@ function ProfileContent() {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      showToast("Kích thước file ảnh không được vượt quá 2MB!", "error");
+    if (file.size > 10 * 1024 * 1024) {
+      showToast("Kích thước file ảnh không được vượt quá 10MB!", "error");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setSelectedAvatarPreview(result);
-    };
-    reader.readAsDataURL(file);
+    setIsUpdating(true);
+    showToast("Đang tải ảnh đại diện lên Cloudinary…", "info");
+    try {
+      const url = await uploadAvatar(file);
+      setSelectedAvatarPreview(url);
+      showToast("Tải ảnh lên Cloudinary thành công!");
+    } catch {
+      showToast("Không thể tải ảnh lên Cloudinary. Vui lòng thử lại!", "error");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   // Password strength logic
