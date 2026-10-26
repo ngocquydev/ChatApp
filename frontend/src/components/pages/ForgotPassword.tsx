@@ -29,6 +29,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
+import BrandLogo from "../common/BrandLogo";
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -313,6 +314,9 @@ export default function ForgotPassword() {
 
         {/* Brand Header */}
         <Box sx={{ textAlign: "center", mb: 3 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+            <BrandLogo size={56} />
+          </Box>
           <Box
             sx={{
               display: "inline-flex",

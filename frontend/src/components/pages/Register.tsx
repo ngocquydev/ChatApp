@@ -41,6 +41,7 @@ import useSocialAuth from "../../hooks/useSocialAuth";
 import registerData from "@/data/registerData";
 import { GoogleIcon, FacebookIcon } from "../common/SocialIcons";
 import ColorModeToggle from "../common/ColorModeToggle";
+import BrandLogo from "../common/BrandLogo";
 
 const registerSchema = z
   .object({
@@ -342,35 +343,7 @@ export default function Register() {
 
         {/* Header trái: Logo */}
         <Box sx={{ position: "relative", zIndex: 1 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: "14px",
-                background:
-                  "linear-gradient(135deg, var(--mui-palette-tone-6366f1) 0%, var(--mui-palette-tone-a855f7) 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 8px 24px rgba(99, 102, 241, 0.4)",
-              }}
-            >
-              <Sparkles size={22} color="var(--mui-palette-common-white)" />
-            </Box>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 800,
-                letterSpacing: "-0.5px",
-                background: "linear-gradient(to right, var(--mui-palette-background-paper), var(--mui-palette-neutral-300))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              {registerData.logo}
-            </Typography>
-          </Box>
+          <BrandLogo size={52} />
         </Box>
 
         {/* Content giữa: Badge, Tiêu đề, Typewriter & Features */}
@@ -528,6 +501,11 @@ export default function Register() {
           sx={{ position: "absolute", top: 12, right: 12, color: "text.secondary" }}
         />
         <Box sx={{ width: "100%", maxWidth: { xs: "100%", sm: 480 } }}>
+          {/* Logo hiển thị trên mobile */}
+          <Box sx={{ display: { xs: "flex", md: "none" }, justifyContent: "center", mb: 3 }}>
+            <BrandLogo size={56} />
+          </Box>
+
           {/* Header form */}
           <Box sx={{ mb: 3 }}>
             <Typography

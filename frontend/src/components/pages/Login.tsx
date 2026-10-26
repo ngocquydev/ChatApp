@@ -32,6 +32,7 @@ import useSocialAuth from "../../hooks/useSocialAuth";
 import TurnstileWidget, { TurnstileRef } from "../common/TurnstileWidget";
 import { GoogleIcon, FacebookIcon } from "../common/SocialIcons";
 import ColorModeToggle from "../common/ColorModeToggle";
+import BrandLogo from "../common/BrandLogo";
 
 const loginSchema = z.object({
   email: z
@@ -301,33 +302,9 @@ export default function Login() {
             zIndex: 1,
             display: "flex",
             alignItems: "center",
-            gap: 1.5,
           }}
         >
-          <Box
-            sx={{
-              width: 42,
-              height: 42,
-              borderRadius: "12px",
-              bgcolor: "var(--mui-palette-brand-600)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 8px 18px rgba(37,99,235,0.45)",
-            }}
-          >
-            <Sparkles size={22} color="var(--mui-palette-common-white)" />
-          </Box>
-
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              letterSpacing: "-0.5px",
-            }}
-          >
-            {login.logo}
-          </Typography>
+          <BrandLogo size={52} />
         </Box>
 
         <Box
@@ -556,6 +533,11 @@ export default function Login() {
               "0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)",
           }}
         >
+          {/* Logo hiển thị trên mobile */}
+          <Box sx={{ display: { xs: "flex", md: "none" }, justifyContent: "center", mb: 3 }}>
+            <BrandLogo size={56} />
+          </Box>
+
           {/* Header */}
           <Box
             sx={{

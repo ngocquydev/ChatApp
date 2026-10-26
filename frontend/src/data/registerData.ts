@@ -58,7 +58,7 @@ export interface RegisterData {
 }
 
 const register: RegisterData = {
-  logo: "ChatApp Studio",
+  logo: "",
   badge: "Gia nhập cộng đồng ChatApp",
   title: "Tạo tài khoản mới, kết nối không giới hạn.",
 
@@ -87,7 +87,7 @@ const register: RegisterData = {
   ],
 
   avatar: "CA",
-  author: "ChatApp Studio",
+  author: "Zuno Platform",
   position: "Next-Gen Messaging Platform",
 
   form: {

@@ -41,7 +41,7 @@ export interface LoginData {
 }
 
 const login: LoginData = {
-  logo: "ChatApp Studio",
+  logo: "",
   labelForget: "Quên mật khẩu?",
   labelRememberme: "Ghi nhớ đăng nhập",
   badge: "Giao thức nhắn tin thế hệ mới",
@@ -77,7 +77,7 @@ const login: LoginData = {
 
   position: "Lead Product Designer",
 
-  copyright: "© 2026 ChatApp Studio. All rights reserved.",
+  copyright: "© 2026. All rights reserved.",
 
   form: {
     title: "Đăng nhập",
