@@ -33,13 +33,21 @@ import {
   Chip,
   ButtonBase,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import SearchIcon from "@mui/icons-material/Search";
-import FeedIcon from "@mui/icons-material/Feed";
-import ExploreIcon from "@mui/icons-material/Explore";
-import ChatIcon from "@mui/icons-material/Chat";
-import PersonIcon from "@mui/icons-material/Person";
-import { X, UserPlus, Clock, Check, UserCheck, Users, Volume2, VolumeX } from "lucide-react";
+import {
+  Menu as MenuIcon,
+  Search,
+  Home,
+  Compass,
+  MessageSquare,
+  UserPlus,
+  X,
+  Clock,
+  Check,
+  UserCheck,
+  Users,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useFriendStore } from "../../store/useFriendStore";
 import { useChatStore } from "../../store/useChatStore";
@@ -181,11 +189,11 @@ function ResponsiveAppBar() {
   ];
 
   const pages: NavPage[] = [
-    { id: "feed", label: "Bảng tin", icon: <FeedIcon />, href: "/" },
+    { id: "home", label: "Trang chủ", icon: <Home size={20} />, href: "/" },
     {
       id: "explore",
       label: "Khám phá",
-      icon: <ExploreIcon />,
+      icon: <Compass size={20} />,
       href: "/explore",
     },
     {
@@ -193,8 +201,7 @@ function ResponsiveAppBar() {
       label: "Bạn bè",
       icon: <UserPlus size={20} />,
     },
-    { id: "chat", label: "Tin nhắn", icon: <ChatIcon />, href: "/chat" },
-    { id: "profile", label: "Cá nhân", icon: <PersonIcon />, href: "/profile" },
+    { id: "chat", label: "Tin nhắn", icon: <MessageSquare size={20} />, href: "/chat" },
   ];
 
   return (
@@ -202,9 +209,9 @@ function ResponsiveAppBar() {
       {/* AppBar luôn tối ở cả hai scheme → ghim biến màu về scheme sáng (data-light) */}
       <AppBar position="fixed" data-light="">
         <Container maxWidth="xl">
-          <Toolbar disableGutters sx={{ gap: 2 }}>
+          <Toolbar disableGutters sx={{ gap: { xs: 1, sm: 1.5, md: 2 } }}>
             {/* Logo Desktop */}
-            <Box sx={{ display: { xs: "none", md: "flex" }, mr: 2 }}>
+            <Box sx={{ display: { xs: "none", md: "flex" }, mr: 1, flexShrink: 0 }}>
               <BrandLogo />
             </Box>
 
@@ -217,7 +224,7 @@ function ResponsiveAppBar() {
                 onClick={handleDrawerToggle}
                 color="inherit"
               >
-                <MenuIcon />
+                <MenuIcon size={22} />
               </IconButton>
             </Box>
 
@@ -229,7 +236,11 @@ function ResponsiveAppBar() {
             {/* Thanh Search Real-Time Toàn Hệ Thống */}
             <Box
               ref={searchAnchorRef}
-              sx={{ flexGrow: 1, maxWidth: { xs: "100%", md: 450 }, position: "relative" }}
+              sx={{
+                flexGrow: 1,
+                maxWidth: { xs: "100%", md: 280, lg: 340, xl: 400 },
+                position: "relative",
+              }}
             >
               <TextField
                 fullWidth
@@ -249,8 +260,9 @@ function ResponsiveAppBar() {
                   input: {
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon
-                          sx={{ color: "rgba(255, 255, 255, 0.7)" }}
+                        <Search
+                          size={18}
+                          color="rgba(255, 255, 255, 0.7)"
                         />
                       </InputAdornment>
                     ),
@@ -348,69 +360,96 @@ function ResponsiveAppBar() {
               sx={{
                 flexGrow: 1,
                 display: { xs: "none", md: "flex" },
-                justifyContent: "flex-end",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: { md: 0.5, lg: 1 },
+                mx: { md: 1, lg: 2 },
               }}
             >
               {pages.map((page) => {
                 const isActive = Boolean(
-                  page.href &&
-                    (page.href === "/" ? pathname === "/" : pathname?.startsWith(page.href))
+                  (page.href &&
+                    (page.href === "/" ? pathname === "/" : pathname?.startsWith(page.href))) ||
+                    (page.id === "friends" && isFriendOpen) ||
+                    (page.id === "chat" && isChatOpen)
                 );
                 return (
-                <Box key={page.id} sx={{ position: "relative", display: "flex", alignItems: "center" }}>
-                  <Button
-                    aria-label={page.label}
-                    aria-current={isActive ? "page" : undefined}
-                    onClick={(e) => {
-                      if (page.id === "chat") {
-                        handleOpenChat(e);
-                      } else if (page.id === "friends") {
-                        handleOpenFriend(e);
-                      } else if (page.href) {
-                        router.push(page.href);
-                      }
-                    }}
-                    sx={{
-                      color: "white",
-                      display: "flex",
-                      gap: 1,
-                      px: 1.5,
-                      minHeight: 42,
-                      borderRadius: 3,
-                      bgcolor: isActive ? "rgba(255, 255, 255, 0.14)" : "transparent",
-                      "&:hover": { bgcolor: "rgba(255, 255, 255, 0.2)" },
-                    }}
-                  >
-                    {page.id === "chat" ? (
-                      <Badge
-                        color="error"
-                        variant="dot"
-                        invisible={
-                          !conversations.some(
-                            (c) =>
-                              c.unreadCounts &&
-                              Number(c.unreadCounts[String(user?.id || user?._id)] || 0) > 0
-                          )
-                        }
+                  <Box key={page.id} sx={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <Tooltip title={page.label} enterDelay={500}>
+                      <Button
+                        aria-label={page.label}
+                        aria-current={isActive ? "page" : undefined}
+                        onClick={(e) => {
+                          if (page.id === "chat") {
+                            handleOpenChat(e);
+                          } else if (page.id === "friends") {
+                            handleOpenFriend(e);
+                          } else if (page.href) {
+                            router.push(page.href);
+                          }
+                        }}
+                        sx={{
+                          color: "white",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 1,
+                          px: { md: 1.5, lg: 2 },
+                          py: 0.85,
+                          minHeight: 40,
+                          minWidth: "auto",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                          borderRadius: "12px",
+                          fontWeight: isActive ? 700 : 500,
+                          bgcolor: isActive ? "rgba(255, 255, 255, 0.16)" : "transparent",
+                          transition: "all 0.15s ease",
+                          "&:hover": {
+                            bgcolor: isActive
+                              ? "rgba(255, 255, 255, 0.22)"
+                              : "rgba(255, 255, 255, 0.1)",
+                          },
+                        }}
                       >
-                        {page.icon}
-                      </Badge>
-                    ) : page.id === "friends" ? (
-                      <Badge
-                        color="error"
-                        badgeContent={receivedRequests.length}
-                        max={99}
-                        invisible={receivedRequests.length === 0}
-                      >
-                        {page.icon}
-                      </Badge>
-                    ) : (
-                      page.icon
-                    )}
-                    <Box component="span" sx={{ display: { md: "none", lg: "inline" }, fontSize: "0.875rem" }}>
-                      {page.label}
-                    </Box>
-                  </Button>
+                        {page.id === "chat" ? (
+                          <Badge
+                            color="error"
+                            variant="dot"
+                            invisible={
+                              !conversations.some(
+                                (c) =>
+                                  c.unreadCounts &&
+                                  Number(c.unreadCounts[String(user?.id || user?._id)] || 0) > 0
+                              )
+                            }
+                          >
+                            {page.icon}
+                          </Badge>
+                        ) : page.id === "friends" ? (
+                          <Badge
+                            color="error"
+                            badgeContent={receivedRequests.length}
+                            max={99}
+                            invisible={receivedRequests.length === 0}
+                          >
+                            {page.icon}
+                          </Badge>
+                        ) : (
+                          page.icon
+                        )}
+                        <Box
+                          component="span"
+                          sx={{
+                            display: { md: "none", lg: "inline" },
+                            fontSize: "0.875rem",
+                            whiteSpace: "nowrap",
+                            lineHeight: 1,
+                          }}
+                        >
+                          {page.label}
+                        </Box>
+                      </Button>
+                    </Tooltip>
 
                   {/* Popover Lời mời kết bạn */}
                   {page.id === "friends" && (
@@ -848,7 +887,7 @@ function ResponsiveAppBar() {
                     )
                   }
                 >
-                  <ChatIcon />
+                  <MessageSquare size={20} />
                 </Badge>
               </IconButton>
             </Box>
@@ -871,7 +910,13 @@ function ResponsiveAppBar() {
                   aria-label="Mở menu tài khoản"
                   aria-haspopup="menu"
                   aria-controls="menu-appbar-user"
-                  sx={{ p: 0 }}
+                  sx={{
+                    p: 0.25,
+                    border: pathname?.startsWith("/profile")
+                      ? "2px solid rgba(255, 255, 255, 0.9)"
+                      : "2px solid transparent",
+                    transition: "border-color 0.2s ease",
+                  }}
                 >
                   <Avatar
                     alt={user?.name || "User Avatar"}
@@ -947,60 +992,98 @@ function ResponsiveAppBar() {
         </Box>
         <Divider />
         <List>
-          {pages.map((page) => (
-            <ListItem key={page.id} disablePadding>
-              <ListItemButton
-                onClick={(e) => {
-                  handleDrawerToggle();
+          {pages.map((page) => {
+            const isActive = Boolean(
+              page.href &&
+                (page.href === "/" ? pathname === "/" : pathname?.startsWith(page.href))
+            );
+            return (
+              <ListItem key={page.id} disablePadding>
+                <ListItemButton
+                  selected={isActive}
+                  onClick={(e) => {
+                    handleDrawerToggle();
 
-                  if (page.id === "chat") {
-                    handleOpenChat(e);
-                  } else if (page.id === "friends") {
-                    handleOpenFriend(e);
-                  } else if (page.href) {
-                    router.push(page.href);
-                  }
-                }}
-              >
-                <ListItemIcon>
-                  {page.id === "friends" ? (
-                    <Badge
-                      color="error"
-                      badgeContent={receivedRequests.length}
-                      max={99}
-                      invisible={receivedRequests.length === 0}
-                    >
-                      {page.icon}
-                    </Badge>
-                  ) : page.id === "chat" ? (
-                    <Badge
-                      color="error"
-                      variant="dot"
-                      invisible={
-                        !conversations.some(
-                          (c) =>
-                            c.unreadCounts &&
-                            Number(c.unreadCounts[String(user?.id || user?._id)] || 0) > 0
-                        )
-                      }
-                    >
-                      {page.icon}
-                    </Badge>
-                  ) : (
-                    page.icon
-                  )}
-                </ListItemIcon>
-                <ListItemText
-                  primary={page.label}
-                  secondary={
-                    page.id === "friends" && receivedRequests.length > 0
-                      ? `${receivedRequests.length} lời mời mới`
-                      : undefined
-                  }
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
+                    if (page.id === "chat") {
+                      handleOpenChat(e);
+                    } else if (page.id === "friends") {
+                      handleOpenFriend(e);
+                    } else if (page.href) {
+                      router.push(page.href);
+                    }
+                  }}
+                >
+                  <ListItemIcon>
+                    {page.id === "friends" ? (
+                      <Badge
+                        color="error"
+                        badgeContent={receivedRequests.length}
+                        max={99}
+                        invisible={receivedRequests.length === 0}
+                      >
+                        {page.icon}
+                      </Badge>
+                    ) : page.id === "chat" ? (
+                      <Badge
+                        color="error"
+                        variant="dot"
+                        invisible={
+                          !conversations.some(
+                            (c) =>
+                              c.unreadCounts &&
+                              Number(c.unreadCounts[String(user?.id || user?._id)] || 0) > 0
+                          )
+                        }
+                      >
+                        {page.icon}
+                      </Badge>
+                    ) : (
+                      page.icon
+                    )}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={page.label}
+                    secondary={
+                      page.id === "friends" && receivedRequests.length > 0
+                        ? `${receivedRequests.length} lời mời mới`
+                        : undefined
+                    }
+                  />
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
+        <Divider />
+        <List>
+          <ListItem disablePadding>
+            <ListItemButton
+              selected={Boolean(pathname?.startsWith("/profile"))}
+              onClick={() => {
+                handleDrawerToggle();
+                router.push("/profile");
+              }}
+            >
+              <ListItemIcon>
+                <Avatar
+                  src={user?.avatar || ""}
+                  sx={{
+                    width: 28,
+                    height: 28,
+                    bgcolor: "var(--mui-palette-brand-500)",
+                    fontSize: "0.8rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  {(user?.name || "U")[0].toUpperCase()}
+                </Avatar>
+              </ListItemIcon>
+              <ListItemText
+                primary={user?.name || "Hồ sơ cá nhân"}
+                secondary="Xem và chỉnh sửa hồ sơ"
+              />
+            </ListItemButton>
+          </ListItem>
         </List>
       </Drawer>
     </>
