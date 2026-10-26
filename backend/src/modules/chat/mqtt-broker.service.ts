@@ -20,7 +20,7 @@ import {
 
 interface AuthenticatedMqttClient extends Client {
   userId?: string;
-  user?: any;
+  user?: unknown;
 }
 
 @Injectable()
@@ -65,8 +65,11 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
         let token = password ? password.toString('utf-8') : '';
 
         // Fallback: Tìm trong cookie hoặc query param của WebSocket handshake request
+        const clientConn = client.conn as unknown as
+          | { req?: IncomingMessage; conn?: IncomingMessage }
+          | undefined;
         const req: IncomingMessage | undefined =
-          client.req || (client.conn as any)?.req || (client.conn as any)?.conn;
+          client.req || clientConn?.req || clientConn?.conn;
         if (!token && req) {
           // Trích từ cookie
           const cookieHeader = req.headers?.cookie;
@@ -88,8 +91,10 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
             this.logger.log(`[MQTT] Xác thực Client ${client.id} theo UserID: ${username}`);
             return done(null, true);
           }
-          const err = new Error('Thiếu Token xác thực trong MQTT CONNECT') as any;
-          err.returnCode = 4; // Bad username or password
+          const err = Object.assign(
+            new Error('Thiếu Token xác thực trong MQTT CONNECT'),
+            { returnCode: 4 }, // Bad username or password
+          );
           return done(err, false);
         }
 
@@ -107,8 +112,9 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
         this.logger.warn(
           `[MQTT] Xác thực thất bại cho Client ${client.id}: ${error instanceof Error ? error.message : String(error)}`,
         );
-        const err = new Error('Token không hợp lệ') as any;
-        err.returnCode = 4;
+        const err = Object.assign(new Error('Token không hợp lệ'), {
+          returnCode: 4,
+        });
         return done(err, false);
       }
     };
@@ -179,7 +185,11 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
             : Buffer.from(packet.payload);
 
           // Giải mã Protocol Buffers nhị phân
-          const decoded = SendMessageProto.decode(payloadBuffer) as any;
+          const decoded = SendMessageProto.decode(payloadBuffer) as unknown as {
+            text?: string;
+            receiverId?: string;
+            conversationId?: string;
+          };
           if (!decoded.text || !decoded.receiverId) return;
 
           this.logger.log(
@@ -228,7 +238,11 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
             ? packet.payload
             : Buffer.from(packet.payload);
 
-          const decoded = TypingEventProto.decode(payloadBuffer) as any;
+          const decoded = TypingEventProto.decode(payloadBuffer) as unknown as {
+            receiverId?: string;
+            conversationId?: string;
+            isTyping?: boolean;
+          };
           let targetReceiverId = decoded.receiverId;
 
           // Nếu chưa có receiverId, tra cứu từ cuộc hội thoại
@@ -236,7 +250,7 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
             try {
               const conv = await this.chatService.getConversationById(decoded.conversationId);
               if (conv && conv.participants) {
-                const other = conv.participants.find((p: any) => p.toString() !== senderId);
+                const other = conv.participants.find((p: unknown) => String(p) !== senderId);
                 if (other) targetReceiverId = other.toString();
               }
             } catch {
@@ -261,7 +275,9 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
             );
           }
         } catch (error) {
-          this.logger.error(`[MQTT] Lỗi xử lý typing nhị phân: ${error}`);
+          this.logger.error(
+            `[MQTT] Lỗi xử lý typing nhị phân: ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
       }
 
@@ -272,7 +288,10 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
             ? packet.payload
             : Buffer.from(packet.payload);
 
-          const decoded = MessageReadProto.decode(payloadBuffer) as any;
+          const decoded = MessageReadProto.decode(payloadBuffer) as unknown as {
+            conversationId: string;
+            receiverId?: string;
+          };
           await this.chatService.markAsRead(decoded.conversationId, senderId);
 
           const binaryEncoded = Buffer.from(
@@ -291,7 +310,9 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
             );
           }
         } catch (error) {
-          this.logger.error(`[MQTT] Lỗi xử lý seen event: ${error}`);
+          this.logger.error(
+            `[MQTT] Lỗi xử lý seen event: ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
       }
     });
@@ -361,9 +382,9 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
 
     this.wss.on('connection', (wsSocket: WebSocket, req: IncomingMessage) => {
       const stream = createWebSocketStream(wsSocket);
-      (stream as any).conn = req;
+      Object.assign(stream, { conn: req });
       if (this.aedes) {
-        this.aedes.handle(stream as any, req);
+        this.aedes.handle(stream as unknown as Parameters<typeof this.aedes.handle>[0], req);
       }
     });
 

@@ -27,7 +27,7 @@ export class ChatController {
     const userId =
       req.user?._id?.toString() ||
       req.user?.id?.toString() ||
-      (req.user as any)?.sub;
+      req.user?.sub;
     if (!userId) {
       throw new UnauthorizedException('Không thể xác thực danh tính người dùng');
     }

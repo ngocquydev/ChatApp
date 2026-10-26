@@ -10,8 +10,16 @@ import { FriendsService } from './friends.service.js';
 
 describe('FriendsService', () => {
   let service: FriendsService;
-  let mockFriendshipModel: any;
-  let mockUsersService: any;
+  let mockFriendshipModel: {
+    findOne: ReturnType<typeof vi.fn>;
+    find: ReturnType<typeof vi.fn>;
+    findById: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    deleteOne: ReturnType<typeof vi.fn>;
+  };
+  let mockUsersService: {
+    findById: ReturnType<typeof vi.fn>;
+  };
 
   const userAId = new Types.ObjectId().toString();
   const userBId = new Types.ObjectId().toString();
@@ -48,9 +56,9 @@ describe('FriendsService', () => {
     };
 
     service = new FriendsService(
-      mockFriendshipModel as any,
-      mockUsersService as any,
-      mockRedisService as any,
+      mockFriendshipModel as unknown as never,
+      mockUsersService as unknown as never,
+      mockRedisService as unknown as never,
     );
   });
 
@@ -179,10 +187,10 @@ describe('FriendsService', () => {
       const redis = { client: { del: vi.fn(), sadd: vi.fn(), expire: vi.fn() } };
       mockFriendshipModel.find.mockResolvedValue([]);
       notifying = new FriendsService(
-        mockFriendshipModel as any,
-        mockUsersService as any,
-        redis as any,
-        { server: { to } } as any,
+        mockFriendshipModel as unknown as never,
+        mockUsersService as unknown as never,
+        redis as unknown as never,
+        { server: { to } } as unknown as never,
       );
     });
 

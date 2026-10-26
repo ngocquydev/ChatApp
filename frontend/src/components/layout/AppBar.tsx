@@ -729,7 +729,7 @@ function ResponsiveAppBar() {
                                     await selectConversation(conv);
                                   } else {
                                     if (other) {
-                                      openChat(other as any, conv._id);
+                                      openChat(other as unknown as Parameters<typeof openChat>[0], conv._id);
                                     } else {
                                       await selectConversation(conv);
                                       router.push("/chat");

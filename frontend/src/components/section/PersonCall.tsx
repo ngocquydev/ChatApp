@@ -760,7 +760,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                             size="small"
                             variant="outlined"
                             color="primary"
-                            onClick={() => handleStartChat(rec as any)}
+                            onClick={() => handleStartChat(rec as unknown as ChatUser)}
                             startIcon={<MessageSquare size={13} />}
                             sx={{
                               textTransform: "none",

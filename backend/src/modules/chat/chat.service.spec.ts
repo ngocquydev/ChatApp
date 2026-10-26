@@ -5,9 +5,21 @@ import { ChatService } from './chat.service.js';
 
 describe('ChatService', () => {
   let service: ChatService;
-  let mockConversationModel: any;
-  let mockMessageModel: any;
-  let mockUsersService: any;
+  let mockConversationModel: {
+    findOne: ReturnType<typeof vi.fn>;
+    find: ReturnType<typeof vi.fn>;
+    findById: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    save: ReturnType<typeof vi.fn>;
+  };
+  let mockMessageModel: {
+    find: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    updateMany: ReturnType<typeof vi.fn>;
+  };
+  let mockUsersService: {
+    findById: ReturnType<typeof vi.fn>;
+  };
 
   const userAId = new Types.ObjectId().toString();
   const userBId = new Types.ObjectId().toString();
@@ -33,9 +45,9 @@ describe('ChatService', () => {
     };
 
     service = new ChatService(
-      mockConversationModel as any,
-      mockMessageModel as any,
-      mockUsersService as any,
+      mockConversationModel as unknown as never,
+      mockMessageModel as unknown as never,
+      mockUsersService as unknown as never,
     );
   });
 
@@ -97,11 +109,11 @@ describe('ChatService', () => {
         _id: conversationId,
         participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
         unreadCounts: new Map<string, number>([[userBId, 0]]),
-        lastMessage: null as any,
+        lastMessage: null as unknown as { text?: string },
         save: vi.fn().mockResolvedValue(true),
       };
 
-      vi.spyOn(service, 'getOrCreateConversation').mockResolvedValue(mockConv as any);
+      vi.spyOn(service, 'getOrCreateConversation').mockResolvedValue(mockConv as unknown as never);
 
       const createdMsg = {
         _id: new Types.ObjectId(),

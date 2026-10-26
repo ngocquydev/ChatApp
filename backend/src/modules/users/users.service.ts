@@ -96,11 +96,11 @@ export class UsersService {
     options: { limit?: number; after?: string } = {},
   ) {
     const limit = Math.min(Math.max(options.limit ?? 20, 1), 50);
-    const query: Record<string, any> = {
+    const query: Record<string, unknown> = {
       isDeleted: { $ne: true },
       isBan: { $ne: true },
     };
-    const idFilter: Record<string, any> = {};
+    const idFilter: Record<string, unknown> = {};
     if (excludeUserId) {
       idFilter.$ne = Types.ObjectId.isValid(excludeUserId)
         ? new Types.ObjectId(excludeUserId)
@@ -129,9 +129,10 @@ export class UsersService {
         .exec();
       const hasMore = docs.length > limit;
       return { users: hasMore ? docs.slice(0, limit) : docs, hasMore };
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Mã 50 = MaxTimeMSExpired: truy vấn regex phải quét quá nhiều bản ghi
-      if (err?.code === 50 || err?.codeName === 'MaxTimeMSExpired') {
+      const error = err as { code?: number; codeName?: string } | null;
+      if (error?.code === 50 || error?.codeName === 'MaxTimeMSExpired') {
         throw new RequestTimeoutException(
           'Tìm kiếm mất quá nhiều thời gian. Hãy nhập từ khóa cụ thể hơn.',
         );

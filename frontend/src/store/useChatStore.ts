@@ -151,7 +151,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             );
             return exists
               ? state
-              : { messages: [...state.messages, newMsg as any] };
+              : { messages: [...state.messages, newMsg as unknown as ChatMessage] };
           });
 
           mqttChatClient.sendRead(convId, newMsg.senderId);
@@ -277,7 +277,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const senderId =
         typeof newMsg.senderId === "string"
           ? newMsg.senderId
-          : String(newMsg.senderId?._id || (newMsg.senderId as any)?.id || "");
+          : String(newMsg.senderId?._id || newMsg.senderId?.id || "");
 
       // Phát âm thanh khi người khác nhắn tin cho mình
       if (senderId && senderId !== myId) {
@@ -492,7 +492,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // Tìm người nhận trong participants
     const participants = active.participants;
-    const currentUserId = (api.defaults.headers as any)?.["X-User-Id"]; // fallback
+    const headers = api.defaults.headers as unknown as Record<string, unknown>;
+    const currentUserId = typeof headers?.["X-User-Id"] === "string" ? headers["X-User-Id"] : undefined; // fallback
     const socket = get().socket;
 
     const otherParticipant =
@@ -538,9 +539,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const otherParticipant =
       active.participants.find((p) => String(p._id || p.id) !== currentUserId) ||
       active.participants[0];
-    if (!otherParticipant?._id && !(otherParticipant as any)?.id) return;
+    if (!otherParticipant?._id && !otherParticipant?.id) return;
 
-    const receiverId = String(otherParticipant._id || (otherParticipant as any).id);
+    const receiverId = String(otherParticipant._id || otherParticipant.id);
 
     // Bắn typing nhị phân qua MQTT
     mqttChatClient.sendTyping(active._id, receiverId, isTyping);

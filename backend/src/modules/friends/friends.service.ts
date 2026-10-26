@@ -42,6 +42,19 @@ export interface FriendRecommendationResult {
   requestId?: string;
 }
 
+interface RedisGeoClient {
+  geoadd(key: string, longitude: number, latitude: number, member: string): Promise<number>;
+  geopos(key: string, member: string): Promise<Array<[string, string] | null> | null>;
+  georadius(
+    key: string,
+    longitude: number,
+    latitude: number,
+    radius: number,
+    unit: string,
+    ...args: string[]
+  ): Promise<Array<[string, string]> | unknown[]>;
+}
+
 @Injectable()
 export class FriendsService {
   constructor(
@@ -274,7 +287,7 @@ export class FriendsService {
   /**
    * Lấy danh sách bạn bè chính thức
    */
-  async getFriendsList(userId: string): Promise<any[]> {
+  async getFriendsList(userId: string): Promise<unknown[]> {
     const userObjId = new Types.ObjectId(userId);
 
     const friendships = await this.friendshipModel
@@ -287,8 +300,8 @@ export class FriendsService {
       .exec();
 
     return friendships.map((f) => {
-      const requester = f.requesterId as any;
-      const recipient = f.recipientId as any;
+      const requester = f.requesterId as unknown as { _id?: Types.ObjectId | string };
+      const recipient = f.recipientId as unknown as { _id?: Types.ObjectId | string };
       const friend =
         requester?._id?.toString() === userId ? recipient : requester;
       return {
@@ -303,8 +316,8 @@ export class FriendsService {
    * Lấy danh sách lời mời kết bạn (Đã nhận & Đã gửi)
    */
   async getFriendRequests(userId: string): Promise<{
-    received: any[];
-    sent: any[];
+    received: unknown[];
+    sent: unknown[];
   }> {
     const userObjId = new Types.ObjectId(userId);
 
@@ -485,7 +498,7 @@ export class FriendsService {
     }
 
     // 1. Lưu vào Redis GEO với key 'users:locations'
-    await (this.redisService.client as any).geoadd(
+    await (this.redisService.client as unknown as RedisGeoClient).geoadd(
       'users:locations',
       longitude,
       latitude,
@@ -553,7 +566,7 @@ export class FriendsService {
     } else {
       // Thử lấy vị trí đã lưu của user từ Redis GEO
       try {
-        const pos = await (this.redisService.client as any).geopos(
+        const pos = await (this.redisService.client as unknown as RedisGeoClient).geopos(
           'users:locations',
           currentUserId,
         );
@@ -592,7 +605,7 @@ export class FriendsService {
     // 4.1. Nguồn 1: Người dùng ở gần vị trí (Redis Geospatial GEORADIUS)
     if (typeof currentLat === 'number' && typeof currentLng === 'number') {
       try {
-        const geoResults = await (this.redisService.client as any).georadius(
+        const geoResults = await (this.redisService.client as unknown as RedisGeoClient).georadius(
           'users:locations',
           currentLng,
           currentLat,

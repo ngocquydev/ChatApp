@@ -34,11 +34,31 @@ describe('PostsService – quyền riêng tư', () => {
 
 describe('PostsService', () => {
   let service: PostsService;
-  let postModel: any;
-  let likeModel: any;
-  let commentModel: any;
-  let friendshipModel: any;
-  let usersService: any;
+  let postModel: {
+    find: ReturnType<typeof vi.fn>;
+    findOne: ReturnType<typeof vi.fn>;
+    findById: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    updateOne: ReturnType<typeof vi.fn>;
+  };
+  let likeModel: {
+    find: ReturnType<typeof vi.fn>;
+    deleteOne: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+  };
+  let commentModel: {
+    find: ReturnType<typeof vi.fn>;
+    findOne: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    deleteOne: ReturnType<typeof vi.fn>;
+  };
+  let friendshipModel: {
+    find: ReturnType<typeof vi.fn>;
+    exists: ReturnType<typeof vi.fn>;
+  };
+  let usersService: {
+    findByIds: ReturnType<typeof vi.fn>;
+  };
 
   const me = oid().toString();
   const other = oid().toString();
@@ -56,11 +76,11 @@ describe('PostsService', () => {
     friendshipModel = { find: vi.fn(() => q([])), exists: vi.fn(() => q(null)) };
     usersService = { findByIds: vi.fn().mockResolvedValue([]) };
     service = new PostsService(
-      postModel,
-      likeModel,
-      commentModel,
-      friendshipModel,
-      usersService,
+      postModel as unknown as never,
+      likeModel as unknown as never,
+      commentModel as unknown as never,
+      friendshipModel as unknown as never,
+      usersService as unknown as never,
     );
   });
 
@@ -224,7 +244,7 @@ describe('PostsService', () => {
       const chain = q(rows);
       postModel.find.mockReturnValue(chain);
       const page = await service.getFeed(me, { limit: 3 });
-      expect((chain.limit as any).mock.calls[0][0]).toBe(4);
+      expect((chain.limit as unknown as { mock: { calls: unknown[][] } }).mock.calls[0][0]).toBe(4);
       expect(page.items).toHaveLength(3);
       expect(page.hasMore).toBe(true);
       expect(page.nextCursor).toBe(rows[2]._id.toString());

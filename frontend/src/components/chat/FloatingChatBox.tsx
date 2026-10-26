@@ -248,10 +248,10 @@ export default function FloatingChatBox({
         }
         setMessages((prev) => {
           const exists = prev.some(
-            (m) => m._id === newMsg._id || (m as any).id === newMsg.id
+            (m) => m._id === newMsg._id || m.id === newMsg.id
           );
           if (exists) return prev;
-          return [...prev, newMsg as any];
+          return [...prev, newMsg as unknown as ChatMessage];
         });
 
         if (!session.isMinimized) {
@@ -288,7 +288,7 @@ export default function FloatingChatBox({
         const senderId =
           typeof newMsg.senderId === "string"
             ? newMsg.senderId
-            : String(newMsg.senderId?._id || (newMsg.senderId as any)?.id || "");
+            : String(newMsg.senderId?._id || newMsg.senderId?.id || "");
         if (senderId && senderId !== myId) {
           soundNotification.playIncomingSound(newMsg._id || newMsg.id, session.user.name);
         }
@@ -474,7 +474,7 @@ export default function FloatingChatBox({
     const sId =
       typeof msg.senderId === "string"
         ? msg.senderId
-        : (msg.senderId as any)?._id || (msg.senderId as any)?.id;
+        : msg.senderId?._id || msg.senderId?.id;
     return String(sId) === currentUserId;
   };
 

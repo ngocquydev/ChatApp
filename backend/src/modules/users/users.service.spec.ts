@@ -32,7 +32,13 @@ describe('UsersService.searchUsersPage (phân trang theo con trỏ)', () => {
   /** Mock chuỗi find().select().sort().limit().maxTimeMS().exec() và ghi lại tham số */
   const makeService = (result: unknown[] | Error) => {
     const calls: Record<string, unknown> = {};
-    const chain: any = {
+    const chain: {
+      select: ReturnType<typeof vi.fn>;
+      sort: ReturnType<typeof vi.fn>;
+      limit: ReturnType<typeof vi.fn>;
+      maxTimeMS: ReturnType<typeof vi.fn>;
+      exec: ReturnType<typeof vi.fn>;
+    } = {
       select: vi.fn().mockReturnThis(),
       sort: vi.fn((arg) => ((calls.sort = arg), chain)),
       limit: vi.fn((arg) => ((calls.limit = arg), chain)),
@@ -40,7 +46,7 @@ describe('UsersService.searchUsersPage (phân trang theo con trỏ)', () => {
       exec: vi.fn(() => (result instanceof Error ? Promise.reject(result) : Promise.resolve(result))),
     };
     const model = { find: vi.fn((q) => ((calls.query = q), chain)) };
-    return { service: new UsersService(model as any), calls };
+    return { service: new UsersService(model as unknown as never), calls };
   };
 
   it('lấy dư 1 bản ghi: đủ trang + còn dữ liệu → hasMore = true và cắt về đúng limit', async () => {
@@ -63,7 +69,7 @@ describe('UsersService.searchUsersPage (phân trang theo con trỏ)', () => {
     const me = new Types.ObjectId().toString();
     const { service, calls } = makeService([]);
     await service.searchUsersPage('an', me, { after });
-    const idFilter = (calls.query as any)._id;
+    const idFilter = (calls.query as Record<string, Record<string, Types.ObjectId>>)._id;
     expect(idFilter.$gt.toString()).toBe(after);
     expect(idFilter.$ne.toString()).toBe(me);
     expect(calls.sort).toEqual({ _id: 1 });
@@ -92,7 +98,8 @@ describe('UsersService.searchUsersPage (phân trang theo con trỏ)', () => {
   it('ký tự đặc biệt regex trong từ khóa được escape', async () => {
     const { service, calls } = makeService([]);
     await service.searchUsersPage('a.*(b');
-    const first = (calls.query as any).$or[0].name.$regex as string;
+    const query = calls.query as { $or: Array<{ name: { $regex: string } }> };
+    const first = query.$or[0].name.$regex;
     expect(first).toBe('a\\.\\*\\(b');
   });
 });

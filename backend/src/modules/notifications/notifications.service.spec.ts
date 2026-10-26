@@ -4,11 +4,25 @@ import { NotificationsService } from './notifications.service.js';
 
 describe('NotificationsService', () => {
   let service: NotificationsService;
-  let mockNotificationModel: any;
-  let mockUsersService: any;
-  let mockChatGateway: any;
-  let emitMock: any;
-  let toMock: any;
+  let mockNotificationModel: {
+    create: ReturnType<typeof vi.fn>;
+    find: ReturnType<typeof vi.fn>;
+    countDocuments: ReturnType<typeof vi.fn>;
+    updateOne: ReturnType<typeof vi.fn>;
+    updateMany: ReturnType<typeof vi.fn>;
+    deleteOne: ReturnType<typeof vi.fn>;
+  };
+  let mockUsersService: {
+    findById: ReturnType<typeof vi.fn>;
+    findByIds: ReturnType<typeof vi.fn>;
+  };
+  let mockChatGateway: {
+    server: {
+      to: ReturnType<typeof vi.fn>;
+    };
+  };
+  let emitMock: ReturnType<typeof vi.fn>;
+  let toMock: ReturnType<typeof vi.fn>;
 
   const recipientId = new Types.ObjectId().toString();
   const actorId = new Types.ObjectId().toString();
@@ -38,9 +52,9 @@ describe('NotificationsService', () => {
     };
 
     service = new NotificationsService(
-      mockNotificationModel as any,
-      mockUsersService as any,
-      mockChatGateway as any,
+      mockNotificationModel as unknown as never,
+      mockUsersService as unknown as never,
+      mockChatGateway as unknown as never,
     );
   });
 

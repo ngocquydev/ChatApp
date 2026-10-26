@@ -108,7 +108,15 @@ class MqttChatClient {
 
         // 1. Nhận tin nhắn mới (Binary ChatMessageProto)
         if (topic === `chat/user/${userId}`) {
-          const decoded = ChatMessageProto.decode(uint8Payload) as any;
+          const decoded = ChatMessageProto.decode(uint8Payload) as unknown as {
+            id: string;
+            conversationId: string;
+            senderId: string;
+            receiverId: string;
+            text: string;
+            createdAt: string;
+            readAt?: string;
+          };
           const msgObj: BinaryChatMessage = {
             _id: decoded.id,
             id: decoded.id,
@@ -125,7 +133,11 @@ class MqttChatClient {
 
         // 2. Nhận sự kiện Typing (Binary TypingEventProto)
         else if (topic === `chat/user/${userId}/typing`) {
-          const decoded = TypingEventProto.decode(uint8Payload) as any;
+          const decoded = TypingEventProto.decode(uint8Payload) as unknown as {
+            conversationId: string;
+            userId: string;
+            isTyping?: boolean;
+          };
           const typingObj: BinaryTypingEvent = {
             conversationId: decoded.conversationId,
             userId: decoded.userId,
@@ -136,7 +148,11 @@ class MqttChatClient {
 
         // 3. Nhận sự kiện Seen (Binary MessageReadProto)
         else if (topic === `chat/user/${userId}/seen`) {
-          const decoded = MessageReadProto.decode(uint8Payload) as any;
+          const decoded = MessageReadProto.decode(uint8Payload) as unknown as {
+            conversationId: string;
+            readerId: string;
+            readAt: string;
+          };
           const seenObj: BinarySeenEvent = {
             conversationId: decoded.conversationId,
             readerId: decoded.readerId,
@@ -147,7 +163,11 @@ class MqttChatClient {
 
         // 4. Nhận sự kiện Presence (Binary PresenceEventProto)
         else if (topic === "chat/presence") {
-          const decoded = PresenceEventProto.decode(uint8Payload) as any;
+          const decoded = PresenceEventProto.decode(uint8Payload) as unknown as {
+            userId: string;
+            isOnline?: boolean;
+            onlineUserIds?: string[];
+          };
           const presenceObj: BinaryPresenceEvent = {
             userId: decoded.userId,
             isOnline: Boolean(decoded.isOnline),
