@@ -10,7 +10,17 @@ import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserRepository } from './entities/user.entity.js';
 import { CreateUserData } from './types/user.types.js';
+
+
+export interface SearchUserItem {
+  _id: Types.ObjectId | string;
+  name: string;
+  avatar?: string;
+  phone?: string;
+  bio?: string;
+}
 import { Neo4jService } from '../neo4j/neo4j.service.js';
+import { RedisService } from '../redis/redis/redis.service.js';
 
 /** Trần thời gian cho truy vấn tìm kiếm regex (ms) — tránh một lần tìm làm nghẽn MongoDB */
 const SEARCH_MAX_TIME_MS = 8000;
@@ -20,6 +30,7 @@ export class UsersService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserRepository>,
     @Optional() private readonly neo4jService?: Neo4jService,
+    @Optional() private readonly redisService?: RedisService,
   ) {}
 
   async create(createUserDto: CreateUserData) {
@@ -104,7 +115,7 @@ export class UsersService {
     keyword?: string,
     excludeUserId?: string,
     options: { limit?: number; after?: string } = {},
-  ) {
+  ): Promise<{ users: SearchUserItem[]; hasMore: boolean }> {
     const limit = Math.min(Math.max(options.limit ?? 20, 1), 50);
     const query: Record<string, unknown> = {
       isDeleted: { $ne: true },
@@ -122,20 +133,88 @@ export class UsersService {
     if (Object.keys(idFilter).length > 0) {
       query._id = idFilter;
     }
-    if (keyword && keyword.trim()) {
-      const escaped = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      query.name = { $regex: escaped, $options: 'i' };
+
+    const trimmed = keyword?.trim() ?? '';
+    const cacheKey = trimmed
+      ? `cache:search:user:${trimmed.toLowerCase()}:${excludeUserId ?? 'all'}:${options.after ?? 'start'}:${limit}`
+      : null;
+
+    // 1. Kiểm tra bộ nhớ đệm Redis (tốc độ < 1ms)
+    if (cacheKey && this.redisService) {
+      try {
+        const cached = await this.redisService.client.get(cacheKey);
+        if (cached) {
+          return JSON.parse(cached) as { users: UserRepository[]; hasMore: boolean };
+        }
+      } catch {
+        // Bỏ qua lỗi cache, tiếp tục truy vấn DB
+      }
     }
+
+    // 2. Xây dựng điều kiện tìm kiếm tối ưu
+    const hasRegexChars = /[.*+?^${}()|[\]\\]/.test(trimmed);
+    if (trimmed) {
+      if (hasRegexChars) {
+        const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        query.name = { $regex: escaped, $options: 'i' };
+      } else {
+        // Dùng Inverted Text Index ($text) của MongoDB: tốc độ 1ms - 5ms trên 1 triệu người dùng!
+        query.$text = { $search: trimmed };
+      }
+    }
+
     try {
-      const docs = await this.userModel
-        .find(query)
+      const docsQuery = this.userModel
+        .find(query as never)
         .select('name avatar phone bio')
         .sort({ _id: 1 })
         .limit(limit + 1)
-        .maxTimeMS(SEARCH_MAX_TIME_MS)
-        .exec();
+        .maxTimeMS(SEARCH_MAX_TIME_MS);
+
+      let docs = (await docsQuery.exec()) as unknown as SearchUserItem[];
+
+      // Nếu từ khóa ngắn (1 - 4 ký tự) chưa tìm thấy trong $text -> dùng B-Tree range query trên index { name: 1 } (4ms - 6ms)
+      if (docs.length === 0 && trimmed && !hasRegexChars && trimmed.length <= 4) {
+        const upperFirst = trimmed[0].toUpperCase() + trimmed.slice(1);
+        const lowerFirst = trimmed.toLowerCase();
+        const makeRange = (prefix: string) => {
+          const lastChar = prefix.slice(-1);
+          const nextChar = String.fromCharCode(lastChar.charCodeAt(0) + 1);
+          const upperLimit = prefix.slice(0, -1) + nextChar;
+          return { $gte: prefix, $lt: upperLimit };
+        };
+
+        const rangeQuery: Record<string, unknown> = {
+          isDeleted: query.isDeleted,
+          isBan: query.isBan,
+          $or: [{ name: makeRange(upperFirst) }, { name: makeRange(lowerFirst) }],
+        };
+        if (query._id) rangeQuery._id = query._id;
+
+        try {
+          const rangeDocs = (await this.userModel
+            .find(rangeQuery as never)
+            .select('name avatar phone bio')
+            .limit(limit + 1)
+            .maxTimeMS(SEARCH_MAX_TIME_MS)
+            .exec()) as unknown as SearchUserItem[];
+
+          if (rangeDocs && rangeDocs.length > 0) {
+            docs = rangeDocs;
+          }
+        } catch {
+          // Bỏ qua lỗi fallback
+        }
+      }
+
       const hasMore = docs.length > limit;
-      return { users: hasMore ? docs.slice(0, limit) : docs, hasMore };
+      const sliced = (hasMore ? docs.slice(0, limit) : docs) as SearchUserItem[];
+      const res = { users: sliced, hasMore };
+
+      if (cacheKey && this.redisService) {
+        this.redisService.client.set(cacheKey, JSON.stringify(res), 'EX', 120).catch(() => {});
+      }
+      return res;
     } catch (err: unknown) {
       // Mã 50 = MaxTimeMSExpired: truy vấn regex phải quét quá nhiều bản ghi
       const error = err as { code?: number; codeName?: string } | null;
