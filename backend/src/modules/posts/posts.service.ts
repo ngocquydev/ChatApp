@@ -263,14 +263,15 @@ export class PostsService {
 
   // ───────────────────────── Bảng tin & hồ sơ ─────────────────────────
 
-  /** Bảng tin: bài của chính mình + bài (công khai/bạn bè) của bạn bè. */
+  /** Bảng tin: bài của chính mình + bài bạn bè của bạn bè + tất cả bài viết công khai toàn hệ thống. */
   async getFeed(viewerId: string, options: { limit?: number; after?: string }) {
     const friendIds = await this.getFriendIds(viewerId);
     return this.toPage(
       {
         $or: [
           { authorId: new Types.ObjectId(viewerId) },
-          { authorId: { $in: friendIds }, privacy: { $in: ['public', 'friends'] } },
+          { authorId: { $in: friendIds }, privacy: 'friends' },
+          { privacy: 'public' },
         ],
       },
       viewerId,

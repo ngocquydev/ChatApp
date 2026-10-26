@@ -57,7 +57,14 @@ export default function PostCard({
       component="article"
       elevation={0}
       aria-label={`Bài viết của ${post.author.name}`}
-      sx={{ borderRadius: "16px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}
+      sx={{
+        borderRadius: "16px",
+        border: "1px solid",
+        borderColor: "divider",
+        bgcolor: "background.paper",
+        overflow: "visible",
+        flexShrink: 0,
+      }}
     >
       <Box sx={{ p: 2, pb: 1 }}>
         <PostAuthorHeader
@@ -112,23 +119,25 @@ export default function PostCard({
 
       <PostImages images={post.images} altPrefix={post.author.name} />
 
-      <Box sx={{ px: 2, pt: 1, display: "flex", gap: 2, flexWrap: "wrap", minHeight: 24 }}>
-        {post.likeCount > 0 && (
-          <Typography variant="caption" color="text.secondary">
-            {post.likeCount} lượt thích
-          </Typography>
-        )}
-        {post.commentCount > 0 && (
-          <Typography variant="caption" color="text.secondary">
-            {post.commentCount} bình luận
-          </Typography>
-        )}
-        {post.shareCount > 0 && (
-          <Typography variant="caption" color="text.secondary">
-            {post.shareCount} lượt chia sẻ
-          </Typography>
-        )}
-      </Box>
+      {(post.likeCount > 0 || post.commentCount > 0 || post.shareCount > 0) && (
+        <Box sx={{ px: 2, pt: 1, pb: 0.5, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+          {post.likeCount > 0 && (
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+              {post.likeCount} lượt thích
+            </Typography>
+          )}
+          {post.commentCount > 0 && (
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+              {post.commentCount} bình luận
+            </Typography>
+          )}
+          {post.shareCount > 0 && (
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+              {post.shareCount} lượt chia sẻ
+            </Typography>
+          )}
+        </Box>
+      )}
 
       <Box sx={{ px: 1, py: 0.5, display: "flex", gap: 0.5, borderTop: "1px solid", borderColor: "divider", mx: 2, mt: 0.5 }}>
         <Button
@@ -137,7 +146,13 @@ export default function PostCard({
           aria-pressed={post.likedByMe}
           onClick={() => onToggleLike(post)}
           startIcon={<Heart size={18} aria-hidden fill={post.likedByMe ? "currentColor" : "none"} />}
-          sx={{ fontWeight: 600, color: post.likedByMe ? "error.main" : "text.secondary" }}
+          sx={{
+            fontWeight: 600,
+            color: post.likedByMe ? "error.main" : "text.secondary",
+            py: 0.8,
+            borderRadius: "8px",
+            "&:hover": { bgcolor: "action.hover" },
+          }}
         >
           Thích
         </Button>
@@ -147,7 +162,13 @@ export default function PostCard({
           aria-expanded={showComments}
           onClick={() => setShowComments((v) => !v)}
           startIcon={<MessageCircle size={18} aria-hidden />}
-          sx={{ fontWeight: 600, color: "text.secondary" }}
+          sx={{
+            fontWeight: 600,
+            color: "text.secondary",
+            py: 0.8,
+            borderRadius: "8px",
+            "&:hover": { bgcolor: "action.hover" },
+          }}
         >
           Bình luận
         </Button>
@@ -159,7 +180,13 @@ export default function PostCard({
               disabled={!shareable}
               onClick={() => onRequestShare(post)}
               startIcon={<Share2 size={18} aria-hidden />}
-              sx={{ fontWeight: 600, color: "text.secondary" }}
+              sx={{
+                fontWeight: 600,
+                color: "text.secondary",
+                py: 0.8,
+                borderRadius: "8px",
+                "&:hover": { bgcolor: "action.hover" },
+              }}
             >
               Chia sẻ
             </Button>

@@ -250,6 +250,21 @@ describe('PostsService', () => {
       expect(page.nextCursor).toBe(rows[2]._id.toString());
     });
 
+    it('lấy cả bài viết công khai toàn hệ thống và bài bạn bè trên bảng tin', async () => {
+      postModel.find.mockClear();
+      postModel.find.mockReturnValue(q([]));
+      await service.getFeed(me, { limit: 10 });
+      expect(postModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          $or: expect.arrayContaining([
+            { privacy: 'public' },
+            expect.objectContaining({ privacy: 'friends' }),
+            expect.objectContaining({ authorId: new Types.ObjectId(me) }),
+          ]),
+        }),
+      );
+    });
+
     it('dùng đúng 1 truy vấn bài + 1 truy vấn thích + 1 truy vấn tác giả (không N+1)', async () => {
       const rows = Array.from({ length: 5 }, () => ({
         _id: oid(),

@@ -53,21 +53,28 @@ export default function SharedPostEmbed({ shared, currentUserId }: SharedPostEmb
         borderRadius: "12px",
         border: "1px solid",
         borderColor: "divider",
+        bgcolor: "action.hover",
         overflow: "hidden",
       }}
     >
-      <Box sx={{ p: 1.5 }}>
+      <Box sx={{ p: { xs: 1.75, sm: 2 } }}>
         <PostAuthorHeader
           author={shared.author}
           currentUserId={currentUserId}
           createdAt={shared.createdAt}
           privacy={shared.privacy}
-          size={32}
+          size={36}
         />
         {shared.content && (
           <Typography
             variant="body2"
-            sx={{ mt: 1, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+            sx={{
+              mt: 1.25,
+              whiteSpace: "pre-wrap",
+              overflowWrap: "anywhere",
+              color: "text.primary",
+              lineHeight: 1.55,
+            }}
           >
             {shared.content}
           </Typography>
