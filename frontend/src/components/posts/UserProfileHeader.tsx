@@ -33,8 +33,21 @@ export default function UserProfileHeader({
       elevation={0}
       sx={{ borderRadius: "16px", border: "1px solid", borderColor: "divider", overflow: "hidden", bgcolor: "background.paper" }}
     >
-      {/* Ảnh bìa: màu thương hiệu phẳng (gradient chỉ dành cho khoảnh khắc thương hiệu) */}
-      <Box aria-hidden sx={{ height: { xs: 120, sm: 180 }, bgcolor: "primary.main" }} />
+      {/* Ảnh bìa: ảnh bìa người dùng hoặc màu thương hiệu mặc định */}
+      <Box
+        aria-hidden
+        sx={{
+          height: { xs: 130, sm: 200 },
+          bgcolor: "primary.main",
+          ...(user.cover
+            ? {
+                backgroundImage: `url(${user.cover})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : {}),
+        }}
+      />
 
       <Box
         sx={{

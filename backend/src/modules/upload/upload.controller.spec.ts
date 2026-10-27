@@ -47,4 +47,18 @@ describe('UploadController', () => {
       expect.objectContaining({ folder: 'chatapp/media' }),
     );
   });
+
+  it('tải lên ảnh bìa thành công và trả về cover url trong thư mục chatapp/covers', async () => {
+    const res = await controller.uploadCover({
+      buffer: Buffer.from('fake-cover-bytes'),
+      mimetype: 'image/png',
+      originalname: 'banner.png',
+    });
+    expect(res.success).toBe(true);
+    expect(res.cover).toBe('https://res.cloudinary.com/test/image/upload/v1/test.jpg');
+    expect(cloudinaryService.uploadBuffer).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      expect.objectContaining({ folder: 'chatapp/covers' }),
+    );
+  });
 });

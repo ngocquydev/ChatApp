@@ -112,4 +112,43 @@ export class UploadController {
       public_id: result.public_id,
     };
   }
+
+  @Post('cover')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Tải ảnh bìa hồ sơ lên Cloudinary' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 15 * 1024 * 1024, files: 1 },
+    }),
+  )
+  async uploadCover(
+    @UploadedFile()
+    file?: {
+      buffer: Buffer;
+      mimetype?: string;
+      originalname?: string;
+    },
+  ) {
+    if (!file?.buffer || file.buffer.length === 0) {
+      throw new BadRequestException('Vui lòng chọn ảnh bìa để tải lên');
+    }
+
+    if (file.mimetype && !file.mimetype.startsWith('image/')) {
+      throw new BadRequestException('Ảnh bìa phải là tệp hình ảnh (JPG, PNG, WEBP, GIF)');
+    }
+
+    const result = await this.cloudinaryService.uploadBuffer(file.buffer, {
+      folder: 'chatapp/covers',
+      resource_type: 'image',
+    });
+
+    return {
+      success: true,
+      url: result.secure_url,
+      cover: result.secure_url,
+      public_id: result.public_id,
+    };
+  }
 }

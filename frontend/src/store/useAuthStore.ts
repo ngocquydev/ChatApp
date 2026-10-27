@@ -13,6 +13,7 @@ export interface UserProfile {
   name?: string;
   email?: string;
   avatar?: string;
+  cover?: string;
   phone?: string;
   dateOfBirth?: string;
   bio?: string;
@@ -42,6 +43,7 @@ export interface AuthState {
     phone?: string;
     dateOfBirth?: string;
     avatar?: string;
+    cover?: string;
     bio?: string;
   }) => Promise<UserProfile>;
   changePassword: (data: {

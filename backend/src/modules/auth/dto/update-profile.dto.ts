@@ -18,6 +18,11 @@ export class UpdateProfileDto {
   @IsString({ message: 'Ảnh đại diện phải là chuỗi ký tự' })
   avatar?: string;
 
+  @ApiPropertyOptional({ example: 'https://...', description: 'URL hoặc data ảnh bìa (background) hồ sơ' })
+  @IsOptional()
+  @IsString({ message: 'Ảnh bìa phải là chuỗi ký tự' })
+  cover?: string;
+
   @ApiPropertyOptional({ example: 'Yêu thích lập trình và kết nối bạn bè', description: 'Tiểu sử' })
   @IsOptional()
   @IsString({ message: 'Tiểu sử phải là chuỗi ký tự' })

@@ -69,9 +69,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useAuthStore } from "../../store/useAuthStore";
-import { uploadAvatar } from "@/services/postsApi";
+import { uploadAvatar, uploadCover } from "@/services/postsApi";
 import AuthGuard from "../common/AuthGuard";
 import MyPostsTab from "../posts/MyPostsTab";
+import AvatarCropDialog from "../profile/AvatarCropDialog";
 
 // Thứ tự các tab (khớp với thứ tự <Tab> bên dưới)
 const TAB_POSTS = 0;
@@ -155,8 +156,16 @@ function ProfileContent() {
   const [avatarTab, setAvatarTab] = useState(0); // 0: presets, 1: upload/url
 
   // Cover Theme Menu State
+  const coverInputId = useId();
   const [coverMenuAnchor, setCoverMenuAnchor] = useState<null | HTMLElement>(null);
   const [currentCoverIndex, setCurrentCoverIndex] = useState(0);
+
+  // Avatar Crop Modal State
+  const [cropModal, setCropModal] = useState<{ open: boolean; imageSrc: string | null }>({
+    open: false,
+    imageSrc: null,
+  });
+  const [isCroppingUpload, setIsCroppingUpload] = useState(false);
 
   // Logout Dialog State
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
@@ -216,12 +225,19 @@ function ProfileContent() {
     }
   }, []);
 
-  const handleSelectCoverTheme = (index: number) => {
+  const handleSelectCoverTheme = async (index: number) => {
     setCurrentCoverIndex(index);
     if (typeof window !== "undefined") {
       localStorage.setItem("chatapp_cover_theme", COVER_THEMES[index].id);
     }
     setCoverMenuAnchor(null);
+    if (user?.cover) {
+      try {
+        await updateProfile({ cover: "" });
+      } catch {
+        // bỏ qua nếu lỗi
+      }
+    }
     showToast(`Đã đổi chủ đề ảnh bìa sang: ${COVER_THEMES[index].name}`);
   };
 
@@ -290,9 +306,10 @@ function ProfileContent() {
     }
   };
 
-  // Handle File Upload for Avatar
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle File Select for Avatar (Mở AvatarCropDialog kéo cắt giống Facebook)
+  const handleFileSelectForCrop = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -300,19 +317,64 @@ function ProfileContent() {
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      showToast("Kích thước file ảnh không được vượt quá 10MB!", "error");
+    if (file.size > 15 * 1024 * 1024) {
+      showToast("Kích thước file ảnh không được vượt quá 15MB!", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setCropModal({ open: true, imageSrc: reader.result });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Hoàn tất crop ảnh và lưu làm avatar
+  const handleConfirmCropAvatar = async (croppedBlob: Blob) => {
+    setIsCroppingUpload(true);
+    showToast("Đang tải ảnh đại diện lên Cloudinary…", "info");
+    try {
+      const url = await uploadAvatar(croppedBlob);
+      setAvatarUrl(url);
+      setSelectedAvatarPreview(url);
+      await updateProfile({ avatar: url });
+      setCropModal({ open: false, imageSrc: null });
+      setIsAvatarDialogOpen(false);
+      showToast("Cập nhật ảnh đại diện thành công!");
+    } catch {
+      showToast("Không thể tải ảnh lên Cloudinary. Vui lòng thử lại!", "error");
+    } finally {
+      setIsCroppingUpload(false);
+    }
+  };
+
+  // Handle File Upload cho Ảnh bìa (Cover)
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      showToast("Vui lòng chọn file hình ảnh (PNG, JPG, WEBP)!", "error");
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      showToast("Kích thước file ảnh bìa không được vượt quá 15MB!", "error");
       return;
     }
 
     setIsUpdating(true);
-    showToast("Đang tải ảnh đại diện lên Cloudinary…", "info");
+    setCoverMenuAnchor(null);
+    showToast("Đang tải ảnh bìa lên Cloudinary…", "info");
     try {
-      const url = await uploadAvatar(file);
-      setSelectedAvatarPreview(url);
-      showToast("Tải ảnh lên Cloudinary thành công!");
+      const coverUrl = await uploadCover(file);
+      await updateProfile({ cover: coverUrl });
+      showToast("Ảnh bìa trang cá nhân đã được cập nhật thành công!");
     } catch {
-      showToast("Không thể tải ảnh lên Cloudinary. Vui lòng thử lại!", "error");
+      showToast("Không thể tải ảnh bìa lên. Vui lòng thử lại!", "error");
     } finally {
       setIsUpdating(false);
     }
@@ -434,7 +496,9 @@ function ProfileContent() {
           <Box
             sx={{
               height: { xs: 180, sm: 230, md: 260 },
-              background: activeCover.gradient,
+              background: user?.cover ? `url(${user.cover})` : activeCover.gradient,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
               position: "relative",
               overflow: "hidden",
               transition: "background 0.5s ease",
@@ -498,6 +562,14 @@ function ProfileContent() {
                 Đổi ảnh bìa
               </Button>
 
+              <input
+                id={coverInputId}
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={handleCoverUpload}
+              />
+
               <Menu
                 anchorEl={coverMenuAnchor}
                 open={Boolean(coverMenuAnchor)}
@@ -507,30 +579,48 @@ function ProfileContent() {
                     sx: {
                       borderRadius: "16px",
                       p: 1,
-                      minWidth: 200,
+                      minWidth: 220,
                       boxShadow: "0 15px 30px rgba(0,0,0,0.12)",
                     },
                   },
                 }}
               >
+                <MenuItem
+                  component="label"
+                  htmlFor={coverInputId}
+                  onClick={() => setCoverMenuAnchor(null)}
+                  sx={{
+                    borderRadius: "10px",
+                    my: 0.5,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Camera size={18} />
+                  Tải ảnh từ máy tính
+                </MenuItem>
+                <Divider sx={{ my: 0.5 }} />
                 <Typography
                   variant="caption"
                   sx={{ px: 2, py: 1, fontWeight: 700, color: "var(--mui-palette-neutral-500)", display: "block" }}
                 >
-                  CHỦ ĐỀ ẢNH BÌA
+                  HOẶC CHỌN CHỦ ĐỀ MÀU
                 </Typography>
                 {COVER_THEMES.map((theme, idx) => (
                   <MenuItem
                     key={theme.id}
-                    onClick={() => handleSelectCoverTheme(idx)}
-                    selected={idx === currentCoverIndex}
+                    onClick={() => void handleSelectCoverTheme(idx)}
+                    selected={!user?.cover && idx === currentCoverIndex}
                     sx={{
                       borderRadius: "10px",
                       my: 0.5,
                       display: "flex",
                       alignItems: "center",
                       gap: 1.5,
-                      fontWeight: idx === currentCoverIndex ? 700 : 500,
+                      fontWeight: !user?.cover && idx === currentCoverIndex ? 700 : 500,
                     }}
                   >
                     <Box
@@ -2255,14 +2345,14 @@ function ProfileContent() {
                     type="file"
                     hidden
                     accept="image/*"
-                    onChange={handleFileUpload}
+                    onChange={handleFileSelectForCrop}
                   />
                   <Camera size={32} color="var(--mui-palette-neutral-500)" style={{ margin: "0 auto 8px" }} />
                   <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-800)" }}>
-                    Nhấn vào đây để tải ảnh từ máy tính
+                    Nhấn vào đây để tải ảnh từ máy tính (kéo cắt giống Facebook)
                   </Typography>
                   <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                    PNG, JPG, WEBP tối đa 2MB
+                    Hỗ trợ kéo vị trí, thu phóng theo ý muốn
                   </Typography>
                 </Box>
 
@@ -2304,6 +2394,15 @@ function ProfileContent() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* ================= DIALOG: CẮT ẢNH ĐẠI DIỆN GIỐNG FACEBOOK ================= */}
+        <AvatarCropDialog
+          open={cropModal.open}
+          imageSrc={cropModal.imageSrc}
+          onClose={() => setCropModal({ open: false, imageSrc: null })}
+          onConfirmCrop={handleConfirmCropAvatar}
+          loading={isCroppingUpload}
+        />
 
         {/* ================= DIALOG: CONFIRM LOGOUT ================= */}
         <Dialog

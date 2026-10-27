@@ -476,6 +476,7 @@ export class FriendsService {
         _id: target._id.toString(),
         name: target.name,
         avatar: target.avatar ?? undefined,
+        cover: target.cover ?? undefined,
         bio: target.bio ?? undefined,
         createdAt: target.createdAt,
       },

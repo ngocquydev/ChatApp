@@ -48,7 +48,7 @@ export interface CursorPage<T> {
 }
 
 export interface PublicProfile {
-  user: { _id: string; name: string; avatar?: string; bio?: string; createdAt?: string };
+  user: { _id: string; name: string; avatar?: string; cover?: string; bio?: string; createdAt?: string };
   relationStatus: "self" | "none" | "pending_sent" | "pending_received" | "friends";
   requestId?: string;
   friendCount: number;
@@ -148,10 +148,19 @@ export async function uploadMedia(file: File): Promise<{ url: string; resource_t
   return { url: data.url, resource_type: data.resource_type };
 }
 
-export async function uploadAvatar(file: File): Promise<string> {
+export async function uploadAvatar(file: File | Blob): Promise<string> {
   const form = new FormData();
-  form.append("file", file);
+  form.append("file", file, file instanceof File ? file.name : "avatar.jpg");
   const { data } = await api.post("/upload/avatar", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data.url as string;
+}
+
+export async function uploadCover(file: File | Blob): Promise<string> {
+  const form = new FormData();
+  form.append("file", file, file instanceof File ? file.name : "cover.jpg");
+  const { data } = await api.post("/upload/cover", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return data.url as string;

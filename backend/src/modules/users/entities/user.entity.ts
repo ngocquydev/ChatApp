@@ -25,6 +25,9 @@ export class User {
   avatar?: string; // Ảnh đại diện Google/Facebook
 
   @Prop({ required: false })
+  cover?: string; // Ảnh bìa hồ sơ cá nhân
+
+  @Prop({ required: false })
   bio?: string; // Giới thiệu bản thân
 
   @Prop({ required: false, type: Date })
