@@ -64,7 +64,7 @@ export default function PostCard({
         border: "1px solid",
         borderColor: "divider",
         bgcolor: "background.paper",
-        overflow: "visible",
+        overflow: "hidden",
         flexShrink: 0,
       }}
     >
@@ -152,17 +152,33 @@ export default function PostCard({
         </Box>
       )}
 
-      <Box sx={{ px: 1, py: 0.5, display: "flex", gap: 0.5, borderTop: "1px solid", borderColor: "divider", mx: 2, mt: 0.5 }}>
+      <Box
+        sx={{
+          px: { xs: 0.5, sm: 1 },
+          py: 0.5,
+          display: "flex",
+          gap: { xs: 0.5, sm: 1 },
+          alignItems: "center",
+          borderTop: "1px solid",
+          borderColor: "divider",
+          mx: { xs: 1, sm: 2 },
+          mt: 0.5,
+        }}
+      >
         <Button
-          fullWidth
           color={post.likedByMe ? "error" : "inherit"}
           aria-pressed={post.likedByMe}
           onClick={() => onToggleLike(post)}
           startIcon={<Heart size={18} aria-hidden fill={post.likedByMe ? "currentColor" : "none"} />}
           sx={{
+            flex: 1,
+            minWidth: 0,
+            whiteSpace: "nowrap",
             fontWeight: 600,
+            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
             color: post.likedByMe ? "error.main" : "text.secondary",
             py: 0.8,
+            px: { xs: 0.5, sm: 1.5 },
             borderRadius: "8px",
             "&:hover": { bgcolor: "action.hover" },
           }}
@@ -170,15 +186,19 @@ export default function PostCard({
           Thích
         </Button>
         <Button
-          fullWidth
           color="inherit"
           aria-expanded={showComments}
           onClick={() => setShowComments((v) => !v)}
           startIcon={<MessageCircle size={18} aria-hidden />}
           sx={{
+            flex: 1,
+            minWidth: 0,
+            whiteSpace: "nowrap",
             fontWeight: 600,
+            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
             color: "text.secondary",
             py: 0.8,
+            px: { xs: 0.5, sm: 1.5 },
             borderRadius: "8px",
             "&:hover": { bgcolor: "action.hover" },
           }}
@@ -186,7 +206,7 @@ export default function PostCard({
           Bình luận
         </Button>
         <Tooltip title={shareable ? "" : "Chỉ chia sẻ lại được bài viết công khai"}>
-          <Box component="span" sx={{ flex: 1, display: "flex" }}>
+          <Box component="span" sx={{ flex: 1, minWidth: 0, display: "flex" }}>
             <Button
               fullWidth
               color="inherit"
@@ -194,9 +214,14 @@ export default function PostCard({
               onClick={() => onRequestShare(post)}
               startIcon={<Share2 size={18} aria-hidden />}
               sx={{
+                width: "100%",
+                minWidth: 0,
+                whiteSpace: "nowrap",
                 fontWeight: 600,
+                fontSize: { xs: "0.8125rem", sm: "0.875rem" },
                 color: "text.secondary",
                 py: 0.8,
+                px: { xs: 0.5, sm: 1.5 },
                 borderRadius: "8px",
                 "&:hover": { bgcolor: "action.hover" },
               }}

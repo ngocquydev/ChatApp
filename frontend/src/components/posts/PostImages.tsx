@@ -36,7 +36,9 @@ export default function PostImages({ images, altPrefix }: PostImagesProps) {
               <Box
                 key={src}
                 sx={{
-                  display: "block",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   overflow: "hidden",
                   bgcolor: "black",
                   borderRadius: "8px",
@@ -64,7 +66,9 @@ export default function PostImages({ images, altPrefix }: PostImagesProps) {
               onClick={() => setOpenIndex(index)}
               aria-label={`Xem ảnh ${index + 1} trên ${images.length} của ${altPrefix}`}
               sx={{
-                display: "block",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 overflow: "hidden",
                 bgcolor: "action.hover",
                 // Bộ 3 ảnh: ảnh đầu trải rộng hai cột cho cân đối
