@@ -23,12 +23,16 @@ Hệ thống ứng dụng trò chuyện và mạng xã hội thời gian thực 
 
 ## ✨ Tính năng nổi bật
 
-### 1. Nhắn tin thời gian thực (Realtime Messaging with Socket.IO)
+### 1. Nhắn tin thời gian thực & Quyền riêng tư nâng cao (Realtime Messaging & Privacy)
 - **Kiến trúc WebSocket Gateway 2 chiều**: Tích hợp `@nestjs/websockets` và `@nestjs/platform-socket.io` phía Server cùng `socket.io-client` phía Client.
 - **Trò chuyện 1-1 tức thì**: Gửi và nhận tin nhắn theo thời gian thực không độ trễ, tự động cuộn đến tin nhắn mới nhất.
 - **Chỉ báo đang soạn tin (Typing Indicator)**: Hiển thị trạng thái gõ phím của đối phương trong phòng chat theo thời gian thực (tự động tắt sau 2 giây ngưng gõ).
 - **Trạng thái đã xem (Seen Status)**: Cập nhật trạng thái tin nhắn đã đọc ngay khi người nhận mở cuộc hội thoại.
 - **Theo dõi trạng thái trực tuyến (Online/Offline Status)**: Quản lý danh sách người dùng đang online trên toàn hệ thống thông qua WebSocket rooms và broadcast sự kiện kết nối/ngắt kết nối.
+- **Thu hồi tin nhắn (Unsend / Delete Message)**: Cho phép người gửi thu hồi tin nhắn của mình với hộp thoại xác nhận, đồng bộ trạng thái *"Tin nhắn đã bị thu hồi"* cho cả hai phía theo thời gian thực.
+- **Tùy biến Hình nền & Chủ đề đoạn chat (Chat Themes & Wallpapers)**: 5 chủ đề sống động (*Mặc định, Hẹn hò lãng mạn, Bầu trời trong xanh, Bóng đêm huyền bí, Biển cả tươi mát*) thiết kế bằng Design Tokens, đổi nền gradient và bong bóng chat, đồng bộ realtime qua WebSocket.
+- **Chế độ Hạn chế chuẩn Facebook Messenger (Restrict)**: Hạn chế người dùng mà đối phương hoàn toàn không hay biết; ẩn trạng thái "Đã xem" khi đọc tin nhắn; ẩn trạng thái online; chuyển cuộc trò chuyện sang mục riêng *"Bị hạn chế"* tách biệt khỏi hộp thư chính.
+- **Chặn & Bỏ chặn người dùng (Block / Unblock)**: Chặn đối phương trực tiếp trong cuộc hội thoại; hiển thị banner thông báo trạng thái chặn cho cả hai bên và vô hiệu hóa ô soạn thảo tin nhắn.
 
 ### 2. Hệ thống Tìm bạn & Quản lý quan hệ bạn bè thật (Friendship System)
 - **100% Dữ liệu thực**: Loại bỏ hoàn toàn mock data, đồng bộ quan hệ bạn bè từ MongoDB qua Mongoose Schema (`Friendship`).
@@ -336,9 +340,17 @@ io('http://localhost:3000', {
 | Chiều | Tên sự kiện | Dữ liệu truyền (Payload) | Ý nghĩa |
 | :--- | :--- | :--- | :--- |
 | **Client ➔ Server** | `message:send` | `{ receiverId, text, conversationId? }` | Gửi tin nhắn trực tiếp đến người dùng |
+| **Client ➔ Server** | `message:delete` | `{ messageId, conversationId, partnerId? }` | Yêu cầu thu hồi / xóa tin nhắn của bản thân |
 | **Client ➔ Server** | `typing` | `{ conversationId, isTyping: boolean }` | Báo trạng thái người dùng đang gõ/ngưng gõ |
-| **Client ➔ Server** | `message:read` | `{ conversationId }` | Đánh dấu đã xem toàn bộ tin nhắn trong phòng |
+| **Client ➔ Server** | `message:read` | `{ conversationId }` | Đánh dấu đã xem toàn bộ tin nhắn trong phòng (ẩn phát nếu đang hạn chế) |
+| **Client ➔ Server** | `conversation:theme` | `{ conversationId, theme, partnerId? }` | Thay đổi hình nền / chủ đề cuộc trò chuyện |
+| **Client ➔ Server** | `conversation:block` | `{ conversationId, partnerId }` | Yêu cầu chặn đối phương trong cuộc hội thoại |
+| **Client ➔ Server** | `conversation:unblock` | `{ conversationId, partnerId }` | Yêu cầu bỏ chặn đối phương trong cuộc hội thoại |
 | **Server ➔ Client** | `message:new` | `MessageDocument` | Nhận tin nhắn mới tức thì |
+| **Server ➔ Client** | `message:deleted` | `{ messageId, conversationId }` | Thông báo tin nhắn đã bị thu hồi thời gian thực |
+| **Server ➔ Client** | `conversation:theme_updated` | `{ conversationId, theme, updatedBy }` | Cập nhật hình nền / chủ đề cuộc hội thoại |
+| **Server ➔ Client** | `conversation:blocked` | `{ conversationId, blockedBy }` | Thông báo cuộc hội thoại đã bị chặn |
+| **Server ➔ Client** | `conversation:unblocked` | `{ conversationId, unblockedBy }` | Thông báo cuộc hội thoại đã được bỏ chặn |
 | **Server ➔ Client** | `typing` | `{ conversationId, userId, isTyping }` | Cập nhật chỉ báo soạn tin của đối phương |
 | **Server ➔ Client** | `message:seen` | `{ conversationId, readerId, readAt }` | Nhận thông báo tin nhắn đã được đọc |
 | **Server ➔ Client** | `user:status` | `{ userId, online: boolean }` | Cập nhật trạng thái online/offline của bạn bè |
@@ -401,6 +413,11 @@ Khi Backend đang chạy, truy cập đường dẫn sau để xem và thử ngh
 | `GET` | `/chat/conversations/:id/messages` | Lấy lịch sử tin nhắn trong cuộc hội thoại (phân trang) | ✅ |
 | `POST` | `/chat/messages` | Gửi tin nhắn qua REST API (fallback khi socket gián đoạn) | ✅ |
 | `PATCH` | `/chat/conversations/:id/read` | Đánh dấu các tin nhắn trong hội thoại là đã xem | ✅ |
+| `PATCH` | `/chat/conversations/:id/theme` | Tùy chỉnh chủ đề / hình nền cho cuộc trò chuyện | ✅ |
+| `PATCH` | `/chat/conversations/:id/block` | Chặn người dùng trong cuộc hội thoại | ✅ |
+| `PATCH` | `/chat/conversations/:id/unblock` | Bỏ chặn người dùng trong cuộc hội thoại | ✅ |
+| `PATCH` | `/chat/conversations/:id/restrict` | Bật / tắt chế độ hạn chế (kiểu Facebook Messenger) | ✅ |
+| `DELETE` | `/chat/messages/:id` | Thu hồi / xóa tin nhắn của chính mình (realtime) | ✅ |
 
 #### 5. Nhóm Thông báo (`/notifications`)
 | Phương thức | Endpoint | Mô tả | Xác thực |
@@ -429,12 +446,12 @@ Mỗi khi có commit được `push` hoặc tạo `pull_request` vào nhánh `ma
   - Script AST Static Scanner (`scripts/ci-inspect.mjs`): Quét toàn bộ mã nguồn phát hiện các vòng lặp chứa query DB lẻ, buffer không an toàn hoặc in mật khẩu ra log.
   - Bộ test rò rỉ RAM: Chạy với Node `--expose-gc`, đo heap memory delta khi xử lý 10,000 tin nhắn realtime và kiểm tra dọn dẹp Event Listener khi ngắt kết nối.
   - Bộ test N+1 Query: Kiểm chứng số lượng truy vấn DB duy trì $O(1)$ thay vì $O(N)$ bằng Mongoose `populate` & `$in`.
-- **Job 4: Toàn bộ Unit Tests & Production Build**: Chạy 16 bộ test (91/91 tests passed) và build bundle hoàn chỉnh của NestJS + Next.js Turbopack.
+- **Job 4: Toàn bộ Unit Tests & Production Build**: Chạy 20 bộ test (120/120 tests passed) và build bundle hoàn chỉnh của NestJS + Next.js Turbopack.
 
 ### 2. Git Pre-Push Hook (Kiểm tra cục bộ trước khi push)
 Tệp `.git/hooks/pre-push` tự động chạy 4 cổng kiểm soát chất lượng nghiêm ngặt trước mỗi lần `git push`:
 1. `➡️ [1/4] Backend Lint & Types` (`oxlint --type-aware`)
-2. `➡️ [2/4] Backend Unit Tests` (`vitest run` - 91/91 tests passed)
+2. `➡️ [2/4] Backend Unit Tests` (`vitest run` - 120/120 tests passed)
 3. `➡️ [3/4] Backend Build` (`nest build`)
 4. `➡️ [4/4] Frontend Lint & Build` (`eslint .` & `next build` với Turbopack)
 
@@ -457,7 +474,7 @@ npm run lint           # Kiểm tra cú pháp nhanh với Oxlint
 npm run test:security  # Chạy bộ test bảo mật OWASP Top 10 & chống rò rỉ dữ liệu
 npm run test:memory    # Chạy bộ test kiểm tra rò rỉ RAM & tràn bộ đệm (--expose-gc)
 npm run test:nplusone  # Chạy bộ test kiểm tra tối ưu hóa truy vấn N+1
-npm run test           # Chạy toàn bộ 91 Unit Tests với Vitest
+npm run test           # Chạy toàn bộ 120 Unit Tests với Vitest
 npm run build          # Build kiểm tra NestJS
 
 # Nạp dữ liệu mô phỏng (Mock Data Seeder):
@@ -556,6 +573,12 @@ npm run build          # Build kiểm tra Next.js Turbopack production bundle
    - [x] Phát socket `notification:new` thời gian thực và cập nhật số lượng chưa đọc (`unreadCount`).
    - [x] Chuông thông báo (`NotificationBell`) trên thanh Header (cả Desktop và Mobile) kèm huy hiệu đếm số chưa đọc.
    - [x] Popover xem danh sách thông báo, phân trang, đánh dấu đã đọc một thông báo hoặc toàn bộ, và xóa thông báo.
+
+13. **Tính năng Nhắn tin Nâng cao & Cá nhân hóa (Advanced Chat & Privacy)**:
+   - [x] **Chặn & Bỏ chặn người dùng (Block / Unblock)**: Chặn gửi tin nhắn hai chiều, hiển thị banner thông báo và nút bỏ chặn tức thì.
+   - [x] **Thu hồi / Xóa tin nhắn (Unsend / Delete Message)**: Xóa mềm tin nhắn của bản thân, xác nhận qua `ConfirmDialog`, cập nhật realtime *"Tin nhắn đã bị thu hồi"*.
+   - [x] **Bộ 5 Chủ đề & Hình nền cuộc trò chuyện (Chat Themes & Wallpapers)**: Mặc định, Hẹn hò, Bầu trời, Bóng đêm, Biển cả với hiệu ứng gradient và bong bóng chat, đồng bộ realtime qua Socket.IO.
+   - [x] **Hạn chế người dùng kín đáo chuẩn Facebook Messenger (Restrict)**: Người bị hạn chế không biết; tự động ẩn trạng thái "Đã xem" khi đọc tin nhắn; ẩn trạng thái Online; chuyển sang danh mục *"Bị hạn chế"* riêng biệt trên thanh danh sách cuộc trò chuyện.
 
 ---
 
