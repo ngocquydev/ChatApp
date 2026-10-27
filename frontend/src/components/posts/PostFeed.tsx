@@ -19,6 +19,7 @@ import PostCard from "./PostCard";
 import PostComposer from "./PostComposer";
 import SharePostDialog from "./SharePostDialog";
 import EditPostDialog from "./EditPostDialog";
+import PostEngagersDialog, { type EngagerTab } from "./PostEngagersDialog";
 
 interface PostFeedProps {
   loadPage: (after: string | null) => Promise<CursorPage<PostView>>;
@@ -68,6 +69,7 @@ export default function PostFeed({
   const [deleting, setDeleting] = useState(false);
   const [toShare, setToShare] = useState<PostView | null>(null);
   const [toEdit, setToEdit] = useState<PostView | null>(null);
+  const [engagersModal, setEngagersModal] = useState<{ postId: string; initialTab: EngagerTab } | null>(null);
 
   const sentinelRef = useInfiniteSentinel(
     list.loadMore,
@@ -180,6 +182,7 @@ export default function PostFeed({
             onRequestEdit={setToEdit}
             onRequestDelete={setToDelete}
             onRequestShare={setToShare}
+            onOpenEngagers={(postId, tab) => setEngagersModal({ postId, initialTab: tab })}
             onCommentCountChange={handleCommentCountChange}
           />
         ))}
@@ -226,6 +229,13 @@ export default function PostFeed({
         currentUserId={currentUserId}
         onClose={() => setToEdit(null)}
         onUpdated={handleUpdated}
+      />
+
+      <PostEngagersDialog
+        open={!!engagersModal}
+        postId={engagersModal?.postId ?? null}
+        initialTab={engagersModal?.initialTab ?? "likes"}
+        onClose={() => setEngagersModal(null)}
       />
 
       <ConfirmDialog

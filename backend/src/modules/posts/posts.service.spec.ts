@@ -51,6 +51,7 @@ describe('PostsService', () => {
     findOne: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     deleteOne: ReturnType<typeof vi.fn>;
+    aggregate: ReturnType<typeof vi.fn>;
   };
   let friendshipModel: {
     find: ReturnType<typeof vi.fn>;
@@ -72,7 +73,13 @@ describe('PostsService', () => {
       updateOne: vi.fn(() => q({})),
     };
     likeModel = { find: vi.fn(() => q([])), deleteOne: vi.fn(), create: vi.fn() };
-    commentModel = { find: vi.fn(), findOne: vi.fn(), create: vi.fn(), deleteOne: vi.fn() };
+    commentModel = {
+      find: vi.fn(),
+      findOne: vi.fn(),
+      create: vi.fn(),
+      deleteOne: vi.fn(),
+      aggregate: vi.fn().mockResolvedValue([]),
+    };
     friendshipModel = { find: vi.fn(() => q([])), exists: vi.fn(() => q(null)) };
     usersService = { findByIds: vi.fn().mockResolvedValue([]) };
     service = new PostsService(
@@ -255,6 +262,40 @@ describe('PostsService', () => {
         service.deleteComment(stranger, postId.toString(), oid().toString()),
       ).rejects.toThrow(ForbiddenException);
       expect(commentModel.deleteOne).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getPostLikes và getPostCommenters', () => {
+    it('getPostLikes trả về danh sách user đã thích', async () => {
+      const postId = oid();
+      const user1 = oid();
+      postModel.findOne.mockReturnValue(
+        q({ _id: postId, authorId: new Types.ObjectId(me), privacy: 'friends' }),
+      );
+      likeModel.find.mockReturnValue(q([{ userId: user1 }]));
+      usersService.findByIds.mockResolvedValue([
+        { _id: user1, name: 'User 1', avatar: 'ava1.jpg' },
+      ]);
+
+      const result = await service.getPostLikes(me, postId.toString());
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('User 1');
+    });
+
+    it('getPostCommenters trả về danh sách người bình luận không trùng nhau', async () => {
+      const postId = oid();
+      const user1 = oid();
+      postModel.findOne.mockReturnValue(
+        q({ _id: postId, authorId: new Types.ObjectId(me), privacy: 'friends' }),
+      );
+      commentModel.aggregate.mockResolvedValue([{ _id: user1 }]);
+      usersService.findByIds.mockResolvedValue([
+        { _id: user1, name: 'User 1' },
+      ]);
+
+      const result = await service.getPostCommenters(me, postId.toString());
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('User 1');
     });
   });
 

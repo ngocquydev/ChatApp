@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, Card, IconButton, ListItemIcon, Menu, MenuItem, Tooltip, Typography } from "@mui/material";
+import { Box, Button, ButtonBase, Card, IconButton, ListItemIcon, Menu, MenuItem, Tooltip, Typography } from "@mui/material";
 import { Heart, MessageCircle, MoreHorizontal, Pencil, Share2, Trash2 } from "lucide-react";
 import { isSharedPostAvailable, type PostView } from "@/services/postsApi";
 import PostAuthorHeader from "./PostAuthorHeader";
@@ -19,6 +19,7 @@ interface PostCardProps {
   onRequestDelete: (post: PostView) => void;
   onRequestShare: (post: PostView) => void;
   onCommentCountChange: (postId: string, delta: number) => void;
+  onOpenEngagers?: (postId: string, tab: "likes" | "commenters") => void;
 }
 
 /** Bài gốc mà thao tác chia sẻ sẽ trỏ tới (bài chia sẻ → bài gốc của nó). */
@@ -44,6 +45,7 @@ export default function PostCard({
   onRequestDelete,
   onRequestShare,
   onCommentCountChange,
+  onOpenEngagers,
 }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -135,14 +137,26 @@ export default function PostCard({
       {(post.likeCount > 0 || post.commentCount > 0 || post.shareCount > 0) && (
         <Box sx={{ px: 2, pt: 1, pb: 0.5, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
           {post.likeCount > 0 && (
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-              {post.likeCount} lượt thích
-            </Typography>
+            <ButtonBase
+              onClick={() => onOpenEngagers?.(post._id, "likes")}
+              aria-label={`Xem danh sách ${post.likeCount} người thích bài viết`}
+              sx={{ borderRadius: "4px", p: 0.25, "&:hover": { textDecoration: "underline" } }}
+            >
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                {post.likeCount} lượt thích
+              </Typography>
+            </ButtonBase>
           )}
           {post.commentCount > 0 && (
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-              {post.commentCount} bình luận
-            </Typography>
+            <ButtonBase
+              onClick={() => onOpenEngagers?.(post._id, "commenters")}
+              aria-label="Xem danh sách người đã bình luận bài viết"
+              sx={{ borderRadius: "4px", p: 0.25, "&:hover": { textDecoration: "underline" } }}
+            >
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                {post.commentCount} bình luận
+              </Typography>
+            </ButtonBase>
           )}
           {post.shareCount > 0 && (
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>

@@ -506,6 +506,35 @@ export class PostsService {
     return { success: true, message: 'Đã xóa bình luận' };
   }
 
+  // ───────────────────────── Danh sách người thích & người bình luận ─────────────────────────
+
+  async getPostLikes(viewerId: string, postId: string): Promise<PostAuthorView[]> {
+    const post = await this.loadVisiblePost(postId, viewerId);
+    const rows = await this.likeModel
+      .find({ postId: post._id })
+      .sort({ _id: -1 })
+      .limit(100)
+      .select('userId')
+      .lean<{ userId: Types.ObjectId }[]>()
+      .exec();
+    const userIds = rows.map((r) => r.userId);
+    const authors = await this.loadAuthors(userIds);
+    return userIds.map((id) => authors.get(id.toString()) ?? PostsService.unknownAuthor(id));
+  }
+
+  async getPostCommenters(viewerId: string, postId: string): Promise<PostAuthorView[]> {
+    const post = await this.loadVisiblePost(postId, viewerId);
+    const distinctRows = await this.commentModel.aggregate<{ _id: Types.ObjectId }>([
+      { $match: { postId: post._id } },
+      { $group: { _id: '$authorId', lastAt: { $max: '$_id' } } },
+      { $sort: { lastAt: -1 } },
+      { $limit: 100 },
+    ]);
+    const authorIds = distinctRows.map((r) => r._id);
+    const authors = await this.loadAuthors(authorIds);
+    return authorIds.map((id) => authors.get(id.toString()) ?? PostsService.unknownAuthor(id));
+  }
+
   private toCommentView(
     row: PostComment & { _id: Types.ObjectId },
     authors: Map<string, PostAuthorView>,

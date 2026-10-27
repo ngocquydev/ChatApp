@@ -213,3 +213,13 @@ export async function addComment(postId: string, content: string): Promise<Comme
 export async function deleteComment(postId: string, commentId: string): Promise<void> {
   await api.delete(`/posts/${postId}/comments/${commentId}`);
 }
+
+export async function fetchPostLikes(postId: string): Promise<PostAuthor[]> {
+  const { data } = await api.get(`/posts/${postId}/likes`);
+  return data.users ?? [];
+}
+
+export async function fetchPostCommenters(postId: string): Promise<PostAuthor[]> {
+  const { data } = await api.get(`/posts/${postId}/commenters`);
+  return data.users ?? [];
+}

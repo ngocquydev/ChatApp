@@ -173,6 +173,20 @@ export class PostsController {
     return this.postsService.toggleLike(this.extractUserId(req), postId);
   }
 
+  @Get(':postId/likes')
+  @ApiOperation({ summary: 'Danh sách người dùng đã thích bài viết' })
+  async getLikes(@Req() req: AuthenticatedRequest, @Param('postId') postId: string) {
+    const users = await this.postsService.getPostLikes(this.extractUserId(req), postId);
+    return { success: true, users };
+  }
+
+  @Get(':postId/commenters')
+  @ApiOperation({ summary: 'Danh sách người dùng duy nhất đã bình luận bài viết' })
+  async getCommenters(@Req() req: AuthenticatedRequest, @Param('postId') postId: string) {
+    const users = await this.postsService.getPostCommenters(this.extractUserId(req), postId);
+    return { success: true, users };
+  }
+
   @Get(':postId/comments')
   @ApiOperation({ summary: 'Danh sách bình luận (cũ → mới, phân trang theo con trỏ)' })
   async comments(
