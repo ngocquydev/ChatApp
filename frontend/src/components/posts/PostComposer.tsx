@@ -32,6 +32,19 @@ interface PostComposerProps {
 }
 
 const ACCEPT = "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime";
+const POST_PRIVACY_STORAGE_KEY = "chatapp:post_privacy";
+const VALID_PRIVACIES: PostPrivacy[] = ["public", "friends", "only_me"];
+
+function readStoredPrivacy(fallback: PostPrivacy): PostPrivacy {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = localStorage.getItem(POST_PRIVACY_STORAGE_KEY) as PostPrivacy | null;
+    if (raw && VALID_PRIVACIES.includes(raw)) return raw;
+  } catch {
+    // Bỏ qua nếu localStorage bị chặn
+  }
+  return fallback;
+}
 
 /** Ô soạn bài: chữ + tối đa 4 ảnh + quyền riêng tư. Ảnh được tải lên ngay khi chọn. */
 export default function PostComposer({
@@ -48,6 +61,23 @@ export default function PostComposer({
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const previewsRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    // Khôi phục quyền riêng tư người dùng đã chọn trước đó
+    const stored = readStoredPrivacy(defaultPrivacy);
+    if (stored !== defaultPrivacy) {
+      setPrivacy(stored);
+    }
+  }, [defaultPrivacy]);
+
+  const handlePrivacyChange = (next: PostPrivacy) => {
+    setPrivacy(next);
+    try {
+      localStorage.setItem(POST_PRIVACY_STORAGE_KEY, next);
+    } catch {
+      // Bỏ qua nếu localStorage bị chặn
+    }
+  };
 
   useEffect(() => {
     const previews = previewsRef;
@@ -216,7 +246,7 @@ export default function PostComposer({
             Ảnh / Video
             <input hidden type="file" accept={ACCEPT} multiple onChange={handleFiles} aria-label="Chọn ảnh hoặc video đính kèm" />
           </Button>
-          <PrivacyPicker value={privacy} onChange={setPrivacy} disabled={posting} labelId={`${uid}-privacy`} />
+          <PrivacyPicker value={privacy} onChange={handlePrivacyChange} disabled={posting} labelId={`${uid}-privacy`} />
         </Box>
         <Button variant="contained" disabled={!canPost} onClick={() => void submit()}>
           {posting ? "Đang đăng…" : uploading > 0 ? "Đang tải lên…" : "Đăng"}
