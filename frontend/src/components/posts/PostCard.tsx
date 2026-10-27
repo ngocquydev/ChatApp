@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Box, Button, Card, IconButton, ListItemIcon, Menu, MenuItem, Tooltip, Typography } from "@mui/material";
-import { Heart, MessageCircle, MoreHorizontal, Share2, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, MoreHorizontal, Pencil, Share2, Trash2 } from "lucide-react";
 import { isSharedPostAvailable, type PostView } from "@/services/postsApi";
 import PostAuthorHeader from "./PostAuthorHeader";
 import PostCommentSection from "./PostCommentSection";
@@ -15,6 +15,7 @@ interface PostCardProps {
   post: PostView;
   currentUserId?: string;
   onToggleLike: (post: PostView) => void;
+  onRequestEdit?: (post: PostView) => void;
   onRequestDelete: (post: PostView) => void;
   onRequestShare: (post: PostView) => void;
   onCommentCountChange: (postId: string, delta: number) => void;
@@ -39,6 +40,7 @@ export default function PostCard({
   post,
   currentUserId,
   onToggleLike,
+  onRequestEdit,
   onRequestDelete,
   onRequestShare,
   onCommentCountChange,
@@ -85,6 +87,17 @@ export default function PostCard({
                   <MoreHorizontal size={20} aria-hidden />
                 </IconButton>
                 <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={() => setMenuAnchor(null)}>
+                  <MenuItem
+                    onClick={() => {
+                      setMenuAnchor(null);
+                      onRequestEdit?.(post);
+                    }}
+                  >
+                    <ListItemIcon sx={{ color: "inherit", minWidth: 32 }}>
+                      <Pencil size={18} aria-hidden />
+                    </ListItemIcon>
+                    Chỉnh sửa bài viết
+                  </MenuItem>
                   <MenuItem
                     onClick={() => {
                       setMenuAnchor(null);

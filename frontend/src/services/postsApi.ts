@@ -170,6 +170,18 @@ export async function deletePost(postId: string): Promise<void> {
   await api.delete(`/posts/${postId}`);
 }
 
+export async function updatePost(
+  postId: string,
+  input: {
+    content?: string;
+    images?: string[];
+    privacy?: PostPrivacy;
+  },
+): Promise<PostView> {
+  const { data } = await api.patch(`/posts/${postId}`, input);
+  return data.post;
+}
+
 export async function sharePost(
   postId: string,
   input: { content?: string; privacy: PostPrivacy },

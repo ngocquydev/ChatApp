@@ -12,7 +12,7 @@ import { Post, PostDocument } from './schemas/post.schema.js';
 import type { PostPrivacy } from './schemas/post.schema.js';
 import { PostLike, PostLikeDocument } from './schemas/post-like.schema.js';
 import { PostComment, PostCommentDocument } from './schemas/post-comment.schema.js';
-import type { CreatePostDto, SharePostDto } from './dto/posts.dto.js';
+import type { CreatePostDto, SharePostDto, UpdatePostDto } from './dto/posts.dto.js';
 
 export type ViewerRelation = 'self' | 'friends' | 'none';
 
@@ -338,6 +338,40 @@ export class PostsService {
       privacy: dto.privacy ?? 'friends',
     });
     return this.getPost(authorId, created._id.toString());
+  }
+
+  async updatePost(viewerId: string, postId: string, dto: UpdatePostDto): Promise<PostView> {
+    const post = await this.postModel
+      .findOne({ _id: toObjectId(postId, 'Mã bài viết không hợp lệ'), isDeleted: false })
+      .lean<LeanPost>()
+      .exec();
+    if (!post) throw new NotFoundException('Bài viết không tồn tại hoặc đã bị xóa');
+    if (post.authorId.toString() !== viewerId) {
+      throw new ForbiddenException('Bạn không có quyền chỉnh sửa bài viết này');
+    }
+
+    const content = dto.content !== undefined ? dto.content.trim() : post.content;
+    const images = dto.images !== undefined ? dto.images : post.images;
+    const privacy = dto.privacy !== undefined ? dto.privacy : post.privacy;
+
+    if (!post.sharedPostId && !content && images.length === 0) {
+      throw new BadRequestException('Bài viết cần có nội dung hoặc ít nhất một ảnh');
+    }
+
+    await this.postModel
+      .updateOne(
+        { _id: post._id },
+        {
+          $set: {
+            content,
+            images,
+            privacy,
+          },
+        },
+      )
+      .exec();
+
+    return this.getPost(viewerId, post._id.toString());
   }
 
   async deletePost(viewerId: string, postId: string) {

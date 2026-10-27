@@ -127,6 +127,82 @@ describe('PostsService', () => {
     });
   });
 
+  describe('updatePost', () => {
+    it('404 khi bài không tồn tại', async () => {
+      postModel.findOne.mockReturnValue(q(null));
+      await expect(
+        service.updatePost(me, oid().toString(), { content: 'test' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('403 khi sửa bài của người khác', async () => {
+      postModel.findOne.mockReturnValue(
+        q({ _id: oid(), authorId: new Types.ObjectId(other), sharedPostId: null }),
+      );
+      await expect(
+        service.updatePost(me, oid().toString(), { content: 'test' }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(postModel.updateOne).not.toHaveBeenCalled();
+    });
+
+    it('400 khi sửa bài thường thành rỗng không có chữ và không có ảnh', async () => {
+      const postId = oid();
+      postModel.findOne.mockReturnValue(
+        q({
+          _id: postId,
+          authorId: new Types.ObjectId(me),
+          content: 'cũ',
+          images: [],
+          privacy: 'friends',
+          sharedPostId: null,
+        }),
+      );
+      await expect(
+        service.updatePost(me, postId.toString(), { content: '   ', images: [] }),
+      ).rejects.toThrow(BadRequestException);
+      expect(postModel.updateOne).not.toHaveBeenCalled();
+    });
+
+    it('cập nhật thành công nội dung và quyền riêng tư của bài viết', async () => {
+      const postId = oid();
+      const existing = {
+        _id: postId,
+        authorId: new Types.ObjectId(me),
+        content: 'Nội dung cũ',
+        images: ['/uploads/posts/11111111-1111-1111-1111-111111111111.jpg'],
+        privacy: 'friends',
+        sharedPostId: null,
+        createdAt: new Date(),
+        likeCount: 0,
+        commentCount: 0,
+        shareCount: 0,
+      };
+      // findOne lần 1 trong updatePost, lần 2 trong getPost -> loadVisiblePost
+      postModel.findOne.mockReturnValue(q(existing));
+      postModel.find.mockReturnValue(q([]));
+      usersService.findByIds.mockResolvedValue([
+        { _id: new Types.ObjectId(me), name: 'Tôi' },
+      ]);
+
+      const result = await service.updatePost(me, postId.toString(), {
+        content: 'Nội dung mới',
+        privacy: 'public',
+      });
+
+      expect(postModel.updateOne).toHaveBeenCalledWith(
+        { _id: postId },
+        {
+          $set: {
+            content: 'Nội dung mới',
+            images: existing.images,
+            privacy: 'public',
+          },
+        },
+      );
+      expect(result._id).toBe(postId.toString());
+    });
+  });
+
   describe('xem bài viết', () => {
     it('trả 404 (không lộ sự tồn tại) khi bài only_me của người khác', async () => {
       postModel.findOne.mockReturnValue(

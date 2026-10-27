@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   Optional,
   BadRequestException,
+  Patch,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -26,6 +27,7 @@ import {
   PageQueryDto,
   PhotosQueryDto,
   SharePostDto,
+  UpdatePostDto,
 } from './dto/posts.dto.js';
 import { savePostImage } from './post-image.util.js';
 
@@ -134,6 +136,17 @@ export class PostsController {
   @ApiOperation({ summary: 'Đăng bài viết mới' })
   async create(@Req() req: AuthenticatedRequest, @Body() dto: CreatePostDto) {
     const post = await this.postsService.createPost(this.extractUserId(req), dto);
+    return { success: true, post };
+  }
+
+  @Patch(':postId')
+  @ApiOperation({ summary: 'Chỉnh sửa bài viết của mình' })
+  async update(
+    @Req() req: AuthenticatedRequest,
+    @Param('postId') postId: string,
+    @Body() dto: UpdatePostDto,
+  ) {
+    const post = await this.postsService.updatePost(this.extractUserId(req), postId, dto);
     return { success: true, post };
   }
 

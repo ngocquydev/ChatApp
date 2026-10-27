@@ -18,6 +18,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import PostCard from "./PostCard";
 import PostComposer from "./PostComposer";
 import SharePostDialog from "./SharePostDialog";
+import EditPostDialog from "./EditPostDialog";
 
 interface PostFeedProps {
   loadPage: (after: string | null) => Promise<CursorPage<PostView>>;
@@ -66,6 +67,7 @@ export default function PostFeed({
   const [toDelete, setToDelete] = useState<PostView | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toShare, setToShare] = useState<PostView | null>(null);
+  const [toEdit, setToEdit] = useState<PostView | null>(null);
 
   const sentinelRef = useInfiniteSentinel(
     list.loadMore,
@@ -124,6 +126,13 @@ export default function PostFeed({
     list.patch(postId, (p) => ({ ...p, commentCount: Math.max(0, p.commentCount + delta) }));
   };
 
+  const handleUpdated = (updated: PostView) => {
+    list.patch(updated._id, () => updated);
+    setToEdit(null);
+    setToast({ message: "Đã cập nhật bài viết.", severity: "success" });
+    onOwnPostsChanged?.();
+  };
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {canCompose && (
@@ -168,6 +177,7 @@ export default function PostFeed({
             post={post}
             currentUserId={currentUserId}
             onToggleLike={(p) => void handleToggleLike(p)}
+            onRequestEdit={setToEdit}
             onRequestDelete={setToDelete}
             onRequestShare={setToShare}
             onCommentCountChange={handleCommentCountChange}
@@ -207,6 +217,15 @@ export default function PostFeed({
         currentUserId={currentUserId}
         onClose={() => setToShare(null)}
         onShared={handleShared}
+      />
+
+      <EditPostDialog
+        // Remount theo bài để khởi tạo lại nháp khi đổi bài chỉnh sửa
+        key={toEdit?._id ?? "closed"}
+        post={toEdit}
+        currentUserId={currentUserId}
+        onClose={() => setToEdit(null)}
+        onUpdated={handleUpdated}
       />
 
       <ConfirmDialog
