@@ -212,7 +212,7 @@ export default function PostFeed({
 
       <SharePostDialog
         // Remount theo bài để xóa nháp lời bình khi mở bài khác
-        key={toShare?._id ?? "closed"}
+        key={toShare ? `share-${toShare._id}` : "share-closed"}
         post={toShare}
         currentUserId={currentUserId}
         onClose={() => setToShare(null)}
@@ -221,7 +221,7 @@ export default function PostFeed({
 
       <EditPostDialog
         // Remount theo bài để khởi tạo lại nháp khi đổi bài chỉnh sửa
-        key={toEdit?._id ?? "closed"}
+        key={toEdit ? `edit-${toEdit._id}` : "edit-closed"}
         post={toEdit}
         currentUserId={currentUserId}
         onClose={() => setToEdit(null)}
