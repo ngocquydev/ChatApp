@@ -729,7 +729,10 @@ function ResponsiveAppBar() {
                       </Box>
 
                       <Box sx={{ overflowY: "auto", maxHeight: 320 }}>
-                        {conversations.length === 0 ? (
+                        {conversations.filter((c) => {
+                          const myId = String(user?.id || user?._id || "");
+                          return !myId || !c.restrictedBy?.includes(myId);
+                        }).length === 0 ? (
                           <Box sx={{ textAlign: "center", py: 4, px: 2 }}>
                             <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-500)", mb: 1 }}>
                               Chưa có cuộc trò chuyện nào
@@ -747,7 +750,12 @@ function ResponsiveAppBar() {
                             </Button>
                           </Box>
                         ) : (
-                          conversations.map((conv) => {
+                          conversations
+                            .filter((c) => {
+                              const myId = String(user?.id || user?._id || "");
+                              return !myId || !c.restrictedBy?.includes(myId);
+                            })
+                            .map((conv) => {
                             const other =
                               conv.participants.find(
                                 (p) =>
@@ -833,9 +841,12 @@ function ResponsiveAppBar() {
                                     sx={{
                                       fontSize: "0.78rem",
                                       fontWeight: unread ? 600 : 400,
+                                      fontStyle: conv.lastMessage?.isDeleted ? "italic" : "normal",
                                     }}
                                   >
-                                    {conv.lastMessage?.text || "Chưa có tin nhắn"}
+                                    {conv.lastMessage?.isDeleted
+                                      ? "Tin nhắn đã bị thu hồi"
+                                      : (conv.lastMessage?.text || "Chưa có tin nhắn")}
                                   </Typography>
                                 </Box>
                               </ButtonBase>

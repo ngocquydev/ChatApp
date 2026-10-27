@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import {
   Paper,
   Box,
+  Button,
   Typography,
   Avatar,
   IconButton,
@@ -20,6 +21,10 @@ import {
   Badge,
   CircularProgress,
   Popover,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
   Grid,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
@@ -34,6 +39,11 @@ import {
   Check,
   CheckCheck,
   ChevronUp,
+  MoreVertical,
+  Palette,
+  ShieldAlert,
+  Ban,
+  Trash2,
 } from "lucide-react";
 import api from "@/services/api";
 import { mqttChatClient } from "@/services/mqttClient";
@@ -41,6 +51,10 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore, ChatMessage, ChatUser } from "@/store/useChatStore";
 import { useChatBoxStore, ChatBoxSession } from "@/store/useChatBoxStore";
 import { soundNotification } from "@/utils/soundNotification";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
+import ThemeSelectDialog from "@/components/chat/app/ThemeSelectDialog";
+import RestrictInfoDialog from "@/components/chat/app/RestrictInfoDialog";
+import { getChatTheme } from "@/components/chat/app/chatThemes";
 
 const POPULAR_EMOJIS = [
   "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
@@ -102,6 +116,16 @@ export default function FloatingChatBox({
   // Emoji popover state
   const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(null);
 
+  // Theme, Block, Restrict, Delete states
+  const [convTheme, setConvTheme] = useState<string>("default");
+  const [blockedBy, setBlockedBy] = useState<string | null>(null);
+  const [restrictedBy, setRestrictedBy] = useState<string[]>([]);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [openThemeDialog, setOpenThemeDialog] = useState(false);
+  const [openRestrictDialog, setOpenRestrictDialog] = useState(false);
+  const [openBlockConfirm, setOpenBlockConfirm] = useState(false);
+  const [deleteMsgId, setDeleteMsgId] = useState<string | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingSentRef = useRef<number>(0);
@@ -110,7 +134,14 @@ export default function FloatingChatBox({
   const targetUser = session.user;
   const targetUserId = String(targetUser._id || targetUser.id);
   const currentUserId = String(currentUser?._id || currentUser?.id);
-  const isOnline = onlineUserIds.includes(targetUserId);
+
+  const isBlocked = Boolean(blockedBy);
+  const isBlockedByMe = Boolean(blockedBy && currentUserId && blockedBy === currentUserId);
+  const isBlockedByPartner = Boolean(blockedBy && currentUserId && blockedBy !== currentUserId);
+  const isRestricted = Boolean(currentUserId && restrictedBy.includes(currentUserId));
+  const isOnline = !isRestricted && onlineUserIds.includes(targetUserId);
+
+  const chatTheme = getChatTheme(convTheme);
 
   // Scroll to bottom smoothly
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
@@ -170,8 +201,21 @@ export default function FloatingChatBox({
             if (isMounted) {
               setConvId(currentConvId);
               setConversationId(targetUserId, currentConvId!);
+              if (conversation.theme) setConvTheme(conversation.theme);
+              if (conversation.blockedBy) setBlockedBy(conversation.blockedBy);
+              if (conversation.restrictedBy) setRestrictedBy(conversation.restrictedBy);
             }
           }
+        } else {
+          try {
+            const convListRes = await api.get("/chat/conversations");
+            const found = convListRes.data?.conversations?.find((c: { _id: string }) => c._id === currentConvId);
+            if (found && isMounted) {
+              if (found.theme) setConvTheme(found.theme);
+              if (found.blockedBy) setBlockedBy(found.blockedBy);
+              if (found.restrictedBy) setRestrictedBy(found.restrictedBy);
+            }
+          } catch {}
         }
 
         if (currentConvId && isMounted) {
@@ -187,8 +231,8 @@ export default function FloatingChatBox({
             clearUnread(targetUserId);
           }
 
-          // Báo qua socket
-          if (socket && socket.connected) {
+          // Báo qua socket (chỉ khi không hạn chế)
+          if (!isRestricted && socket && socket.connected) {
             socket.emit("message:read", {
               conversationId: currentConvId,
               receiverId: targetUserId,
@@ -335,11 +379,43 @@ export default function FloatingChatBox({
       }
     };
 
+    const handleThemeUpdated = (data: { conversationId: string; theme: string }) => {
+      if (data.conversationId === convId) {
+        setConvTheme(data.theme);
+      }
+    };
+
+    const handleBlocked = (data: { conversationId: string; blockedBy: string }) => {
+      if (data.conversationId === convId) {
+        setBlockedBy(data.blockedBy);
+      }
+    };
+
+    const handleUnblocked = (data: { conversationId: string }) => {
+      if (data.conversationId === convId) {
+        setBlockedBy(null);
+      }
+    };
+
+    const handleMessageDeleted = (data: { messageId: string; conversationId: string }) => {
+      if (data.conversationId === convId) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m._id === data.messageId || m.id === data.messageId ? { ...m, isDeleted: true } : m
+          )
+        );
+      }
+    };
+
     if (socket) {
       socket.on("message:new", handleNewMessage);
       socket.on("typing:start", handleTypingStart);
       socket.on("typing:stop", handleTypingStop);
       socket.on("message:seen", handleMessageSeen);
+      socket.on("conversation:theme_updated", handleThemeUpdated);
+      socket.on("conversation:blocked", handleBlocked);
+      socket.on("conversation:unblocked", handleUnblocked);
+      socket.on("message:deleted", handleMessageDeleted);
     }
 
     return () => {
@@ -354,6 +430,10 @@ export default function FloatingChatBox({
         socket.off("typing:start", handleTypingStart);
         socket.off("typing:stop", handleTypingStop);
         socket.off("message:seen", handleMessageSeen);
+        socket.off("conversation:theme_updated", handleThemeUpdated);
+        socket.off("conversation:blocked", handleBlocked);
+        socket.off("conversation:unblocked", handleUnblocked);
+        socket.off("message:deleted", handleMessageDeleted);
       }
     };
   }, [socket, convId, targetUserId, session.isMinimized, clearUnread, incrementUnread]);
@@ -397,7 +477,7 @@ export default function FloatingChatBox({
   // 4. Gửi tin nhắn (ưu tiên Protocol Buffers nhị phân qua MQTT)
   const handleSendMessage = async (customText?: string) => {
     const textToSend = (customText ?? inputText).trim();
-    if (!textToSend || !convId) return;
+    if (isBlocked || !textToSend || !convId) return;
 
     // Ngừng typing ngay lập tức khi gửi tin
     if (typingTimeoutRef.current) {
@@ -442,6 +522,82 @@ export default function FloatingChatBox({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleSelectTheme = async (newTheme: string) => {
+    if (!convId) return;
+    try {
+      await api.patch(`/chat/conversations/${convId}/theme`, { theme: newTheme });
+      if (socket && socket.connected) {
+        socket.emit("conversation:theme", {
+          conversationId: convId,
+          theme: newTheme,
+          partnerId: targetUserId,
+        });
+      }
+      setConvTheme(newTheme);
+    } catch (err) {
+      console.error("Lỗi đổi chủ đề:", err);
+    }
+  };
+
+  const handleToggleBlock = async () => {
+    if (!convId) return;
+    try {
+      if (isBlockedByMe) {
+        await api.patch(`/chat/conversations/${convId}/unblock`);
+        if (socket && socket.connected) {
+          socket.emit("conversation:unblock", {
+            conversationId: convId,
+            partnerId: targetUserId,
+          });
+        }
+        setBlockedBy(null);
+      } else {
+        await api.patch(`/chat/conversations/${convId}/block`);
+        if (socket && socket.connected) {
+          socket.emit("conversation:block", {
+            conversationId: convId,
+            partnerId: targetUserId,
+          });
+        }
+        setBlockedBy(currentUserId);
+      }
+    } catch (err) {
+      console.error("Lỗi chặn/bỏ chặn:", err);
+    }
+  };
+
+  const handleToggleRestrict = async () => {
+    if (!convId) return;
+    try {
+      const nextRestricted = !isRestricted;
+      await api.patch(`/chat/conversations/${convId}/restrict`, { restrict: nextRestricted });
+      setRestrictedBy((prev) =>
+        nextRestricted ? [...prev, currentUserId] : prev.filter((id) => id !== currentUserId)
+      );
+    } catch (err) {
+      console.error("Lỗi hạn chế:", err);
+    }
+  };
+
+  const handleDeleteMessage = async (msgId: string) => {
+    if (!convId) return;
+    try {
+      await api.delete(`/chat/messages/${msgId}`);
+      if (socket && socket.connected) {
+        socket.emit("message:delete", {
+          messageId: msgId,
+          conversationId: convId,
+          partnerId: targetUserId,
+        });
+      }
+      setMessages((prev) =>
+        prev.map((m) => (m._id === msgId || m.id === msgId ? { ...m, isDeleted: true } : m))
+      );
+    } catch (err) {
+      console.error("Lỗi xóa tin nhắn:", err);
     }
   };
 
@@ -605,6 +761,26 @@ export default function FloatingChatBox({
 
         {/* Nút hành động */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.3 }}>
+          {!session.isMinimized && (
+            <Tooltip title="Tùy chọn đoạn chat">
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuAnchorEl(e.currentTarget);
+                }}
+                sx={{
+                  color: "var(--mui-palette-neutral-500)",
+                  p: 0.6,
+                  "&:hover": { bgcolor: "var(--mui-palette-neutral-100)", color: "var(--mui-palette-neutral-900)" },
+                }}
+                aria-label="Tùy chọn cuộc trò chuyện"
+              >
+                <MoreVertical size={16} />
+              </IconButton>
+            </Tooltip>
+          )}
+
           <Tooltip title={session.isMinimized ? "Mở rộng" : "Thu nhỏ"}>
             <IconButton
               size="small"
@@ -658,6 +834,74 @@ export default function FloatingChatBox({
         </Box>
       </Box>
 
+      {/* Menu tùy chọn: Đổi nền, Hạn chế, Chặn */}
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={() => setMenuAnchorEl(null)}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: "12px",
+              minWidth: 195,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+              p: 0.5,
+            },
+          },
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            setMenuAnchorEl(null);
+            setOpenThemeDialog(true);
+          }}
+          sx={{ py: 1, borderRadius: "8px" }}
+        >
+          <ListItemIcon>
+            <Palette size={16} color="var(--mui-palette-primary-main)" />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.82rem" }}>
+              Đổi chủ đề / hình nền
+            </Typography>
+          </ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            setMenuAnchorEl(null);
+            setOpenRestrictDialog(true);
+          }}
+          sx={{ py: 1, borderRadius: "8px" }}
+        >
+          <ListItemIcon>
+            <ShieldAlert size={16} color="var(--mui-palette-warning-main)" />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.82rem" }}>
+              {isRestricted ? "Bỏ hạn chế" : "Hạn chế người dùng"}
+            </Typography>
+          </ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            setMenuAnchorEl(null);
+            setOpenBlockConfirm(true);
+          }}
+          sx={{ py: 1, borderRadius: "8px", color: "error.main" }}
+        >
+          <ListItemIcon>
+            <Ban size={16} color="var(--mui-palette-error-main)" />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.82rem", color: "error.main" }}>
+              {isBlockedByMe ? "Bỏ chặn người dùng" : "Chặn người dùng"}
+            </Typography>
+          </ListItemText>
+        </MenuItem>
+      </Menu>
+
       {/* BODY KHI MỞ RỘNG */}
       {!session.isMinimized && (
         <>
@@ -667,7 +911,8 @@ export default function FloatingChatBox({
               flex: 1,
               overflowY: "auto",
               p: 1.5,
-              bgcolor: "var(--mui-palette-background-paper)",
+              background: chatTheme.background,
+              backgroundAttachment: "fixed",
               display: "flex",
               flexDirection: "column",
               gap: 1,
@@ -766,13 +1011,14 @@ export default function FloatingChatBox({
                       display: "flex",
                       flexDirection: "column",
                       alignItems: isMe ? "flex-end" : "flex-start",
+                      "&:hover .msg-delete-btn": { opacity: 1 },
                     }}
                   >
                     <Box
                       sx={{
                         display: "flex",
-                        alignItems: "flex-end",
-                        gap: 0.8,
+                        alignItems: "center",
+                        gap: 0.6,
                         maxWidth: "85%",
                         flexDirection: isMe ? "row-reverse" : "row",
                       }}
@@ -785,31 +1031,75 @@ export default function FloatingChatBox({
                             height: 24,
                             fontSize: "0.65rem",
                             bgcolor: "var(--mui-palette-brand-500)",
+                            alignSelf: "flex-end",
                           }}
                         >
                           {(targetUser.name || "U")[0].toUpperCase()}
                         </Avatar>
                       )}
 
-                      <Box
-                        sx={{
-                          p: 1.1,
-                          px: 1.5,
-                          borderRadius: isMe
-                            ? "18px 18px 4px 18px"
-                            : "18px 18px 18px 4px",
-                          bgcolor: isMe ? "var(--mui-palette-brand-600)" : "var(--mui-palette-neutral-100)",
-                          color: isMe ? "var(--mui-palette-common-white)" : "var(--mui-palette-neutral-900)",
-                          fontSize: "0.86rem",
-                          lineHeight: 1.38,
-                          wordBreak: "break-word",
-                          boxShadow: isMe
-                            ? "0 1px 3px rgba(37, 99, 235, 0.25)"
-                            : "none",
-                        }}
-                      >
-                        {msg.text}
-                      </Box>
+                      {msg.isDeleted ? (
+                        <Box
+                          sx={{
+                            p: 1.1,
+                            px: 1.5,
+                            borderRadius: isMe
+                              ? "18px 18px 4px 18px"
+                              : "18px 18px 18px 4px",
+                            bgcolor: "var(--mui-palette-neutral-100)",
+                            color: "var(--mui-palette-neutral-500)",
+                            fontSize: "0.82rem",
+                            fontStyle: "italic",
+                            border: "1px dashed var(--mui-palette-neutral-300)",
+                            lineHeight: 1.38,
+                          }}
+                        >
+                          Tin nhắn đã bị thu hồi
+                        </Box>
+                      ) : (
+                        <>
+                          <Box
+                            sx={{
+                              p: 1.1,
+                              px: 1.5,
+                              borderRadius: isMe
+                                ? "18px 18px 4px 18px"
+                                : "18px 18px 18px 4px",
+                              background: isMe ? chatTheme.bubbleMe : undefined,
+                              bgcolor: isMe ? undefined : "var(--mui-palette-neutral-100)",
+                              color: isMe ? chatTheme.bubbleMeColor : "var(--mui-palette-neutral-900)",
+                              fontSize: "0.86rem",
+                              lineHeight: 1.38,
+                              wordBreak: "break-word",
+                            }}
+                          >
+                            {msg.text}
+                          </Box>
+
+                          {isMe && (
+                            <Tooltip title="Thu hồi tin nhắn">
+                              <IconButton
+                                className="msg-delete-btn"
+                                size="small"
+                                onClick={() => setDeleteMsgId(msg._id || msg.id || null)}
+                                sx={{
+                                  opacity: 0,
+                                  transition: "opacity 0.15s ease",
+                                  p: 0.4,
+                                  color: "var(--mui-palette-neutral-400)",
+                                  "&:hover": {
+                                    color: "var(--mui-palette-tone-ef4444)",
+                                    bgcolor: "var(--mui-palette-tone-fee2e2)",
+                                  },
+                                }}
+                                aria-label="Thu hồi tin nhắn"
+                              >
+                                <Trash2 size={13} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </>
+                      )}
                     </Box>
 
                     {/* Timestamp & Trạng thái đã xem */}
@@ -825,7 +1115,7 @@ export default function FloatingChatBox({
                       }}
                     >
                       <span>{formatTime(msg.createdAt)}</span>
-                      {isMe && isLastMsg && isSeen && (
+                      {isMe && isLastMsg && isSeen && !isRestricted && (
                         <Tooltip title="Đã xem">
                           <CheckCheck size={12} color="var(--mui-palette-brand-600)" style={{ marginLeft: 2 }} />
                         </Tooltip>
@@ -895,91 +1185,123 @@ export default function FloatingChatBox({
           </Box>
 
           {/* FOOTER: Thanh nhập tin nhắn chuẩn Facebook Messenger */}
-          <Box
-            sx={{
-              p: 1,
-              px: 1.2,
-              borderTop: "1px solid var(--mui-palette-neutral-200)",
-              bgcolor: "var(--mui-palette-background-paper)",
-              display: "flex",
-              alignItems: "center",
-              gap: 0.8,
-            }}
-          >
-            {/* Nút chọn emoji */}
-            <Tooltip title="Chọn biểu tượng cảm xúc">
-              <IconButton
-                size="small"
-                onClick={handleOpenEmoji}
-                sx={{
-                  color: "var(--mui-palette-neutral-500)",
-                  p: 0.6,
-                  "&:hover": { color: "var(--mui-palette-brand-600)", bgcolor: "var(--mui-palette-brand-50)" },
-                }}
-              >
-                <Smile size={19} />
-              </IconButton>
-            </Tooltip>
-
-            {/* Ô nhập tin nhắn */}
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Aa"
-              value={inputText}
-              onChange={(e) => handleInputChange(e.target.value)}
-              onKeyDown={handleKeyDown}
+          {isBlocked ? (
+            <Box
               sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "20px",
-                  bgcolor: "var(--mui-palette-neutral-100)",
-                  fontSize: "0.85rem",
-                  py: 0.2,
-                  px: 1.2,
-                  "& fieldset": { borderColor: "transparent" },
-                  "&:hover fieldset": { borderColor: "var(--mui-palette-neutral-300)" },
-                  "&.Mui-focused fieldset": { borderColor: "transparent" },
-                  "&.Mui-focused": { boxShadow: "none" },
-                },
-                "& .MuiInputBase-input": {
-                  py: 0.6,
-                },
+                p: 1.5,
+                textAlign: "center",
+                borderTop: "1px solid var(--mui-palette-neutral-200)",
+                bgcolor: "var(--mui-palette-background-paper)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 0.8,
               }}
-            />
+            >
+              <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500, fontSize: "0.78rem" }}>
+                {isBlockedByMe
+                  ? "Bạn đã chặn người dùng này. Bỏ chặn để tiếp tục trò chuyện."
+                  : "Người dùng này hiện không thể nhận tin nhắn vào lúc này."}
+              </Typography>
+              {isBlockedByMe && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                  onClick={handleToggleBlock}
+                  sx={{ textTransform: "none", fontSize: "0.75rem", py: 0.3, px: 1.5, borderRadius: "6px" }}
+                >
+                  Bỏ chặn
+                </Button>
+              )}
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                p: 1,
+                px: 1.2,
+                borderTop: "1px solid var(--mui-palette-neutral-200)",
+                bgcolor: "var(--mui-palette-background-paper)",
+                display: "flex",
+                alignItems: "center",
+                gap: 0.8,
+              }}
+            >
+              {/* Nút chọn emoji */}
+              <Tooltip title="Chọn biểu tượng cảm xúc">
+                <IconButton
+                  size="small"
+                  onClick={handleOpenEmoji}
+                  sx={{
+                    color: "var(--mui-palette-neutral-500)",
+                    p: 0.6,
+                    "&:hover": { color: "var(--mui-palette-brand-600)", bgcolor: "var(--mui-palette-brand-50)" },
+                  }}
+                >
+                  <Smile size={19} />
+                </IconButton>
+              </Tooltip>
 
-            {/* Nút Like 👍 nếu rỗng, hoặc nút Send nếu có chữ */}
-            {inputText.trim() ? (
-              <Tooltip title="Gửi (Enter)">
-                <IconButton
-                  size="small"
-                  onClick={() => handleSendMessage()}
-                  sx={{
-                    bgcolor: "var(--mui-palette-brand-600)",
-                    color: "white",
-                    p: 0.7,
-                    "&:hover": { bgcolor: "var(--mui-palette-brand-700)" },
-                  }}
-                >
-                  <Send size={15} />
-                </IconButton>
-              </Tooltip>
-            ) : (
-              <Tooltip title="Gửi Like">
-                <IconButton
-                  size="small"
-                  onClick={() => handleSendMessage("👍")}
-                  sx={{
-                    color: "var(--mui-palette-brand-600)",
-                    p: 0.7,
-                    "&:hover": { bgcolor: "var(--mui-palette-brand-50)", transform: "scale(1.1)" },
-                    transition: "all 0.15s ease",
-                  }}
-                >
-                  <ThumbsUp size={19} />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Box>
+              {/* Ô nhập tin nhắn */}
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Aa"
+                value={inputText}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "20px",
+                    bgcolor: "var(--mui-palette-neutral-100)",
+                    fontSize: "0.85rem",
+                    py: 0.2,
+                    px: 1.2,
+                    "& fieldset": { borderColor: "transparent" },
+                    "&:hover fieldset": { borderColor: "var(--mui-palette-neutral-300)" },
+                    "&.Mui-focused fieldset": { borderColor: "transparent" },
+                    "&.Mui-focused": { boxShadow: "none" },
+                  },
+                  "& .MuiInputBase-input": {
+                    py: 0.6,
+                  },
+                }}
+              />
+
+              {/* Nút Like 👍 nếu rỗng, hoặc nút Send nếu có chữ */}
+              {inputText.trim() ? (
+                <Tooltip title="Gửi (Enter)">
+                  <IconButton
+                    size="small"
+                    onClick={() => handleSendMessage()}
+                    sx={{
+                      bgcolor: "var(--mui-palette-brand-600)",
+                      color: "white",
+                      p: 0.7,
+                      "&:hover": { bgcolor: "var(--mui-palette-brand-700)" },
+                    }}
+                  >
+                    <Send size={15} />
+                  </IconButton>
+                </Tooltip>
+              ) : (
+                <Tooltip title="Gửi Like">
+                  <IconButton
+                    size="small"
+                    onClick={() => handleSendMessage("👍")}
+                    sx={{
+                      color: "var(--mui-palette-brand-600)",
+                      p: 0.7,
+                      "&:hover": { bgcolor: "var(--mui-palette-brand-50)", transform: "scale(1.1)" },
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <ThumbsUp size={19} />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
+          )}
 
           {/* POPOVER EMOJI */}
           <Popover
@@ -1036,6 +1358,54 @@ export default function FloatingChatBox({
           </Popover>
         </>
       )}
+
+      {/* Dialog Chọn Hình Nền / Chủ Đề */}
+      <ThemeSelectDialog
+        open={openThemeDialog}
+        currentTheme={convTheme}
+        onClose={() => setOpenThemeDialog(false)}
+        onSelectTheme={handleSelectTheme}
+      />
+
+      {/* Dialog Thông Tin Hạn Chế */}
+      <RestrictInfoDialog
+        open={openRestrictDialog}
+        partner={targetUser as unknown as ChatUser}
+        isRestricted={isRestricted}
+        onClose={() => setOpenRestrictDialog(false)}
+        onConfirm={handleToggleRestrict}
+      />
+
+      {/* Dialog Xác Nhận Chặn / Bỏ Chặn */}
+      <ConfirmDialog
+        open={openBlockConfirm}
+        title={isBlockedByMe ? "Bỏ chặn người dùng?" : `Chặn ${targetUser.name}?`}
+        description={
+          isBlockedByMe
+            ? "Sau khi bỏ chặn, hai bạn sẽ có thể gửi và nhận tin nhắn bình thường."
+            : "Người này sẽ không thể gửi tin nhắn cho bạn và bạn cũng không thể gửi tin nhắn cho họ cho đến khi bỏ chặn."
+        }
+        confirmLabel={isBlockedByMe ? "Bỏ chặn" : "Chặn người dùng"}
+        cancelLabel="Hủy"
+        onClose={() => setOpenBlockConfirm(false)}
+        onConfirm={handleToggleBlock}
+      />
+
+      {/* Dialog Xác Nhận Thu Hồi Tin Nhắn */}
+      <ConfirmDialog
+        open={Boolean(deleteMsgId)}
+        title="Thu hồi tin nhắn?"
+        description="Tin nhắn này sẽ bị thu hồi với tất cả mọi người trong cuộc trò chuyện."
+        confirmLabel="Thu hồi"
+        cancelLabel="Hủy"
+        onClose={() => setDeleteMsgId(null)}
+        onConfirm={() => {
+          if (deleteMsgId) {
+            void handleDeleteMessage(deleteMsgId);
+            setDeleteMsgId(null);
+          }
+        }}
+      />
 
       {/* Global CSS animation for typing */}
       <style jsx global>{`
