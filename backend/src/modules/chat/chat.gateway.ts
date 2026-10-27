@@ -208,8 +208,14 @@ export class ChatGateway
     try {
       await this.chatService.markAsRead(payload.conversationId, readerId);
 
-      // Báo cho người gửi biết tin nhắn đã được xem
-      if (payload.receiverId) {
+      // Nếu người đọc đã "Hạn chế" đối phương, ẩn trạng thái "Đã xem" (chuẩn Facebook Restrict)
+      const conv = await this.chatService.getConversationById(payload.conversationId);
+      const isRestrictedByReader = conv?.restrictedBy?.some(
+        (id) => id.toString() === readerId,
+      );
+
+      // Báo cho người gửi biết tin nhắn đã được xem (nếu không bị hạn chế)
+      if (payload.receiverId && !isRestrictedByReader) {
         this.server.to(`user:${payload.receiverId}`).emit('message:seen', {
           conversationId: payload.conversationId,
           readerId,
@@ -220,6 +226,142 @@ export class ChatGateway
       this.logger.error(
         `Lỗi đánh dấu đã đọc: ${error instanceof Error ? error.message : String(error)}`,
       );
+    }
+  }
+
+  /**
+   * Thu hồi / Xóa tin nhắn realtime
+   */
+  @SubscribeMessage('message:delete')
+  async handleMessageDelete(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { messageId: string; conversationId: string; receiverId?: string },
+  ) {
+    const senderId = client.data?.user?.sub;
+    if (!senderId || !payload.messageId) return { success: false, message: 'Dữ liệu không hợp lệ' };
+
+    try {
+      const message = await this.chatService.deleteMessage(payload.messageId, senderId);
+
+      // Phát sự kiện xóa tin nhắn cho cả hai bên
+      const emitData = {
+        messageId: payload.messageId,
+        conversationId: payload.conversationId,
+        deletedBy: senderId,
+      };
+
+      this.server.to(`user:${senderId}`).emit('message:deleted', emitData);
+      if (payload.receiverId) {
+        this.server.to(`user:${payload.receiverId}`).emit('message:deleted', emitData);
+      }
+
+      return { success: true, message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Xóa tin nhắn thất bại',
+      };
+    }
+  }
+
+  /**
+   * Cập nhật chủ đề / hình nền cuộc trò chuyện realtime
+   */
+  @SubscribeMessage('conversation:theme')
+  async handleUpdateTheme(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { conversationId: string; theme: string; partnerId?: string },
+  ) {
+    const userId = client.data?.user?.sub;
+    if (!userId || !payload.conversationId || !payload.theme) return;
+
+    try {
+      await this.chatService.updateConversationTheme(
+        payload.conversationId,
+        userId,
+        payload.theme,
+      );
+
+      const emitData = {
+        conversationId: payload.conversationId,
+        theme: payload.theme,
+        updatedBy: userId,
+      };
+
+      this.server.to(`user:${userId}`).emit('conversation:theme_updated', emitData);
+      if (payload.partnerId) {
+        this.server.to(`user:${payload.partnerId}`).emit('conversation:theme_updated', emitData);
+      }
+
+      return { success: true, theme: payload.theme };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Đổi hình nền thất bại',
+      };
+    }
+  }
+
+  /**
+   * Chặn cuộc trò chuyện realtime
+   */
+  @SubscribeMessage('conversation:block')
+  async handleBlockConversation(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { conversationId: string; partnerId?: string },
+  ) {
+    const userId = client.data?.user?.sub;
+    if (!userId || !payload.conversationId) return;
+
+    try {
+      await this.chatService.blockConversation(payload.conversationId, userId);
+
+      const emitData = {
+        conversationId: payload.conversationId,
+        blockedBy: userId,
+      };
+
+      this.server.to(`user:${userId}`).emit('conversation:blocked', emitData);
+      if (payload.partnerId) {
+        this.server.to(`user:${payload.partnerId}`).emit('conversation:blocked', emitData);
+      }
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Chặn thất bại',
+      };
+    }
+  }
+
+  /**
+   * Bỏ chặn cuộc trò chuyện realtime
+   */
+  @SubscribeMessage('conversation:unblock')
+  async handleUnblockConversation(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { conversationId: string; partnerId?: string },
+  ) {
+    const userId = client.data?.user?.sub;
+    if (!userId || !payload.conversationId) return;
+
+    try {
+      await this.chatService.unblockConversation(payload.conversationId, userId);
+
+      const emitData = {
+        conversationId: payload.conversationId,
+      };
+
+      this.server.to(`user:${userId}`).emit('conversation:unblocked', emitData);
+      if (payload.partnerId) {
+        this.server.to(`user:${payload.partnerId}`).emit('conversation:unblocked', emitData);
+      }
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Bỏ chặn thất bại',
+      };
     }
   }
 

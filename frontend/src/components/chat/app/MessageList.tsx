@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Avatar, Box, Skeleton, Typography } from "@mui/material";
-import { Check, CheckCheck } from "lucide-react";
+import { Avatar, Box, IconButton, Skeleton, Tooltip, Typography } from "@mui/material";
+import { Check, CheckCheck, Trash2 } from "lucide-react";
 import EmptyState from "@/components/common/EmptyState";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { ChatMessage, ChatUser } from "@/store/useChatStore";
 import { dayKey, formatClockTime, formatDaySeparator } from "@/utils/formatTime";
 import { isVideoUrl } from "@/services/postsApi";
 import ImageLightbox from "../../posts/ImageLightbox";
+import { getChatTheme } from "./chatThemes";
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
 
@@ -18,6 +20,8 @@ interface MessageListProps {
   partner: ChatUser | null;
   isLoading: boolean;
   isPartnerTyping: boolean;
+  theme?: string;
+  onDeleteMessage?: (messageId: string) => Promise<void> | void;
 }
 
 type Row =
@@ -127,12 +131,17 @@ export default function MessageList({
   partner,
   isLoading,
   isPartnerTyping,
+  theme = "default",
+  onDeleteMessage,
 }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
   const lastConversationRef = useRef<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  const themeConfig = useMemo(() => getChatTheme(theme), [theme]);
   const rows = useMemo(() => buildRows(messages, currentUserId), [messages, currentUserId]);
 
   const handleScroll = () => {
@@ -171,7 +180,7 @@ export default function MessageList({
         py: 2,
         display: "flex",
         flexDirection: "column",
-        bgcolor: "background.default",
+        background: themeConfig.background,
         overscrollBehavior: "contain",
       }}
     >
@@ -214,6 +223,7 @@ export default function MessageList({
           return (
             <Box
               key={row.key}
+              className="message-row"
               sx={{
                 display: "flex",
                 justifyContent: isMe ? "flex-end" : "flex-start",
@@ -221,6 +231,7 @@ export default function MessageList({
                 gap: 1,
                 mt: isFirst ? 1.25 : 0.25,
                 animation: "fadeInUp 160ms ease-out",
+                "&:hover .msg-action-btn": { opacity: 1 },
               }}
             >
               {!isMe && (
@@ -241,87 +252,144 @@ export default function MessageList({
                   alignItems: isMe ? "flex-end" : "flex-start",
                 }}
               >
-                {(() => {
-                  const trimmed = msg.text?.trim() || "";
-                  const isMedia = /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);
-                  const isVideo = isMedia && isVideoUrl(trimmed);
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    flexDirection: isMe ? "row-reverse" : "row",
+                  }}
+                >
+                  {(() => {
+                    if (msg.isDeleted) {
+                      return (
+                        <Box
+                          sx={{
+                            px: 1.75,
+                            py: 0.75,
+                            bgcolor: "action.hover",
+                            color: "text.secondary",
+                            border: "1px dashed",
+                            borderColor: "divider",
+                            borderRadius: isMe
+                              ? `${radius}px ${isFirst ? radius : tail}px ${tail}px ${radius}px`
+                              : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${tail}px`,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ fontSize: "0.875rem", fontStyle: "italic", lineHeight: 1.4 }}
+                          >
+                            Tin nhắn đã bị thu hồi
+                          </Typography>
+                        </Box>
+                      );
+                    }
 
-                  if (isMedia) {
+                    const trimmed = msg.text?.trim() || "";
+                    const isMedia = /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);
+                    const isVideo = isMedia && isVideoUrl(trimmed);
+
+                    if (isMedia) {
+                      return (
+                        <Box
+                          sx={{
+                            overflow: "hidden",
+                            borderRadius: isMe
+                              ? `${radius}px ${isFirst ? radius : tail}px ${tail}px ${radius}px`
+                              : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${tail}px`,
+                            maxWidth: "100%",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+                          }}
+                        >
+                          {isVideo ? (
+                            <Box
+                              component="video"
+                              controls
+                              preload="metadata"
+                              src={trimmed}
+                              sx={{
+                                maxWidth: "100%",
+                                maxHeight: 280,
+                                display: "block",
+                                bgcolor: "common.black",
+                              }}
+                            />
+                          ) : (
+                            <Box
+                              component="img"
+                              src={trimmed}
+                              alt="Ảnh trong tin nhắn"
+                              loading="lazy"
+                              onClick={() => setLightboxUrl(trimmed)}
+                              sx={{
+                                maxWidth: "100%",
+                                maxHeight: 280,
+                                display: "block",
+                                cursor: "pointer",
+                                transition: "opacity 150ms",
+                                "&:hover": { opacity: 0.9 },
+                              }}
+                            />
+                          )}
+                        </Box>
+                      );
+                    }
+
                     return (
                       <Box
                         sx={{
-                          overflow: "hidden",
+                          px: 1.75,
+                          py: 1,
+                          background: isMe ? themeConfig.bubbleMe : themeConfig.bubblePartner,
+                          color: isMe ? themeConfig.bubbleMeColor : themeConfig.bubblePartnerColor,
+                          border: isMe ? "none" : "1px solid",
+                          borderColor: isMe ? "transparent" : "divider",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                          // Góc phía người gửi nhỏ lại để các bubble liền nhau "dính" vào nhau; bubble cuối có đuôi.
                           borderRadius: isMe
                             ? `${radius}px ${isFirst ? radius : tail}px ${tail}px ${radius}px`
                             : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${tail}px`,
-                          maxWidth: "100%",
                         }}
                       >
-                        {isVideo ? (
-                          <Box
-                            component="video"
-                            controls
-                            preload="metadata"
-                            src={trimmed}
-                            sx={{
-                              maxWidth: "100%",
-                              maxHeight: 280,
-                              display: "block",
-                              bgcolor: "common.black",
-                            }}
-                          />
-                        ) : (
-                          <Box
-                            component="img"
-                            src={trimmed}
-                            alt="Ảnh trong tin nhắn"
-                            loading="lazy"
-                            onClick={() => setLightboxUrl(trimmed)}
-                            sx={{
-                              maxWidth: "100%",
-                              maxHeight: 280,
-                              display: "block",
-                              cursor: "pointer",
-                              transition: "opacity 150ms",
-                              "&:hover": { opacity: 0.9 },
-                            }}
-                          />
-                        )}
+                        <Typography
+                          variant="body2"
+                          sx={{ fontSize: "0.9375rem", lineHeight: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+                        >
+                          {msg.text}
+                        </Typography>
                       </Box>
                     );
-                  }
+                  })()}
 
-                  return (
-                    <Box
-                      sx={{
-                        px: 1.75,
-                        py: 1,
-                        bgcolor: isMe ? "primary.main" : "background.paper",
-                        color: isMe ? "primary.contrastText" : "text.primary",
-                        border: isMe ? "none" : "1px solid",
-                        borderColor: "divider",
-                        // Góc phía người gửi nhỏ lại để các bubble liền nhau "dính" vào nhau; bubble cuối có đuôi.
-                        borderRadius: isMe
-                          ? `${radius}px ${isFirst ? radius : tail}px ${tail}px ${radius}px`
-                          : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${tail}px`,
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        sx={{ fontSize: "0.9375rem", lineHeight: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+                  {/* Nút thu hồi tin nhắn cho tin nhắn của chính mình */}
+                  {isMe && !msg.isDeleted && Boolean(onDeleteMessage) && (
+                    <Tooltip title="Thu hồi tin nhắn">
+                      <IconButton
+                        size="small"
+                        className="msg-action-btn"
+                        onClick={() => setMessageToDelete(msg._id)}
+                        aria-label="Thu hồi tin nhắn"
+                        sx={{
+                          opacity: { xs: 0.7, sm: 0 },
+                          transition: "opacity 0.15s ease",
+                          color: "text.secondary",
+                          p: 0.5,
+                          "&:hover": { color: "error.main", bgcolor: "action.hover" },
+                        }}
                       >
-                        {msg.text}
-                      </Typography>
-                    </Box>
-                  );
-                })()}
+                        <Trash2 size={15} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
 
                 {isLast && (
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4, px: 0.5 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
                       {formatClockTime(msg.createdAt)}
                     </Typography>
-                    {isMe && (
+                    {isMe && !msg.isDeleted && (
                       <Box
                         component="span"
                         sx={{ display: "inline-flex", color: msg.readAt ? "primary.main" : "text.secondary" }}
@@ -346,6 +414,27 @@ export default function MessageList({
         src={lightboxUrl}
         alt="Ảnh trong tin nhắn"
         onClose={() => setLightboxUrl(null)}
+      />
+
+      {/* Xác nhận Thu Hồi Tin Nhắn */}
+      <ConfirmDialog
+        open={Boolean(messageToDelete)}
+        title="Thu hồi tin nhắn?"
+        description="Tin nhắn này sẽ bị thu hồi với tất cả mọi người trong cuộc trò chuyện."
+        confirmLabel="Thu hồi"
+        cancelLabel="Hủy"
+        pending={isDeleting}
+        onClose={() => setMessageToDelete(null)}
+        onConfirm={async () => {
+          if (!messageToDelete || !onDeleteMessage) return;
+          setIsDeleting(true);
+          try {
+            await onDeleteMessage(messageToDelete);
+            setMessageToDelete(null);
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
       />
     </Box>
   );

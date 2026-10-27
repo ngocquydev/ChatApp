@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -109,5 +110,91 @@ export class ChatController {
   ) {
     const userId = this.extractUserId(req);
     return this.chatService.markAsRead(conversationId, userId);
+  }
+
+  @Patch('conversations/:id/block')
+  @ApiOperation({ summary: 'Chặn cuộc hội thoại' })
+  async blockConversation(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') conversationId: string,
+  ) {
+    const userId = this.extractUserId(req);
+    const conversation = await this.chatService.blockConversation(
+      conversationId,
+      userId,
+    );
+    return {
+      success: true,
+      conversation,
+    };
+  }
+
+  @Patch('conversations/:id/unblock')
+  @ApiOperation({ summary: 'Bỏ chặn cuộc hội thoại' })
+  async unblockConversation(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') conversationId: string,
+  ) {
+    const userId = this.extractUserId(req);
+    const conversation = await this.chatService.unblockConversation(
+      conversationId,
+      userId,
+    );
+    return {
+      success: true,
+      conversation,
+    };
+  }
+
+  @Patch('conversations/:id/restrict')
+  @ApiOperation({ summary: 'Bật hoặc tắt hạn chế cuộc trò chuyện' })
+  async restrictConversation(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') conversationId: string,
+    @Body('restrict') restrict: boolean,
+  ) {
+    const userId = this.extractUserId(req);
+    const conversation = await this.chatService.restrictConversation(
+      conversationId,
+      userId,
+      Boolean(restrict),
+    );
+    return {
+      success: true,
+      conversation,
+    };
+  }
+
+  @Patch('conversations/:id/theme')
+  @ApiOperation({ summary: 'Đổi chủ đề / hình nền cho cuộc trò chuyện' })
+  async updateTheme(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') conversationId: string,
+    @Body('theme') theme: string,
+  ) {
+    const userId = this.extractUserId(req);
+    const conversation = await this.chatService.updateConversationTheme(
+      conversationId,
+      userId,
+      theme,
+    );
+    return {
+      success: true,
+      conversation,
+    };
+  }
+
+  @Delete('messages/:id')
+  @ApiOperation({ summary: 'Thu hồi / Xóa tin nhắn của chính mình' })
+  async deleteMessage(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') messageId: string,
+  ) {
+    const userId = this.extractUserId(req);
+    const message = await this.chatService.deleteMessage(messageId, userId);
+    return {
+      success: true,
+      message,
+    };
   }
 }

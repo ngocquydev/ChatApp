@@ -121,12 +121,14 @@ export const toneLight = {
   "4ade80": "#4ade80", "166534": "#166534", "065f46": "#065f46", "f0fdf4": "#f0fdf4", "ecfdf5": "#ecfdf5",
   // đỏ / hồng
   "ef4444": "#ef4444", "dc2626": "#dc2626", "be123c": "#be123c", "f43f5e": "#f43f5e", "db2777": "#db2777",
+  "e11d48": "#e11d48", "ec4899": "#ec4899",
   "fef2f2": "#fef2f2", "fee2e2": "#fee2e2", "fca5a5": "#fca5a5",
   // vàng / cam
   "f59e0b": "#f59e0b", "d97706": "#d97706", "eab308": "#eab308", "f97316": "#f97316",
   // tím / chàm / lam / ngọc
   "7c3aed": "#7c3aed", "8b5cf6": "#8b5cf6", "a855f7": "#a855f7", "6d28d9": "#6d28d9", "6366f1": "#6366f1",
   "4f46e5": "#4f46e5", "4338ca": "#4338ca", "818cf8": "#818cf8", "06b6d4": "#06b6d4", "0284c7": "#0284c7",
+  "0369a1": "#0369a1", "0d9488": "#0d9488", "0f766e": "#0f766e",
   "e0f2fe": "#e0f2fe",
   // nền gradient có chữ trắng: KHÔNG đổi theo scheme (khác bản không có tiền tố, vốn sáng lên ở dark mode để làm chữ)
   "fx-166534": "#166534", "fx-065f46": "#065f46", "fx-16a34a": "#16a34a", "fx-059669": "#059669",

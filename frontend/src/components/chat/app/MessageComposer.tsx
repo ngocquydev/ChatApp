@@ -1,7 +1,7 @@
 "use client";
 
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
-import { Box, CircularProgress, IconButton, TextField, Tooltip, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, IconButton, TextField, Tooltip, Typography } from "@mui/material";
 import { Image as ImageIcon, Paperclip, Send, Smile } from "lucide-react";
 import { uploadMedia } from "@/services/postsApi";
 
@@ -11,6 +11,9 @@ const TYPING_IDLE_MS = 5000;
 interface MessageComposerProps {
   onSend: (text: string) => Promise<void> | void;
   onTyping: (isTyping: boolean) => void;
+  isBlocked?: boolean;
+  isBlockedByMe?: boolean;
+  onUnblock?: () => void;
 }
 
 function ComingSoonButton({ label, children }: { label: string; children: React.ReactNode }) {
@@ -25,7 +28,13 @@ function ComingSoonButton({ label, children }: { label: string; children: React.
   );
 }
 
-export default function MessageComposer({ onSend, onTyping }: MessageComposerProps) {
+export default function MessageComposer({
+  onSend,
+  onTyping,
+  isBlocked = false,
+  isBlockedByMe = false,
+  onUnblock,
+}: MessageComposerProps) {
   const [text, setText] = useState("");
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -99,6 +108,36 @@ export default function MessageComposer({ onSend, onTyping }: MessageComposerPro
       void submit();
     }
   };
+
+  if (isBlocked) {
+    return (
+      <Box
+        sx={{
+          bgcolor: "background.paper",
+          borderTop: "1px solid",
+          borderColor: "divider",
+          px: 2,
+          py: 2.5,
+          textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 1.5,
+        }}
+      >
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+          {isBlockedByMe
+            ? "Bạn đã chặn người dùng này. Bỏ chặn để tiếp tục trò chuyện."
+            : "Người dùng này hiện không thể nhận tin nhắn vào lúc này."}
+        </Typography>
+        {isBlockedByMe && onUnblock && (
+          <Button variant="outlined" size="small" color="primary" onClick={onUnblock} sx={{ textTransform: "none", borderRadius: "8px" }}>
+            Bỏ chặn
+          </Button>
+        )}
+      </Box>
+    );
+  }
 
   return (
     <Box

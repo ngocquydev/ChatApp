@@ -24,6 +24,9 @@ export interface ChatMessage {
   receiverId: string | ChatUser;
   text: string;
   readAt?: string | null;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedBy?: string | null;
   createdAt: string;
 }
 
@@ -34,8 +37,12 @@ export interface ConversationItem {
     text: string;
     senderId: string;
     createdAt: string;
+    isDeleted?: boolean;
   } | null;
   unreadCounts?: Record<string, number>;
+  theme?: string;
+  blockedBy?: string | null;
+  restrictedBy?: string[];
   updatedAt: string;
 }
 
@@ -59,6 +66,11 @@ interface ChatState {
   startConversationWithUser: (user: ChatUser) => Promise<ConversationItem>;
   sendMessage: (text: string) => Promise<void>;
   sendTyping: (isTyping: boolean) => void;
+  deleteChatMessage: (messageId: string) => Promise<{ success: boolean; message?: string }>;
+  updateActiveConversationTheme: (theme: string) => Promise<{ success: boolean; message?: string }>;
+  blockActiveConversation: () => Promise<{ success: boolean; message?: string }>;
+  unblockActiveConversation: () => Promise<{ success: boolean; message?: string }>;
+  restrictActiveConversation: (restrict: boolean) => Promise<{ success: boolean; message?: string }>;
 }
 
 const BACKEND_URL =
@@ -376,6 +388,91 @@ export const useChatStore = create<ChatState>((set, get) => ({
       useFriendStore.getState().handleRealtimeEvent("accepted", data);
     });
 
+    socket.on(
+      "message:deleted",
+      (data: { messageId: string; conversationId: string; deletedBy: string }) => {
+        const active = get().activeConversation;
+        if (active && active._id === data.conversationId) {
+          set((state) => ({
+            messages: state.messages.map((m) =>
+              m._id === data.messageId
+                ? {
+                    ...m,
+                    isDeleted: true,
+                    text: "Tin nhắn đã bị thu hồi",
+                    deletedBy: data.deletedBy,
+                  }
+                : m
+            ),
+          }));
+        }
+        set((state) => ({
+          conversations: state.conversations.map((c) => {
+            if (c._id === data.conversationId && c.lastMessage) {
+              return {
+                ...c,
+                lastMessage: {
+                  ...c.lastMessage,
+                  text: "Tin nhắn đã bị thu hồi",
+                },
+              };
+            }
+            return c;
+          }),
+        }));
+      }
+    );
+
+    socket.on(
+      "conversation:theme_updated",
+      (data: { conversationId: string; theme: string }) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === data.conversationId ? { ...c, theme: data.theme } : c
+          ),
+          activeConversation:
+            state.activeConversation &&
+            state.activeConversation._id === data.conversationId
+              ? { ...state.activeConversation, theme: data.theme }
+              : state.activeConversation,
+        }));
+      }
+    );
+
+    socket.on(
+      "conversation:blocked",
+      (data: { conversationId: string; blockedBy: string }) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === data.conversationId
+              ? { ...c, blockedBy: data.blockedBy }
+              : c
+          ),
+          activeConversation:
+            state.activeConversation &&
+            state.activeConversation._id === data.conversationId
+              ? { ...state.activeConversation, blockedBy: data.blockedBy }
+              : state.activeConversation,
+        }));
+      }
+    );
+
+    socket.on(
+      "conversation:unblocked",
+      (data: { conversationId: string }) => {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === data.conversationId ? { ...c, blockedBy: null } : c
+          ),
+          activeConversation:
+            state.activeConversation &&
+            state.activeConversation._id === data.conversationId
+              ? { ...state.activeConversation, blockedBy: null }
+              : state.activeConversation,
+        }));
+      }
+    );
+
     set({ socket });
   },
 
@@ -552,6 +649,194 @@ export const useChatStore = create<ChatState>((set, get) => ({
         conversationId: active._id,
         receiverId,
       });
+    }
+  },
+
+  deleteChatMessage: async (messageId: string) => {
+    const active = get().activeConversation;
+    if (!active) return { success: false, message: "Chưa chọn hội thoại" };
+
+    try {
+      await api.delete(`/chat/messages/${messageId}`);
+      // Optimistic update
+      set((state) => ({
+        messages: state.messages.map((m) =>
+          m._id === messageId
+            ? { ...m, isDeleted: true, text: "Tin nhắn đã bị thu hồi" }
+            : m
+        ),
+      }));
+
+      // Báo qua socket nếu đang kết nối
+      const socket = get().socket;
+      const currentUser = useAuthStore.getState().user;
+      const myId = String(currentUser?._id || currentUser?.id || "");
+      const partner = active.participants.find(
+        (p) => String(p._id || p.id) !== myId
+      );
+      if (socket && socket.connected) {
+        socket.emit("message:delete", {
+          messageId,
+          conversationId: active._id,
+          receiverId: partner?._id || partner?.id,
+        });
+      }
+
+      return { success: true };
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Thu hồi tin nhắn thất bại";
+      return { success: false, message: msg };
+    }
+  },
+
+  updateActiveConversationTheme: async (theme: string) => {
+    const active = get().activeConversation;
+    if (!active) return { success: false, message: "Chưa chọn hội thoại" };
+
+    try {
+      await api.patch(`/chat/conversations/${active._id}/theme`, { theme });
+      set((state) => ({
+        activeConversation: state.activeConversation
+          ? { ...state.activeConversation, theme }
+          : null,
+        conversations: state.conversations.map((c) =>
+          c._id === active._id ? { ...c, theme } : c
+        ),
+      }));
+
+      const socket = get().socket;
+      const currentUser = useAuthStore.getState().user;
+      const myId = String(currentUser?._id || currentUser?.id || "");
+      const partner = active.participants.find(
+        (p) => String(p._id || p.id) !== myId
+      );
+      if (socket && socket.connected) {
+        socket.emit("conversation:theme", {
+          conversationId: active._id,
+          theme,
+          partnerId: partner?._id || partner?.id,
+        });
+      }
+
+      return { success: true };
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Đổi hình nền thất bại";
+      return { success: false, message: msg };
+    }
+  },
+
+  blockActiveConversation: async () => {
+    const active = get().activeConversation;
+    if (!active) return { success: false, message: "Chưa chọn hội thoại" };
+
+    const myId = String(
+      useAuthStore.getState().user?._id || useAuthStore.getState().user?.id || ""
+    );
+    try {
+      await api.patch(`/chat/conversations/${active._id}/block`);
+      set((state) => ({
+        activeConversation: state.activeConversation
+          ? { ...state.activeConversation, blockedBy: myId }
+          : null,
+        conversations: state.conversations.map((c) =>
+          c._id === active._id ? { ...c, blockedBy: myId } : c
+        ),
+      }));
+
+      const socket = get().socket;
+      const partner = active.participants.find(
+        (p) => String(p._id || p.id) !== myId
+      );
+      if (socket && socket.connected) {
+        socket.emit("conversation:block", {
+          conversationId: active._id,
+          partnerId: partner?._id || partner?.id,
+        });
+      }
+
+      return { success: true };
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Chặn thất bại";
+      return { success: false, message: msg };
+    }
+  },
+
+  unblockActiveConversation: async () => {
+    const active = get().activeConversation;
+    if (!active) return { success: false, message: "Chưa chọn hội thoại" };
+
+    try {
+      await api.patch(`/chat/conversations/${active._id}/unblock`);
+      set((state) => ({
+        activeConversation: state.activeConversation
+          ? { ...state.activeConversation, blockedBy: null }
+          : null,
+        conversations: state.conversations.map((c) =>
+          c._id === active._id ? { ...c, blockedBy: null } : c
+        ),
+      }));
+
+      const socket = get().socket;
+      const currentUser = useAuthStore.getState().user;
+      const myId = String(currentUser?._id || currentUser?.id || "");
+      const partner = active.participants.find(
+        (p) => String(p._id || p.id) !== myId
+      );
+      if (socket && socket.connected) {
+        socket.emit("conversation:unblock", {
+          conversationId: active._id,
+          partnerId: partner?._id || partner?.id,
+        });
+      }
+
+      return { success: true };
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Bỏ chặn thất bại";
+      return { success: false, message: msg };
+    }
+  },
+
+  restrictActiveConversation: async (restrict: boolean) => {
+    const active = get().activeConversation;
+    if (!active) return { success: false, message: "Chưa chọn hội thoại" };
+
+    const myId = String(
+      useAuthStore.getState().user?._id || useAuthStore.getState().user?.id || ""
+    );
+    try {
+      await api.patch(`/chat/conversations/${active._id}/restrict`, {
+        restrict,
+      });
+      const currentRestricted = active.restrictedBy || [];
+      const updatedRestricted = restrict
+        ? Array.from(new Set([...currentRestricted, myId]))
+        : currentRestricted.filter((id) => id !== myId);
+
+      set((state) => ({
+        activeConversation: state.activeConversation
+          ? { ...state.activeConversation, restrictedBy: updatedRestricted }
+          : null,
+        conversations: state.conversations.map((c) =>
+          c._id === active._id
+            ? { ...c, restrictedBy: updatedRestricted }
+            : c
+        ),
+      }));
+
+      return { success: true };
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Cập nhật hạn chế thất bại";
+      return { success: false, message: msg };
     }
   },
 }));

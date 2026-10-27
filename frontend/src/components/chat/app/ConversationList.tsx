@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import {
   Box,
   Button,
+  Chip,
   InputAdornment,
   List,
   ListItemButton,
@@ -11,7 +12,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { MessageSquare, Search } from "lucide-react";
+import { MessageSquare, Search, ShieldAlert } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import EmptyState from "@/components/common/EmptyState";
 import { ConversationItem } from "@/store/useChatStore";
@@ -53,15 +54,29 @@ export default function ConversationList({
   onGoToFriends,
 }: ConversationListProps) {
   const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "restricted">("all");
+
+  const restrictedCount = useMemo(() => {
+    if (!currentUserId) return 0;
+    return conversations.filter((c) => c.restrictedBy?.includes(currentUserId)).length;
+  }, [conversations, currentUserId]);
 
   const filtered = useMemo(() => {
+    let list = conversations;
+    if (filter === "restricted") {
+      list = list.filter((c) => currentUserId && c.restrictedBy?.includes(currentUserId));
+    } else {
+      // Ẩn người bị hạn chế khỏi hộp thư chính (giống Facebook)
+      list = list.filter((c) => !currentUserId || !c.restrictedBy?.includes(currentUserId));
+    }
+
     const q = query.trim().toLowerCase();
-    if (!q) return conversations;
-    return conversations.filter((c) => {
+    if (!q) return list;
+    return list.filter((c) => {
       const other = c.participants.find((u) => u._id !== currentUserId);
       return other?.name.toLowerCase().includes(q);
     });
-  }, [conversations, query, currentUserId]);
+  }, [conversations, filter, query, currentUserId]);
 
   return (
     <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
@@ -87,6 +102,26 @@ export default function ConversationList({
         />
       </Box>
 
+      {/* Bộ lọc Hộp thư / Bị hạn chế */}
+      <Box sx={{ px: 2, pb: 1, display: "flex", gap: 1 }}>
+        <Chip
+          label="Hộp thư"
+          size="small"
+          clickable
+          color={filter === "all" ? "primary" : "default"}
+          variant={filter === "all" ? "filled" : "outlined"}
+          onClick={() => setFilter("all")}
+        />
+        <Chip
+          label={restrictedCount > 0 ? `Bị hạn chế (${restrictedCount})` : "Bị hạn chế"}
+          size="small"
+          clickable
+          color={filter === "restricted" ? "primary" : "default"}
+          variant={filter === "restricted" ? "filled" : "outlined"}
+          onClick={() => setFilter("restricted")}
+        />
+      </Box>
+
       <Box sx={{ flex: 1, overflowY: "auto", px: 1, pb: 1 }}>
         {isLoading && conversations.length === 0 ? (
           <ConversationSkeleton />
@@ -97,6 +132,13 @@ export default function ConversationList({
               icon={<Search size={26} />}
               title="Không tìm thấy hội thoại"
               description={`Không có kết quả nào khớp với “${query.trim()}”.`}
+            />
+          ) : filter === "restricted" ? (
+            <EmptyState
+              compact
+              icon={<ShieldAlert size={26} />}
+              title="Không có đoạn chat bị hạn chế"
+              description="Khi bạn hạn chế ai đó, họ sẽ không biết khi nào bạn online hoặc đã đọc tin nhắn của họ."
             />
           ) : (
             <EmptyState
@@ -117,9 +159,12 @@ export default function ConversationList({
               const other =
                 item.participants.find((p) => p._id !== currentUserId) || item.participants[0];
               const isActive = activeConversationId === item._id;
-              const isOnline = other?._id ? onlineUserIds.includes(other._id) : false;
+              const isRestricted = Boolean(currentUserId && item.restrictedBy?.includes(currentUserId));
+              const isOnline = !isRestricted && other?._id ? onlineUserIds.includes(other._id) : false;
               const unreadCount = item.unreadCounts?.[currentUserId || ""] || 0;
-              const lastText = item.lastMessage?.text;
+              const lastText = item.lastMessage?.isDeleted
+                ? "Tin nhắn đã bị thu hồi"
+                : item.lastMessage?.text;
               const sentByMe = item.lastMessage?.senderId === currentUserId;
 
               return (

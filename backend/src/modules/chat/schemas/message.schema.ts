@@ -42,6 +42,25 @@ export class Message {
   })
   readAt?: Date | null;
 
+  @Prop({
+    type: Boolean,
+    default: false,
+  })
+  isDeleted: boolean;
+
+  @Prop({
+    type: Date,
+    default: null,
+  })
+  deletedAt?: Date | null;
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    default: null,
+  })
+  deletedBy?: Types.ObjectId | null;
+
   createdAt?: Date;
   updatedAt?: Date;
 }

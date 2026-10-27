@@ -47,6 +47,11 @@ export default function ChatApp() {
     typingMap,
     isLoadingConversations,
     isLoadingMessages,
+    updateActiveConversationTheme,
+    blockActiveConversation,
+    unblockActiveConversation,
+    restrictActiveConversation,
+    deleteChatMessage,
   } = useChatStore();
 
   const {
@@ -100,7 +105,16 @@ export default function ChatApp() {
     );
   }, [activeConversation, currentUserId]);
 
-  const isPartnerOnline = partner?._id ? onlineUserIds.includes(partner._id) : false;
+  const blockedBy = activeConversation?.blockedBy;
+  const isBlockedByMe = Boolean(blockedBy && currentUserId && blockedBy === currentUserId);
+  const isBlockedByPartner = Boolean(blockedBy && currentUserId && blockedBy !== currentUserId);
+  const isBlocked = Boolean(blockedBy);
+  const isRestricted = Boolean(
+    currentUserId && activeConversation?.restrictedBy?.includes(currentUserId)
+  );
+
+  const isPartnerOnline =
+    !isRestricted && partner?._id ? onlineUserIds.includes(partner._id) : false;
   const isPartnerTyping = activeConversation ? Boolean(typingMap[activeConversation._id]) : false;
 
   const openChatWith = async (friend: ChatUser) => {
@@ -258,8 +272,33 @@ export default function ChatApp() {
               isOnline={isPartnerOnline}
               isTyping={isPartnerTyping}
               isMuted={isMuted}
+              currentTheme={activeConversation.theme || "default"}
+              isBlockedByMe={isBlockedByMe}
+              isBlockedByPartner={isBlockedByPartner}
+              isRestricted={isRestricted}
               onToggleMute={toggleMute}
               onBack={clearActiveConversation}
+              onSelectTheme={async (themeId) => {
+                await updateActiveConversationTheme(themeId);
+                showToast("Đã thay đổi chủ đề đoạn chat", "success");
+              }}
+              onToggleBlock={async () => {
+                if (isBlockedByMe) {
+                  await unblockActiveConversation();
+                  showToast("Đã bỏ chặn người dùng", "success");
+                } else {
+                  await blockActiveConversation();
+                  showToast("Đã chặn người dùng", "success");
+                }
+              }}
+              onToggleRestrict={async () => {
+                const nextState = !isRestricted;
+                await restrictActiveConversation(nextState);
+                showToast(
+                  nextState ? "Đã chuyển vào đoạn chat bị hạn chế" : "Đã bỏ hạn chế người dùng",
+                  "success"
+                );
+              }}
             />
             <MessageList
               conversationId={activeConversation._id}
@@ -268,8 +307,23 @@ export default function ChatApp() {
               partner={partner}
               isLoading={isLoadingMessages}
               isPartnerTyping={isPartnerTyping}
+              theme={activeConversation.theme || "default"}
+              onDeleteMessage={async (msgId) => {
+                await deleteChatMessage(msgId);
+                showToast("Đã thu hồi tin nhắn", "info");
+              }}
             />
-            <MessageComposer key={activeConversation._id} onSend={sendMessage} onTyping={sendTyping} />
+            <MessageComposer
+              key={activeConversation._id}
+              onSend={sendMessage}
+              onTyping={sendTyping}
+              isBlocked={isBlocked}
+              isBlockedByMe={isBlockedByMe}
+              onUnblock={async () => {
+                await unblockActiveConversation();
+                showToast("Đã bỏ chặn người dùng", "success");
+              }}
+            />
           </>
         )}
       </Box>

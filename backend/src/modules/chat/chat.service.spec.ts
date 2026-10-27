@@ -14,6 +14,7 @@ describe('ChatService', () => {
   };
   let mockMessageModel: {
     find: ReturnType<typeof vi.fn>;
+    findById: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     updateMany: ReturnType<typeof vi.fn>;
   };
@@ -36,6 +37,7 @@ describe('ChatService', () => {
 
     mockMessageModel = {
       find: vi.fn(),
+      findById: vi.fn(),
       create: vi.fn(),
       updateMany: vi.fn(),
     };
@@ -100,6 +102,20 @@ describe('ChatService', () => {
       await expect(
         service.saveMessage(userAId, userBId, 'Xin chào!'),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if conversation is blocked', async () => {
+      mockUsersService.findById.mockResolvedValue({ _id: userBId, name: 'User B' });
+      const mockConv = {
+        _id: conversationId,
+        participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+        blockedBy: new Types.ObjectId(userBId),
+      };
+      vi.spyOn(service, 'getOrCreateConversation').mockResolvedValue(mockConv as unknown as never);
+
+      await expect(
+        service.saveMessage(userAId, userBId, 'Xin chào!'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should save message and update conversation lastMessage & unread count', async () => {
@@ -168,6 +184,147 @@ describe('ChatService', () => {
       mockConversationModel.findById.mockResolvedValue(mockConv);
 
       await expect(service.markAsRead(conversationId, otherUserId)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  describe('block & unblock conversation', () => {
+    it('should block conversation successfully', async () => {
+      const mockConv = {
+        _id: conversationId,
+        participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+        blockedBy: null as unknown,
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockConversationModel.findById.mockResolvedValue(mockConv);
+
+      const result = await service.blockConversation(conversationId, userAId);
+      expect(result.blockedBy?.toString()).toBe(userAId);
+      expect(mockConv.save).toHaveBeenCalled();
+    });
+
+    it('should unblock conversation successfully if requested by blocker', async () => {
+      const mockConv = {
+        _id: conversationId,
+        participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+        blockedBy: new Types.ObjectId(userAId),
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockConversationModel.findById.mockResolvedValue(mockConv);
+
+      const result = await service.unblockConversation(conversationId, userAId);
+      expect(result.blockedBy).toBeNull();
+      expect(mockConv.save).toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException if non-blocker attempts unblock', async () => {
+      const mockConv = {
+        _id: conversationId,
+        participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+        blockedBy: new Types.ObjectId(userAId),
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockConversationModel.findById.mockResolvedValue(mockConv);
+
+      await expect(service.unblockConversation(conversationId, userBId)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  describe('restrictConversation', () => {
+    it('should restrict conversation', async () => {
+      const mockConv = {
+        _id: conversationId,
+        participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+        restrictedBy: [] as Types.ObjectId[],
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockConversationModel.findById.mockResolvedValue(mockConv);
+
+      const result = await service.restrictConversation(conversationId, userAId, true);
+      expect(result.restrictedBy.some((id) => id.toString() === userAId)).toBe(true);
+      expect(mockConv.save).toHaveBeenCalled();
+    });
+
+    it('should unrestrict conversation', async () => {
+      const mockConv = {
+        _id: conversationId,
+        participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+        restrictedBy: [new Types.ObjectId(userAId)],
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockConversationModel.findById.mockResolvedValue(mockConv);
+
+      const result = await service.restrictConversation(conversationId, userAId, false);
+      expect(result.restrictedBy.some((id) => id.toString() === userAId)).toBe(false);
+      expect(mockConv.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateConversationTheme', () => {
+    it('should update theme successfully', async () => {
+      const mockConv = {
+        _id: conversationId,
+        participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+        theme: 'default',
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockConversationModel.findById.mockResolvedValue(mockConv);
+
+      const result = await service.updateConversationTheme(conversationId, userAId, 'dating');
+      expect(result.theme).toBe('dating');
+      expect(mockConv.save).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if theme is invalid', async () => {
+      const mockConv = {
+        _id: conversationId,
+        participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+        theme: 'default',
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockConversationModel.findById.mockResolvedValue(mockConv);
+
+      await expect(
+        service.updateConversationTheme(conversationId, userAId, 'invalid-theme'),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('deleteMessage', () => {
+    it('should mark message as deleted', async () => {
+      const msgId = new Types.ObjectId().toString();
+      const mockMsg = {
+        _id: msgId,
+        conversationId: new Types.ObjectId(conversationId),
+        senderId: new Types.ObjectId(userAId),
+        text: 'Xin chào',
+        isDeleted: false,
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockMessageModel.findById.mockResolvedValue(mockMsg);
+      mockConversationModel.findById.mockResolvedValue(null);
+
+      const result = await service.deleteMessage(msgId, userAId);
+      expect(result.isDeleted).toBe(true);
+      expect(result.text).toBe('Tin nhắn đã bị thu hồi');
+      expect(mockMsg.save).toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException if user deletes message sent by someone else', async () => {
+      const msgId = new Types.ObjectId().toString();
+      const mockMsg = {
+        _id: msgId,
+        conversationId: new Types.ObjectId(conversationId),
+        senderId: new Types.ObjectId(userAId),
+        text: 'Tin nhắn người khác',
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockMessageModel.findById.mockResolvedValue(mockMsg);
+
+      await expect(service.deleteMessage(msgId, userBId)).rejects.toThrow(
         ForbiddenException,
       );
     });

@@ -32,6 +32,25 @@ export class Conversation {
   })
   unreadCounts: Map<string, number>;
 
+  @Prop({
+    type: String,
+    default: 'default',
+  })
+  theme: string;
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    default: null,
+  })
+  blockedBy?: Types.ObjectId | null;
+
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'User' }],
+    default: [],
+  })
+  restrictedBy: Types.ObjectId[];
+
   createdAt?: Date;
   updatedAt?: Date;
 }

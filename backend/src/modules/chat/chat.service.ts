@@ -102,12 +102,19 @@ export class ChatService {
       conversation = await this.getOrCreateConversation(senderId, receiverId);
     }
 
+    if (conversation.blockedBy) {
+      throw new BadRequestException('Cuộc hội thoại đã bị chặn');
+    }
+
     const message = await this.messageModel.create({
       conversationId: conversation._id,
       senderId: new Types.ObjectId(senderId),
       receiverId: new Types.ObjectId(receiverId),
       text: text.trim(),
       readAt: null,
+      isDeleted: false,
+      deletedAt: null,
+      deletedBy: null,
     });
 
     // Cập nhật tin nhắn cuối cùng và số tin chưa đọc cho người nhận
@@ -194,6 +201,164 @@ export class ChatService {
       success: true,
       modifiedCount: updateResult.modifiedCount || 0,
     };
+  }
+
+  /**
+   * Chặn cuộc hội thoại
+   */
+  async blockConversation(
+    conversationId: string,
+    userId: string,
+  ): Promise<ConversationDocument> {
+    const conv = await this.conversationModel.findById(conversationId);
+    if (!conv) {
+      throw new NotFoundException('Không tìm thấy cuộc hội thoại');
+    }
+    const isParticipant = conv.participants.some(
+      (p) => p.toString() === userId,
+    );
+    if (!isParticipant) {
+      throw new ForbiddenException('Bạn không thuộc cuộc hội thoại này');
+    }
+
+    conv.blockedBy = new Types.ObjectId(userId);
+    await conv.save();
+    return conv;
+  }
+
+  /**
+   * Bỏ chặn cuộc hội thoại
+   */
+  async unblockConversation(
+    conversationId: string,
+    userId: string,
+  ): Promise<ConversationDocument> {
+    const conv = await this.conversationModel.findById(conversationId);
+    if (!conv) {
+      throw new NotFoundException('Không tìm thấy cuộc hội thoại');
+    }
+    const isParticipant = conv.participants.some(
+      (p) => p.toString() === userId,
+    );
+    if (!isParticipant) {
+      throw new ForbiddenException('Bạn không thuộc cuộc hội thoại này');
+    }
+
+    if (conv.blockedBy && conv.blockedBy.toString() !== userId) {
+      throw new ForbiddenException('Chỉ người đã chặn mới có quyền bỏ chặn');
+    }
+
+    conv.blockedBy = null;
+    await conv.save();
+    return conv;
+  }
+
+  /**
+   * Bật/Tắt tính năng Hạn chế (Restrict) giống Facebook Messenger
+   */
+  async restrictConversation(
+    conversationId: string,
+    userId: string,
+    restrict: boolean,
+  ): Promise<ConversationDocument> {
+    const conv = await this.conversationModel.findById(conversationId);
+    if (!conv) {
+      throw new NotFoundException('Không tìm thấy cuộc hội thoại');
+    }
+    const isParticipant = conv.participants.some(
+      (p) => p.toString() === userId,
+    );
+    if (!isParticipant) {
+      throw new ForbiddenException('Bạn không thuộc cuộc hội thoại này');
+    }
+
+    if (!conv.restrictedBy) {
+      conv.restrictedBy = [];
+    }
+    const userObjId = new Types.ObjectId(userId);
+    if (restrict) {
+      const alreadyRestricted = conv.restrictedBy.some(
+        (id) => id.toString() === userId,
+      );
+      if (!alreadyRestricted) {
+        conv.restrictedBy.push(userObjId);
+      }
+    } else {
+      conv.restrictedBy = conv.restrictedBy.filter(
+        (id) => id.toString() !== userId,
+      );
+    }
+
+    await conv.save();
+    return conv;
+  }
+
+  /**
+   * Thay đổi chủ đề / hình nền cuộc hội thoại (Hẹn hò, Bầu trời, Bóng đêm, Biển cả...)
+   */
+  async updateConversationTheme(
+    conversationId: string,
+    userId: string,
+    theme: string,
+  ): Promise<ConversationDocument> {
+    const conv = await this.conversationModel.findById(conversationId);
+    if (!conv) {
+      throw new NotFoundException('Không tìm thấy cuộc hội thoại');
+    }
+    const isParticipant = conv.participants.some(
+      (p) => p.toString() === userId,
+    );
+    if (!isParticipant) {
+      throw new ForbiddenException('Bạn không thuộc cuộc hội thoại này');
+    }
+
+    const validThemes = ['default', 'dating', 'sky', 'midnight', 'ocean'];
+    if (!validThemes.includes(theme)) {
+      throw new BadRequestException('Chủ đề không hợp lệ');
+    }
+
+    conv.theme = theme;
+    await conv.save();
+    return conv;
+  }
+
+  /**
+   * Thu hồi / Xóa tin nhắn (Unsend message)
+   */
+  async deleteMessage(
+    messageId: string,
+    userId: string,
+  ): Promise<MessageDocument> {
+    const message = await this.messageModel.findById(messageId);
+    if (!message) {
+      throw new NotFoundException('Không tìm thấy tin nhắn');
+    }
+    if (message.senderId.toString() !== userId) {
+      throw new ForbiddenException('Bạn chỉ có thể thu hồi tin nhắn của chính mình');
+    }
+
+    message.isDeleted = true;
+    message.deletedAt = new Date();
+    message.deletedBy = new Types.ObjectId(userId);
+    message.text = 'Tin nhắn đã bị thu hồi';
+    await message.save();
+
+    // Nếu tin này là tin nhắn cuối của hội thoại, cập nhật lại lastMessage
+    const conv = await this.conversationModel.findById(message.conversationId);
+    if (conv && conv.lastMessage) {
+      const lastCreated = conv.lastMessage.createdAt
+        ? new Date(conv.lastMessage.createdAt).getTime()
+        : 0;
+      const msgCreated = message.createdAt
+        ? new Date(message.createdAt).getTime()
+        : 0;
+      if (Math.abs(lastCreated - msgCreated) < 1500) {
+        conv.lastMessage.text = 'Tin nhắn đã bị thu hồi';
+        await conv.save();
+      }
+    }
+
+    return message;
   }
 
   async getConversationById(id: string): Promise<ConversationDocument | null> {
