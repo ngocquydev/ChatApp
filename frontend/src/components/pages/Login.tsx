@@ -604,7 +604,6 @@ export default function Login() {
               id="email"
               placeholder={login.form.email.placeholder}
               autoComplete="email"
-              autoFocus
               {...register("email")}
               error={Boolean(errors.email)}
               helperText={errors.email?.message}
@@ -626,7 +625,7 @@ export default function Login() {
                   },
                   "&.Mui-focused": {
                     backgroundColor: "var(--mui-palette-background-paper)",
-                    boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.12)",
+                    boxShadow: "none",
                   },
                 },
               }}
@@ -682,7 +681,7 @@ export default function Login() {
                   },
                   "&.Mui-focused": {
                     backgroundColor: "var(--mui-palette-background-paper)",
-                    boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.12)",
+                    boxShadow: "none",
                   },
                 },
               }}

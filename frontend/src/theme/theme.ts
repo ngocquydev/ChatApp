@@ -123,6 +123,29 @@ const theme = createTheme({
       },
     },
 
+    MuiButtonBase: {
+      defaultProps: { disableRipple: false },
+      styleOverrides: {
+        root: {
+          "&:focus, &:focus-visible, &.Mui-focusVisible": {
+            outline: "none !important",
+            boxShadow: "none !important",
+          },
+        },
+      },
+    },
+
+    MuiInputBase: {
+      styleOverrides: {
+        root: {
+          "&.Mui-focused": { boxShadow: "none !important" },
+        },
+        input: {
+          "&:focus, &:focus-visible": { outline: "none !important" },
+        },
+      },
+    },
+
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
@@ -130,14 +153,18 @@ const theme = createTheme({
           transition: `box-shadow ${motion.base} ${motion.ease}, background-color ${motion.base} ${motion.ease}`,
           "&:not(.MuiInputBase-multiline)": { height: "54px" },
           "&.MuiInputBase-sizeSmall:not(.MuiInputBase-multiline)": { height: "42px" },
-          "&.Mui-focused": { boxShadow: shadows.focus },
-          "&.Mui-focused.Mui-error": { boxShadow: "0 0 0 3px rgba(220, 38, 38, 0.2)" },
+          "&.Mui-focused": { boxShadow: "none" },
+          "&.Mui-focused.Mui-error": { boxShadow: "none" },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderWidth: "1px",
+          },
         },
         input: {
           height: "100%",
           boxSizing: "border-box",
           padding: "0 14px",
           fontSize: "1rem",
+          "&:focus, &:focus-visible": { outline: "none !important" },
         },
         notchedOutline: { borderColor: v.neutral[300] },
       },

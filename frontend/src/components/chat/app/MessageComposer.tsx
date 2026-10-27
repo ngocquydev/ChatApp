@@ -124,9 +124,9 @@ export default function MessageComposer({ onSend, onTyping }: MessageComposerPro
           py: 0.5,
           transition: "border-color 150ms, box-shadow 150ms, background-color 150ms",
           "&:focus-within": {
-            borderColor: "primary.main",
+            borderColor: "divider",
             bgcolor: "background.paper",
-            boxShadow: "0 0 0 3px rgba(37, 99, 235, 0.15)",
+            boxShadow: "none",
           },
         }}
       >

@@ -938,7 +938,8 @@ export default function FloatingChatBox({
                   px: 1.2,
                   "& fieldset": { borderColor: "transparent" },
                   "&:hover fieldset": { borderColor: "var(--mui-palette-neutral-300)" },
-                  "&.Mui-focused fieldset": { borderColor: "var(--mui-palette-brand-600)" },
+                  "&.Mui-focused fieldset": { borderColor: "transparent" },
+                  "&.Mui-focused": { boxShadow: "none" },
                 },
                 "& .MuiInputBase-input": {
                   py: 0.6,

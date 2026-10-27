@@ -58,7 +58,7 @@ export const shadows = {
   sm: "0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04)",
   md: "0 6px 16px -4px rgba(15, 23, 42, 0.12)",
   lg: "0 16px 32px -12px rgba(15, 23, 42, 0.18)",
-  focus: "0 0 0 3px rgba(37, 99, 235, 0.25)",
+  focus: "none",
 } as const;
 
 /** Chiều cao AppBar cố định (px) — các trang full-height phải trừ đi giá trị này. */

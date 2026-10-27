@@ -582,7 +582,7 @@ export default function Register() {
                     "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
                       bgcolor: "var(--mui-palette-background-paper)",
-                      boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+                      boxShadow: "none",
                     },
                   },
                 }}
@@ -634,7 +634,7 @@ export default function Register() {
                     "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
                       bgcolor: "var(--mui-palette-background-paper)",
-                      boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+                      boxShadow: "none",
                     },
                   },
                 }}
@@ -686,7 +686,7 @@ export default function Register() {
                     "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
                       bgcolor: "var(--mui-palette-background-paper)",
-                      boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+                      boxShadow: "none",
                     },
                   },
                 }}
@@ -738,7 +738,7 @@ export default function Register() {
                     "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
                       bgcolor: "var(--mui-palette-background-paper)",
-                      boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+                      boxShadow: "none",
                     },
                   },
                 }}
@@ -809,7 +809,7 @@ export default function Register() {
                     "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
                       bgcolor: "var(--mui-palette-background-paper)",
-                      boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+                      boxShadow: "none",
                     },
                   },
                 }}
@@ -919,7 +919,7 @@ export default function Register() {
                     "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
                     "&.Mui-focused": {
                       bgcolor: "var(--mui-palette-background-paper)",
-                      boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.12)",
+                      boxShadow: "none",
                     },
                   },
                 }}

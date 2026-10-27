@@ -29,7 +29,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
-import BrandLogo from "../common/BrandLogo";
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -295,6 +294,9 @@ export default function ForgotPassword() {
           color: "var(--mui-palette-common-white)",
           position: "relative",
           overflow: "hidden",
+          "& .MuiOutlinedInput-root.Mui-focused": {
+            boxShadow: "none !important",
+          },
         }}
       >
         {/* Glow accent */}
@@ -314,9 +316,7 @@ export default function ForgotPassword() {
 
         {/* Brand Header */}
         <Box sx={{ textAlign: "center", mb: 3 }}>
-          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-            <BrandLogo size={56} />
-          </Box>
+       
           <Box
             sx={{
               display: "inline-flex",
@@ -388,11 +388,15 @@ export default function ForgotPassword() {
                       bgcolor: "rgba(30, 41, 59, 0.6)",
                       color: "var(--mui-palette-common-white)",
                       "& fieldset": { borderColor: "rgba(255, 255, 255, 0.15)" },
-                      "&:hover fieldset": { borderColor: "var(--mui-palette-brand-500)" },
-                      "&.Mui-focused fieldset": { borderColor: "var(--mui-palette-brand-500)" },
+                      "&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.25)" },
+                      "&.Mui-focused": { boxShadow: "none" },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "rgba(255, 255, 255, 0.15)",
+                        borderWidth: "1px",
+                      },
                     },
                     "& .MuiInputLabel-root": { color: "var(--mui-palette-neutral-400)" },
-                    "& .MuiInputLabel-root.Mui-focused": { color: "var(--mui-palette-brand-500)" },
+                    "& .MuiInputLabel-root.Mui-focused": { color: "var(--mui-palette-neutral-400)" },
                   }}
                 />
 
@@ -513,8 +517,12 @@ export default function ForgotPassword() {
                           "& fieldset": {
                             borderColor: digit ? "var(--mui-palette-brand-500)" : "rgba(255, 255, 255, 0.15)",
                           },
-                          "&:hover fieldset": { borderColor: "var(--mui-palette-brand-500)" },
-                          "&.Mui-focused fieldset": { borderColor: "var(--mui-palette-brand-500)", borderWidth: "2px" },
+                          "&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.25)" },
+                          "&.Mui-focused": { boxShadow: "none" },
+                          "&.Mui-focused fieldset": {
+                            borderColor: digit ? "var(--mui-palette-brand-500)" : "rgba(255, 255, 255, 0.15)",
+                            borderWidth: "1px",
+                          },
                         },
                       }}
                     />
@@ -618,11 +626,15 @@ export default function ForgotPassword() {
                         bgcolor: "rgba(30, 41, 59, 0.6)",
                         color: "var(--mui-palette-common-white)",
                         "& fieldset": { borderColor: "rgba(255, 255, 255, 0.15)" },
-                        "&:hover fieldset": { borderColor: "var(--mui-palette-brand-500)" },
-                        "&.Mui-focused fieldset": { borderColor: "var(--mui-palette-brand-500)" },
+                        "&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.25)" },
+                        "&.Mui-focused": { boxShadow: "none" },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "rgba(255, 255, 255, 0.15)",
+                          borderWidth: "1px",
+                        },
                       },
                       "& .MuiInputLabel-root": { color: "var(--mui-palette-neutral-400)" },
-                      "& .MuiInputLabel-root.Mui-focused": { color: "var(--mui-palette-brand-500)" },
+                      "& .MuiInputLabel-root.Mui-focused": { color: "var(--mui-palette-neutral-400)" },
                     }}
                   />
 
@@ -695,11 +707,15 @@ export default function ForgotPassword() {
                       bgcolor: "rgba(30, 41, 59, 0.6)",
                       color: "var(--mui-palette-common-white)",
                       "& fieldset": { borderColor: "rgba(255, 255, 255, 0.15)" },
-                      "&:hover fieldset": { borderColor: "var(--mui-palette-brand-500)" },
-                      "&.Mui-focused fieldset": { borderColor: "var(--mui-palette-brand-500)" },
+                      "&:hover fieldset": { borderColor: "rgba(255, 255, 255, 0.25)" },
+                      "&.Mui-focused": { boxShadow: "none" },
+                      "&.Mui-focused:not(.Mui-error) fieldset": {
+                        borderColor: "rgba(255, 255, 255, 0.15)",
+                        borderWidth: "1px",
+                      },
                     },
                     "& .MuiInputLabel-root": { color: "var(--mui-palette-neutral-400)" },
-                    "& .MuiInputLabel-root.Mui-focused": { color: "var(--mui-palette-brand-500)" },
+                    "& .MuiInputLabel-root.Mui-focused": { color: "var(--mui-palette-neutral-400)" },
                   }}
                 />
 

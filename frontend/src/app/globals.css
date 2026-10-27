@@ -8,7 +8,7 @@
   --color-text: var(--mui-palette-text-primary, #0f172a);
   --color-text-muted: var(--mui-palette-text-secondary, #64748b);
   --color-primary: var(--mui-palette-primary-main, #2563eb);
-  --focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.35);
+  --focus-ring: none;
   --app-bar-height: 64px;
 }
 
@@ -35,17 +35,28 @@ body {
   background: rgba(37, 99, 235, 0.2);
 }
 
-/* Focus ring thống nhất cho điều hướng bàn phím (WCAG 2.4.7) */
-:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+/* Bỏ toàn bộ viền focus / outline / focus ring trên toàn app */
+*,
+*::before,
+*::after {
+  outline: none;
 }
 
-/* Ô nhập liệu đã có vòng focus riêng từ MUI theme */
+:focus,
+:focus-visible {
+  outline: none !important;
+}
+
+input:focus,
 input:focus-visible,
+textarea:focus,
 textarea:focus-visible,
-select:focus-visible {
-  outline: none;
+select:focus,
+select:focus-visible,
+button:focus,
+button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Skip link: nhảy thẳng tới nội dung chính */
