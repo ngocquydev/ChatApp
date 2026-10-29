@@ -76,7 +76,7 @@ function readStoredPersonCallTab(): number {
 }
 
 function PersonCall({ onSelectFriend }: PersonCallProps) {
-  const [activeTab, setActiveTab] = useState<number>(readStoredPersonCallTab);
+  const [activeTab, setActiveTab] = useState<number>(0);
   const [searchFriend, setSearchFriend] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [geoNotice, setGeoNotice] = useState<string | null>(null);

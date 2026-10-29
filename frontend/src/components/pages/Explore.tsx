@@ -48,7 +48,7 @@ function readStoredExploreTab(): number {
 export default function Explore() {
   const router = useRouter();
   const { tr, language } = useTranslation();
-  const [tab, setTab] = useState<number>(readStoredExploreTab);
+  const [tab, setTab] = useState<number>(0);
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState<{ text: string; severity: "success" | "info" | "warning" } | null>(null);
 
