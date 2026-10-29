@@ -16,6 +16,12 @@ export interface BinaryChatMessage {
   text: string;
   createdAt: string;
   readAt?: string;
+  type?: string;
+  callLog?: {
+    callType: "audio" | "video";
+    status: "missed" | "declined" | "completed" | "busy" | "cancelled";
+    duration: number;
+  } | null;
 }
 
 export interface BinaryTypingEvent {
@@ -116,7 +122,19 @@ class MqttChatClient {
             text: string;
             createdAt: string;
             readAt?: string;
+            type?: string;
+            callLog?: string;
           };
+
+          let parsedCallLog = null;
+          if (decoded.callLog) {
+            try {
+              parsedCallLog = JSON.parse(decoded.callLog);
+            } catch {
+              parsedCallLog = null;
+            }
+          }
+
           const msgObj: BinaryChatMessage = {
             _id: decoded.id,
             id: decoded.id,
@@ -126,6 +144,8 @@ class MqttChatClient {
             text: decoded.text,
             createdAt: decoded.createdAt,
             readAt: decoded.readAt || undefined,
+            type: decoded.type || (decoded.text?.startsWith("📞") || decoded.text?.startsWith("📹") ? "call" : "text"),
+            callLog: parsedCallLog,
           };
        
           this.messageHandlers.forEach((handler) => handler(msgObj));

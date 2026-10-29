@@ -170,45 +170,65 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Lắng nghe tin nhắn mới nhị phân qua MQTT
       const unbindMsg = mqttChatClient.onMessage((newMsg) => {
         const active = get().activeConversation;
-        const convId = newMsg.conversationId;
+        const msgConvId = String(newMsg.conversationId || "");
+        const activeConvId = String(active?._id || "");
         const myId = String(
           useAuthStore.getState().user?._id ||
             useAuthStore.getState().user?.id ||
             ""
         );
         const senderId = String(newMsg.senderId || "");
+        const receiverId = String(newMsg.receiverId || "");
+
+        const partner = active?.participants?.find(
+          (p) => String(p._id || p.id) !== myId
+        );
+        const partnerId = String(partner?._id || partner?.id || "");
+
+        const isMatchActive =
+          Boolean(active) &&
+          ((Boolean(msgConvId) && Boolean(activeConvId) && activeConvId === msgConvId) ||
+            (Boolean(partnerId) &&
+              ((senderId === partnerId && receiverId === myId) ||
+                (senderId === myId && receiverId === partnerId))));
 
         // Phát âm thanh khi người khác nhắn tin cho mình
         if (senderId && senderId !== myId) {
-          const conv = get().conversations.find((c) => c._id === convId);
-          const partner = conv?.participants?.find(
-            (p) => String(p._id || p.id) === senderId
-          );
+          const conv = get().conversations.find((c) => String(c._id) === msgConvId);
+          const partnerName =
+            conv?.participants?.find(
+              (p) => String(p._id || p.id) === senderId
+            )?.name || partner?.name;
           soundNotification.playIncomingSound(
             newMsg._id || newMsg.id,
-            partner?.name
+            partnerName
           );
         }
 
-        if (active && active._id === convId) {
+        if (isMatchActive) {
           set((state) => {
             const exists = state.messages.some(
-              (m) => m._id === newMsg._id || m.id === newMsg.id
+              (m) => String(m._id || m.id) === String(newMsg._id || newMsg.id)
             );
             return exists
               ? state
               : { messages: [...state.messages, newMsg as unknown as ChatMessage] };
           });
 
-          mqttChatClient.sendRead(convId, newMsg.senderId);
+          mqttChatClient.sendRead(msgConvId || activeConvId, newMsg.senderId);
         }
 
         set((state) => {
           const updated = state.conversations.map((c) => {
-            if (c._id === convId) {
+            const isThisConv =
+              (Boolean(msgConvId) && String(c._id) === msgConvId) ||
+              (c.participants.some((p) => String(p._id || p.id) === senderId) &&
+                c.participants.some((p) => String(p._id || p.id) === receiverId));
+
+            if (isThisConv) {
               const currentUnread =
                 (c.unreadCounts && c.unreadCounts[myId]) || 0;
-              const isNotActive = !active || active._id !== convId;
+              const isNotActive = !active || String(active._id) !== String(c._id);
               return {
                 ...c,
                 lastMessage: {
@@ -314,7 +334,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     socket.on("message:new", (newMsg: ChatMessage) => {
       const active = get().activeConversation;
-      const convId = newMsg.conversationId;
+      const msgConvId = String(newMsg.conversationId || "");
+      const activeConvId = String(active?._id || "");
       const myId = String(
         useAuthStore.getState().user?._id ||
           useAuthStore.getState().user?.id ||
@@ -324,26 +345,42 @@ export const useChatStore = create<ChatState>((set, get) => ({
         typeof newMsg.senderId === "string"
           ? newMsg.senderId
           : String(newMsg.senderId?._id || newMsg.senderId?.id || "");
+      const receiverId =
+        typeof newMsg.receiverId === "string"
+          ? newMsg.receiverId
+          : String(newMsg.receiverId?._id || newMsg.receiverId?.id || "");
+
+      const partner = active?.participants?.find(
+        (p) => String(p._id || p.id) !== myId
+      );
+      const partnerId = String(partner?._id || partner?.id || "");
+
+      const isMatchActive =
+        Boolean(active) &&
+        ((Boolean(msgConvId) && Boolean(activeConvId) && activeConvId === msgConvId) ||
+          (Boolean(partnerId) &&
+            ((senderId === partnerId && receiverId === myId) ||
+              (senderId === myId && receiverId === partnerId))));
 
       // Phát âm thanh khi người khác nhắn tin cho mình
       if (senderId && senderId !== myId) {
-        const conv = get().conversations.find((c) => c._id === convId);
+        const conv = get().conversations.find((c) => String(c._id) === msgConvId);
         const partnerName =
           typeof newMsg.senderId === "object" && newMsg.senderId?.name
             ? newMsg.senderId.name
             : conv?.participants?.find(
                 (p) => String(p._id || p.id) === senderId
-              )?.name;
+              )?.name || partner?.name;
         soundNotification.playIncomingSound(
           newMsg._id || newMsg.id,
           partnerName
         );
       }
 
-      if (active && active._id === convId) {
+      if (isMatchActive) {
         set((state) => {
           const exists = state.messages.some(
-            (m) => m._id === newMsg._id || m.id === newMsg.id
+            (m) => String(m._id || m.id) === String(newMsg._id || newMsg.id)
           );
           return exists
             ? state
@@ -351,17 +388,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
 
         socket.emit("message:read", {
-          conversationId: convId,
+          conversationId: msgConvId || activeConvId,
           receiverId: senderId,
         });
       }
 
       set((state) => {
         const updated = state.conversations.map((c) => {
-          if (c._id === convId) {
+          const isThisConv =
+            (Boolean(msgConvId) && String(c._id) === msgConvId) ||
+            (c.participants.some((p) => String(p._id || p.id) === senderId) &&
+              c.participants.some((p) => String(p._id || p.id) === receiverId));
+
+          if (isThisConv) {
             const currentUnread =
               (c.unreadCounts && c.unreadCounts[myId]) || 0;
-            const isNotActive = !active || active._id !== convId;
+            const isNotActive = !active || String(active._id) !== String(c._id);
             return {
               ...c,
               lastMessage: {

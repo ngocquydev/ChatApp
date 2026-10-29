@@ -290,25 +290,40 @@ export default function FloatingChatBox({
     };
 
     const unbindMqttMsg = mqttChatClient.onMessage((newMsg) => {
-      if (newMsg.conversationId === convId) {
+      const msgConvId = String(newMsg.conversationId || "");
+      const currentConvId = String(convId || "");
+      const msgSenderId = String(newMsg.senderId || "");
+      const msgReceiverId = String(newMsg.receiverId || "");
+
+      const isMatch =
+        (Boolean(msgConvId) && Boolean(currentConvId) && msgConvId === currentConvId) ||
+        (msgSenderId === targetUserId && msgReceiverId === currentUserId) ||
+        (msgSenderId === currentUserId && msgReceiverId === targetUserId);
+
+      if (isMatch) {
+        if (!convId && msgConvId) {
+          setConvId(msgConvId);
+        }
         setPartnerTypingInactive();
-        if (newMsg.senderId && newMsg.senderId !== currentUserId) {
+        if (msgSenderId && msgSenderId !== currentUserId) {
           soundNotification.playIncomingSound(newMsg._id || newMsg.id, targetUserName);
         }
         setMessages((prev) => {
           const exists = prev.some(
-            (m) => m._id === newMsg._id || m.id === newMsg.id
+            (m) => String(m._id || m.id) === String(newMsg._id || newMsg.id)
           );
           if (exists) return prev;
           return [...prev, newMsg as unknown as ChatMessage];
         });
 
         if (!session.isMinimized) {
-          mqttChatClient.sendRead(convId, targetUserId);
-          api.patch(`/chat/conversations/${convId}/read`).catch(() => {});
+          mqttChatClient.sendRead(msgConvId || currentConvId, targetUserId);
+          if (msgConvId || currentConvId) {
+            api.patch(`/chat/conversations/${msgConvId || currentConvId}/read`).catch(() => {});
+          }
           clearUnread(targetUserId);
         } else {
-          incrementUnread(convId);
+          incrementUnread(msgConvId || currentConvId);
         }
       }
     });
@@ -331,17 +346,34 @@ export default function FloatingChatBox({
 
     // 2.2. Lắng nghe qua Socket.IO (Fallback)
     const handleNewMessage = (newMsg: ChatMessage) => {
-      if (newMsg.conversationId === convId) {
+      const msgConvId = String(newMsg.conversationId || "");
+      const currentConvId = String(convId || "");
+      const senderId =
+        typeof newMsg.senderId === "string"
+          ? newMsg.senderId
+          : String(newMsg.senderId?._id || newMsg.senderId?.id || "");
+      const receiverId =
+        typeof newMsg.receiverId === "string"
+          ? newMsg.receiverId
+          : String(newMsg.receiverId?._id || newMsg.receiverId?.id || "");
+
+      const isMatch =
+        (Boolean(msgConvId) && Boolean(currentConvId) && msgConvId === currentConvId) ||
+        (senderId === targetUserId && receiverId === currentUserId) ||
+        (senderId === currentUserId && receiverId === targetUserId);
+
+      if (isMatch) {
+        if (!convId && msgConvId) {
+          setConvId(msgConvId);
+        }
         setPartnerTypingInactive();
-        const senderId =
-          typeof newMsg.senderId === "string"
-            ? newMsg.senderId
-            : String(newMsg.senderId?._id || newMsg.senderId?.id || "");
         if (senderId && senderId !== currentUserId) {
           soundNotification.playIncomingSound(newMsg._id || newMsg.id, targetUserName);
         }
         setMessages((prev) => {
-          const exists = prev.some((m) => m._id === newMsg._id || m.id === newMsg.id);
+          const exists = prev.some(
+            (m) => String(m._id || m.id) === String(newMsg._id || newMsg.id)
+          );
           if (exists) return prev;
           return [...prev, newMsg];
         });
@@ -349,14 +381,16 @@ export default function FloatingChatBox({
         if (!session.isMinimized) {
           if (socket && socket.connected) {
             socket.emit("message:read", {
-              conversationId: convId,
+              conversationId: msgConvId || currentConvId,
               receiverId: targetUserId,
             });
           }
-          api.patch(`/chat/conversations/${convId}/read`).catch(() => {});
+          if (msgConvId || currentConvId) {
+            api.patch(`/chat/conversations/${msgConvId || currentConvId}/read`).catch(() => {});
+          }
           clearUnread(targetUserId);
         } else {
-          incrementUnread(convId);
+          incrementUnread(msgConvId || currentConvId);
         }
       }
     };

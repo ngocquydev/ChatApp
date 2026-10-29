@@ -215,6 +215,8 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
               ? message.createdAt.toISOString()
               : new Date().toISOString(),
             readAt: message.readAt ? message.readAt.toISOString() : '',
+            type: message.type || 'text',
+            callLog: message.callLog ? JSON.stringify(message.callLog) : '',
           };
 
           const binaryEncoded = Buffer.from(
@@ -422,6 +424,62 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
         }
       },
     );
+  }
+
+  /**
+   * Đóng gói tin nhắn dạng Binary Protobuf và phát tới Topic của cả người gửi và người nhận
+   */
+  public publishChatMessage(message: {
+    _id?: { toString(): string } | string | null;
+    id?: { toString(): string } | string | null;
+    conversationId: { toString(): string } | string;
+    senderId: { toString(): string } | string;
+    receiverId: { toString(): string } | string;
+    text: string;
+    type?: string;
+    callLog?: unknown;
+    createdAt?: Date | string;
+    readAt?: Date | string | null;
+  }) {
+    try {
+      const msgId = (message._id || message.id || '').toString();
+      const convId = message.conversationId ? message.conversationId.toString() : '';
+      const senderId = message.senderId ? message.senderId.toString() : '';
+      const receiverId = message.receiverId ? message.receiverId.toString() : '';
+
+      const messageProtoPayload = {
+        id: msgId,
+        conversationId: convId,
+        senderId,
+        receiverId,
+        text: message.text || '',
+        createdAt:
+          typeof message.createdAt === 'string'
+            ? message.createdAt
+            : message.createdAt
+              ? message.createdAt.toISOString()
+              : new Date().toISOString(),
+        readAt:
+          typeof message.readAt === 'string'
+            ? message.readAt
+            : message.readAt
+              ? message.readAt.toISOString()
+              : '',
+        type: message.type || 'text',
+        callLog: message.callLog ? JSON.stringify(message.callLog) : '',
+      };
+
+      const binaryEncoded = Buffer.from(
+        ChatMessageProto.encode(messageProtoPayload).finish(),
+      );
+
+      this.publishBinary(`chat/user/${receiverId}`, binaryEncoded);
+      this.publishBinary(`chat/user/${senderId}`, binaryEncoded);
+    } catch (err) {
+      this.logger.error(
+        `[MQTT] Lỗi publishChatMessage: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   private async shutdown() {

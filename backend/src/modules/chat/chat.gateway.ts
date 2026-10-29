@@ -15,6 +15,7 @@ import { ChatService } from './chat.service.js';
 import { SendMessageDto } from './dto/send-message.dto.js';
 import { RedisService } from '../redis/redis/redis.service.js';
 import { CallStatus, CallType } from './schemas/message.schema.js';
+import { MqttBrokerService } from './mqtt-broker.service.js';
 
 interface AuthenticatedSocket extends Socket {
   data: {
@@ -60,6 +61,7 @@ export class ChatGateway
     private readonly chatService: ChatService,
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
+    private readonly mqttBrokerService: MqttBrokerService,
   ) {}
 
   afterInit() {
@@ -156,10 +158,7 @@ export class ChatGateway
             session.conversationId,
           )
           .then((msg) => {
-            this.server
-              .to(`user:${session.callerId}`)
-              .to(`user:${session.targetUserId}`)
-              .emit('message:new', msg);
+            this.broadcastNewMessage(msg);
           })
           .catch((err) => {
             this.logger.error(
@@ -168,6 +167,63 @@ export class ChatGateway
           });
       }
     }
+  }
+
+  /**
+   * Broadcast tin nhắn mới tới cả 2 người dùng qua cả MQTT Protobuf và Socket.IO
+   */
+  private broadcastNewMessage(message: {
+    _id: { toString(): string } | string;
+    id?: { toString(): string } | string;
+    conversationId: { toString(): string } | string;
+    senderId: { toString(): string } | string;
+    receiverId: { toString(): string } | string;
+    text: string;
+    type?: string;
+    callLog?: unknown;
+    createdAt?: Date | string;
+    readAt?: Date | string | null;
+    isDeleted?: boolean;
+  }) {
+    const senderId = message.senderId.toString();
+    const receiverId = message.receiverId.toString();
+
+    // 1. Phát qua MQTT nhị phân (Protocol Buffers)
+    try {
+      this.mqttBrokerService.publishChatMessage(message);
+    } catch (err) {
+      this.logger.error(
+        `Lỗi publish MQTT tin nhắn: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
+    // 2. Chuyển đổi thành plain object với id/conversationId dạng chuỗi cho Socket.IO
+    const serializedMessage = {
+      _id: message._id.toString(),
+      id: message._id.toString(),
+      conversationId: message.conversationId.toString(),
+      senderId,
+      receiverId,
+      text: message.text,
+      type: message.type || 'text',
+      callLog: message.callLog || null,
+      createdAt:
+        typeof message.createdAt === 'string'
+          ? message.createdAt
+          : message.createdAt
+            ? message.createdAt.toISOString()
+            : new Date().toISOString(),
+      readAt:
+        typeof message.readAt === 'string'
+          ? message.readAt
+          : message.readAt
+            ? message.readAt.toISOString()
+            : null,
+      isDeleted: Boolean(message.isDeleted),
+    };
+
+    // 3. Phát qua Socket.IO tới cả hai phía
+    this.server.to(`user:${senderId}`).to(`user:${receiverId}`).emit('message:new', serializedMessage);
   }
 
   /**
@@ -191,11 +247,8 @@ export class ChatGateway
         dto.conversationId,
       );
 
-      // Bắn event message:new tới cả sender và receiver
-      this.server
-        .to(`user:${senderId}`)
-        .to(`user:${dto.receiverId}`)
-        .emit('message:new', message);
+      // Bắn event message:new tới cả sender và receiver (qua cả MQTT và Socket.IO)
+      this.broadcastNewMessage(message);
 
       return { success: true, message };
     } catch (error) {
@@ -520,10 +573,7 @@ export class ChatGateway
         session?.conversationId || payload.conversationId,
       );
 
-      this.server
-        .to(`user:${callerId}`)
-        .to(`user:${calleeId}`)
-        .emit('message:new', message);
+      this.broadcastNewMessage(message);
     } catch (err) {
       this.logger.error(`Lỗi lưu log cuộc gọi reject: ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -577,10 +627,7 @@ export class ChatGateway
         session?.conversationId || payload.conversationId,
       );
 
-      this.server
-        .to(`user:${callerId}`)
-        .to(`user:${calleeId}`)
-        .emit('message:new', message);
+      this.broadcastNewMessage(message);
     } catch (err) {
       this.logger.error(`Lỗi lưu log cuộc gọi end: ${err instanceof Error ? err.message : String(err)}`);
     }

@@ -18,6 +18,8 @@ message ChatMessageProto {
   string text = 5;
   string createdAt = 6;
   string readAt = 7;
+  string type = 8;
+  string callLog = 9;
 }
 
 message TypingEventProto {
