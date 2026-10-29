@@ -109,6 +109,32 @@ const updateStoreTyping = (
   }
 };
 
+function dedupeConversations(list: ConversationItem[]): ConversationItem[] {
+  const sorted = [...list].sort((a, b) => {
+    const aHasMsg = Boolean(a.lastMessage?.text);
+    const bHasMsg = Boolean(b.lastMessage?.text);
+    if (aHasMsg !== bHasMsg) return bHasMsg ? 1 : -1;
+    const aTime = new Date(a.lastMessage?.createdAt || a.updatedAt || 0).getTime();
+    const bTime = new Date(b.lastMessage?.createdAt || b.updatedAt || 0).getTime();
+    return bTime - aTime;
+  });
+
+  const seenKeys = new Set<string>();
+  const result: ConversationItem[] = [];
+  for (const conv of sorted) {
+    const ids = (conv.participants || [])
+      .map((p) => String(p?._id || p?.id || ""))
+      .filter(Boolean)
+      .sort();
+    const key = ids.length > 0 ? ids.join(":") : conv._id;
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      result.push(conv);
+    }
+  }
+  return result;
+}
+
 export const useChatStore = create<ChatState>((set, get) => ({
   socket: null,
   isConnected: false,
@@ -492,7 +518,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       const res = await api.get("/chat/conversations");
       if (res.data?.conversations) {
-        set({ conversations: res.data.conversations });
+        set({ conversations: dedupeConversations(res.data.conversations) });
       }
     } catch (err) {
       console.error("Lỗi tải danh sách cuộc trò chuyện:", err);

@@ -44,35 +44,18 @@ import {
   Clock,
   Check,
   UserCheck,
-  Users,
-  Volume2,
-  VolumeX,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useFriendStore } from "../../store/useFriendStore";
 import { useChatStore } from "../../store/useChatStore";
-import { useChatBoxStore } from "../../store/useChatBoxStore";
-import { useSoundStore } from "../../store/useSoundStore";
 import BrandLogo from "../common/BrandLogo";
 import ColorModeToggle from "../common/ColorModeToggle";
-import PresenceAvatar from "../common/PresenceAvatar";
 import NotificationBell from "../notifications/NotificationBell";
+import RecentChatsPopover from "./RecentChatsPopover";
 import UserSearchResults, { SEARCH_PREVIEW_COUNT } from "./UserSearchResults";
 
 /** Số kết quả mỗi trang khi "Xem tất cả" / cuộn vô hạn */
 const SEARCH_PAGE_SIZE = 20;
-
-const CLOUDINARY_MEDIA_RE = /^https:\/\/res\.cloudinary\.com\/.+\/(image|video)\/upload\/.+$/i;
-
-function formatMessagePreview(text?: string, isDeleted?: boolean): string {
-  if (isDeleted) return "Tin nhắn đã bị thu hồi";
-  if (!text) return "Chưa có tin nhắn";
-  const match = text.trim().match(CLOUDINARY_MEDIA_RE);
-  if (match) {
-    return match[1].toLowerCase() === "video" ? "🎬 Đã gửi một video" : "📷 Đã gửi một hình ảnh";
-  }
-  return text;
-}
 
 interface NavPage {
   id: string;
@@ -89,8 +72,6 @@ function ResponsiveAppBar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
-  const { openChat } = useChatBoxStore();
-  const { isMuted, toggleMute } = useSoundStore();
 
   // State tìm kiếm người dùng toàn hệ thống
   const [searchQuery, setSearchQuery] = useState("");
@@ -118,9 +99,7 @@ function ResponsiveAppBar() {
 
   const {
     conversations,
-    onlineUserIds,
     fetchConversations,
-    selectConversation,
     startConversationWithUser,
     connectSocket,
   } = useChatStore();
@@ -662,212 +641,11 @@ function ResponsiveAppBar() {
                   )}
 
                   {page.id === "chat" && (
-                    <Popover
-                      open={isChatOpen}
+                    <RecentChatsPopover
                       anchorEl={chatAnchorEl}
+                      currentUserId={String(user?.id || user?._id || "")}
                       onClose={handleCloseChat}
-                      disableScrollLock
-                      anchorOrigin={{
-                        vertical: "bottom",
-                        horizontal: "right",
-                      }}
-                      transformOrigin={{
-                        vertical: "top",
-                        horizontal: "right",
-                      }}
-                      slotProps={{
-                        paper: {
-                          sx: {
-                            width: 320,
-                            maxHeight: 400,
-                            borderRadius: 2,
-                            boxShadow: "0px 8px 24px rgba(0, 0, 0, 0.15)",
-                            mt: 1,
-                          },
-                        },
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          px: 2,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          borderBottom: "1px solid",
-                          borderColor: "divider",
-                          bgcolor: "var(--mui-palette-neutral-50)",
-                        }}
-                      >
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                          Tin nhắn gần đây
-                        </Typography>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <Tooltip
-                            title={
-                              isMuted
-                                ? "Bật âm thanh tin nhắn"
-                                : "Tắt âm thanh tin nhắn"
-                            }
-                          >
-                            <IconButton
-                              size="small"
-                              onClick={toggleMute}
-                              aria-label={isMuted ? "Bật âm thanh tin nhắn" : "Tắt âm thanh tin nhắn"}
-                              aria-pressed={!isMuted}
-                              sx={{
-                                color: isMuted ? "text.secondary" : "primary.main",
-                                p: 0.5,
-                              }}
-                            >
-                              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                            </IconButton>
-                          </Tooltip>
-                          <ButtonBase
-                            onClick={() => {
-                              handleCloseChat();
-                              router.push("/chat");
-                            }}
-                            sx={{
-                              color: "primary.main",
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                              borderRadius: 1,
-                              px: 0.5,
-                              "&:hover": { textDecoration: "underline" },
-                            }}
-                          >
-                            Xem tất cả
-                          </ButtonBase>
-                        </Box>
-                      </Box>
-
-                      <Box sx={{ overflowY: "auto", maxHeight: 320 }}>
-                        {conversations.filter((c) => {
-                          const myId = String(user?.id || user?._id || "");
-                          return !myId || !c.restrictedBy?.includes(myId);
-                        }).length === 0 ? (
-                          <Box sx={{ textAlign: "center", py: 4, px: 2 }}>
-                            <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-500)", mb: 1 }}>
-                              Chưa có cuộc trò chuyện nào
-                            </Typography>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={() => {
-                                handleCloseChat();
-                                router.push("/chat");
-                              }}
-                              sx={{ textTransform: "none", borderRadius: 1.5 }}
-                            >
-                              Đến phòng chat
-                            </Button>
-                          </Box>
-                        ) : (
-                          conversations
-                            .filter((c) => {
-                              const myId = String(user?.id || user?._id || "");
-                              return !myId || !c.restrictedBy?.includes(myId);
-                            })
-                            .map((conv) => {
-                            const other =
-                              conv.participants.find(
-                                (p) =>
-                                  String(p._id || p.id) !== String(user?.id || user?._id)
-                              ) || conv.participants[0];
-                            const unread = conv.unreadCounts
-                              ? Number(conv.unreadCounts[String(user?.id || user?._id)] || 0) > 0
-                              : false;
-
-                            return (
-                              <ButtonBase
-                                component="div"
-                                key={conv._id}
-                                aria-label={`Mở hội thoại với ${other?.name || "người dùng"}${unread ? " (có tin chưa đọc)" : ""}`}
-                                onClick={async () => {
-                                  handleCloseChat();
-                                  if (pathname === "/chat" || (typeof window !== "undefined" && window.innerWidth < 600)) {
-                                    await selectConversation(conv);
-                                    if (pathname !== "/chat") router.push("/chat");
-                                  } else {
-                                    if (other) {
-                                      openChat(other as unknown as Parameters<typeof openChat>[0], conv._id);
-                                    } else {
-                                      await selectConversation(conv);
-                                      router.push("/chat");
-                                    }
-                                  }
-                                }}
-                                sx={{
-                                  display: "flex",
-                                  width: "100%",
-                                  textAlign: "left",
-                                  justifyContent: "flex-start",
-                                  alignItems: "center",
-                                  gap: 1.5,
-                                  p: 1.5,
-                                  px: 2,
-                                  cursor: "pointer",
-                                  bgcolor: unread ? "rgba(59, 130, 246, 0.05)" : "transparent",
-                                  transition: "background-color 0.2s",
-                                  "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
-                                  borderBottom: "1px solid var(--mui-palette-neutral-100)",
-                                }}
-                              >
-                                <PresenceAvatar
-                                  name={other?.name}
-                                  src={other?.avatar}
-                                  size={40}
-                                  online={Boolean(other?._id && onlineUserIds.includes(String(other._id)))}
-                                />
-                                <Box sx={{ flex: 1, minWidth: 0 }}>
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      alignItems: "center",
-                                      mb: 0.5,
-                                    }}
-                                  >
-                                    <Typography
-                                      variant="subtitle2"
-                                      noWrap
-                                      sx={{ fontWeight: unread ? 700 : 600, color: "var(--mui-palette-neutral-800)", fontSize: "0.85rem" }}
-                                    >
-                                      {other?.name || "Người dùng"}
-                                    </Typography>
-                                    {conv.lastMessage && (
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                        sx={{ fontSize: "0.7rem" }}
-                                      >
-                                        {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], {
-                                          hour: "2-digit",
-                                          minute: "2-digit",
-                                        })}
-                                      </Typography>
-                                    )}
-                                  </Box>
-                                  <Typography
-                                    variant="body2"
-                                    color={unread ? "text.primary" : "text.secondary"}
-                                    noWrap
-                                    sx={{
-                                      fontSize: "0.78rem",
-                                      fontWeight: unread ? 600 : 400,
-                                      fontStyle: conv.lastMessage?.isDeleted ? "italic" : "normal",
-                                    }}
-                                  >
-                                    {formatMessagePreview(conv.lastMessage?.text, conv.lastMessage?.isDeleted)}
-                                  </Typography>
-                                </Box>
-                              </ButtonBase>
-                            );
-                          })
-                        )}
-                      </Box>
-                    </Popover>
+                    />
                   )}
                 </Box>
                 );

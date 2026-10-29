@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar, Box, ButtonBase, IconButton, Skeleton, Tooltip, Typography } from "@mui/material";
-import { Check, CheckCheck, Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import EmptyState from "@/components/common/EmptyState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { ChatMessage, ChatUser } from "@/store/useChatStore";
@@ -26,7 +26,7 @@ interface MessageListProps {
 
 type Row =
   | { type: "day"; key: string; label: string }
-  | { type: "msg"; key: string; msg: ChatMessage; isMe: boolean; isFirst: boolean; isLast: boolean };
+  | { type: "msg"; key: string; msg: ChatMessage; isMe: boolean; isFirst: boolean; isLast: boolean; isLatest: boolean };
 
 const senderOf = (msg: ChatMessage) =>
   typeof msg.senderId === "string" ? msg.senderId : msg.senderId?._id;
@@ -60,6 +60,7 @@ function buildRows(messages: ChatMessage[], currentUserId?: string): Row[] {
       isMe: sender === currentUserId,
       isFirst: !continuesPrev,
       isLast: !continuesNext,
+      isLatest: i === messages.length - 1,
     });
   });
   return rows;
@@ -217,9 +218,15 @@ export default function MessageList({
             );
           }
 
-          const { msg, isMe, isFirst, isLast } = row;
+          const { msg, isMe, isFirst, isLast, isLatest } = row;
           const radius = 18;
-          const tail = 6;
+          const tail = 4;
+          const bubbleRadius =
+            isFirst && isLast
+              ? `${radius}px`
+              : isMe
+                ? `${radius}px ${isFirst ? radius : tail}px ${isLast ? radius : tail}px ${radius}px`
+                : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${isLast ? radius : tail}px`;
 
           return (
             <Box
@@ -230,7 +237,7 @@ export default function MessageList({
                 justifyContent: isMe ? "flex-end" : "flex-start",
                 alignItems: "flex-end",
                 gap: 1,
-                mt: isFirst ? 1.25 : 0.25,
+                mt: isFirst ? 1.15 : 0.25,
                 animation: "fadeInUp 160ms ease-out",
                 "&:hover .msg-action-btn": { opacity: 1 },
               }}
@@ -261,111 +268,104 @@ export default function MessageList({
                     flexDirection: isMe ? "row-reverse" : "row",
                   }}
                 >
-                  {(() => {
-                    if (msg.isDeleted) {
-                      return (
-                        <Box
-                          sx={{
-                            px: 1.75,
-                            py: 0.75,
-                            bgcolor: themeConfig.isDarkTheme ? "rgba(30, 41, 59, 0.55)" : "action.hover",
-                            color: themeConfig.metaTextColor,
-                            border: "1px dashed",
-                            borderColor: themeConfig.partnerBorder,
-                            borderRadius: isMe
-                              ? `${radius}px ${isFirst ? radius : tail}px ${tail}px ${radius}px`
-                              : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${tail}px`,
-                          }}
-                        >
-                          <Typography
-                            variant="body2"
-                            sx={{ fontSize: "0.875rem", fontStyle: "italic", lineHeight: 1.4 }}
+                  <Tooltip title={formatClockTime(msg.createdAt)} placement={isMe ? "left" : "right"} enterDelay={400}>
+                    {(() => {
+                      if (msg.isDeleted) {
+                        return (
+                          <Box
+                            sx={{
+                              px: 1.75,
+                              py: 0.75,
+                              bgcolor: themeConfig.isDarkTheme ? "rgba(30, 41, 59, 0.55)" : "action.hover",
+                              color: themeConfig.metaTextColor,
+                              border: "1px dashed",
+                              borderColor: themeConfig.partnerBorder,
+                              borderRadius: bubbleRadius,
+                            }}
                           >
-                            Tin nhắn đã bị thu hồi
-                          </Typography>
-                        </Box>
-                      );
-                    }
-
-                    const trimmed = msg.text?.trim() || "";
-                    const isMedia = /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);
-                    const isVideo = isMedia && isVideoUrl(trimmed);
-
-                    if (isMedia) {
-                      return (
-                        <Box
-                          sx={{
-                            overflow: "hidden",
-                            borderRadius: isMe
-                              ? `${radius}px ${isFirst ? radius : tail}px ${tail}px ${radius}px`
-                              : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${tail}px`,
-                            maxWidth: "100%",
-                            boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-                          }}
-                        >
-                          {isVideo ? (
-                            <Box
-                              component="video"
-                              controls
-                              preload="metadata"
-                              src={trimmed}
-                              sx={{
-                                maxWidth: "100%",
-                                maxHeight: 280,
-                                display: "block",
-                                bgcolor: "common.black",
-                              }}
-                            />
-                          ) : (
-                            <ButtonBase
-                              onClick={() => setLightboxUrl(trimmed)}
-                              aria-label="Phóng to ảnh trong tin nhắn"
-                              sx={{ display: "block", width: "100%" }}
+                            <Typography
+                              variant="body2"
+                              sx={{ fontSize: "0.875rem", fontStyle: "italic", lineHeight: 1.4 }}
                             >
+                              Tin nhắn đã bị thu hồi
+                            </Typography>
+                          </Box>
+                        );
+                      }
+
+                      const trimmed = msg.text?.trim() || "";
+                      const isMedia = /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);
+                      const isVideo = isMedia && isVideoUrl(trimmed);
+
+                      if (isMedia) {
+                        return (
+                          <Box
+                            sx={{
+                              overflow: "hidden",
+                              borderRadius: bubbleRadius,
+                              maxWidth: "100%",
+                            }}
+                          >
+                            {isVideo ? (
                               <Box
-                                component="img"
+                                component="video"
+                                controls
+                                preload="metadata"
                                 src={trimmed}
-                                alt="Ảnh trong tin nhắn"
-                                loading="lazy"
                                 sx={{
                                   maxWidth: "100%",
                                   maxHeight: 280,
                                   display: "block",
-                                  transition: "opacity 150ms",
-                                  "&:hover": { opacity: 0.9 },
+                                  bgcolor: "common.black",
                                 }}
                               />
-                            </ButtonBase>
-                          )}
+                            ) : (
+                              <ButtonBase
+                                onClick={() => setLightboxUrl(trimmed)}
+                                aria-label="Phóng to ảnh trong tin nhắn"
+                                sx={{ display: "block", width: "100%" }}
+                              >
+                                <Box
+                                  component="img"
+                                  src={trimmed}
+                                  alt="Ảnh trong tin nhắn"
+                                  loading="lazy"
+                                  sx={{
+                                    maxWidth: "100%",
+                                    maxHeight: 280,
+                                    display: "block",
+                                    transition: "opacity 150ms",
+                                    "&:hover": { opacity: 0.9 },
+                                  }}
+                                />
+                              </ButtonBase>
+                            )}
+                          </Box>
+                        );
+                      }
+
+                      return (
+                        <Box
+                          sx={{
+                            px: 1.65,
+                            py: 0.9,
+                            background: isMe ? themeConfig.bubbleMe : themeConfig.bubblePartner,
+                            color: isMe ? themeConfig.bubbleMeColor : themeConfig.bubblePartnerColor,
+                            border: isMe ? "none" : "1px solid",
+                            borderColor: isMe ? "transparent" : themeConfig.partnerBorder,
+                            borderRadius: bubbleRadius,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ fontSize: "0.9375rem", lineHeight: 1.45, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+                          >
+                            {msg.text}
+                          </Typography>
                         </Box>
                       );
-                    }
-
-                    return (
-                      <Box
-                        sx={{
-                          px: 1.75,
-                          py: 1,
-                          background: isMe ? themeConfig.bubbleMe : themeConfig.bubblePartner,
-                          color: isMe ? themeConfig.bubbleMeColor : themeConfig.bubblePartnerColor,
-                          border: isMe ? "none" : "1px solid",
-                          borderColor: isMe ? "transparent" : themeConfig.partnerBorder,
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-                          // Góc phía người gửi nhỏ lại để các bubble liền nhau "dính" vào nhau; bubble cuối có đuôi.
-                          borderRadius: isMe
-                            ? `${radius}px ${isFirst ? radius : tail}px ${tail}px ${radius}px`
-                            : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${tail}px`,
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{ fontSize: "0.9375rem", lineHeight: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
-                        >
-                          {msg.text}
-                        </Typography>
-                      </Box>
-                    );
-                  })()}
+                    })()}
+                  </Tooltip>
 
                   {/* Nút thu hồi tin nhắn cho tin nhắn của chính mình */}
                   {isMe && !msg.isDeleted && Boolean(onDeleteMessage) && (
@@ -389,19 +389,26 @@ export default function MessageList({
                   )}
                 </Box>
 
-                {isLast && (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4, px: 0.5 }}>
-                    <Typography variant="caption" sx={{ fontSize: "0.7rem", color: themeConfig.metaTextColor }}>
-                      {formatClockTime(msg.createdAt)}
-                    </Typography>
-                    {isMe && !msg.isDeleted && (
+                {isMe && isLatest && !msg.isDeleted && (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4, px: 0.25 }}>
+                    {msg.readAt ? (
+                      <Tooltip title={`Đã xem lúc ${formatClockTime(msg.readAt)}`}>
+                        <Avatar
+                          src={partner?.avatar}
+                          alt={`Đã xem bởi ${partner?.name || "đối phương"}`}
+                          sx={{ width: 15, height: 15, fontSize: "0.55rem" }}
+                        >
+                          {partner?.name?.[0]?.toUpperCase()}
+                        </Avatar>
+                      </Tooltip>
+                    ) : (
                       <Box
                         component="span"
-                        sx={{ display: "inline-flex", color: msg.readAt ? "primary.main" : themeConfig.metaTextColor }}
+                        sx={{ display: "inline-flex", color: themeConfig.metaTextColor }}
                       >
-                        {msg.readAt ? <CheckCheck size={14} aria-hidden /> : <Check size={14} aria-hidden />}
+                        <Check size={14} aria-hidden />
                         <Box component="span" sx={visuallyHidden}>
-                          {msg.readAt ? "Đã xem" : "Đã gửi"}
+                          Đã gửi
                         </Box>
                       </Box>
                     )}

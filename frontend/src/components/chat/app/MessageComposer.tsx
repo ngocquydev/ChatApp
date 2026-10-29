@@ -172,21 +172,10 @@ export default function MessageComposer({
         sx={{
           display: "flex",
           alignItems: "flex-end",
-          gap: 0.25,
-          bgcolor: "background.default",
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: "24px",
-          px: 1,
-          py: 0.5,
-          transition: "border-color 150ms, background-color 150ms",
-          "&:focus-within": {
-            borderColor: "primary.main",
-            bgcolor: "background.paper",
-          },
+          gap: 0.75,
         }}
       >
-        <Box sx={{ display: "flex", pb: 0.25, alignItems: "center" }}>
+        <Box sx={{ display: "flex", pb: 0.35, alignItems: "center", gap: 0.25 }}>
           <input
             ref={fileInputRef}
             type="file"
@@ -204,7 +193,7 @@ export default function MessageComposer({
                 onClick={() => fileInputRef.current?.click()}
                 sx={{ color: "primary.main" }}
               >
-                {uploadingMedia ? <CircularProgress size={18} /> : <ImageIcon size={19} />}
+                {uploadingMedia ? <CircularProgress size={18} /> : <ImageIcon size={20} />}
               </IconButton>
             </span>
           </Tooltip>
@@ -215,30 +204,48 @@ export default function MessageComposer({
           </Box>
         </Box>
 
-        <TextField
-          fullWidth
-          multiline
-          maxRows={5}
-          variant="standard"
-          placeholder="Nhập tin nhắn…"
-          value={text}
-          onChange={(e) => handleChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          slotProps={{
-            htmlInput: { "aria-label": "Nội dung tin nhắn", enterKeyHint: "send" },
-            input: { disableUnderline: true, sx: { px: 1, py: 0.9, fontSize: "0.9375rem" } },
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            alignItems: "flex-end",
+            bgcolor: "action.hover",
+            border: "1px solid",
+            borderColor: "transparent",
+            borderRadius: "24px",
+            pl: 2,
+            pr: 0.75,
+            py: 0.25,
+            transition: "border-color 150ms, background-color 150ms",
+            "&:focus-within": {
+              borderColor: "primary.main",
+              bgcolor: "background.paper",
+            },
           }}
-        />
+        >
+          <TextField
+            fullWidth
+            multiline
+            maxRows={5}
+            variant="standard"
+            placeholder="Aa"
+            value={text}
+            onChange={(e) => handleChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            slotProps={{
+              htmlInput: { "aria-label": "Nội dung tin nhắn", enterKeyHint: "send" },
+              input: { disableUnderline: true, sx: { py: 0.65, fontSize: "0.9375rem" } },
+            }}
+          />
 
-        <Box sx={{ display: "flex", pb: 0.25, alignItems: "center" }}>
           <Tooltip title="Chọn biểu tượng cảm xúc">
             <IconButton
               size="small"
               aria-label="Chọn biểu tượng cảm xúc"
               onClick={(e: MouseEvent<HTMLButtonElement>) => setEmojiAnchorEl(e.currentTarget)}
-              sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}
+              sx={{ color: "primary.main", mb: 0.25 }}
             >
-              <Smile size={19} />
+              <Smile size={20} />
             </IconButton>
           </Tooltip>
         </Box>
@@ -250,14 +257,13 @@ export default function MessageComposer({
               aria-label="Gửi tin nhắn"
               sx={{
                 mb: 0.25,
-                width: 36,
-                height: 36,
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
-                "&:hover": { bgcolor: "primary.dark" },
+                width: 38,
+                height: 38,
+                color: "primary.main",
+                "&:hover": { bgcolor: "action.hover" },
               }}
             >
-              <Send size={16} />
+              <Send size={19} />
             </IconButton>
           </Tooltip>
         ) : (
@@ -267,13 +273,13 @@ export default function MessageComposer({
               aria-label="Gửi biểu tượng thích"
               sx={{
                 mb: 0.25,
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 color: "primary.main",
-                "&:hover": { bgcolor: "action.selected", transform: "scale(1.08)" },
+                "&:hover": { bgcolor: "action.hover", transform: "scale(1.08)" },
               }}
             >
-              <ThumbsUp size={18} />
+              <ThumbsUp size={20} />
             </IconButton>
           </Tooltip>
         )}
