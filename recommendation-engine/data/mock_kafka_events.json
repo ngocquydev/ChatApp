@@ -1,0 +1,32 @@
+[
+  {
+    "eventType": "FRIEND_ACCEPTED",
+    "userA": 960,
+    "userB": 961,
+    "timestamp": 1720000000000
+  },
+  {
+    "eventType": "FRIEND_ACCEPTED",
+    "userA": 960,
+    "userB": 962,
+    "timestamp": 1720000001000
+  },
+  {
+    "eventType": "FRIEND_ACCEPTED",
+    "userA": 961,
+    "userB": 963,
+    "timestamp": 1720000002000
+  },
+  {
+    "eventType": "FRIEND_ACCEPTED",
+    "userA": 5,
+    "userB": 25,
+    "timestamp": 1720000003000
+  },
+  {
+    "eventType": "FRIEND_ACCEPTED",
+    "userA": 12,
+    "userB": 48,
+    "timestamp": 1720000004000
+  }
+]
