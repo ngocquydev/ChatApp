@@ -227,7 +227,14 @@ export class AuthService {
 
   async updateProfile(
     userId: string,
-    data: { name?: string; phone?: string; avatar?: string; bio?: string; dateOfBirth?: string },
+    data: {
+      name?: string;
+      phone?: string;
+      avatar?: string;
+      cover?: string;
+      bio?: string;
+      dateOfBirth?: string;
+    },
   ): Promise<UpdateProfileResponse> {
     const user = await this.userService.findById(userId);
     if (!user) {
@@ -235,29 +242,59 @@ export class AuthService {
     }
 
     const updatePayload: Record<string, unknown> = {};
+    const addToSet: Record<string, unknown> = {};
+
     if (typeof data.name === 'string') updatePayload.name = data.name.trim();
     if (typeof data.phone === 'string') updatePayload.phone = data.phone.trim();
+
     if (typeof data.avatar === 'string') {
       const trimmedAvatar = data.avatar.trim();
+      let avatarUrl = trimmedAvatar;
       if (trimmedAvatar.startsWith('data:image/') && this.cloudinaryService?.isConfigured()) {
         try {
           const res = await this.cloudinaryService.uploadBase64(trimmedAvatar, {
             folder: 'chatapp/avatars',
           });
-          updatePayload.avatar = res.secure_url;
+          avatarUrl = res.secure_url;
         } catch {
-          updatePayload.avatar = trimmedAvatar;
+          avatarUrl = trimmedAvatar;
         }
-      } else {
-        updatePayload.avatar = trimmedAvatar;
+      }
+      updatePayload.avatar = avatarUrl;
+      if (avatarUrl) {
+        addToSet.photos = avatarUrl;
       }
     }
+
+    if (typeof data.cover === 'string') {
+      const trimmedCover = data.cover.trim();
+      let coverUrl = trimmedCover;
+      if (trimmedCover.startsWith('data:image/') && this.cloudinaryService?.isConfigured()) {
+        try {
+          const res = await this.cloudinaryService.uploadBase64(trimmedCover, {
+            folder: 'chatapp/covers',
+          });
+          coverUrl = res.secure_url;
+        } catch {
+          coverUrl = trimmedCover;
+        }
+      }
+      updatePayload.cover = coverUrl;
+      if (coverUrl) {
+        addToSet.photos = coverUrl;
+      }
+    }
+
     if (typeof data.bio === 'string') updatePayload.bio = data.bio.trim();
     if (typeof data.dateOfBirth === 'string' && data.dateOfBirth.trim()) {
       const d = new Date(data.dateOfBirth);
       if (!isNaN(d.getTime())) {
         updatePayload.dateOfBirth = d;
       }
+    }
+
+    if (Object.keys(addToSet).length > 0) {
+      updatePayload.$addToSet = addToSet;
     }
 
     const updatedUser = await this.userService.findByIdAndUpdate(

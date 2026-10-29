@@ -12,7 +12,7 @@ export default function MyPostsTab() {
   const userId = (user?._id || user?.id) as string | undefined;
 
   if (!userId) return null;
-  return <MyPostsTabContent key={userId} userId={userId} />;
+  return <MyPostsTabContent key={`${userId}-${user?.avatar ?? ""}-${user?.cover ?? ""}`} userId={userId} />;
 }
 
 function MyPostsTabContent({ userId }: { userId: string }) {

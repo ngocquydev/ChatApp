@@ -27,6 +27,9 @@ export class User {
   @Prop({ required: false })
   cover?: string; // Ảnh bìa hồ sơ cá nhân
 
+  @Prop({ type: [String], default: [] })
+  photos?: string[]; // Kho lưu trữ toàn bộ ảnh cá nhân (avatar, cover, ảnh bài viết)
+
   @Prop({ required: false })
   bio?: string; // Giới thiệu bản thân
 

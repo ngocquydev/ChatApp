@@ -296,7 +296,7 @@ export class PostsService {
     );
   }
 
-  /** Ảnh gần đây của một người (cho khung "Ảnh" ở hồ sơ). */
+  /** Ảnh gần đây của một người (cho khung "Ảnh" ở hồ sơ bao gồm ảnh bài viết, ảnh bìa, avatar). */
   async getUserPhotos(viewerId: string, targetUserId: string, limit = 9) {
     const target = toObjectId(targetUserId, 'Mã người dùng không hợp lệ');
     const max = Math.min(Math.max(limit, 1), MAX_PAGE);
@@ -309,14 +309,47 @@ export class PostsService {
         'images.0': { $exists: true },
       })
       .sort({ _id: -1 })
-      .limit(max)
+      .limit(max * 2)
       .select('images')
       .lean<{ _id: Types.ObjectId; images: string[] }[]>()
       .exec();
-    const photos = rows.flatMap((r) =>
+    const postPhotos = rows.flatMap((r) =>
       r.images.map((url) => ({ postId: r._id.toString(), url })),
     );
-    return photos.slice(0, max);
+
+    // Lấy thêm ảnh từ thông tin hồ sơ: cover, avatar và kho lưu trữ photos
+    const targetUser = await this.usersService.findById(targetUserId).catch(() => null);
+    const userPhotosList: { postId: string; url: string }[] = [];
+
+    if (targetUser?.cover && typeof targetUser.cover === 'string' && targetUser.cover.trim()) {
+      userPhotosList.push({ postId: 'cover', url: targetUser.cover.trim() });
+    }
+    if (targetUser?.avatar && typeof targetUser.avatar === 'string' && targetUser.avatar.trim()) {
+      userPhotosList.push({ postId: 'avatar', url: targetUser.avatar.trim() });
+    }
+    if (Array.isArray((targetUser as any)?.photos)) {
+      const storedPhotos = (targetUser as any).photos as string[];
+      for (let i = storedPhotos.length - 1; i >= 0; i--) {
+        const p = storedPhotos[i];
+        if (typeof p === 'string' && p.trim()) {
+          userPhotosList.push({ postId: 'profile', url: p.trim() });
+        }
+      }
+    }
+
+    // Kết hợp và lọc trùng lặp URL
+    const seen = new Set<string>();
+    const result: { postId: string; url: string }[] = [];
+
+    for (const item of [...postPhotos, ...userPhotosList]) {
+      const normalized = item.url.trim();
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      result.push({ postId: item.postId, url: normalized });
+      if (result.length >= max) break;
+    }
+
+    return result;
   }
 
   async getPost(viewerId: string, postId: string): Promise<PostView> {
@@ -339,6 +372,13 @@ export class PostsService {
       images,
       privacy: dto.privacy ?? 'friends',
     });
+    if (images.length > 0) {
+      await this.usersService
+        .findByIdAndUpdate(authorId, {
+          $addToSet: { photos: { $each: images } },
+        } as any)
+        .catch(() => {});
+    }
     return this.getPost(authorId, created._id.toString());
   }
 

@@ -59,6 +59,8 @@ describe('PostsService', () => {
   };
   let usersService: {
     findByIds: ReturnType<typeof vi.fn>;
+    findById: ReturnType<typeof vi.fn>;
+    findByIdAndUpdate: ReturnType<typeof vi.fn>;
   };
 
   const me = oid().toString();
@@ -81,7 +83,11 @@ describe('PostsService', () => {
       aggregate: vi.fn().mockResolvedValue([]),
     };
     friendshipModel = { find: vi.fn(() => q([])), exists: vi.fn(() => q(null)) };
-    usersService = { findByIds: vi.fn().mockResolvedValue([]) };
+    usersService = {
+      findByIds: vi.fn().mockResolvedValue([]),
+      findById: vi.fn().mockResolvedValue(null),
+      findByIdAndUpdate: vi.fn().mockResolvedValue(null),
+    };
     service = new PostsService(
       postModel as unknown as never,
       likeModel as unknown as never,
@@ -432,6 +438,42 @@ describe('PostsService', () => {
 
     it('từ chối con trỏ sai định dạng', async () => {
       await expect(service.getFeed(me, { after: 'bad' })).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getUserPhotos', () => {
+    it('kết hợp ảnh bài viết, ảnh bìa, avatar và kho lưu trữ của người dùng', async () => {
+      postModel.find.mockReturnValue(
+        q([{ _id: oid(), images: ['/uploads/posts/p1.jpg'] }]),
+      );
+      usersService.findById.mockResolvedValue({
+        cover: 'https://cloudinary.com/cover.jpg',
+        avatar: 'https://cloudinary.com/avatar.jpg',
+        photos: ['https://cloudinary.com/old-avatar.jpg'],
+      });
+
+      const photos = await service.getUserPhotos(me, other, 9);
+      expect(photos).toHaveLength(4);
+      expect(photos.map((p) => p.url)).toEqual([
+        '/uploads/posts/p1.jpg',
+        'https://cloudinary.com/cover.jpg',
+        'https://cloudinary.com/avatar.jpg',
+        'https://cloudinary.com/old-avatar.jpg',
+      ]);
+    });
+
+    it('loại bỏ các URL ảnh bị trùng lặp', async () => {
+      postModel.find.mockReturnValue(
+        q([{ _id: oid(), images: ['https://cloudinary.com/avatar.jpg'] }]),
+      );
+      usersService.findById.mockResolvedValue({
+        avatar: 'https://cloudinary.com/avatar.jpg',
+        photos: ['https://cloudinary.com/avatar.jpg'],
+      });
+
+      const photos = await service.getUserPhotos(me, other, 9);
+      expect(photos).toHaveLength(1);
+      expect(photos[0].url).toBe('https://cloudinary.com/avatar.jpg');
     });
   });
 });

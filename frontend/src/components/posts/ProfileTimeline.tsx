@@ -37,7 +37,7 @@ export default function ProfileTimeline({ userId, isOwner, profile, currentUserI
     return () => {
       cancelled = true;
     };
-  }, [userId, photosVersion]);
+  }, [userId, photosVersion, profile?.user.avatar, profile?.user.cover]);
 
   const name = profile?.user.name;
 
