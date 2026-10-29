@@ -55,11 +55,24 @@ import { useChatBoxStore } from "../../store/useChatBoxStore";
 import { useSoundStore } from "../../store/useSoundStore";
 import BrandLogo from "../common/BrandLogo";
 import ColorModeToggle from "../common/ColorModeToggle";
+import PresenceAvatar from "../common/PresenceAvatar";
 import NotificationBell from "../notifications/NotificationBell";
 import UserSearchResults, { SEARCH_PREVIEW_COUNT } from "./UserSearchResults";
 
 /** Số kết quả mỗi trang khi "Xem tất cả" / cuộn vô hạn */
 const SEARCH_PAGE_SIZE = 20;
+
+const CLOUDINARY_MEDIA_RE = /^https:\/\/res\.cloudinary\.com\/.+\/(image|video)\/upload\/.+$/i;
+
+function formatMessagePreview(text?: string, isDeleted?: boolean): string {
+  if (isDeleted) return "Tin nhắn đã bị thu hồi";
+  if (!text) return "Chưa có tin nhắn";
+  const match = text.trim().match(CLOUDINARY_MEDIA_RE);
+  if (match) {
+    return match[1].toLowerCase() === "video" ? "🎬 Đã gửi một video" : "📷 Đã gửi một hình ảnh";
+  }
+  return text;
+}
 
 interface NavPage {
   id: string;
@@ -105,6 +118,7 @@ function ResponsiveAppBar() {
 
   const {
     conversations,
+    onlineUserIds,
     fetchConversations,
     selectConversation,
     startConversationWithUser,
@@ -772,8 +786,9 @@ function ResponsiveAppBar() {
                                 aria-label={`Mở hội thoại với ${other?.name || "người dùng"}${unread ? " (có tin chưa đọc)" : ""}`}
                                 onClick={async () => {
                                   handleCloseChat();
-                                  if (pathname === "/chat") {
+                                  if (pathname === "/chat" || (typeof window !== "undefined" && window.innerWidth < 600)) {
                                     await selectConversation(conv);
+                                    if (pathname !== "/chat") router.push("/chat");
                                   } else {
                                     if (other) {
                                       openChat(other as unknown as Parameters<typeof openChat>[0], conv._id);
@@ -799,12 +814,12 @@ function ResponsiveAppBar() {
                                   borderBottom: "1px solid var(--mui-palette-neutral-100)",
                                 }}
                               >
-                                <Avatar
-                                  src={other?.avatar || ""}
-                                  sx={{ width: 40, height: 40, bgcolor: "var(--mui-palette-brand-500)", fontWeight: 700 }}
-                                >
-                                  {(other?.name || "U")[0].toUpperCase()}
-                                </Avatar>
+                                <PresenceAvatar
+                                  name={other?.name}
+                                  src={other?.avatar}
+                                  size={40}
+                                  online={Boolean(other?._id && onlineUserIds.includes(String(other._id)))}
+                                />
                                 <Box sx={{ flex: 1, minWidth: 0 }}>
                                   <Box
                                     sx={{
@@ -844,9 +859,7 @@ function ResponsiveAppBar() {
                                       fontStyle: conv.lastMessage?.isDeleted ? "italic" : "normal",
                                     }}
                                   >
-                                    {conv.lastMessage?.isDeleted
-                                      ? "Tin nhắn đã bị thu hồi"
-                                      : (conv.lastMessage?.text || "Chưa có tin nhắn")}
+                                    {formatMessagePreview(conv.lastMessage?.text, conv.lastMessage?.isDeleted)}
                                   </Typography>
                                 </Box>
                               </ButtonBase>

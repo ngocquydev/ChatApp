@@ -312,7 +312,7 @@ export class ChatService {
       throw new ForbiddenException('Bạn không thuộc cuộc hội thoại này');
     }
 
-    const validThemes = ['default', 'dating', 'sky', 'midnight', 'ocean'];
+    const validThemes = ['default', 'dating', 'sky', 'midnight', 'ocean', 'sunset'];
     if (!validThemes.includes(theme)) {
       throw new BadRequestException('Chủ đề không hợp lệ');
     }

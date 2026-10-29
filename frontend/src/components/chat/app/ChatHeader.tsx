@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, MouseEvent } from "react";
+import NextLink from "next/link";
 import {
   Box,
+  ButtonBase,
+  Divider,
   IconButton,
   ListItemIcon,
   ListItemText,
@@ -18,6 +21,7 @@ import {
   Palette,
   Phone,
   ShieldAlert,
+  User as UserIcon,
   Video,
   Volume2,
   VolumeX,
@@ -25,6 +29,7 @@ import {
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { ChatUser } from "@/store/useChatStore";
+import { getChatTheme } from "./chatThemes";
 import ThemeSelectDialog from "./ThemeSelectDialog";
 import RestrictInfoDialog from "./RestrictInfoDialog";
 
@@ -78,6 +83,8 @@ export default function ChatHeader({
   const [openBlockConfirm, setOpenBlockConfirm] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
+  const activeThemeConfig = getChatTheme(currentTheme);
+
   const handleOpenMenu = (e: MouseEvent<HTMLElement>) => {
     setMenuAnchor(e.currentTarget);
   };
@@ -109,6 +116,7 @@ export default function ChatHeader({
     : "text.secondary";
 
   const partnerName = partner?.name || "Người dùng";
+  const partnerId = partner?._id || partner?.id;
 
   return (
     <Box
@@ -126,7 +134,7 @@ export default function ChatHeader({
         minHeight: 68,
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1.5 }, minWidth: 0 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1 }, minWidth: 0 }}>
         <IconButton
           onClick={onBack}
           aria-label="Quay lại danh sách hội thoại"
@@ -135,29 +143,80 @@ export default function ChatHeader({
           <ArrowLeft size={22} />
         </IconButton>
 
-        <PresenceAvatar
-          name={partner?.name}
-          src={partner?.avatar}
-          online={!isRestricted && isOnline}
-          size={42}
-        />
-
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="subtitle1" component="h2" noWrap sx={{ fontWeight: 700, lineHeight: 1.25 }}>
-            {partnerName}
-          </Typography>
-          <Typography
-            variant="caption"
-            role="status"
-            aria-live="polite"
-            sx={{ color: statusColor, fontWeight: 600, display: "block" }}
+        {partnerId ? (
+          <ButtonBase
+            component={NextLink}
+            href={`/profile/${partnerId}`}
+            aria-label={`Xem trang cá nhân của ${partnerName}`}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: { xs: 1, sm: 1.5 },
+              minWidth: 0,
+              textAlign: "left",
+              borderRadius: "12px",
+              p: 0.5,
+              pr: 1.25,
+              transition: "background-color 0.15s ease",
+              "&:hover": { bgcolor: "action.hover" },
+            }}
           >
-            {statusText}
-          </Typography>
-        </Box>
+            <PresenceAvatar
+              name={partner?.name}
+              src={partner?.avatar}
+              online={!isRestricted && isOnline}
+              size={42}
+            />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle1" component="h2" noWrap sx={{ fontWeight: 700, lineHeight: 1.25 }}>
+                {partnerName}
+              </Typography>
+              <Typography
+                variant="caption"
+                role="status"
+                aria-live="polite"
+                sx={{ color: statusColor, fontWeight: 600, display: "block" }}
+              >
+                {statusText}
+              </Typography>
+            </Box>
+          </ButtonBase>
+        ) : (
+          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 1.5 }, minWidth: 0 }}>
+            <PresenceAvatar
+              name={partner?.name}
+              src={partner?.avatar}
+              online={!isRestricted && isOnline}
+              size={42}
+            />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="subtitle1" component="h2" noWrap sx={{ fontWeight: 700, lineHeight: 1.25 }}>
+                {partnerName}
+              </Typography>
+              <Typography
+                variant="caption"
+                role="status"
+                aria-live="polite"
+                sx={{ color: statusColor, fontWeight: 600, display: "block" }}
+              >
+                {statusText}
+              </Typography>
+            </Box>
+          </Box>
+        )}
       </Box>
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
+        <Tooltip title={`Chủ đề: ${activeThemeConfig.name}`}>
+          <IconButton
+            onClick={() => setOpenThemeDialog(true)}
+            aria-label="Đổi chủ đề cuộc trò chuyện"
+            sx={{ color: activeThemeConfig.previewColor, position: "relative" }}
+          >
+            <Palette size={20} />
+          </IconButton>
+        </Tooltip>
+
         <Tooltip title={isMuted ? "Bật âm thanh thông báo" : "Tắt âm thanh thông báo"}>
           <IconButton
             onClick={onToggleMute}
@@ -206,13 +265,31 @@ export default function ChatHeader({
             paper: {
               sx: {
                 borderRadius: "14px",
-                minWidth: 220,
+                minWidth: 230,
                 boxShadow: "0 10px 25px -5px rgba(0,0,0,0.2)",
                 p: 0.5,
               },
             },
           }}
         >
+          {partnerId && (
+            <MenuItem
+              component={NextLink}
+              href={`/profile/${partnerId}`}
+              onClick={handleCloseMenu}
+              sx={{ borderRadius: "8px", py: 1 }}
+            >
+              <ListItemIcon>
+                <UserIcon size={18} color="var(--mui-palette-text-secondary)" />
+              </ListItemIcon>
+              <ListItemText>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Xem trang cá nhân
+                </Typography>
+              </ListItemText>
+            </MenuItem>
+          )}
+
           <MenuItem
             onClick={() => {
               handleCloseMenu();
@@ -225,10 +302,12 @@ export default function ChatHeader({
             </ListItemIcon>
             <ListItemText>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                Đổi chủ đề / hình nền
+                Đổi chủ đề ({activeThemeConfig.name})
               </Typography>
             </ListItemText>
           </MenuItem>
+
+          <Divider sx={{ my: 0.5 }} />
 
           <MenuItem
             onClick={() => {

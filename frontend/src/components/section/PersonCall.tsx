@@ -1,25 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import NextLink from "next/link";
 import {
+  Alert,
   Box,
   Typography,
   TextField,
-  Avatar,
-  Badge,
   InputAdornment,
   Divider,
   Tabs,
   Tab,
   Button,
+  ButtonBase,
   IconButton,
   CircularProgress,
   LinearProgress,
   Tooltip,
   Chip,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
 import {
   Search,
   Circle,
@@ -29,16 +28,15 @@ import {
   Check,
   X,
   Clock,
-  UserCheck,
   MapPin,
   Compass,
   Sparkles,
   ShieldCheck,
 } from "lucide-react";
+import PresenceAvatar from "@/components/common/PresenceAvatar";
 import {
   useFriendStore,
   UserRelationResult,
-  FriendRecommendationResult,
 } from "../../store/useFriendStore";
 import { useChatStore, ChatUser } from "../../store/useChatStore";
 import { useChatBoxStore } from "../../store/useChatBoxStore";
@@ -55,35 +53,11 @@ export interface PersonCallProps {
   onSelectFriend?: (friend: ChatUser) => void;
 }
 
-const OnlineBadge = styled(Badge)<{ isonline?: string }>(({ isonline }) => ({
-  "& .MuiBadge-badge": {
-    backgroundColor: isonline === "true" ? "var(--mui-palette-tone-22c55e)" : "var(--mui-palette-neutral-400)",
-    color: isonline === "true" ? "var(--mui-palette-tone-22c55e)" : "var(--mui-palette-neutral-400)",
-    boxShadow: `0 0 0 2px var(--mui-palette-background-paper)`,
-    "&::after": {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      borderRadius: "50%",
-      animation:
-        isonline === "true" ? "ripple 1.4s infinite ease-in-out" : "none",
-      border: "1px solid currentColor",
-      content: '""',
-    },
-  },
-  "@keyframes ripple": {
-    "0%": { transform: "scale(.8)", opacity: 1 },
-    "100%": { transform: "scale(2.2)", opacity: 0 },
-  },
-}));
-
 function PersonCall({ onSelectFriend }: PersonCallProps) {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<number>(0);
   const [searchFriend, setSearchFriend] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [geoNotice, setGeoNotice] = useState<string | null>(null);
 
   const {
     friends,
@@ -104,7 +78,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
     updateLocation,
   } = useFriendStore();
 
-  const { onlineUserIds, startConversationWithUser } = useChatStore();
+  const { onlineUserIds } = useChatStore();
   const { openChat } = useChatBoxStore();
 
   useEffect(() => {
@@ -119,8 +93,9 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
   }, [activeTab, recommendations.length, fetchRecommendations]);
 
   const handleRequestLocation = () => {
+    setGeoNotice(null);
     if (typeof window === "undefined" || !navigator.geolocation) {
-      alert("Trình duyệt của bạn không hỗ trợ Geolocation API");
+      setGeoNotice("Trình duyệt của bạn không hỗ trợ định vị vị trí.");
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -130,6 +105,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
       },
       (err) => {
         console.warn("Không thể lấy tọa độ hiện tại:", err);
+        setGeoNotice("Không lấy được vị trí hiện tại. Đang hiển thị gợi ý mặc định.");
         fetchRecommendations();
       },
       { timeout: 10000, enableHighAccuracy: true }
@@ -358,10 +334,14 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                 const isOnline = onlineUserIds.includes(friend._id);
 
                 return (
-                  <Box
+                  <ButtonBase
+                    component="div"
                     key={f.friendshipId || friend._id}
+                    aria-label={`Trò chuyện với ${friend.name}`}
                     onClick={() => handleStartChat(friend)}
                     sx={{
+                      width: "100%",
+                      textAlign: "left",
                       display: "flex",
                       alignItems: "center",
                       p: 1,
@@ -374,19 +354,12 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       },
                     }}
                   >
-                    <OnlineBadge
-                      overlap="circular"
-                      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                      variant="dot"
-                      isonline={isOnline ? "true" : "false"}
-                    >
-                      <Avatar
-                        src={friend.avatar || ""}
-                        sx={{ width: 38, height: 38, bgcolor: "var(--mui-palette-brand-500)", fontWeight: 700 }}
-                      >
-                        {(friend.name || "U")[0].toUpperCase()}
-                      </Avatar>
-                    </OnlineBadge>
+                    <PresenceAvatar
+                      name={friend.name}
+                      src={friend.avatar}
+                      online={isOnline}
+                      size={38}
+                    />
 
                     <Box sx={{ ml: 1.5, flex: 1, minWidth: 0 }}>
                       <Typography
@@ -406,13 +379,14 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                           fontWeight: isOnline ? 600 : 400,
                         }}
                       >
-                        {isOnline ? "Đang hoạt động" : "Offline"}
+                        {isOnline ? "Đang hoạt động" : "Ngoại tuyến"}
                       </Typography>
                     </Box>
 
                     <Tooltip title="Nhắn tin">
                       <IconButton
                         size="small"
+                        aria-label={`Nhắn tin với ${friend.name}`}
                         sx={{ color: "var(--mui-palette-brand-500)" }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -422,7 +396,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         <MessageSquare size={16} />
                       </IconButton>
                     </Tooltip>
-                  </Box>
+                  </ButtonBase>
                 );
               })}
           </Box>
@@ -534,8 +508,13 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       "&:hover": { bgcolor: "var(--mui-palette-brand-700)" },
                     }}
                   >
-                    {isLocating ? "Đang định vị..." : (userLocation ? "Cập nhật lại vị trí" : "Bật định vị & Gợi ý quanh đây")}
+                    {isLocating ? "Đang định vị…" : (userLocation ? "Cập nhật lại vị trí" : "Bật định vị & Gợi ý quanh đây")}
                   </Button>
+                  {geoNotice && (
+                    <Alert severity="info" onClose={() => setGeoNotice(null)} sx={{ py: 0, px: 1, fontSize: "0.72rem" }}>
+                      {geoNotice}
+                    </Alert>
+                  )}
                 </Box>
 
                 {/* Tiêu đề danh sách gợi ý */}
@@ -607,28 +586,34 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         },
                       }}
                     >
-                      <Avatar
-                        src={rec.avatar || ""}
-                        sx={{
-                          width: 40,
-                          height: 40,
-                          bgcolor: "var(--mui-palette-brand-500)",
-                          fontWeight: 700,
-                          flexShrink: 0,
-                        }}
+                      <ButtonBase
+                        component={NextLink}
+                        href={`/profile/${rec._id}`}
+                        aria-label={`Xem trang cá nhân của ${rec.name}`}
+                        sx={{ borderRadius: "50%", flexShrink: 0 }}
                       >
-                        {(rec.name || "U")[0].toUpperCase()}
-                      </Avatar>
+                        <PresenceAvatar
+                          name={rec.name}
+                          src={rec.avatar}
+                          size={40}
+                          hidePresence
+                        />
+                      </ButtonBase>
 
                       <Box sx={{ ml: 1.2, flex: 1, minWidth: 0 }}>
                         <Typography
+                          component={NextLink}
+                          href={`/profile/${rec._id}`}
                           variant="subtitle2"
                           noWrap
                           sx={{
+                            display: "block",
+                            textDecoration: "none",
                             fontWeight: 700,
                             color: "var(--mui-palette-neutral-800)",
                             fontSize: "0.86rem",
                             lineHeight: 1.3,
+                            "&:hover": { color: "primary.main", textDecoration: "underline" },
                           }}
                         >
                           {rec.name}
@@ -810,18 +795,34 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   border: "1px solid var(--mui-palette-neutral-200)",
                 }}
               >
-                <Avatar
-                  src={user.avatar || ""}
-                  sx={{ width: 40, height: 40, bgcolor: "var(--mui-palette-brand-500)", fontWeight: 700, flexShrink: 0 }}
+                <ButtonBase
+                  component={NextLink}
+                  href={`/profile/${user._id}`}
+                  aria-label={`Xem trang cá nhân của ${user.name}`}
+                  sx={{ borderRadius: "50%", flexShrink: 0 }}
                 >
-                  {(user.name || "U")[0].toUpperCase()}
-                </Avatar>
+                  <PresenceAvatar
+                    name={user.name}
+                    src={user.avatar}
+                    size={40}
+                    hidePresence
+                  />
+                </ButtonBase>
 
                 <Box sx={{ ml: 1.2, flex: 1, minWidth: 0 }}>
                   <Typography
+                    component={NextLink}
+                    href={`/profile/${user._id}`}
                     variant="subtitle2"
                     noWrap
-                    sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.86rem" }}
+                    sx={{
+                      display: "block",
+                      textDecoration: "none",
+                      fontWeight: 700,
+                      color: "var(--mui-palette-neutral-800)",
+                      fontSize: "0.86rem",
+                      "&:hover": { color: "primary.main", textDecoration: "underline" },
+                    }}
                   >
                     {user.name}
                   </Typography>
@@ -886,6 +887,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       <IconButton
                         size="small"
                         color="primary"
+                        aria-label={`Đồng ý kết bạn với ${user.name}`}
                         onClick={() => handleRespond(user.requestId || "", "accept")}
                         sx={{ bgcolor: "var(--mui-palette-brand-50)", p: 0.5 }}
                       >
@@ -894,6 +896,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       <IconButton
                         size="small"
                         color="error"
+                        aria-label={`Từ chối kết bạn với ${user.name}`}
                         onClick={() => handleRespond(user.requestId || "", "reject")}
                         sx={{ bgcolor: "var(--mui-palette-tone-fef2f2)", p: 0.5 }}
                       >

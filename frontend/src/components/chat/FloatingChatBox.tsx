@@ -13,21 +13,19 @@ import {
   Paper,
   Box,
   Button,
+  ButtonBase,
   Typography,
   Avatar,
   IconButton,
   Tooltip,
   TextField,
-  Badge,
   CircularProgress,
   Popover,
   Menu,
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Grid,
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
 import {
   Minus,
   X,
@@ -35,8 +33,6 @@ import {
   Send,
   Smile,
   ThumbsUp,
-  Circle,
-  Check,
   CheckCheck,
   ChevronUp,
   MoreVertical,
@@ -44,14 +40,18 @@ import {
   ShieldAlert,
   Ban,
   Trash2,
+  Image as ImageIcon,
 } from "lucide-react";
 import api from "@/services/api";
+import { isVideoUrl, uploadMedia } from "@/services/postsApi";
 import { mqttChatClient } from "@/services/mqttClient";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore, ChatMessage, ChatUser } from "@/store/useChatStore";
 import { useChatBoxStore, ChatBoxSession } from "@/store/useChatBoxStore";
 import { soundNotification } from "@/utils/soundNotification";
+import PresenceAvatar from "@/components/common/PresenceAvatar";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import ImageLightbox from "@/components/posts/ImageLightbox";
 import ThemeSelectDialog from "@/components/chat/app/ThemeSelectDialog";
 import RestrictInfoDialog from "@/components/chat/app/RestrictInfoDialog";
 import { getChatTheme } from "@/components/chat/app/chatThemes";
@@ -59,36 +59,8 @@ import { getChatTheme } from "@/components/chat/app/chatThemes";
 const POPULAR_EMOJIS = [
   "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
   "👍", "❤️", "🔥", "🎉", "👏", "💯", "✨", "🙏",
-  "👋", "☕", "🚀", "💪"
+  "👋", "☕", "🚀", "💪",
 ];
-
-// Styled online badge with pulsing ripple effect
-const OnlineBadge = styled(Badge)<{ isonline?: string }>(({ isonline }) => ({
-  "& .MuiBadge-badge": {
-    backgroundColor: isonline === "true" ? "var(--mui-palette-tone-22c55e)" : "var(--mui-palette-neutral-400)",
-    color: isonline === "true" ? "var(--mui-palette-tone-22c55e)" : "var(--mui-palette-neutral-400)",
-    boxShadow: `0 0 0 2px var(--mui-palette-background-paper)`,
-    width: 10,
-    height: 10,
-    borderRadius: "50%",
-    "&::after": {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      borderRadius: "50%",
-      animation:
-        isonline === "true" ? "chatPulse 1.5s infinite ease-in-out" : "none",
-      border: "1px solid currentColor",
-      content: '""',
-    },
-  },
-  "@keyframes chatPulse": {
-    "0%": { transform: "scale(.8)", opacity: 1 },
-    "100%": { transform: "scale(2.2)", opacity: 0 },
-  },
-}));
 
 interface FloatingChatBoxProps {
   session: ChatBoxSession;
@@ -125,23 +97,33 @@ export default function FloatingChatBox({
   const [openRestrictDialog, setOpenRestrictDialog] = useState(false);
   const [openBlockConfirm, setOpenBlockConfirm] = useState(false);
   const [deleteMsgId, setDeleteMsgId] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingSentRef = useRef<number>(0);
   const partnerTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const targetUser = session.user;
+  const targetUserName = targetUser.name;
   const targetUserId = String(targetUser._id || targetUser.id);
   const currentUserId = String(currentUser?._id || currentUser?.id);
 
   const isBlocked = Boolean(blockedBy);
   const isBlockedByMe = Boolean(blockedBy && currentUserId && blockedBy === currentUserId);
-  const isBlockedByPartner = Boolean(blockedBy && currentUserId && blockedBy !== currentUserId);
   const isRestricted = Boolean(currentUserId && restrictedBy.includes(currentUserId));
   const isOnline = !isRestricted && onlineUserIds.includes(targetUserId);
 
   const chatTheme = getChatTheme(convTheme);
+
+  const socketRef = useRef(socket);
+  const isRestrictedRef = useRef(isRestricted);
+  useEffect(() => {
+    socketRef.current = socket;
+    isRestrictedRef.current = isRestricted;
+  }, [socket, isRestricted]);
 
   // Scroll to bottom smoothly
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
@@ -190,7 +172,7 @@ export default function FloatingChatBox({
 
       setIsLoading(true);
       try {
-        let currentConvId = convId || session.conversationId || null;
+        let currentConvId = session.conversationId || null;
         if (!currentConvId) {
           const res = await api.post("/chat/conversations", {
             participantId: targetUserId,
@@ -232,8 +214,9 @@ export default function FloatingChatBox({
           }
 
           // Báo qua socket (chỉ khi không hạn chế)
-          if (!isRestricted && socket && socket.connected) {
-            socket.emit("message:read", {
+          const sock = socketRef.current;
+          if (!isRestrictedRef.current && sock && sock.connected) {
+            sock.emit("message:read", {
               conversationId: currentConvId,
               receiverId: targetUserId,
             });
@@ -253,7 +236,7 @@ export default function FloatingChatBox({
     return () => {
       isMounted = false;
     };
-  }, [targetUserId, session.conversationId]);
+  }, [targetUserId, currentUserId, session.conversationId, setConversationId, clearUnread]);
 
   // Cuộn xuống đáy khi tin nhắn thay đổi hoặc khi un-minimize
   useEffect(() => {
@@ -286,9 +269,8 @@ export default function FloatingChatBox({
     const unbindMqttMsg = mqttChatClient.onMessage((newMsg) => {
       if (newMsg.conversationId === convId) {
         setPartnerTypingInactive();
-        const myId = String(currentUser?._id || currentUser?.id || "");
-        if (newMsg.senderId && newMsg.senderId !== myId) {
-          soundNotification.playIncomingSound(newMsg._id || newMsg.id, session.user.name);
+        if (newMsg.senderId && newMsg.senderId !== currentUserId) {
+          soundNotification.playIncomingSound(newMsg._id || newMsg.id, targetUserName);
         }
         setMessages((prev) => {
           const exists = prev.some(
@@ -328,13 +310,12 @@ export default function FloatingChatBox({
     const handleNewMessage = (newMsg: ChatMessage) => {
       if (newMsg.conversationId === convId) {
         setPartnerTypingInactive();
-        const myId = String(currentUser?._id || currentUser?.id || "");
         const senderId =
           typeof newMsg.senderId === "string"
             ? newMsg.senderId
             : String(newMsg.senderId?._id || newMsg.senderId?.id || "");
-        if (senderId && senderId !== myId) {
-          soundNotification.playIncomingSound(newMsg._id || newMsg.id, session.user.name);
+        if (senderId && senderId !== currentUserId) {
+          soundNotification.playIncomingSound(newMsg._id || newMsg.id, targetUserName);
         }
         setMessages((prev) => {
           const exists = prev.some((m) => m._id === newMsg._id || m.id === newMsg.id);
@@ -436,7 +417,7 @@ export default function FloatingChatBox({
         socket.off("message:deleted", handleMessageDeleted);
       }
     };
-  }, [socket, convId, targetUserId, session.isMinimized, clearUnread, incrementUnread]);
+  }, [socket, convId, targetUserId, currentUserId, targetUserName, session.isMinimized, clearUnread, incrementUnread]);
 
   // 3. Xử lý gõ chữ & bắn event typing nhị phân
   const handleInputChange = (text: string) => {
@@ -625,6 +606,23 @@ export default function FloatingChatBox({
     handleCloseEmoji();
   };
 
+  const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !convId) return;
+    e.target.value = "";
+    setUploadingMedia(true);
+    try {
+      const res = await uploadMedia(file);
+      if (res?.url) {
+        await handleSendMessage(res.url);
+      }
+    } catch {
+      // bỏ qua lỗi tải tệp
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
   // Nhận diện người gửi là mình
   const isSenderMe = (msg: ChatMessage) => {
     const sId =
@@ -646,12 +644,12 @@ export default function FloatingChatBox({
       elevation={8}
       sx={{
         width: { xs: 290, sm: 330 },
-        height: session.isMinimized ? 46 : 450,
+        height: session.isMinimized ? 48 : 450,
         display: "flex",
         flexDirection: "column",
-        borderRadius: "14px 14px 0 0",
+        borderRadius: "16px 16px 0 0",
         overflow: "hidden",
-        border: "1px solid var(--mui-palette-neutral-300)",
+        border: "1px solid var(--mui-palette-divider)",
         boxShadow: "0 8px 30px rgba(0, 0, 0, 0.16)",
         transition: "height 0.22s cubic-bezier(0.4, 0, 0.2, 1)",
         bgcolor: "var(--mui-palette-background-paper)",
@@ -660,52 +658,42 @@ export default function FloatingChatBox({
     >
       {/* HEADER: Kiểu Facebook Messenger */}
       <Box
-        onClick={session.isMinimized ? onToggleMinimize : undefined}
         sx={{
-          height: 46,
-          px: 1.5,
+          height: 48,
+          px: 1.25,
           bgcolor: "var(--mui-palette-background-paper)",
-          borderBottom: session.isMinimized ? "none" : "1px solid var(--mui-palette-neutral-200)",
+          borderBottom: session.isMinimized ? "none" : "1px solid var(--mui-palette-divider)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          cursor: session.isMinimized ? "pointer" : "default",
           userSelect: "none",
-          transition: "background-color 0.15s",
-          "&:hover": session.isMinimized ? { bgcolor: "var(--mui-palette-neutral-100)" } : {},
         }}
       >
         {/* Avatar & Tên */}
-        <Box
+        <ButtonBase
+          component="div"
+          aria-label={session.isMinimized ? `Mở rộng hộp chat với ${targetUser.name}` : `Thu nhỏ hộp chat với ${targetUser.name}`}
+          onClick={onToggleMinimize}
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: 1.2,
+            justifyContent: "flex-start",
+            textAlign: "left",
+            gap: 1.1,
             minWidth: 0,
             flex: 1,
-            cursor: "pointer",
+            py: 0.5,
+            px: 0.5,
+            borderRadius: "10px",
+            "&:hover": { bgcolor: "action.hover" },
           }}
-          onClick={onToggleMinimize}
         >
-          <OnlineBadge
-            overlap="circular"
-            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-            variant="dot"
-            isonline={isOnline ? "true" : "false"}
-          >
-            <Avatar
-              src={targetUser.avatar || ""}
-              sx={{
-                width: 32,
-                height: 32,
-                bgcolor: "var(--mui-palette-brand-600)",
-                fontWeight: 700,
-                fontSize: "0.85rem",
-              }}
-            >
-              {(targetUser.name || "U")[0].toUpperCase()}
-            </Avatar>
-          </OnlineBadge>
+          <PresenceAvatar
+            name={targetUser.name}
+            src={targetUser.avatar}
+            online={isOnline}
+            size={32}
+          />
 
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
@@ -715,7 +703,7 @@ export default function FloatingChatBox({
                 sx={{
                   fontWeight: 700,
                   fontSize: "0.88rem",
-                  color: "var(--mui-palette-neutral-900)",
+                  color: "text.primary",
                   lineHeight: 1.2,
                 }}
               >
@@ -725,8 +713,8 @@ export default function FloatingChatBox({
               {session.isMinimized && session.unreadCount > 0 && (
                 <Box
                   sx={{
-                    bgcolor: "var(--mui-palette-tone-ef4444)",
-                    color: "white",
+                    bgcolor: "error.main",
+                    color: "common.white",
                     borderRadius: "10px",
                     px: 0.7,
                     py: 0.1,
@@ -748,19 +736,19 @@ export default function FloatingChatBox({
                   alignItems: "center",
                   gap: 0.5,
                   fontSize: "0.72rem",
-                  color: isOnline ? "var(--mui-palette-tone-16a34a)" : "var(--mui-palette-neutral-500)",
+                  color: isOnline ? "success.main" : "text.secondary",
                   fontWeight: isOnline ? 600 : 400,
-                  lineHeight: 1,
+                  lineHeight: 1.1,
                 }}
               >
-                {isOnline ? "Đang hoạt động" : "Offline"}
+                {isOnline ? "Đang hoạt động" : "Ngoại tuyến"}
               </Typography>
             )}
           </Box>
-        </Box>
+        </ButtonBase>
 
         {/* Nút hành động */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
           {!session.isMinimized && (
             <Tooltip title="Tùy chọn đoạn chat">
               <IconButton
@@ -770,9 +758,9 @@ export default function FloatingChatBox({
                   setMenuAnchorEl(e.currentTarget);
                 }}
                 sx={{
-                  color: "var(--mui-palette-neutral-500)",
+                  color: "text.secondary",
                   p: 0.6,
-                  "&:hover": { bgcolor: "var(--mui-palette-neutral-100)", color: "var(--mui-palette-neutral-900)" },
+                  "&:hover": { bgcolor: "action.hover", color: "text.primary" },
                 }}
                 aria-label="Tùy chọn cuộc trò chuyện"
               >
@@ -784,14 +772,15 @@ export default function FloatingChatBox({
           <Tooltip title={session.isMinimized ? "Mở rộng" : "Thu nhỏ"}>
             <IconButton
               size="small"
+              aria-label={session.isMinimized ? "Mở rộng hộp chat" : "Thu nhỏ hộp chat"}
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleMinimize();
               }}
               sx={{
-                color: "var(--mui-palette-neutral-500)",
+                color: "text.secondary",
                 p: 0.6,
-                "&:hover": { bgcolor: "var(--mui-palette-neutral-100)", color: "var(--mui-palette-neutral-900)" },
+                "&:hover": { bgcolor: "action.hover", color: "text.primary" },
               }}
             >
               {session.isMinimized ? <ChevronUp size={16} /> : <Minus size={16} />}
@@ -801,14 +790,15 @@ export default function FloatingChatBox({
           <Tooltip title="Mở trong trang Chat">
             <IconButton
               size="small"
+              aria-label="Mở trong trang Chat"
               onClick={(e) => {
                 e.stopPropagation();
-                handleOpenFullChat();
+                void handleOpenFullChat();
               }}
               sx={{
-                color: "var(--mui-palette-neutral-500)",
+                color: "text.secondary",
                 p: 0.6,
-                "&:hover": { bgcolor: "var(--mui-palette-neutral-100)", color: "var(--mui-palette-brand-600)" },
+                "&:hover": { bgcolor: "action.hover", color: "primary.main" },
               }}
             >
               <Maximize2 size={15} />
@@ -818,14 +808,15 @@ export default function FloatingChatBox({
           <Tooltip title="Đóng">
             <IconButton
               size="small"
+              aria-label="Đóng hộp chat"
               onClick={(e) => {
                 e.stopPropagation();
                 onClose();
               }}
               sx={{
-                color: "var(--mui-palette-neutral-500)",
+                color: "text.secondary",
                 p: 0.6,
-                "&:hover": { bgcolor: "var(--mui-palette-tone-fee2e2)", color: "var(--mui-palette-tone-ef4444)" },
+                "&:hover": { bgcolor: "var(--mui-palette-tone-fee2e2)", color: "error.main" },
               }}
             >
               <X size={16} />
@@ -907,12 +898,14 @@ export default function FloatingChatBox({
         <>
           {/* VÙNG DANH SÁCH TIN NHẮN */}
           <Box
+            role="log"
+            aria-live="polite"
+            aria-label={`Tin nhắn với ${targetUser.name}`}
             sx={{
               flex: 1,
               overflowY: "auto",
               p: 1.5,
               background: chatTheme.background,
-              backgroundAttachment: "fixed",
               display: "flex",
               flexDirection: "column",
               gap: 1,
@@ -928,14 +921,13 @@ export default function FloatingChatBox({
                   justifyContent: "center",
                   height: "100%",
                   gap: 1.5,
-                  color: "var(--mui-palette-neutral-400)",
+                  color: chatTheme.metaTextColor,
                 }}
               >
                 <CircularProgress size={24} />
-                <Typography variant="caption">Đang tải tin nhắn...</Typography>
+                <Typography variant="caption">Đang tải tin nhắn…</Typography>
               </Box>
             ) : messages.length === 0 ? (
-              // Trạng thái chưa có tin nhắn: Chào mừng kiểu Facebook
               <Box
                 sx={{
                   display: "flex",
@@ -948,61 +940,43 @@ export default function FloatingChatBox({
                   py: 3,
                 }}
               >
-                <Avatar
-                  src={targetUser.avatar || ""}
-                  sx={{
-                    width: 58,
-                    height: 58,
-                    mb: 1.2,
-                    bgcolor: "var(--mui-palette-brand-600)",
-                    fontSize: "1.4rem",
-                    fontWeight: 700,
-                    boxShadow: "0 4px 12px rgba(37, 99, 235, 0.2)",
-                  }}
+                <PresenceAvatar name={targetUser.name} src={targetUser.avatar} online={isOnline} size={56} />
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 700, color: chatTheme.isDarkTheme ? "common.white" : "text.primary", mt: 1.25 }}
                 >
-                  {(targetUser.name || "U")[0].toUpperCase()}
-                </Avatar>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                   {targetUser.name}
                 </Typography>
                 <Typography
                   variant="caption"
-                  sx={{ color: "var(--mui-palette-neutral-500)", mb: 2, display: "block", maxWidth: 200 }}
+                  sx={{ color: chatTheme.metaTextColor, mb: 2, display: "block", maxWidth: 200 }}
                 >
                   Các bạn đã kết nối trên ChatApp. Hãy bắt đầu cuộc trò chuyện!
                 </Typography>
-                <Box
-                  component="button"
-                  onClick={() => handleSendMessage("👋 Chào bạn!")}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => void handleSendMessage("👋 Chào bạn!")}
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.8,
-                    bgcolor: "var(--mui-palette-brand-50)",
-                    color: "var(--mui-palette-brand-600)",
-                    border: "1px solid var(--mui-palette-brand-200)",
                     borderRadius: "20px",
                     px: 2,
-                    py: 0.7,
+                    py: 0.6,
                     fontSize: "0.82rem",
                     fontWeight: 600,
-                    cursor: "pointer",
-                    transition: "all 0.15s ease",
-                    "&:hover": {
-                      bgcolor: "var(--mui-palette-brand-100)",
-                      transform: "translateY(-1px)",
-                    },
+                    bgcolor: "background.paper",
                   }}
                 >
                   👋 Nói xin chào!
-                </Box>
+                </Button>
               </Box>
             ) : (
-              // Danh sách bong bóng tin nhắn
               messages.map((msg, index) => {
                 const isMe = isSenderMe(msg);
                 const isLastMsg = index === messages.length - 1;
                 const isSeen = Boolean(msg.readAt || partnerSeenAt);
+                const trimmed = msg.text?.trim() || "";
+                const isMedia = !msg.isDeleted && /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);
+                const isVideo = isMedia && isVideoUrl(trimmed);
 
                 return (
                   <Box
@@ -1026,6 +1000,7 @@ export default function FloatingChatBox({
                       {!isMe && (
                         <Avatar
                           src={targetUser.avatar || ""}
+                          alt=""
                           sx={{
                             width: 24,
                             height: 24,
@@ -1046,59 +1021,95 @@ export default function FloatingChatBox({
                             borderRadius: isMe
                               ? "18px 18px 4px 18px"
                               : "18px 18px 18px 4px",
-                            bgcolor: "var(--mui-palette-neutral-100)",
-                            color: "var(--mui-palette-neutral-500)",
+                            bgcolor: chatTheme.isDarkTheme ? "rgba(30, 41, 59, 0.55)" : "action.hover",
+                            color: chatTheme.metaTextColor,
                             fontSize: "0.82rem",
                             fontStyle: "italic",
-                            border: "1px dashed var(--mui-palette-neutral-300)",
+                            border: "1px dashed",
+                            borderColor: chatTheme.partnerBorder,
                             lineHeight: 1.38,
                           }}
                         >
                           Tin nhắn đã bị thu hồi
                         </Box>
-                      ) : (
-                        <>
-                          <Box
-                            sx={{
-                              p: 1.1,
-                              px: 1.5,
-                              borderRadius: isMe
-                                ? "18px 18px 4px 18px"
-                                : "18px 18px 18px 4px",
-                              background: isMe ? chatTheme.bubbleMe : undefined,
-                              bgcolor: isMe ? undefined : "var(--mui-palette-neutral-100)",
-                              color: isMe ? chatTheme.bubbleMeColor : "var(--mui-palette-neutral-900)",
-                              fontSize: "0.86rem",
-                              lineHeight: 1.38,
-                              wordBreak: "break-word",
-                            }}
-                          >
-                            {msg.text}
-                          </Box>
-
-                          {isMe && (
-                            <Tooltip title="Thu hồi tin nhắn">
-                              <IconButton
-                                className="msg-delete-btn"
-                                size="small"
-                                onClick={() => setDeleteMsgId(msg._id || msg.id || null)}
-                                sx={{
-                                  opacity: 0,
-                                  transition: "opacity 0.15s ease",
-                                  p: 0.4,
-                                  color: "var(--mui-palette-neutral-400)",
-                                  "&:hover": {
-                                    color: "var(--mui-palette-tone-ef4444)",
-                                    bgcolor: "var(--mui-palette-tone-fee2e2)",
-                                  },
-                                }}
-                                aria-label="Thu hồi tin nhắn"
-                              >
-                                <Trash2 size={13} />
-                              </IconButton>
-                            </Tooltip>
+                      ) : isMedia ? (
+                        <Box
+                          sx={{
+                            overflow: "hidden",
+                            borderRadius: isMe
+                              ? "18px 18px 4px 18px"
+                              : "18px 18px 18px 4px",
+                            maxWidth: 210,
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+                          }}
+                        >
+                          {isVideo ? (
+                            <Box
+                              component="video"
+                              controls
+                              preload="metadata"
+                              src={trimmed}
+                              sx={{ maxWidth: "100%", maxHeight: 200, display: "block", bgcolor: "common.black" }}
+                            />
+                          ) : (
+                            <ButtonBase
+                              onClick={() => setLightboxUrl(trimmed)}
+                              aria-label="Phóng to ảnh trong tin nhắn"
+                              sx={{ display: "block", width: "100%" }}
+                            >
+                              <Box
+                                component="img"
+                                src={trimmed}
+                                alt="Ảnh trong tin nhắn"
+                                loading="lazy"
+                                sx={{ maxWidth: "100%", maxHeight: 200, display: "block" }}
+                              />
+                            </ButtonBase>
                           )}
-                        </>
+                        </Box>
+                      ) : (
+                        <Box
+                          sx={{
+                            p: 1.1,
+                            px: 1.5,
+                            borderRadius: isMe
+                              ? "18px 18px 4px 18px"
+                              : "18px 18px 18px 4px",
+                            background: isMe ? chatTheme.bubbleMe : chatTheme.bubblePartner,
+                            color: isMe ? chatTheme.bubbleMeColor : chatTheme.bubblePartnerColor,
+                            border: isMe ? "none" : "1px solid",
+                            borderColor: isMe ? "transparent" : chatTheme.partnerBorder,
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                            fontSize: "0.86rem",
+                            lineHeight: 1.4,
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {msg.text}
+                        </Box>
+                      )}
+
+                      {isMe && !msg.isDeleted && (
+                        <Tooltip title="Thu hồi tin nhắn">
+                          <IconButton
+                            className="msg-delete-btn"
+                            size="small"
+                            onClick={() => setDeleteMsgId(msg._id || msg.id || null)}
+                            sx={{
+                              opacity: 0,
+                              transition: "opacity 0.15s ease",
+                              p: 0.4,
+                              color: chatTheme.metaTextColor,
+                              "&:hover": {
+                                color: "error.main",
+                                bgcolor: "action.hover",
+                              },
+                            }}
+                            aria-label="Thu hồi tin nhắn"
+                          >
+                            <Trash2 size={13} />
+                          </IconButton>
+                        </Tooltip>
                       )}
                     </Box>
 
@@ -1108,16 +1119,16 @@ export default function FloatingChatBox({
                         display: "flex",
                         alignItems: "center",
                         gap: 0.4,
-                        mt: 0.2,
+                        mt: 0.25,
                         px: 0.5,
                         fontSize: "0.66rem",
-                        color: "var(--mui-palette-neutral-400)",
+                        color: chatTheme.metaTextColor,
                       }}
                     >
                       <span>{formatTime(msg.createdAt)}</span>
                       {isMe && isLastMsg && isSeen && !isRestricted && (
                         <Tooltip title="Đã xem">
-                          <CheckCheck size={12} color="var(--mui-palette-brand-600)" style={{ marginLeft: 2 }} />
+                          <CheckCheck size={12} color="var(--mui-palette-brand-500)" style={{ marginLeft: 2 }} />
                         </Tooltip>
                       )}
                     </Box>
@@ -1131,52 +1142,39 @@ export default function FloatingChatBox({
               <Box sx={{ display: "flex", alignItems: "flex-end", gap: 0.8 }}>
                 <Avatar
                   src={targetUser.avatar || ""}
+                  alt=""
                   sx={{ width: 22, height: 22, fontSize: "0.65rem", bgcolor: "var(--mui-palette-brand-500)" }}
                 >
                   {(targetUser.name || "U")[0].toUpperCase()}
                 </Avatar>
                 <Box
+                  role="status"
+                  aria-label={`${targetUser.name} đang soạn tin nhắn`}
                   sx={{
                     display: "flex",
                     alignItems: "center",
                     gap: 0.4,
                     px: 1.4,
-                    py: 0.9,
-                    borderRadius: "16px",
-                    bgcolor: "var(--mui-palette-neutral-100)",
-                    color: "var(--mui-palette-neutral-500)",
+                    py: 1,
+                    borderRadius: "16px 16px 16px 4px",
+                    background: chatTheme.bubblePartner,
+                    border: "1px solid",
+                    borderColor: chatTheme.partnerBorder,
                   }}
                 >
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      bgcolor: "var(--mui-palette-neutral-400)",
-                      animation: "typingBounce 1.2s infinite ease-in-out",
-                      animationDelay: "0ms",
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      bgcolor: "var(--mui-palette-neutral-400)",
-                      animation: "typingBounce 1.2s infinite ease-in-out",
-                      animationDelay: "200ms",
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      bgcolor: "var(--mui-palette-neutral-400)",
-                      animation: "typingBounce 1.2s infinite ease-in-out",
-                      animationDelay: "400ms",
-                    }}
-                  />
+                  {[0, 1, 2].map((i) => (
+                    <Box
+                      key={i}
+                      aria-hidden
+                      sx={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        bgcolor: chatTheme.metaTextColor,
+                        animation: `typingDot 1.2s infinite ${i * 0.15}s`,
+                      }}
+                    />
+                  ))}
                 </Box>
               </Box>
             )}
@@ -1190,7 +1188,7 @@ export default function FloatingChatBox({
               sx={{
                 p: 1.5,
                 textAlign: "center",
-                borderTop: "1px solid var(--mui-palette-neutral-200)",
+                borderTop: "1px solid var(--mui-palette-divider)",
                 bgcolor: "var(--mui-palette-background-paper)",
                 display: "flex",
                 flexDirection: "column",
@@ -1209,7 +1207,7 @@ export default function FloatingChatBox({
                   variant="outlined"
                   color="primary"
                   onClick={handleToggleBlock}
-                  sx={{ textTransform: "none", fontSize: "0.75rem", py: 0.3, px: 1.5, borderRadius: "6px" }}
+                  sx={{ fontSize: "0.75rem", py: 0.3, px: 1.5, borderRadius: "8px" }}
                 >
                   Bỏ chặn
                 </Button>
@@ -1219,26 +1217,49 @@ export default function FloatingChatBox({
             <Box
               sx={{
                 p: 1,
-                px: 1.2,
-                borderTop: "1px solid var(--mui-palette-neutral-200)",
+                px: 1.1,
+                borderTop: "1px solid var(--mui-palette-divider)",
                 bgcolor: "var(--mui-palette-background-paper)",
                 display: "flex",
                 alignItems: "center",
-                gap: 0.8,
+                gap: 0.5,
               }}
             >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                hidden
+                onChange={handleMediaSelect}
+                aria-label="Chọn ảnh hoặc video để gửi"
+              />
+              <Tooltip title={uploadingMedia ? "Đang tải tệp lên…" : "Gửi ảnh hoặc video"}>
+                <span>
+                  <IconButton
+                    size="small"
+                    disabled={uploadingMedia}
+                    aria-label="Gửi ảnh hoặc video"
+                    onClick={() => fileInputRef.current?.click()}
+                    sx={{ color: "primary.main", p: 0.6 }}
+                  >
+                    {uploadingMedia ? <CircularProgress size={16} /> : <ImageIcon size={18} />}
+                  </IconButton>
+                </span>
+              </Tooltip>
+
               {/* Nút chọn emoji */}
               <Tooltip title="Chọn biểu tượng cảm xúc">
                 <IconButton
                   size="small"
+                  aria-label="Chọn biểu tượng cảm xúc"
                   onClick={handleOpenEmoji}
                   sx={{
-                    color: "var(--mui-palette-neutral-500)",
+                    color: "text.secondary",
                     p: 0.6,
-                    "&:hover": { color: "var(--mui-palette-brand-600)", bgcolor: "var(--mui-palette-brand-50)" },
+                    "&:hover": { color: "primary.main", bgcolor: "action.hover" },
                   }}
                 >
-                  <Smile size={19} />
+                  <Smile size={18} />
                 </IconButton>
               </Tooltip>
 
@@ -1246,24 +1267,27 @@ export default function FloatingChatBox({
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Aa"
+                placeholder="Nhập tin nhắn…"
                 value={inputText}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
+                slotProps={{
+                  htmlInput: { "aria-label": "Nội dung tin nhắn" },
+                }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: "20px",
-                    bgcolor: "var(--mui-palette-neutral-100)",
+                    bgcolor: "background.default",
                     fontSize: "0.85rem",
                     py: 0.2,
                     px: 1.2,
+                    height: 36,
                     "& fieldset": { borderColor: "transparent" },
-                    "&:hover fieldset": { borderColor: "var(--mui-palette-neutral-300)" },
-                    "&.Mui-focused fieldset": { borderColor: "transparent" },
-                    "&.Mui-focused": { boxShadow: "none" },
+                    "&:hover fieldset": { borderColor: "divider" },
+                    "&.Mui-focused fieldset": { borderColor: "primary.main" },
                   },
                   "& .MuiInputBase-input": {
-                    py: 0.6,
+                    py: 0.5,
                   },
                 }}
               />
@@ -1273,30 +1297,32 @@ export default function FloatingChatBox({
                 <Tooltip title="Gửi (Enter)">
                   <IconButton
                     size="small"
-                    onClick={() => handleSendMessage()}
+                    aria-label="Gửi tin nhắn"
+                    onClick={() => void handleSendMessage()}
                     sx={{
-                      bgcolor: "var(--mui-palette-brand-600)",
-                      color: "white",
+                      bgcolor: "primary.main",
+                      color: "primary.contrastText",
                       p: 0.7,
-                      "&:hover": { bgcolor: "var(--mui-palette-brand-700)" },
+                      "&:hover": { bgcolor: "primary.dark" },
                     }}
                   >
                     <Send size={15} />
                   </IconButton>
                 </Tooltip>
               ) : (
-                <Tooltip title="Gửi Like">
+                <Tooltip title="Gửi biểu tượng thích">
                   <IconButton
                     size="small"
-                    onClick={() => handleSendMessage("👍")}
+                    aria-label="Gửi biểu tượng thích"
+                    onClick={() => void handleSendMessage("👍")}
                     sx={{
-                      color: "var(--mui-palette-brand-600)",
+                      color: "primary.main",
                       p: 0.7,
-                      "&:hover": { bgcolor: "var(--mui-palette-brand-50)", transform: "scale(1.1)" },
+                      "&:hover": { bgcolor: "action.selected", transform: "scale(1.1)" },
                       transition: "all 0.15s ease",
                     }}
                   >
-                    <ThumbsUp size={19} />
+                    <ThumbsUp size={18} />
                   </IconButton>
                 </Tooltip>
               )}
@@ -1315,49 +1341,52 @@ export default function FloatingChatBox({
               paper: {
                 sx: {
                   p: 1.2,
-                  borderRadius: 2,
+                  borderRadius: "16px",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
                   maxWidth: 240,
                 },
               },
             }}
           >
-            <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 700, mb: 1, display: "block" }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, mb: 1, display: "block" }}>
               Biểu tượng cảm xúc
             </Typography>
             <Box
               sx={{
                 display: "grid",
                 gridTemplateColumns: "repeat(5, 1fr)",
-                gap: 0.8,
+                gap: 0.6,
               }}
             >
               {POPULAR_EMOJIS.map((emoji) => (
-                <Box
-                  component="button"
+                <ButtonBase
                   key={emoji}
+                  aria-label={`Chèn biểu tượng ${emoji}`}
                   onClick={() => handleSelectEmoji(emoji)}
                   sx={{
                     fontSize: "1.25rem",
                     p: 0.5,
-                    border: "none",
-                    bgcolor: "transparent",
-                    cursor: "pointer",
-                    borderRadius: "6px",
+                    borderRadius: "8px",
                     transition: "transform 0.1s, background-color 0.1s",
                     "&:hover": {
-                      bgcolor: "var(--mui-palette-neutral-100)",
+                      bgcolor: "action.hover",
                       transform: "scale(1.2)",
                     },
                   }}
                 >
                   {emoji}
-                </Box>
+                </ButtonBase>
               ))}
             </Box>
           </Popover>
         </>
       )}
+
+      <ImageLightbox
+        src={lightboxUrl}
+        alt="Ảnh trong tin nhắn"
+        onClose={() => setLightboxUrl(null)}
+      />
 
       {/* Dialog Chọn Hình Nền / Chủ Đề */}
       <ThemeSelectDialog
@@ -1406,18 +1435,6 @@ export default function FloatingChatBox({
           }
         }}
       />
-
-      {/* Global CSS animation for typing */}
-      <style jsx global>{`
-        @keyframes typingBounce {
-          0%, 80%, 100% {
-            transform: translateY(0);
-          }
-          40% {
-            transform: translateY(-4px);
-          }
-        }
-      `}</style>
     </Paper>
   );
 }

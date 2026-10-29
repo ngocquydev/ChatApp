@@ -29,14 +29,15 @@ export default function FloatingChatDock() {
       sx={{
         position: "fixed",
         bottom: 0,
-        // Khi ở trang chủ có thanh PersonCall bên phải (25% trên md, 20% trên lg)
-        // Dock sẽ nằm ngay sát bên trái của PersonCall trên Desktop y hệt Facebook
+        // Khi ở trang chủ có thanh PersonCall bên phải (width: md 340px, lg 360px, xl 380px)
+        // Dock nằm ngay sát bên trái của PersonCall trên Desktop y hệt Facebook
         right: isHomePage
           ? {
               xs: 8,
               sm: 16,
-              md: "calc(25% + 16px)",
-              lg: "calc(20% + 20px)",
+              md: "356px",
+              lg: "376px",
+              xl: "396px",
             }
           : {
               xs: 8,

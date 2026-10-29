@@ -16,7 +16,18 @@ import { MessageSquare, Search, ShieldAlert } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import EmptyState from "@/components/common/EmptyState";
 import { ConversationItem } from "@/store/useChatStore";
+import { isVideoUrl } from "@/services/postsApi";
 import { formatConversationTime } from "@/utils/formatTime";
+
+function formatLastMessagePreview(rawText?: string, isDeleted?: boolean): string {
+  if (isDeleted) return "Tin nhắn đã bị thu hồi";
+  const trimmed = rawText?.trim() || "";
+  if (!trimmed) return "";
+  if (/^https:\/\/res\.cloudinary\.com\//i.test(trimmed)) {
+    return isVideoUrl(trimmed) ? "🎬 Đã gửi một video" : "📷 Đã gửi một hình ảnh";
+  }
+  return trimmed;
+}
 
 interface ConversationListProps {
   conversations: ConversationItem[];
@@ -162,9 +173,10 @@ export default function ConversationList({
               const isRestricted = Boolean(currentUserId && item.restrictedBy?.includes(currentUserId));
               const isOnline = !isRestricted && other?._id ? onlineUserIds.includes(other._id) : false;
               const unreadCount = item.unreadCounts?.[currentUserId || ""] || 0;
-              const lastText = item.lastMessage?.isDeleted
-                ? "Tin nhắn đã bị thu hồi"
-                : item.lastMessage?.text;
+              const lastText = formatLastMessagePreview(
+                item.lastMessage?.text,
+                item.lastMessage?.isDeleted
+              );
               const sentByMe = item.lastMessage?.senderId === currentUserId;
 
               return (

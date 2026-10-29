@@ -1,12 +1,28 @@
 "use client";
 
-import { KeyboardEvent, useEffect, useRef, useState } from "react";
-import { Box, Button, CircularProgress, IconButton, TextField, Tooltip, Typography } from "@mui/material";
-import { Image as ImageIcon, Paperclip, Send, Smile } from "lucide-react";
+import { KeyboardEvent, MouseEvent, useEffect, useRef, useState } from "react";
+import {
+  Box,
+  Button,
+  ButtonBase,
+  CircularProgress,
+  IconButton,
+  Popover,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import { Image as ImageIcon, Paperclip, Send, Smile, ThumbsUp } from "lucide-react";
 import { uploadMedia } from "@/services/postsApi";
 
 const TYPING_THROTTLE_MS = 2500;
 const TYPING_IDLE_MS = 5000;
+
+const POPULAR_EMOJIS = [
+  "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
+  "👍", "❤️", "🔥", "🎉", "👏", "💯", "✨", "🙏",
+  "👋", "☕", "🚀", "💪",
+];
 
 interface MessageComposerProps {
   onSend: (text: string) => Promise<void> | void;
@@ -37,6 +53,7 @@ export default function MessageComposer({
 }: MessageComposerProps) {
   const [text, setText] = useState("");
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSentRef = useRef(0);
@@ -68,7 +85,6 @@ export default function MessageComposer({
     lastTypingSentRef.current = 0;
   };
 
-  // Dọn timer khi rời khỏi hội thoại / unmount
   useEffect(() => {
     return () => {
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -92,10 +108,12 @@ export default function MessageComposer({
     idleTimerRef.current = setTimeout(stopTyping, TYPING_IDLE_MS);
   };
 
-  const submit = async () => {
-    if (!canSend) return;
-    const value = text;
-    setText("");
+  const submit = async (customText?: string) => {
+    const value = (customText ?? text).trim();
+    if (!value) return;
+    if (!customText) {
+      setText("");
+    }
     stopTyping();
     await onSend(value);
   };
@@ -131,7 +149,7 @@ export default function MessageComposer({
             : "Người dùng này hiện không thể nhận tin nhắn vào lúc này."}
         </Typography>
         {isBlockedByMe && onUnblock && (
-          <Button variant="outlined" size="small" color="primary" onClick={onUnblock} sx={{ textTransform: "none", borderRadius: "8px" }}>
+          <Button variant="outlined" size="small" color="primary" onClick={onUnblock} sx={{ borderRadius: "8px" }}>
             Bỏ chặn
           </Button>
         )}
@@ -158,18 +176,17 @@ export default function MessageComposer({
           bgcolor: "background.default",
           border: "1px solid",
           borderColor: "divider",
-          borderRadius: 5,
+          borderRadius: "24px",
           px: 1,
           py: 0.5,
-          transition: "border-color 150ms, box-shadow 150ms, background-color 150ms",
+          transition: "border-color 150ms, background-color 150ms",
           "&:focus-within": {
-            borderColor: "divider",
+            borderColor: "primary.main",
             bgcolor: "background.paper",
-            boxShadow: "none",
           },
         }}
       >
-        <Box sx={{ display: { xs: "none", sm: "flex" }, pb: 0.25, alignItems: "center" }}>
+        <Box sx={{ display: "flex", pb: 0.25, alignItems: "center" }}>
           <input
             ref={fileInputRef}
             type="file"
@@ -178,21 +195,24 @@ export default function MessageComposer({
             onChange={handleMediaSelect}
             aria-label="Chọn ảnh hoặc video để gửi"
           />
-          <Tooltip title={uploadingMedia ? "Đang tải tệp lên Cloudinary…" : "Gửi ảnh hoặc video"}>
+          <Tooltip title={uploadingMedia ? "Đang tải tệp lên…" : "Gửi ảnh hoặc video"}>
             <span>
               <IconButton
                 size="small"
                 disabled={uploadingMedia}
-                aria-label="Gửi ảnh hoặc video qua Cloudinary"
+                aria-label="Gửi ảnh hoặc video"
                 onClick={() => fileInputRef.current?.click()}
+                sx={{ color: "primary.main" }}
               >
                 {uploadingMedia ? <CircularProgress size={18} /> : <ImageIcon size={19} />}
               </IconButton>
             </span>
           </Tooltip>
-          <ComingSoonButton label="Đính kèm tệp khác">
-            <Paperclip size={19} />
-          </ComingSoonButton>
+          <Box sx={{ display: { xs: "none", sm: "inline-flex" } }}>
+            <ComingSoonButton label="Đính kèm tệp khác">
+              <Paperclip size={19} />
+            </ComingSoonButton>
+          </Box>
         </Box>
 
         <TextField
@@ -206,37 +226,101 @@ export default function MessageComposer({
           onKeyDown={handleKeyDown}
           slotProps={{
             htmlInput: { "aria-label": "Nội dung tin nhắn", enterKeyHint: "send" },
-            input: { disableUnderline: true, sx: { px: 1.25, py: 1, fontSize: "0.9375rem" } },
+            input: { disableUnderline: true, sx: { px: 1, py: 0.9, fontSize: "0.9375rem" } },
           }}
         />
 
-        <Box sx={{ display: { xs: "none", sm: "flex" }, pb: 0.25 }}>
-          <ComingSoonButton label="Biểu tượng cảm xúc">
-            <Smile size={19} />
-          </ComingSoonButton>
+        <Box sx={{ display: "flex", pb: 0.25, alignItems: "center" }}>
+          <Tooltip title="Chọn biểu tượng cảm xúc">
+            <IconButton
+              size="small"
+              aria-label="Chọn biểu tượng cảm xúc"
+              onClick={(e: MouseEvent<HTMLButtonElement>) => setEmojiAnchorEl(e.currentTarget)}
+              sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}
+            >
+              <Smile size={19} />
+            </IconButton>
+          </Tooltip>
         </Box>
 
-        <Tooltip title="Gửi (Enter)">
-          <span>
+        {canSend ? (
+          <Tooltip title="Gửi (Enter)">
             <IconButton
               onClick={() => void submit()}
-              disabled={!canSend}
               aria-label="Gửi tin nhắn"
               sx={{
                 mb: 0.25,
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 bgcolor: "primary.main",
                 color: "primary.contrastText",
                 "&:hover": { bgcolor: "primary.dark" },
-                "&.Mui-disabled": { bgcolor: "action.disabledBackground", color: "text.disabled" },
               }}
             >
-              <Send size={17} />
+              <Send size={16} />
             </IconButton>
-          </span>
-        </Tooltip>
+          </Tooltip>
+        ) : (
+          <Tooltip title="Gửi biểu tượng thích">
+            <IconButton
+              onClick={() => void submit("👍")}
+              aria-label="Gửi biểu tượng thích"
+              sx={{
+                mb: 0.25,
+                width: 36,
+                height: 36,
+                color: "primary.main",
+                "&:hover": { bgcolor: "action.selected", transform: "scale(1.08)" },
+              }}
+            >
+              <ThumbsUp size={18} />
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
+
+      <Popover
+        open={Boolean(emojiAnchorEl)}
+        anchorEl={emojiAnchorEl}
+        onClose={() => setEmojiAnchorEl(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+        slotProps={{
+          paper: {
+            sx: {
+              p: 1.5,
+              borderRadius: "16px",
+              maxWidth: 260,
+              mb: 1,
+            },
+          },
+        }}
+      >
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, mb: 1, display: "block" }}>
+          Biểu tượng cảm xúc
+        </Typography>
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 0.5 }}>
+          {POPULAR_EMOJIS.map((emoji) => (
+            <ButtonBase
+              key={emoji}
+              aria-label={`Chèn biểu tượng ${emoji}`}
+              onClick={() => {
+                handleChange(`${text}${emoji}`);
+                setEmojiAnchorEl(null);
+              }}
+              sx={{
+                fontSize: "1.35rem",
+                p: 0.6,
+                borderRadius: "8px",
+                transition: "transform 0.1s ease, background-color 0.1s ease",
+                "&:hover": { bgcolor: "action.hover", transform: "scale(1.18)" },
+              }}
+            >
+              {emoji}
+            </ButtonBase>
+          ))}
+        </Box>
+      </Popover>
 
       <Typography
         variant="caption"

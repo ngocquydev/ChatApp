@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Dialog, DialogContent, DialogTitle, IconButton, Typography } from "@mui/material";
+import { Box, ButtonBase, Dialog, DialogContent, DialogTitle, IconButton, Typography } from "@mui/material";
 import { Check, Palette, X } from "lucide-react";
 import { CHAT_THEMES } from "./chatThemes";
 
@@ -23,8 +23,9 @@ export default function ThemeSelectDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="xs"
+      maxWidth="sm"
       fullWidth
+      aria-labelledby="theme-select-dialog-title"
       slotProps={{
         paper: {
           sx: {
@@ -37,18 +38,19 @@ export default function ThemeSelectDialog({
       }}
     >
       <DialogTitle
+        id="theme-select-dialog-title"
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           pb: 1,
           pt: 1.5,
-          px: 2,
+          px: 2.5,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Palette size={20} color="var(--mui-palette-primary-main)" />
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
+          <Palette size={20} color="var(--mui-palette-primary-main)" aria-hidden />
+          <Typography variant="h6" component="span" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
             Chủ đề cuộc trò chuyện
           </Typography>
         </Box>
@@ -57,74 +59,138 @@ export default function ThemeSelectDialog({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ px: 2, pb: 2, pt: 0.5 }}>
+      <DialogContent sx={{ px: 2.5, pb: 2.5, pt: 0.5 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: "0.875rem" }}>
-          Chọn hình nền và màu sắc hiển thị cho cuộc trò chuyện này.
+          Chọn hình nền và bảng màu bong bóng tin nhắn cho cả hai người trong cuộc trò chuyện.
         </Typography>
 
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
+            gap: 1.5,
+          }}
+        >
           {themesList.map((theme) => {
             const isSelected = (currentTheme || "default") === theme.id;
 
             return (
-              <Box
+              <ButtonBase
                 key={theme.id}
                 component="button"
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => {
-                  onSelectTheme(theme.id);
+                  void onSelectTheme(theme.id);
                   onClose();
                 }}
                 sx={{
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  p: 1.5,
-                  borderRadius: "14px",
+                  flexDirection: "column",
+                  alignItems: "stretch",
+                  p: 1.25,
+                  borderRadius: "16px",
                   border: "2px solid",
                   borderColor: isSelected ? "primary.main" : "divider",
                   bgcolor: isSelected ? "action.selected" : "background.paper",
-                  cursor: "pointer",
                   textAlign: "left",
-                  transition: "all 0.15s ease",
-                  fontFamily: "inherit",
+                  transition: "border-color 0.15s ease, background-color 0.15s ease, transform 0.12s ease",
                   "&:hover": {
-                    bgcolor: "action.hover",
+                    bgcolor: isSelected ? "action.selected" : "action.hover",
                     borderColor: isSelected ? "primary.main" : "neutral.400",
+                    transform: "translateY(-1px)",
                   },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.75 }}>
-                  {/* Theme Preview Dot / Ring */}
+                {/* Mini Chat Preview */}
+                <Box
+                  aria-hidden
+                  sx={{
+                    height: 68,
+                    borderRadius: "12px",
+                    background: theme.background,
+                    border: "1px solid",
+                    borderColor: "divider",
+                    p: 1,
+                    mb: 1.25,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    overflow: "hidden",
+                    position: "relative",
+                  }}
+                >
+                  {/* Partner mini bubble */}
                   <Box
                     sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      background: theme.bubbleMe,
-                      border: "2px solid var(--mui-palette-common-white)",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                      flexShrink: 0,
+                      alignSelf: "flex-start",
+                      width: "54%",
+                      height: 18,
+                      borderRadius: "10px 10px 10px 3px",
+                      background: theme.bubblePartner,
+                      border: "1px solid",
+                      borderColor: theme.partnerBorder,
+                      display: "flex",
+                      alignItems: "center",
+                      px: 1,
                     }}
-                  />
+                  >
+                    <Box
+                      sx={{
+                        width: "70%",
+                        height: 5,
+                        borderRadius: 999,
+                        bgcolor: theme.bubblePartnerColor,
+                        opacity: 0.45,
+                      }}
+                    />
+                  </Box>
 
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
-                      {theme.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
-                      {theme.description}
-                    </Typography>
+                  {/* My mini bubble */}
+                  <Box
+                    sx={{
+                      alignSelf: "flex-end",
+                      width: "62%",
+                      height: 20,
+                      borderRadius: "10px 10px 3px 10px",
+                      background: theme.bubbleMe,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-end",
+                      px: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: "75%",
+                        height: 5,
+                        borderRadius: 999,
+                        bgcolor: theme.bubbleMeColor,
+                        opacity: 0.85,
+                      }}
+                    />
                   </Box>
                 </Box>
 
-                {isSelected && (
+                {/* Label & Checkmark */}
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, px: 0.25 }}>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700, lineHeight: 1.3 }}>
+                      {theme.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block", fontSize: "0.75rem" }}>
+                      {theme.description}
+                    </Typography>
+                  </Box>
+
                   <Box
                     sx={{
-                      width: 24,
-                      height: 24,
+                      width: 22,
+                      height: 22,
                       borderRadius: "50%",
-                      bgcolor: "primary.main",
+                      bgcolor: isSelected ? "primary.main" : "transparent",
+                      border: isSelected ? "none" : "1.5px solid",
+                      borderColor: "divider",
                       color: "primary.contrastText",
                       display: "flex",
                       alignItems: "center",
@@ -132,10 +198,10 @@ export default function ThemeSelectDialog({
                       flexShrink: 0,
                     }}
                   >
-                    <Check size={14} strokeWidth={3} />
+                    {isSelected && <Check size={13} strokeWidth={3} />}
                   </Box>
-                )}
-              </Box>
+                </Box>
+              </ButtonBase>
             );
           })}
         </Box>

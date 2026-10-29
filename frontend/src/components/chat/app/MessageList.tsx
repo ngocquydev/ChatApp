@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Avatar, Box, IconButton, Skeleton, Tooltip, Typography } from "@mui/material";
+import { Avatar, Box, ButtonBase, IconButton, Skeleton, Tooltip, Typography } from "@mui/material";
 import { Check, CheckCheck, Trash2 } from "lucide-react";
 import EmptyState from "@/components/common/EmptyState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
@@ -203,11 +203,12 @@ export default function MessageList({
                   variant="caption"
                   sx={{
                     px: 1.5,
-                    py: 0.25,
+                    py: 0.35,
                     borderRadius: 999,
-                    bgcolor: "action.focus",
-                    color: "text.secondary",
+                    bgcolor: themeConfig.dayPillBg,
+                    color: themeConfig.dayPillColor,
                     fontWeight: 600,
+                    backdropFilter: "blur(6px)",
                   }}
                 >
                   {row.label}
@@ -267,10 +268,10 @@ export default function MessageList({
                           sx={{
                             px: 1.75,
                             py: 0.75,
-                            bgcolor: "action.hover",
-                            color: "text.secondary",
+                            bgcolor: themeConfig.isDarkTheme ? "rgba(30, 41, 59, 0.55)" : "action.hover",
+                            color: themeConfig.metaTextColor,
                             border: "1px dashed",
-                            borderColor: "divider",
+                            borderColor: themeConfig.partnerBorder,
                             borderRadius: isMe
                               ? `${radius}px ${isFirst ? radius : tail}px ${tail}px ${radius}px`
                               : `${isFirst ? radius : tail}px ${radius}px ${radius}px ${tail}px`,
@@ -316,21 +317,25 @@ export default function MessageList({
                               }}
                             />
                           ) : (
-                            <Box
-                              component="img"
-                              src={trimmed}
-                              alt="Ảnh trong tin nhắn"
-                              loading="lazy"
+                            <ButtonBase
                               onClick={() => setLightboxUrl(trimmed)}
-                              sx={{
-                                maxWidth: "100%",
-                                maxHeight: 280,
-                                display: "block",
-                                cursor: "pointer",
-                                transition: "opacity 150ms",
-                                "&:hover": { opacity: 0.9 },
-                              }}
-                            />
+                              aria-label="Phóng to ảnh trong tin nhắn"
+                              sx={{ display: "block", width: "100%" }}
+                            >
+                              <Box
+                                component="img"
+                                src={trimmed}
+                                alt="Ảnh trong tin nhắn"
+                                loading="lazy"
+                                sx={{
+                                  maxWidth: "100%",
+                                  maxHeight: 280,
+                                  display: "block",
+                                  transition: "opacity 150ms",
+                                  "&:hover": { opacity: 0.9 },
+                                }}
+                              />
+                            </ButtonBase>
                           )}
                         </Box>
                       );
@@ -344,7 +349,7 @@ export default function MessageList({
                           background: isMe ? themeConfig.bubbleMe : themeConfig.bubblePartner,
                           color: isMe ? themeConfig.bubbleMeColor : themeConfig.bubblePartnerColor,
                           border: isMe ? "none" : "1px solid",
-                          borderColor: isMe ? "transparent" : "divider",
+                          borderColor: isMe ? "transparent" : themeConfig.partnerBorder,
                           boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
                           // Góc phía người gửi nhỏ lại để các bubble liền nhau "dính" vào nhau; bubble cuối có đuôi.
                           borderRadius: isMe
@@ -373,7 +378,7 @@ export default function MessageList({
                         sx={{
                           opacity: { xs: 0.7, sm: 0 },
                           transition: "opacity 0.15s ease",
-                          color: "text.secondary",
+                          color: themeConfig.metaTextColor,
                           p: 0.5,
                           "&:hover": { color: "error.main", bgcolor: "action.hover" },
                         }}
@@ -386,13 +391,13 @@ export default function MessageList({
 
                 {isLast && (
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4, px: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+                    <Typography variant="caption" sx={{ fontSize: "0.7rem", color: themeConfig.metaTextColor }}>
                       {formatClockTime(msg.createdAt)}
                     </Typography>
                     {isMe && !msg.isDeleted && (
                       <Box
                         component="span"
-                        sx={{ display: "inline-flex", color: msg.readAt ? "primary.main" : "text.secondary" }}
+                        sx={{ display: "inline-flex", color: msg.readAt ? "primary.main" : themeConfig.metaTextColor }}
                       >
                         {msg.readAt ? <CheckCheck size={14} aria-hidden /> : <Check size={14} aria-hidden />}
                         <Box component="span" sx={visuallyHidden}>

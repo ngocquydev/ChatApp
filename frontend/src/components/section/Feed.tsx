@@ -2,6 +2,7 @@
 
 import NextLink from "next/link";
 import { Box, Button, Typography } from "@mui/material";
+import { Compass } from "lucide-react";
 import PostFeed from "@/components/posts/PostFeed";
 import { fetchFeed } from "@/services/postsApi";
 
@@ -21,9 +22,21 @@ function Feed() {
         gap: 2.5,
       }}
     >
-      <Typography variant="h5" component="h1" sx={{ fontWeight: 800 }}>
-        Bảng tin
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+        <Typography variant="h5" component="h1" sx={{ fontWeight: 800 }}>
+          Bảng tin
+        </Typography>
+        <Button
+          component={NextLink}
+          href="/explore"
+          size="small"
+          variant="outlined"
+          startIcon={<Compass size={16} aria-hidden />}
+          sx={{ display: { xs: "inline-flex", md: "none" }, borderRadius: "10px" }}
+        >
+          Khám phá bạn bè
+        </Button>
+      </Box>
 
       <PostFeed
         loadPage={(after) => fetchFeed({ limit: PAGE_SIZE, after })}
@@ -31,8 +44,8 @@ function Feed() {
         emptyTitle="Bảng tin còn trống"
         emptyDescription="Hãy đăng bài đầu tiên của bạn, hoặc kết bạn để xem bài viết của bạn bè."
         emptyAction={
-          <Button component={NextLink} href="/chat" variant="outlined">
-            Tìm bạn bè
+          <Button component={NextLink} href="/explore" variant="outlined">
+            Khám phá bạn bè
           </Button>
         }
       />

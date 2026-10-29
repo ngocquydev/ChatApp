@@ -132,8 +132,10 @@ export const toneLight = {
   "e0f2fe": "#e0f2fe",
   // nền gradient có chữ trắng: KHÔNG đổi theo scheme (khác bản không có tiền tố, vốn sáng lên ở dark mode để làm chữ)
   "fx-166534": "#166534", "fx-065f46": "#065f46", "fx-16a34a": "#16a34a", "fx-059669": "#059669",
-  "fx-dc2626": "#dc2626", "fx-be123c": "#be123c", "fx-4338ca": "#4338ca", "fx-6d28d9": "#6d28d9",
-  "fx-4f46e5": "#4f46e5", "fx-0284c7": "#0284c7", "fx-d97706": "#d97706",
+  "fx-dc2626": "#dc2626", "fx-be123c": "#be123c", "fx-e11d48": "#e11d48", "fx-db2777": "#db2777",
+  "fx-4338ca": "#4338ca", "fx-6d28d9": "#6d28d9", "fx-7c3aed": "#7c3aed", "fx-4f46e5": "#4f46e5",
+  "fx-2563eb": "#2563eb", "fx-0284c7": "#0284c7", "fx-0369a1": "#0369a1",
+  "fx-0d9488": "#0d9488", "fx-0f766e": "#0f766e", "fx-d97706": "#d97706", "fx-f97316": "#f97316",
 } as const;
 
 export const toneDarkOverrides: Partial<Record<keyof typeof toneLight, string>> = {

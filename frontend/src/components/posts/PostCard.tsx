@@ -135,34 +135,72 @@ export default function PostCard({
       <PostImages images={post.images} altPrefix={post.author.name} />
 
       {(post.likeCount > 0 || post.commentCount > 0 || post.shareCount > 0) && (
-        <Box sx={{ px: 2, pt: 1, pb: 0.5, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
-          {post.likeCount > 0 && (
-            <ButtonBase
-              onClick={() => onOpenEngagers?.(post._id, "likes")}
-              aria-label={`Xem danh sách ${post.likeCount} người thích bài viết`}
-              sx={{ borderRadius: "4px", p: 0.25, "&:hover": { textDecoration: "underline" } }}
-            >
+        <Box
+          sx={{
+            px: 2,
+            pt: 1.25,
+            pb: 0.5,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 1.5,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {post.likeCount > 0 && (
+              <ButtonBase
+                onClick={() => onOpenEngagers?.(post._id, "likes")}
+                aria-label={`Xem danh sách ${post.likeCount} người thích bài viết`}
+                sx={{
+                  borderRadius: "6px",
+                  p: 0.25,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.75,
+                  "&:hover": { textDecoration: "underline" },
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: "50%",
+                    bgcolor: "error.main",
+                    color: "common.white",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Heart size={11} fill="currentColor" aria-hidden />
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  {post.likeCount} lượt thích
+                </Typography>
+              </ButtonBase>
+            )}
+          </Box>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, ml: "auto" }}>
+            {post.commentCount > 0 && (
+              <ButtonBase
+                onClick={() => onOpenEngagers?.(post._id, "commenters")}
+                aria-label="Xem danh sách người đã bình luận bài viết"
+                sx={{ borderRadius: "4px", p: 0.25, "&:hover": { textDecoration: "underline" } }}
+              >
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  {post.commentCount} bình luận
+                </Typography>
+              </ButtonBase>
+            )}
+            {post.shareCount > 0 && (
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                {post.likeCount} lượt thích
+                {post.shareCount} lượt chia sẻ
               </Typography>
-            </ButtonBase>
-          )}
-          {post.commentCount > 0 && (
-            <ButtonBase
-              onClick={() => onOpenEngagers?.(post._id, "commenters")}
-              aria-label="Xem danh sách người đã bình luận bài viết"
-              sx={{ borderRadius: "4px", p: 0.25, "&:hover": { textDecoration: "underline" } }}
-            >
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                {post.commentCount} bình luận
-              </Typography>
-            </ButtonBase>
-          )}
-          {post.shareCount > 0 && (
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-              {post.shareCount} lượt chia sẻ
-            </Typography>
-          )}
+            )}
+          </Box>
         </Box>
       )}
 

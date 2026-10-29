@@ -159,23 +159,40 @@ export default function PostComposer({
       elevation={0}
       sx={{ p: 2, borderRadius: "16px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}
     >
-      <Box sx={{ display: "flex", gap: 1.5 }}>
-        <PresenceAvatar name={userName} src={userAvatar} size={40} hidePresence />
-        <TextField
-          fullWidth
-          multiline
-          minRows={2}
-          maxRows={10}
-          variant="standard"
-          placeholder="Bạn đang nghĩ gì?"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          disabled={posting}
-          slotProps={{
-            input: { disableUnderline: true },
-            htmlInput: { maxLength: POST_MAX_LENGTH, "aria-label": "Nội dung bài viết" },
+      <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+        <PresenceAvatar name={userName} src={userAvatar} size={42} hidePresence />
+        <Box
+          sx={{
+            flex: 1,
+            bgcolor: "action.hover",
+            borderRadius: "14px",
+            px: 2,
+            py: 1.25,
+            border: "1px solid",
+            borderColor: "transparent",
+            transition: "border-color 0.15s ease, background-color 0.15s ease",
+            "&:focus-within": {
+              borderColor: "primary.main",
+              bgcolor: "background.paper",
+            },
           }}
-        />
+        >
+          <TextField
+            fullWidth
+            multiline
+            minRows={2}
+            maxRows={10}
+            variant="standard"
+            placeholder={userName ? `${userName} ơi, bạn đang nghĩ gì?` : "Bạn đang nghĩ gì?"}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            disabled={posting}
+            slotProps={{
+              input: { disableUnderline: true },
+              htmlInput: { maxLength: POST_MAX_LENGTH, "aria-label": "Nội dung bài viết" },
+            }}
+          />
+        </Box>
       </Box>
 
       {text.length > POST_MAX_LENGTH * 0.9 && (
@@ -240,16 +257,21 @@ export default function PostComposer({
             size="small"
             color="inherit"
             disabled={posting || attachments.length >= MAX_POST_IMAGES}
-            startIcon={<ImagePlus size={18} aria-hidden />}
-            sx={{ fontWeight: 600, color: "text.secondary" }}
+            startIcon={<ImagePlus size={18} color="var(--mui-palette-success-main)" aria-hidden />}
+            sx={{ fontWeight: 600, color: "text.secondary", borderRadius: "10px", px: 1.25 }}
           >
             Ảnh / Video
             <input hidden type="file" accept={ACCEPT} multiple onChange={handleFiles} aria-label="Chọn ảnh hoặc video đính kèm" />
           </Button>
           <PrivacyPicker value={privacy} onChange={handlePrivacyChange} disabled={posting} labelId={`${uid}-privacy`} />
         </Box>
-        <Button variant="contained" disabled={!canPost} onClick={() => void submit()}>
-          {posting ? "Đang đăng…" : uploading > 0 ? "Đang tải lên…" : "Đăng"}
+        <Button
+          variant="contained"
+          disabled={!canPost}
+          onClick={() => void submit()}
+          sx={{ borderRadius: "10px", px: 2.5, fontWeight: 700 }}
+        >
+          {posting ? "Đang đăng…" : uploading > 0 ? "Đang tải lên…" : "Đăng bài"}
         </Button>
       </Box>
     </Paper>
