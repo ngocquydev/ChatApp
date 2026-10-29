@@ -56,6 +56,7 @@ export default function RecentChatRowMenu({
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       transformOrigin={{ vertical: "top", horizontal: "right" }}
       slotProps={{
+        root: { sx: { zIndex: 1400 } },
         paper: {
           sx: {
             minWidth: 230,
@@ -63,6 +64,8 @@ export default function RecentChatRowMenu({
             p: 0.75,
             border: "1px solid",
             borderColor: "divider",
+            boxShadow: "0 12px 28px rgba(0,0,0,0.28)",
+            zIndex: 1400,
           },
         },
       }}

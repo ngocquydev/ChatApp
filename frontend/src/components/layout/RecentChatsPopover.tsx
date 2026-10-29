@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Box, Button, ButtonBase, IconButton, InputAdornment, Popover, TextField, Tooltip, Typography } from "@mui/material";
-import { Maximize2, Search, SquarePen, Volume2, VolumeX, X } from "lucide-react";
+import { Maximize2, MoreHorizontal, Search, SquarePen, X } from "lucide-react";
 import api from "@/services/api";
 import { useChatBoxStore } from "@/store/useChatBoxStore";
 import { ConversationItem, useChatStore } from "@/store/useChatStore";
@@ -11,6 +11,7 @@ import { useSoundStore } from "@/store/useSoundStore";
 import { v } from "@/theme/tokens";
 import RecentChatRow from "./RecentChatRow";
 import RecentChatRowMenu from "./RecentChatRowMenu";
+import RecentChatsHeaderMenu from "./RecentChatsHeaderMenu";
 
 export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }: { anchorEl: HTMLElement | null; currentUserId: string; onClose: () => void }) {
   const router = useRouter();
@@ -23,13 +24,13 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [manualUnreadIds, setManualUnreadIds] = useState<string[]>([]);
   const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [headerMenuAnchor, setHeaderMenuAnchor] = useState<HTMLElement | null>(null);
   const [menuTarget, setMenuTarget] = useState<{ el: HTMLElement; conv: ConversationItem } | null>(null);
 
   const visibleList = useMemo(() => {
     const q = query.trim().toLowerCase();
     return conversations.filter((c) => {
-      if (hiddenIds.includes(c._id)) return false;
-      if (currentUserId && c.restrictedBy?.includes(currentUserId)) return false;
+      if (hiddenIds.includes(c._id) || (currentUserId && c.restrictedBy?.includes(currentUserId))) return false;
       const other = c.participants.find((p) => String(p._id || p.id) !== currentUserId) || c.participants[0];
       const isUnread = Number(c.unreadCounts?.[currentUserId] || 0) > 0 || manualUnreadIds.includes(c._id);
       if (filter === "unread" && !isUnread) return false;
@@ -52,9 +53,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
 
   const targetConv = menuTarget?.conv;
   const targetOther = targetConv?.participants.find((p) => String(p._id || p.id) !== currentUserId) || targetConv?.participants[0];
-  const targetUnread = Boolean(
-    targetConv && (Number(targetConv.unreadCounts?.[currentUserId] || 0) > 0 || manualUnreadIds.includes(targetConv._id)),
-  );
+  const targetUnread = Boolean(targetConv && (Number(targetConv.unreadCounts?.[currentUserId] || 0) > 0 || manualUnreadIds.includes(targetConv._id)));
 
   return (
     <Popover
@@ -64,11 +63,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
       disableScrollLock
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       transformOrigin={{ vertical: "top", horizontal: "right" }}
-      slotProps={{
-        paper: {
-          sx: { width: { xs: 340, sm: 375 }, maxHeight: 540, borderRadius: "16px", mt: 1, display: "flex", flexDirection: "column", overflow: "hidden", border: "1px solid", borderColor: "divider" },
-        },
-      }}
+      slotProps={{ paper: { sx: { width: { xs: 340, sm: 375 }, maxHeight: 540, borderRadius: "16px", mt: 1, display: "flex", flexDirection: "column", overflow: "hidden", border: "1px solid", borderColor: "divider" } } }}
     >
       <Box sx={{ px: 2, pt: 2, pb: 1.25 }}>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
@@ -76,9 +71,13 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
             Đoạn chat
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Tooltip title={isMuted ? "Bật âm thanh tin nhắn" : "Tắt âm thanh tin nhắn"}>
-              <IconButton size="small" onClick={toggleMute} aria-label={isMuted ? "Bật âm thanh tin nhắn" : "Tắt âm thanh tin nhắn"}>
-                {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            <Tooltip title="Tùy chọn đoạn chat">
+              <IconButton
+                size="small"
+                onClick={(e) => setHeaderMenuAnchor(e.currentTarget)}
+                aria-label="Tùy chọn đoạn chat"
+              >
+                <MoreHorizontal size={18} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Xem tất cả trong phòng chat">
@@ -216,9 +215,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
         onToggleMute={toggleMute}
         onViewProfile={() => {
           const pid = String(targetOther?._id || targetOther?.id || "");
-          if (!pid) return;
-          onClose();
-          router.push(`/profile/${pid}`);
+          if (pid) { onClose(); router.push(`/profile/${pid}`); }
         }}
         onToggleBlock={() => {
           if (!targetConv) return;
@@ -231,6 +228,18 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
           void api.patch(`/chat/conversations/${targetConv._id}/restrict`, { restrict: !restricted }).then(() => fetchConversations());
         }}
         onHideChat={() => targetConv && setHiddenIds((prev) => [...prev, targetConv._id])}
+      />
+
+      <RecentChatsHeaderMenu
+        anchorEl={headerMenuAnchor}
+        isMuted={isMuted}
+        onClose={() => setHeaderMenuAnchor(null)}
+        onToggleMute={toggleMute}
+        onMarkAllAsRead={() => {
+          setManualUnreadIds([]);
+          void api.patch("/chat/conversations/read-all").catch(() => {}).then(() => fetchConversations());
+        }}
+        onOpenFullChat={() => { onClose(); router.push("/chat"); }}
       />
     </Popover>
   );

@@ -9,6 +9,7 @@ import {
   Eye,
   MessageCircle,
   Palette,
+  ShieldAlert,
   Trash2,
   User,
   UserX,
@@ -19,12 +20,14 @@ interface FloatingChatHeaderMenuProps {
   isMuted: boolean;
   isRestricted: boolean;
   isBlockedByMe: boolean;
+  readReceiptsEnabled: boolean;
   onClose: () => void;
   onOpenFullChat: () => void;
   onViewProfile: () => void;
   onOpenTheme: () => void;
   onToggleMute: () => void;
   onOpenBlock: () => void;
+  onOpenReadReceipts: () => void;
   onOpenRestrict: () => void;
   onArchiveChat: () => void;
   onCloseChat: () => void;
@@ -35,12 +38,14 @@ export default function FloatingChatHeaderMenu({
   isMuted,
   isRestricted,
   isBlockedByMe,
+  readReceiptsEnabled,
   onClose,
   onOpenFullChat,
   onViewProfile,
   onOpenTheme,
   onToggleMute,
   onOpenBlock,
+  onOpenReadReceipts,
   onOpenRestrict,
   onArchiveChat,
   onCloseChat,
@@ -54,17 +59,18 @@ export default function FloatingChatHeaderMenu({
       open={Boolean(anchorEl)}
       onClose={onClose}
       disableScrollLock
-      anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-      transformOrigin={{ vertical: "top", horizontal: "right" }}
+      transformOrigin={{ horizontal: "left", vertical: "top" }}
+      anchorOrigin={{ horizontal: "left", vertical: "bottom" }}
       slotProps={{
         paper: {
           sx: {
-            minWidth: 255,
-            borderRadius: "16px",
+            width: 260,
+            borderRadius: "14px",
             p: 0.75,
-            mt: 0.5,
             border: "1px solid",
             borderColor: "divider",
+            boxShadow: "0 12px 28px rgba(0,0,0,0.25)",
+            zIndex: 1400,
           },
         },
       }}
@@ -103,8 +109,6 @@ export default function FloatingChatHeaderMenu({
         </ListItemText>
       </MenuItem>
 
-      <Divider sx={{ my: 0.75 }} />
-
       <MenuItem
         onClick={() => {
           onClose();
@@ -112,7 +116,7 @@ export default function FloatingChatHeaderMenu({
         }}
         sx={itemSx}
       >
-        <ListItemIcon sx={{ minWidth: 34, color: "text.primary" }}>
+        <ListItemIcon sx={{ minWidth: 34, color: "primary.main" }}>
           <Palette size={18} aria-hidden />
         </ListItemIcon>
         <ListItemText>
@@ -121,6 +125,8 @@ export default function FloatingChatHeaderMenu({
           </Typography>
         </ListItemText>
       </MenuItem>
+
+      <Divider sx={{ my: 0.75 }} />
 
       <MenuItem
         onClick={() => {
@@ -159,7 +165,7 @@ export default function FloatingChatHeaderMenu({
       <MenuItem
         onClick={() => {
           onClose();
-          onOpenRestrict();
+          onOpenReadReceipts();
         }}
         sx={itemSx}
       >
@@ -174,11 +180,28 @@ export default function FloatingChatHeaderMenu({
           }
           secondary={
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.74rem" }}>
-              {isRestricted ? "Đang tắt (Hạn chế)" : "Bật"}
+              {readReceiptsEnabled ? "Bật" : "Tắt"}
             </Typography>
           }
         />
         <ChevronRight size={16} color="var(--mui-palette-text-secondary)" aria-hidden />
+      </MenuItem>
+
+      <MenuItem
+        onClick={() => {
+          onClose();
+          onOpenRestrict();
+        }}
+        sx={itemSx}
+      >
+        <ListItemIcon sx={{ minWidth: 34, color: "text.primary" }}>
+          <ShieldAlert size={18} aria-hidden />
+        </ListItemIcon>
+        <ListItemText>
+          <Typography variant="body2" sx={labelSx}>
+            {isRestricted ? "Bỏ hạn chế" : "Hạn chế"}
+          </Typography>
+        </ListItemText>
       </MenuItem>
 
       <Divider sx={{ my: 0.75 }} />
@@ -219,4 +242,3 @@ export default function FloatingChatHeaderMenu({
     </Menu>
   );
 }
-

@@ -32,6 +32,7 @@ import {
   CheckCheck,
   ChevronUp,
   ChevronDown,
+  MoreVertical,
   Palette,
   Trash2,
   Image as ImageIcon,
@@ -51,6 +52,7 @@ import ThemeSelectDialog from "@/components/chat/app/ThemeSelectDialog";
 import RestrictInfoDialog from "@/components/chat/app/RestrictInfoDialog";
 import { getChatTheme } from "@/components/chat/app/chatThemes";
 import FloatingChatHeaderMenu from "./FloatingChatHeaderMenu";
+import ReadReceiptsDialog from "./ReadReceiptsDialog";
 
 const POPULAR_EMOJIS = [
   "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
@@ -104,6 +106,12 @@ export default function FloatingChatBox({
   const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
   const [openThemeDialog, setOpenThemeDialog] = useState(false);
   const [openRestrictDialog, setOpenRestrictDialog] = useState(false);
+  const [openReadReceiptsDialog, setOpenReadReceiptsDialog] = useState(false);
+  const [readReceiptsEnabled, setReadReceiptsEnabled] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const saved = localStorage.getItem("chat_read_receipts_enabled");
+    return saved !== null ? saved === "true" : true;
+  });
   const [openBlockConfirm, setOpenBlockConfirm] = useState(false);
   const [deleteMsgId, setDeleteMsgId] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
@@ -572,6 +580,13 @@ export default function FloatingChatBox({
     }
   };
 
+  const handleToggleReadReceipts = (enabled: boolean) => {
+    setReadReceiptsEnabled(enabled);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("chat_read_receipts_enabled", String(enabled));
+    }
+  };
+
   const handleDeleteMessage = async (msgId: string) => {
     if (!convId) return;
     try {
@@ -769,8 +784,28 @@ export default function FloatingChatBox({
           </Box>
         </ButtonBase>
 
-        {/* Nút Thu nhỏ (-) & Đóng (×) chuẩn Facebook */}
+        {/* Nút Tùy chọn (3 chấm), Thu nhỏ (-) & Đóng (×) chuẩn Facebook */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
+          {!session.isMinimized && (
+            <Tooltip title="Tùy chọn đoạn chat">
+              <IconButton
+                size="small"
+                aria-label="Tùy chọn đoạn chat"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuAnchorEl(e.currentTarget);
+                }}
+                sx={{
+                  color: "primary.main",
+                  p: 0.65,
+                  "&:hover": { bgcolor: "action.hover" },
+                }}
+              >
+                <MoreVertical size={18} />
+              </IconButton>
+            </Tooltip>
+          )}
+
           <Tooltip title={session.isMinimized ? "Mở rộng" : "Thu nhỏ"}>
             <IconButton
               size="small"
@@ -809,12 +844,13 @@ export default function FloatingChatBox({
         </Box>
       </Box>
 
-      {/* Menu tùy chọn chuẩn Facebook Messenger khi bấm vào tên/avatar trên Header */}
+      {/* Menu tùy chọn chuẩn Facebook Messenger khi bấm vào tên/avatar hoặc nút 3 chấm trên Header */}
       <FloatingChatHeaderMenu
         anchorEl={menuAnchorEl}
         isMuted={isMuted}
         isRestricted={isRestricted}
         isBlockedByMe={isBlockedByMe}
+        readReceiptsEnabled={readReceiptsEnabled}
         onClose={() => setMenuAnchorEl(null)}
         onOpenFullChat={() => void handleOpenFullChat()}
         onViewProfile={() => {
@@ -824,6 +860,7 @@ export default function FloatingChatBox({
         onOpenTheme={() => setOpenThemeDialog(true)}
         onToggleMute={toggleMute}
         onOpenBlock={() => setOpenBlockConfirm(true)}
+        onOpenReadReceipts={() => setOpenReadReceiptsDialog(true)}
         onOpenRestrict={() => setOpenRestrictDialog(true)}
         onArchiveChat={() => void handleToggleRestrict()}
         onCloseChat={onClose}
@@ -1397,6 +1434,15 @@ export default function FloatingChatBox({
         isRestricted={isRestricted}
         onClose={() => setOpenRestrictDialog(false)}
         onConfirm={handleToggleRestrict}
+      />
+
+      {/* Dialog Thông Báo Đã Đọc */}
+      <ReadReceiptsDialog
+        open={openReadReceiptsDialog}
+        enabled={readReceiptsEnabled}
+        partnerName={targetUserName}
+        onClose={() => setOpenReadReceiptsDialog(false)}
+        onToggle={handleToggleReadReceipts}
       />
 
       {/* Dialog Xác Nhận Chặn / Bỏ Chặn */}

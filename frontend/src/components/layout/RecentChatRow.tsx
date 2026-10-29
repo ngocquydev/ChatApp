@@ -58,7 +58,7 @@ export default function RecentChatRow({
         borderRadius: "12px",
         mb: 0.25,
         "&:hover": { bgcolor: "action.hover" },
-        "&:hover .conv-more-btn": { opacity: 1 },
+        "&:hover .conv-more-btn": { opacity: 1, pointerEvents: "auto" },
       }}
     >
       <ButtonBase
@@ -101,7 +101,12 @@ export default function RecentChatRow({
         className="conv-more-btn"
         size="small"
         aria-label={`Tùy chọn đoạn chat với ${other?.name || "Người dùng"}`}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
         onClick={(e) => {
+          e.preventDefault();
           e.stopPropagation();
           onOpenMenu(e.currentTarget, conv);
         }}
@@ -111,12 +116,15 @@ export default function RecentChatRow({
           top: "50%",
           transform: "translateY(-50%)",
           opacity: isMenuOpen ? 1 : 0,
+          pointerEvents: isMenuOpen ? "auto" : "none",
           transition: "opacity 0.15s ease",
           width: 32,
           height: 32,
           bgcolor: "background.paper",
           border: "1px solid",
           borderColor: "divider",
+          zIndex: 5,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
           "&:hover": { bgcolor: "action.selected" },
         }}
       >
