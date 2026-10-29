@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import { useTranslation } from "@/i18n/useTranslation";
 import { ChatUser } from "@/store/useChatStore";
 import { getChatTheme } from "./chatThemes";
 import ThemeSelectDialog from "./ThemeSelectDialog";
@@ -51,10 +52,11 @@ interface ChatHeaderProps {
 
 /** Nút chưa có chức năng: hiển thị disabled kèm tooltip trung thực thay vì nút "chết". */
 function ComingSoonButton({ label, children }: { label: string; children: React.ReactNode }) {
+  const { tr } = useTranslation();
   return (
-    <Tooltip title={`${label} — sắp ra mắt`}>
+    <Tooltip title={`${label} — ${tr("sắp ra mắt", "coming soon")}`}>
       <span>
-        <IconButton disabled aria-label={`${label} (sắp ra mắt)`} sx={{ color: "text.secondary" }}>
+        <IconButton disabled aria-label={`${label} (${tr("sắp ra mắt", "coming soon")})`} sx={{ color: "text.secondary" }}>
           {children}
         </IconButton>
       </span>
@@ -77,6 +79,7 @@ export default function ChatHeader({
   onToggleBlock,
   onToggleRestrict,
 }: ChatHeaderProps) {
+  const { tr } = useTranslation();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [openThemeDialog, setOpenThemeDialog] = useState(false);
   const [openRestrictDialog, setOpenRestrictDialog] = useState(false);
@@ -94,16 +97,16 @@ export default function ChatHeader({
   };
 
   const statusText = isTyping
-    ? "Đang soạn tin nhắn…"
+    ? tr("Đang soạn tin nhắn…", "Typing…")
     : isBlockedByMe
-    ? "Bạn đã chặn người này"
+    ? tr("Bạn đã chặn người này", "You blocked this user")
     : isBlockedByPartner
-    ? "Người này không nhận tin nhắn"
+    ? tr("Người này không nhận tin nhắn", "This person cannot receive messages")
     : isRestricted
-    ? "Đang bị hạn chế"
+    ? tr("Đang bị hạn chế", "Restricted")
     : isOnline
-    ? "Đang hoạt động"
-    : "Ngoại tuyến";
+    ? tr("Đang hoạt động", "Online")
+    : tr("Ngoại tuyến", "Offline");
 
   const statusColor = isTyping
     ? "primary.main"
@@ -115,7 +118,7 @@ export default function ChatHeader({
     ? "success.main"
     : "text.secondary";
 
-  const partnerName = partner?.name || "Người dùng";
+  const partnerName = partner?.name || tr("Người dùng", "User");
   const partnerId = partner?._id || partner?.id;
 
   return (
@@ -137,7 +140,7 @@ export default function ChatHeader({
       <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1 }, minWidth: 0 }}>
         <IconButton
           onClick={onBack}
-          aria-label="Quay lại danh sách hội thoại"
+          aria-label={tr("Quay lại danh sách hội thoại", "Back to conversations")}
           sx={{ display: { xs: "inline-flex", sm: "none" } }}
         >
           <ArrowLeft size={22} />
@@ -147,7 +150,7 @@ export default function ChatHeader({
           <ButtonBase
             component={NextLink}
             href={`/profile/${partnerId}`}
-            aria-label={`Xem trang cá nhân của ${partnerName}`}
+            aria-label={tr(`Xem trang cá nhân của ${partnerName}`, `View ${partnerName}'s profile`)}
             sx={{
               display: "flex",
               alignItems: "center",
@@ -207,21 +210,21 @@ export default function ChatHeader({
       </Box>
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
-        <Tooltip title={`Chủ đề: ${activeThemeConfig.name}`}>
+        <Tooltip title={tr(`Chủ đề: ${activeThemeConfig.name}`, `Theme: ${activeThemeConfig.name}`)}>
           <IconButton
             onClick={() => setOpenThemeDialog(true)}
-            aria-label="Đổi chủ đề cuộc trò chuyện"
+            aria-label={tr("Đổi chủ đề cuộc trò chuyện", "Change chat theme")}
             sx={{ color: activeThemeConfig.previewColor, position: "relative" }}
           >
             <Palette size={20} />
           </IconButton>
         </Tooltip>
 
-        <Tooltip title={isMuted ? "Bật âm thanh thông báo" : "Tắt âm thanh thông báo"}>
+        <Tooltip title={isMuted ? tr("Bật âm thanh thông báo", "Unmute notifications") : tr("Tắt âm thanh thông báo", "Mute notifications")}>
           <IconButton
             onClick={onToggleMute}
             aria-pressed={!isMuted}
-            aria-label={isMuted ? "Bật âm thanh thông báo" : "Tắt âm thanh thông báo"}
+            aria-label={isMuted ? tr("Bật âm thanh thông báo", "Unmute notifications") : tr("Tắt âm thanh thông báo", "Mute notifications")}
             sx={{
               color: isMuted ? "text.secondary" : "primary.main",
               bgcolor: isMuted ? "transparent" : "action.selected",
@@ -232,18 +235,18 @@ export default function ChatHeader({
         </Tooltip>
 
         <Box sx={{ display: { xs: "none", sm: "flex" } }}>
-          <ComingSoonButton label="Gọi thoại">
+          <ComingSoonButton label={tr("Gọi thoại", "Voice call")}>
             <Phone size={20} />
           </ComingSoonButton>
-          <ComingSoonButton label="Gọi video">
+          <ComingSoonButton label={tr("Gọi video", "Video call")}>
             <Video size={20} />
           </ComingSoonButton>
         </Box>
 
-        <Tooltip title="Tùy chọn cuộc trò chuyện">
+        <Tooltip title={tr("Tùy chọn cuộc trò chuyện", "Chat options")}>
           <IconButton
             onClick={handleOpenMenu}
-            aria-label="Tùy chọn cuộc trò chuyện"
+            aria-label={tr("Tùy chọn cuộc trò chuyện", "Chat options")}
             aria-controls={menuAnchor ? "chat-options-menu" : undefined}
             aria-haspopup="true"
             aria-expanded={Boolean(menuAnchor)}
@@ -284,7 +287,7 @@ export default function ChatHeader({
               </ListItemIcon>
               <ListItemText>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  Xem trang cá nhân
+                  {tr("Xem trang cá nhân", "View profile")}
                 </Typography>
               </ListItemText>
             </MenuItem>
@@ -302,7 +305,7 @@ export default function ChatHeader({
             </ListItemIcon>
             <ListItemText>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                Đổi chủ đề ({activeThemeConfig.name})
+                {tr(`Đổi chủ đề (${activeThemeConfig.name})`, `Change theme (${activeThemeConfig.name})`)}
               </Typography>
             </ListItemText>
           </MenuItem>
@@ -321,7 +324,7 @@ export default function ChatHeader({
             </ListItemIcon>
             <ListItemText>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {isRestricted ? "Bỏ hạn chế" : "Hạn chế người dùng"}
+                {isRestricted ? tr("Bỏ hạn chế", "Unrestrict") : tr("Hạn chế người dùng", "Restrict user")}
               </Typography>
             </ListItemText>
           </MenuItem>
@@ -338,7 +341,7 @@ export default function ChatHeader({
             </ListItemIcon>
             <ListItemText>
               <Typography variant="body2" sx={{ fontWeight: 600, color: "error.main" }}>
-                {isBlockedByMe ? "Bỏ chặn người dùng" : "Chặn người dùng"}
+                {isBlockedByMe ? tr("Bỏ chặn người dùng", "Unblock user") : tr("Chặn người dùng", "Block user")}
               </Typography>
             </ListItemText>
           </MenuItem>
@@ -365,14 +368,20 @@ export default function ChatHeader({
       {/* Dialog Xác Nhận Chặn / Bỏ Chặn */}
       <ConfirmDialog
         open={openBlockConfirm}
-        title={isBlockedByMe ? `Bỏ chặn ${partnerName}?` : `Chặn ${partnerName}?`}
+        title={isBlockedByMe ? tr(`Bỏ chặn ${partnerName}?`, `Unblock ${partnerName}?`) : tr(`Chặn ${partnerName}?`, `Block ${partnerName}?`)}
         description={
           isBlockedByMe
-            ? `Sau khi bỏ chặn, bạn và ${partnerName} sẽ có thể nhắn tin lại bình thường.`
-            : `Bạn và ${partnerName} sẽ không thể gửi tin nhắn cho nhau nữa.`
+            ? tr(
+                `Sau khi bỏ chặn, bạn và ${partnerName} sẽ có thể nhắn tin lại bình thường.`,
+                `After unblocking, you and ${partnerName} will be able to message each other again.`
+              )
+            : tr(
+                `Bạn và ${partnerName} sẽ không thể gửi tin nhắn cho nhau nữa.`,
+                `You and ${partnerName} will no longer be able to send messages to each other.`
+              )
         }
-        confirmLabel={isBlockedByMe ? "Bỏ chặn" : "Chặn người dùng"}
-        cancelLabel="Hủy"
+        confirmLabel={isBlockedByMe ? tr("Bỏ chặn", "Unblock") : tr("Chặn người dùng", "Block user")}
+        cancelLabel={tr("Hủy", "Cancel")}
         pending={isPending}
         onClose={() => setOpenBlockConfirm(false)}
         onConfirm={async () => {

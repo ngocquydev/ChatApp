@@ -5,6 +5,7 @@ import { Avatar, Box, ButtonBase, IconButton, Skeleton, Tooltip, Typography } fr
 import { Check, Trash2 } from "lucide-react";
 import EmptyState from "@/components/common/EmptyState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import { useTranslation } from "@/i18n/useTranslation";
 import { ChatMessage, ChatUser } from "@/store/useChatStore";
 import { dayKey, formatClockTime, formatDaySeparator } from "@/utils/formatTime";
 import { isVideoUrl } from "@/services/postsApi";
@@ -31,7 +32,8 @@ type Row =
 const senderOf = (msg: ChatMessage) =>
   typeof msg.senderId === "string" ? msg.senderId : msg.senderId?._id;
 
-function buildRows(messages: ChatMessage[], currentUserId?: string): Row[] {
+function buildRows(messages: ChatMessage[], currentUserId?: string, _lang?: string): Row[] {
+  void _lang;
   const rows: Row[] = [];
   messages.forEach((msg, i) => {
     const prev = messages[i - 1];
@@ -67,8 +69,9 @@ function buildRows(messages: ChatMessage[], currentUserId?: string): Row[] {
 }
 
 function MessagesSkeleton() {
+  const { tr } = useTranslation();
   return (
-    <Box aria-busy="true" aria-label="Đang tải tin nhắn" sx={{ display: "flex", flexDirection: "column", gap: 1.5, p: 1 }}>
+    <Box aria-busy="true" aria-label={tr("Đang tải tin nhắn", "Loading messages")} sx={{ display: "flex", flexDirection: "column", gap: 1.5, p: 1 }}>
       {[
         { w: "48%", me: false },
         { w: "36%", me: true },
@@ -87,6 +90,7 @@ function MessagesSkeleton() {
 }
 
 function TypingIndicator({ partner }: { partner: ChatUser | null }) {
+  const { tr } = useTranslation();
   return (
     <Box sx={{ display: "flex", alignItems: "flex-end", gap: 1, mt: 0.5 }}>
       <Avatar src={partner?.avatar} alt="" sx={{ width: 28, height: 28, fontSize: "0.8rem" }}>
@@ -94,7 +98,7 @@ function TypingIndicator({ partner }: { partner: ChatUser | null }) {
       </Avatar>
       <Box
         role="status"
-        aria-label={`${partner?.name || "Đối phương"} đang soạn tin nhắn`}
+        aria-label={tr(`${partner?.name || "Đối phương"} đang soạn tin nhắn`, `${partner?.name || "User"} is typing`)}
         sx={{
           px: 1.75,
           py: 1.5,
@@ -135,6 +139,7 @@ export default function MessageList({
   theme = "default",
   onDeleteMessage,
 }: MessageListProps) {
+  const { tr, language } = useTranslation();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
   const lastConversationRef = useRef<string | null>(null);
@@ -143,7 +148,7 @@ export default function MessageList({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const themeConfig = useMemo(() => getChatTheme(theme), [theme]);
-  const rows = useMemo(() => buildRows(messages, currentUserId), [messages, currentUserId]);
+  const rows = useMemo(() => buildRows(messages, currentUserId, language), [messages, currentUserId, language]);
 
   const handleScroll = () => {
     const el = containerRef.current;
@@ -172,7 +177,7 @@ export default function MessageList({
       onScroll={handleScroll}
       role="log"
       aria-live="polite"
-      aria-label="Nội dung cuộc trò chuyện"
+      aria-label={tr("Nội dung cuộc trò chuyện", "Conversation messages")}
       sx={{
         flex: 1,
         minHeight: 0,
@@ -191,8 +196,11 @@ export default function MessageList({
         <Box sx={{ my: "auto" }}>
           <EmptyState
             icon={<span style={{ fontSize: 28 }}>👋</span>}
-            title="Chưa có tin nhắn nào"
-            description={`Hãy gửi lời chào đầu tiên tới ${partner?.name || "bạn bè"}!`}
+            title={tr("Chưa có tin nhắn nào", "No messages yet")}
+            description={tr(
+              `Hãy gửi lời chào đầu tiên tới ${partner?.name || "bạn bè"}!`,
+              `Send the first greeting to ${partner?.name || "your friend"}!`
+            )}
           />
         </Box>
       ) : (
@@ -287,7 +295,7 @@ export default function MessageList({
                               variant="body2"
                               sx={{ fontSize: "0.875rem", fontStyle: "italic", lineHeight: 1.4 }}
                             >
-                              Tin nhắn đã bị thu hồi
+                              {tr("Tin nhắn đã bị thu hồi", "Message unsent")}
                             </Typography>
                           </Box>
                         );
@@ -322,13 +330,13 @@ export default function MessageList({
                             ) : (
                               <ButtonBase
                                 onClick={() => setLightboxUrl(trimmed)}
-                                aria-label="Phóng to ảnh trong tin nhắn"
+                                aria-label={tr("Phóng to ảnh trong tin nhắn", "Zoom message image")}
                                 sx={{ display: "block", width: "100%" }}
                               >
                                 <Box
                                   component="img"
                                   src={trimmed}
-                                  alt="Ảnh trong tin nhắn"
+                                  alt={tr("Ảnh trong tin nhắn", "Message image")}
                                   loading="lazy"
                                   sx={{
                                     maxWidth: "100%",
@@ -369,12 +377,12 @@ export default function MessageList({
 
                   {/* Nút thu hồi tin nhắn cho tin nhắn của chính mình */}
                   {isMe && !msg.isDeleted && Boolean(onDeleteMessage) && (
-                    <Tooltip title="Thu hồi tin nhắn">
+                    <Tooltip title={tr("Thu hồi tin nhắn", "Unsend message")}>
                       <IconButton
                         size="small"
                         className="msg-action-btn"
                         onClick={() => setMessageToDelete(msg._id)}
-                        aria-label="Thu hồi tin nhắn"
+                        aria-label={tr("Thu hồi tin nhắn", "Unsend message")}
                         sx={{
                           opacity: { xs: 0.7, sm: 0 },
                           transition: "opacity 0.15s ease",
@@ -392,10 +400,10 @@ export default function MessageList({
                 {isMe && isLatest && !msg.isDeleted && (
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4, px: 0.25 }}>
                     {msg.readAt ? (
-                      <Tooltip title={`Đã xem lúc ${formatClockTime(msg.readAt)}`}>
+                      <Tooltip title={`${tr("Đã xem lúc", "Seen at")} ${formatClockTime(msg.readAt)}`}>
                         <Avatar
                           src={partner?.avatar}
-                          alt={`Đã xem bởi ${partner?.name || "đối phương"}`}
+                          alt={tr(`Đã xem bởi ${partner?.name || "đối phương"}`, `Seen by ${partner?.name || "partner"}`)}
                           sx={{ width: 15, height: 15, fontSize: "0.55rem" }}
                         >
                           {partner?.name?.[0]?.toUpperCase()}
@@ -408,7 +416,7 @@ export default function MessageList({
                       >
                         <Check size={14} aria-hidden />
                         <Box component="span" sx={visuallyHidden}>
-                          Đã gửi
+                          {tr("Đã gửi", "Sent")}
                         </Box>
                       </Box>
                     )}
@@ -424,17 +432,20 @@ export default function MessageList({
 
       <ImageLightbox
         src={lightboxUrl}
-        alt="Ảnh trong tin nhắn"
+        alt={tr("Ảnh trong tin nhắn", "Message image")}
         onClose={() => setLightboxUrl(null)}
       />
 
       {/* Xác nhận Thu Hồi Tin Nhắn */}
       <ConfirmDialog
         open={Boolean(messageToDelete)}
-        title="Thu hồi tin nhắn?"
-        description="Tin nhắn này sẽ bị thu hồi với tất cả mọi người trong cuộc trò chuyện."
-        confirmLabel="Thu hồi"
-        cancelLabel="Hủy"
+        title={tr("Thu hồi tin nhắn?", "Unsend message?")}
+        description={tr(
+          "Tin nhắn này sẽ bị thu hồi với tất cả mọi người trong cuộc trò chuyện.",
+          "This message will be unsent for everyone in the conversation."
+        )}
+        confirmLabel={tr("Thu hồi", "Unsend")}
+        cancelLabel={tr("Hủy", "Cancel")}
         pending={isDeleting}
         onClose={() => setMessageToDelete(null)}
         onConfirm={async () => {

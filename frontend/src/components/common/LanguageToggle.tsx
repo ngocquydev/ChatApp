@@ -56,3 +56,4 @@ export default function LanguageToggle({ sx, size = "medium" }: LanguageTogglePr
     </Tooltip>
   );
 }
+

@@ -2,6 +2,7 @@
 
 import { Avatar, Badge } from "@mui/material";
 import { styled } from "@mui/material/styles";
+import { useTranslation } from "@/i18n/useTranslation";
 import { colors } from "@/theme/tokens";
 
 const PresenceBadge = styled(Badge, {
@@ -48,10 +49,11 @@ export default function PresenceAvatar({
   priority = false,
   hidePresence = false,
 }: PresenceAvatarProps) {
+  const { tr } = useTranslation();
   const avatar = (
     <Avatar
       src={src}
-      alt={name || "Người dùng"}
+      alt={name || tr("Người dùng", "User")}
       slotProps={{
         img: {
           loading: priority ? "eager" : "lazy",
@@ -71,7 +73,7 @@ export default function PresenceAvatar({
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       variant="dot"
       online={online}
-      title={online ? "Đang hoạt động" : "Ngoại tuyến"}
+      title={online ? tr("Đang hoạt động", "Online") : tr("Ngoại tuyến", "Offline")}
     >
       {avatar}
     </PresenceBadge>

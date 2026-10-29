@@ -15,16 +15,22 @@ import {
 import { MessageSquare, Search, ShieldAlert } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import EmptyState from "@/components/common/EmptyState";
+import { useLanguageStore } from "@/i18n/useLanguageStore";
+import { useTranslation } from "@/i18n/useTranslation";
 import { ConversationItem } from "@/store/useChatStore";
 import { isVideoUrl } from "@/services/postsApi";
 import { formatConversationTime } from "@/utils/formatTime";
 
 function formatLastMessagePreview(rawText?: string, isDeleted?: boolean): string {
-  if (isDeleted) return "Tin nhắn đã bị thu hồi";
+  const isEn = useLanguageStore.getState().language === "en";
+  if (isDeleted) return isEn ? "Message unsent" : "Tin nhắn đã bị thu hồi";
   const trimmed = rawText?.trim() || "";
   if (!trimmed) return "";
   if (/^https:\/\/res\.cloudinary\.com\//i.test(trimmed)) {
-    return isVideoUrl(trimmed) ? "🎬 Đã gửi một video" : "📷 Đã gửi một hình ảnh";
+    if (isVideoUrl(trimmed)) {
+      return isEn ? "🎬 Sent a video" : "🎬 Đã gửi một video";
+    }
+    return isEn ? "📷 Sent a photo" : "📷 Đã gửi một hình ảnh";
   }
   return trimmed;
 }
@@ -40,8 +46,9 @@ interface ConversationListProps {
 }
 
 function ConversationSkeleton() {
+  const { tr } = useTranslation();
   return (
-    <Box aria-busy="true" aria-label="Đang tải hội thoại" sx={{ p: 1 }}>
+    <Box aria-busy="true" aria-label={tr("Đang tải hội thoại", "Loading conversations")} sx={{ p: 1 }}>
       {Array.from({ length: 6 }).map((_, i) => (
         <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 1.5 }}>
           <Skeleton variant="circular" width={48} height={48} />
@@ -64,6 +71,7 @@ export default function ConversationList({
   onSelect,
   onGoToFriends,
 }: ConversationListProps) {
+  const { tr } = useTranslation();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "restricted">("all");
 
@@ -96,11 +104,11 @@ export default function ConversationList({
           fullWidth
           size="small"
           type="search"
-          placeholder="Tìm kiếm hội thoại…"
+          placeholder={tr("Tìm kiếm hội thoại…", "Search conversations…")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           slotProps={{
-            htmlInput: { "aria-label": "Tìm kiếm hội thoại" },
+            htmlInput: { "aria-label": tr("Tìm kiếm hội thoại", "Search conversations") },
             input: {
               startAdornment: (
                 <InputAdornment position="start">
@@ -116,7 +124,7 @@ export default function ConversationList({
       {/* Bộ lọc Hộp thư / Bị hạn chế */}
       <Box sx={{ px: 2, pb: 1, display: "flex", gap: 1 }}>
         <Chip
-          label="Hộp thư"
+          label={tr("Hộp thư", "Inbox")}
           size="small"
           clickable
           color={filter === "all" ? "primary" : "default"}
@@ -124,7 +132,11 @@ export default function ConversationList({
           onClick={() => setFilter("all")}
         />
         <Chip
-          label={restrictedCount > 0 ? `Bị hạn chế (${restrictedCount})` : "Bị hạn chế"}
+          label={
+            restrictedCount > 0
+              ? tr(`Bị hạn chế (${restrictedCount})`, `Restricted (${restrictedCount})`)
+              : tr("Bị hạn chế", "Restricted")
+          }
           size="small"
           clickable
           color={filter === "restricted" ? "primary" : "default"}
@@ -141,31 +153,34 @@ export default function ConversationList({
             <EmptyState
               compact
               icon={<Search size={26} />}
-              title="Không tìm thấy hội thoại"
-              description={`Không có kết quả nào khớp với “${query.trim()}”.`}
+              title={tr("Không tìm thấy hội thoại", "No conversations found")}
+              description={tr(`Không có kết quả nào khớp với “${query.trim()}”.`, `No results matched “${query.trim()}”.`)}
             />
           ) : filter === "restricted" ? (
             <EmptyState
               compact
               icon={<ShieldAlert size={26} />}
-              title="Không có đoạn chat bị hạn chế"
-              description="Khi bạn hạn chế ai đó, họ sẽ không biết khi nào bạn online hoặc đã đọc tin nhắn của họ."
+              title={tr("Không có đoạn chat bị hạn chế", "No restricted chats")}
+              description={tr(
+                "Khi bạn hạn chế ai đó, họ sẽ không biết khi nào bạn online hoặc đã đọc tin nhắn của họ.",
+                "When you restrict someone, they won't see when you're online or when you've read their messages."
+              )}
             />
           ) : (
             <EmptyState
               compact
               icon={<MessageSquare size={26} />}
-              title="Chưa có cuộc trò chuyện nào"
-              description="Chọn một người bạn để bắt đầu nhắn tin."
+              title={tr("Chưa có cuộc trò chuyện nào", "No conversations yet")}
+              description={tr("Chọn một người bạn để bắt đầu nhắn tin.", "Select a friend to start chatting.")}
               action={
                 <Button variant="contained" size="small" onClick={onGoToFriends}>
-                  Mở danh sách bạn bè
+                  {tr("Mở danh sách bạn bè", "Open friends list")}
                 </Button>
               }
             />
           )
         ) : (
-          <List disablePadding aria-label="Danh sách hội thoại">
+          <List disablePadding aria-label={tr("Danh sách hội thoại", "Conversations list")}>
             {filtered.map((item) => {
               const other =
                 item.participants.find((p) => p._id !== currentUserId) || item.participants[0];
@@ -196,7 +211,7 @@ export default function ConversationList({
                         noWrap
                         sx={{ fontWeight: unreadCount > 0 || isActive ? 700 : 600 }}
                       >
-                        {other?.name || "Người dùng"}
+                        {other?.name || tr("Người dùng", "User")}
                       </Typography>
                       <Typography
                         variant="caption"
@@ -219,13 +234,15 @@ export default function ConversationList({
                           fontWeight: unreadCount > 0 ? 600 : 400,
                         }}
                       >
-                        {lastText ? `${sentByMe ? "Bạn: " : ""}${lastText}` : "Bắt đầu cuộc trò chuyện…"}
+                        {lastText
+                          ? `${sentByMe ? `${tr("Bạn", "You")}: ` : ""}${lastText}`
+                          : tr("Bắt đầu cuộc trò chuyện…", "Start a conversation…")}
                       </Typography>
 
                       {unreadCount > 0 && (
                         <Box
                           component="span"
-                          aria-label={`${unreadCount} tin nhắn chưa đọc`}
+                          aria-label={tr(`${unreadCount} tin nhắn chưa đọc`, `${unreadCount} unread messages`)}
                           sx={{
                             bgcolor: "primary.main",
                             color: "primary.contrastText",

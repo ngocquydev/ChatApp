@@ -74,7 +74,7 @@ function ResponsiveAppBar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
-  const { t } = useTranslation();
+  const { t, tr } = useTranslation();
 
   // State tìm kiếm người dùng toàn hệ thống
   const [searchQuery, setSearchQuery] = useState("");
@@ -215,7 +215,7 @@ function ResponsiveAppBar() {
             <Box sx={{ display: { xs: "flex", md: "none" } }}>
               <IconButton
                 size="large"
-                aria-label="Mở menu điều hướng"
+                aria-label={tr("Mở menu điều hướng", "Open navigation menu")}
                 aria-expanded={mobileOpen}
                 onClick={handleDrawerToggle}
                 color="inherit"
@@ -241,7 +241,7 @@ function ResponsiveAppBar() {
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Tìm bạn bè, đồng nghiệp…"
+                placeholder={t("nav.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -252,7 +252,7 @@ function ResponsiveAppBar() {
                 }}
                 variant="outlined"
                 slotProps={{
-                  htmlInput: { "aria-label": "Tìm kiếm người dùng" },
+                  htmlInput: { "aria-label": tr("Tìm kiếm người dùng", "Search users") },
                   input: {
                     startAdornment: (
                       <InputAdornment position="start">
@@ -266,7 +266,7 @@ function ResponsiveAppBar() {
                       <InputAdornment position="end">
                         <IconButton
                           size="small"
-                          aria-label="Xóa nội dung tìm kiếm"
+                          aria-label={tr("Xóa nội dung tìm kiếm", "Clear search")}
                           onClick={() => {
                             setSearchQuery("");
                             setSearchExpanded(false);
@@ -488,7 +488,7 @@ function ResponsiveAppBar() {
                       >
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.92rem" }}>
-                            Lời mời kết bạn
+                            {tr("Lời mời kết bạn", "Friend Requests")}
                           </Typography>
                           {receivedRequests.length > 0 && (
                             <Chip
@@ -513,7 +513,7 @@ function ResponsiveAppBar() {
                             "&:hover": { textDecoration: "underline" },
                           }}
                         >
-                          Xem tất cả
+                          {tr("Xem tất cả", "See all")}
                         </ButtonBase>
                       </Box>
 
@@ -526,10 +526,10 @@ function ResponsiveAppBar() {
                           <Box sx={{ textAlign: "center", py: 5, px: 3 }}>
                             <UserCheck size={40} color="var(--mui-palette-neutral-400)" style={{ marginBottom: 10 }} />
                             <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-600)", mb: 0.5 }}>
-                              Không có lời mời kết bạn mới
+                              {tr("Không có lời mời kết bạn mới", "No new friend requests")}
                             </Typography>
                             <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", display: "block" }}>
-                              Khi có người gửi lời mời kết bạn, thông báo sẽ hiển thị tại đây.
+                              {tr("Khi có người gửi lời mời kết bạn, thông báo sẽ hiển thị tại đây.", "When someone sends you a friend request, it will appear here.")}
                             </Typography>
                           </Box>
                         ) : (
@@ -570,7 +570,7 @@ function ResponsiveAppBar() {
                                       noWrap
                                       sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.88rem" }}
                                     >
-                                      {requester?.name || "Người dùng"}
+                                      {requester?.name || tr("Người dùng", "User")}
                                     </Typography>
                                     {timeAgo && (
                                       <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", fontSize: "0.7rem", ml: 1 }}>
@@ -584,7 +584,7 @@ function ResponsiveAppBar() {
                                     noWrap
                                     sx={{ color: "var(--mui-palette-neutral-500)", display: "block", fontSize: "0.74rem", mb: 1 }}
                                   >
-                                    {requester?.bio || "Đã gửi lời mời kết bạn"}
+                                    {requester?.bio || tr("Đã gửi lời mời kết bạn", "Sent you a friend request")}
                                   </Typography>
 
                                   <Box sx={{ display: "flex", gap: 1 }}>
@@ -606,7 +606,7 @@ function ResponsiveAppBar() {
                                         boxShadow: "none",
                                       }}
                                     >
-                                      Xác nhận
+                                      {tr("Xác nhận", "Confirm")}
                                     </Button>
                                     <Button
                                       size="small"
@@ -631,7 +631,7 @@ function ResponsiveAppBar() {
                                         },
                                       }}
                                     >
-                                      Xóa
+                                      {tr("Xóa", "Delete")}
                                     </Button>
                                   </Box>
                                 </Box>
@@ -663,7 +663,7 @@ function ResponsiveAppBar() {
                 color="inherit"
                 size="small"
                 onClick={handleOpenFriend}
-                aria-label="Lời mời kết bạn"
+                aria-label={tr("Lời mời kết bạn", "Friend Requests")}
               >
                 <Badge
                   color="error"
@@ -679,7 +679,7 @@ function ResponsiveAppBar() {
                 color="inherit"
                 size="small"
                 onClick={handleOpenChat}
-                aria-label="Tin nhắn"
+                aria-label={tr("Tin nhắn", "Messages")}
               >
                 <Badge
                   color="error"
@@ -714,10 +714,10 @@ function ResponsiveAppBar() {
 
             {/* Avatar User */}
             <Box sx={{ flexGrow: 0 }}>
-              <Tooltip title="Mở cài đặt">
+              <Tooltip title={tr("Mở cài đặt", "Open settings")}>
                 <IconButton
                   onClick={handleOpenUserMenu}
-                  aria-label="Mở menu tài khoản"
+                  aria-label={tr("Mở menu tài khoản", "Open account menu")}
                   aria-haspopup="menu"
                   aria-controls="menu-appbar-user"
                   sx={{
@@ -796,7 +796,7 @@ function ResponsiveAppBar() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <LanguageToggle size="small" />
             <ColorModeToggle />
-            <IconButton onClick={handleDrawerToggle} aria-label="Đóng menu" sx={{ color: "inherit" }}>
+            <IconButton onClick={handleDrawerToggle} aria-label={tr("Đóng menu", "Close menu")} sx={{ color: "inherit" }}>
               <X size={20} />
             </IconButton>
           </Box>
@@ -856,7 +856,7 @@ function ResponsiveAppBar() {
                     primary={page.label}
                     secondary={
                       page.id === "friends" && receivedRequests.length > 0
-                        ? `${receivedRequests.length} lời mời mới`
+                        ? tr(`${receivedRequests.length} lời mời mới`, `${receivedRequests.length} new requests`)
                         : undefined
                     }
                   />
@@ -890,8 +890,8 @@ function ResponsiveAppBar() {
                 </Avatar>
               </ListItemIcon>
               <ListItemText
-                primary={user?.name || "Hồ sơ cá nhân"}
-                secondary="Xem và chỉnh sửa hồ sơ"
+                primary={user?.name || tr("Hồ sơ cá nhân", "Personal Profile")}
+                secondary={tr("Xem và chỉnh sửa hồ sơ", "View and edit profile")}
               />
             </ListItemButton>
           </ListItem>

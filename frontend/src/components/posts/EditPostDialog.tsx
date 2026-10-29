@@ -29,6 +29,7 @@ import {
   type PostPrivacy,
   type PostView,
 } from "@/services/postsApi";
+import { useTranslation } from "@/i18n/useTranslation";
 import PostAuthorHeader from "./PostAuthorHeader";
 import PrivacyPicker from "./PrivacyPicker";
 
@@ -55,6 +56,7 @@ export default function EditPostDialog({
   onUpdated,
 }: EditPostDialogProps) {
   const uid = useId();
+  const { tr } = useTranslation();
   const [text, setText] = useState(post?.content ?? "");
   const [privacy, setPrivacy] = useState<PostPrivacy>(post?.privacy ?? "friends");
   const [attachments, setAttachments] = useState<Attachment[]>(() => {
@@ -103,7 +105,7 @@ export default function EditPostDialog({
 
     const room = MAX_POST_IMAGES - attachments.length;
     if (files.length > room) {
-      setError(`Mỗi bài viết chỉ đính kèm tối đa ${MAX_POST_IMAGES} ảnh hoặc video.`);
+      setError(tr(`Mỗi bài viết chỉ đính kèm tối đa ${MAX_POST_IMAGES} ảnh hoặc video.`, `Each post can attach up to ${MAX_POST_IMAGES} photos or videos.`));
     }
     const accepted = files.slice(0, Math.max(room, 0));
 
@@ -111,11 +113,11 @@ export default function EditPostDialog({
       const isVideo = file.type.startsWith("video/");
       const isImage = file.type.startsWith("image/");
       if (!isImage && !isVideo) {
-        setError("Chỉ hỗ trợ tệp ảnh (JPG, PNG, WEBP, GIF) hoặc video (MP4, WEBM, MOV).");
+        setError(tr("Chỉ hỗ trợ tệp ảnh (JPG, PNG, WEBP, GIF) hoặc video (MP4, WEBM, MOV).", "Only images (JPG, PNG, WEBP, GIF) or videos (MP4, WEBM, MOV) are supported."));
         continue;
       }
       if (file.size > MAX_IMAGE_BYTES) {
-        setError(`Tệp “${file.name}” vượt quá 50MB.`);
+        setError(tr(`Tệp “${file.name}” vượt quá 50MB.`, `File “${file.name}” exceeds 50MB.`));
         continue;
       }
       const preview = URL.createObjectURL(file);
@@ -128,7 +130,7 @@ export default function EditPostDialog({
         setAttachments((prev) => prev.map((a) => (a.key === key ? { ...a, url } : a)));
       } catch (err) {
         setAttachments((prev) => prev.filter((a) => a.key !== key));
-        setError(apiErrorMessage(err, "Không tải được tệp lên."));
+        setError(apiErrorMessage(err, tr("Không tải được tệp lên.", "Could not upload file.")));
       } finally {
         setUploading((n) => n - 1);
       }
@@ -152,7 +154,7 @@ export default function EditPostDialog({
       });
       onUpdated(updated);
     } catch (err) {
-      setError(apiErrorMessage(err, "Không cập nhật được bài viết. Hãy thử lại."));
+      setError(apiErrorMessage(err, tr("Không cập nhật được bài viết. Hãy thử lại.", "Could not update post. Please try again.")));
     } finally {
       setSaving(false);
     }
@@ -168,7 +170,7 @@ export default function EditPostDialog({
       aria-labelledby={`${uid}-title`}
     >
       <DialogTitle id={`${uid}-title`} sx={{ fontWeight: 700 }}>
-        Chỉnh sửa bài viết
+        {tr("Chỉnh sửa bài viết", "Edit post")}
       </DialogTitle>
       <DialogContent>
         <TextField
@@ -176,14 +178,14 @@ export default function EditPostDialog({
           multiline
           minRows={3}
           maxRows={10}
-          placeholder="Nội dung bài viết…"
+          placeholder={tr("Nội dung bài viết…", "Post content…")}
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={saving}
           slotProps={{
             htmlInput: {
               maxLength: POST_MAX_LENGTH,
-              "aria-label": "Chỉnh sửa nội dung bài viết",
+              "aria-label": tr("Chỉnh sửa nội dung bài viết", "Edit post content"),
             },
           }}
         />
@@ -195,7 +197,7 @@ export default function EditPostDialog({
         )}
 
         {!isShared && attachments.length > 0 && (
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 2 }} aria-label="Tệp đính kèm">
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 2 }} aria-label={tr("Tệp đính kèm", "Attachments")}>
             {attachments.map((a, i) => (
               <Box
                 key={a.key}
@@ -219,18 +221,18 @@ export default function EditPostDialog({
                   <Box
                     component="img"
                     src={a.preview}
-                    alt={`Tệp đính kèm ${i + 1}`}
+                    alt={tr(`Tệp đính kèm ${i + 1}`, `Attachment ${i + 1}`)}
                     sx={{ width: "100%", height: "100%", objectFit: "cover", opacity: a.url ? 1 : 0.5 }}
                   />
                 )}
                 {!a.url && (
                   <Box sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <CircularProgress size={22} aria-label="Đang tải tệp lên" />
+                    <CircularProgress size={22} aria-label={tr("Đang tải tệp lên", "Uploading file")} />
                   </Box>
                 )}
                 <IconButton
                   size="small"
-                  aria-label={`Gỡ tệp đính kèm ${i + 1}`}
+                  aria-label={tr(`Gỡ tệp đính kèm ${i + 1}`, `Remove attachment ${i + 1}`)}
                   onClick={() => removeAttachment(a.key)}
                   disabled={saving}
                   sx={{
@@ -271,7 +273,7 @@ export default function EditPostDialog({
             )}
             {sharedPreview.images.length > 0 && (
               <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
-                Kèm {sharedPreview.images.length} ảnh
+                {tr(`Kèm ${sharedPreview.images.length} ảnh`, `Includes ${sharedPreview.images.length} photos`)}
               </Typography>
             )}
           </Box>
@@ -288,7 +290,7 @@ export default function EditPostDialog({
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              Ai xem được:
+              {tr("Ai xem được:", "Who can see:")}
             </Typography>
             <PrivacyPicker value={privacy} onChange={setPrivacy} disabled={saving} labelId={`${uid}-privacy`} />
           </Box>
@@ -302,14 +304,14 @@ export default function EditPostDialog({
               startIcon={<ImagePlus size={18} aria-hidden />}
               sx={{ fontWeight: 600, color: "text.secondary" }}
             >
-              Thêm ảnh / video
+              {tr("Thêm ảnh / video", "Add photo / video")}
               <input
                 hidden
                 type="file"
                 accept={ACCEPT}
                 multiple
                 onChange={handleFiles}
-                aria-label="Chọn thêm ảnh hoặc video"
+                aria-label={tr("Chọn thêm ảnh hoặc video", "Select more photos or videos")}
               />
             </Button>
           )}
@@ -317,10 +319,14 @@ export default function EditPostDialog({
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button color="inherit" onClick={handleClose} disabled={saving || uploading > 0}>
-          Hủy
+          {tr("Hủy", "Cancel")}
         </Button>
         <Button variant="contained" onClick={() => void submit()} disabled={!canSave}>
-          {saving ? "Đang lưu…" : uploading > 0 ? "Đang tải lên…" : "Lưu thay đổi"}
+          {saving
+            ? tr("Đang lưu…", "Saving…")
+            : uploading > 0
+            ? tr("Đang tải lên…", "Uploading…")
+            : tr("Lưu thay đổi", "Save changes")}
         </Button>
       </DialogActions>
     </Dialog>

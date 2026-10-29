@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Grid } from "@mui/material";
+import { useTranslation } from "@/i18n/useTranslation";
 import { fetchUserPhotos, fetchUserPosts, type PhotoItem, type PublicProfile } from "@/services/postsApi";
 import PostFeed from "./PostFeed";
 import ProfileSidebar from "./ProfileSidebar";
@@ -18,6 +19,7 @@ interface ProfileTimelineProps {
 
 /** Dòng thời gian kiểu Facebook: cột trái (Giới thiệu/Ảnh/Bạn bè) + cột phải (soạn bài, bài viết). */
 export default function ProfileTimeline({ userId, isOwner, profile, currentUserId }: ProfileTimelineProps) {
+  const { tr } = useTranslation();
   const [photos, setPhotos] = useState<PhotoItem[] | null>(null);
   const [photosVersion, setPhotosVersion] = useState(0);
 
@@ -47,11 +49,11 @@ export default function ProfileTimeline({ userId, isOwner, profile, currentUserI
         <PostFeed
           loadPage={(after) => fetchUserPosts(userId, { limit: PAGE_SIZE, after })}
           canCompose={isOwner}
-          emptyTitle="Chưa có bài viết nào"
+          emptyTitle={tr("Chưa có bài viết nào", "No posts yet")}
           emptyDescription={
             isOwner
-              ? "Hãy chia sẻ điều gì đó ở khung phía trên để bắt đầu dòng thời gian của bạn."
-              : `${name ?? "Người này"} chưa có bài viết nào mà bạn xem được.`
+              ? tr("Hãy chia sẻ điều gì đó ở khung phía trên để bắt đầu dòng thời gian của bạn.", "Share something above to start your timeline.")
+              : tr(`${name ?? "Người này"} chưa có bài viết nào mà bạn xem được.`, `${name ?? "This user"} hasn't shared any posts visible to you yet.`)
           }
           onOwnPostsChanged={() => setPhotosVersion((v) => v + 1)}
         />

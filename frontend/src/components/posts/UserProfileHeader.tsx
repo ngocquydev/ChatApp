@@ -3,6 +3,7 @@
 import { Box, Button, Paper, Typography } from "@mui/material";
 import { Check, Clock, MessageCircle, UserCheck, UserMinus, UserPlus, X } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
+import { useTranslation } from "@/i18n/useTranslation";
 import type { PublicProfile } from "@/services/postsApi";
 
 interface UserProfileHeaderProps {
@@ -26,6 +27,7 @@ export default function UserProfileHeader({
   onUnfriend,
   onMessage,
 }: UserProfileHeaderProps) {
+  const { tr } = useTranslation();
   const { user, relationStatus } = profile;
 
   return (
@@ -84,28 +86,28 @@ export default function UserProfileHeader({
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: { xs: "center", sm: "flex-end" } }}>
             {relationStatus === "none" && (
               <Button variant="contained" disabled={pending} startIcon={<UserPlus size={18} aria-hidden />} onClick={onSendRequest}>
-                Kết bạn
+                {tr("Kết bạn", "Add friend")}
               </Button>
             )}
             {relationStatus === "pending_sent" && (
               <Button variant="outlined" color="inherit" disabled={pending} startIcon={<Clock size={18} aria-hidden />} onClick={onCancelRequest}>
-                Đã gửi lời mời (Hủy)
+                {tr("Đã gửi lời mời (Hủy)", "Request sent (Cancel)")}
               </Button>
             )}
             {relationStatus === "pending_received" && (
               <>
                 <Button variant="contained" disabled={pending} startIcon={<Check size={18} aria-hidden />} onClick={() => onRespond("accept")}>
-                  Chấp nhận
+                  {tr("Chấp nhận", "Accept")}
                 </Button>
                 <Button variant="outlined" color="error" disabled={pending} startIcon={<X size={18} aria-hidden />} onClick={() => onRespond("reject")}>
-                  Từ chối
+                  {tr("Từ chối", "Decline")}
                 </Button>
               </>
             )}
             {relationStatus === "friends" && (
               <>
                 <Button variant="contained" startIcon={<MessageCircle size={18} aria-hidden />} onClick={onMessage}>
-                  Nhắn tin
+                  {tr("Nhắn tin", "Message")}
                 </Button>
                 <Button
                   variant="outlined"
@@ -114,9 +116,9 @@ export default function UserProfileHeader({
                   startIcon={<UserCheck size={18} aria-hidden />}
                   endIcon={<UserMinus size={16} aria-hidden />}
                   onClick={onUnfriend}
-                  aria-label="Bạn bè — bấm để hủy kết bạn"
+                  aria-label={tr("Bạn bè — bấm để hủy kết bạn", "Friends — click to unfriend")}
                 >
-                  Bạn bè
+                  {tr("Bạn bè", "Friends")}
                 </Button>
               </>
             )}
@@ -139,7 +141,7 @@ export default function UserProfileHeader({
             {user.name}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontWeight: 500 }}>
-            {profile.friendCount} bạn bè
+            {profile.friendCount} {tr("bạn bè", "friends")}
           </Typography>
           {user.bio && (
             <Typography variant="body2" sx={{ mt: 1, color: "text.secondary", whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxWidth: 640 }}>

@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import { BellOff, EyeOff, MessageSquareOff, ShieldAlert } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
+import { useTranslation } from "@/i18n/useTranslation";
 import { ChatUser } from "@/store/useChatStore";
 
 interface RestrictInfoDialogProps {
@@ -28,7 +29,8 @@ export default function RestrictInfoDialog({
   onConfirm,
   onClose,
 }: RestrictInfoDialogProps) {
-  const partnerName = partner?.name || "Người dùng này";
+  const { tr } = useTranslation();
+  const partnerName = partner?.name || tr("Người dùng này", "This user");
 
   return (
     <Dialog
@@ -51,7 +53,9 @@ export default function RestrictInfoDialog({
           <PresenceAvatar name={partner?.name} src={partner?.avatar} online={false} size={56} />
         </Box>
         <Typography variant="h6" sx={{ fontWeight: 800 }}>
-          {isRestricted ? `Bỏ hạn chế ${partnerName}?` : `Hạn chế ${partnerName}?`}
+          {isRestricted
+            ? tr(`Bỏ hạn chế ${partnerName}?`, `Unrestrict ${partnerName}?`)
+            : tr(`Hạn chế ${partnerName}?`, `Restrict ${partnerName}?`)}
         </Typography>
       </DialogTitle>
 
@@ -61,34 +65,49 @@ export default function RestrictInfoDialog({
             <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
               <MessageSquareOff size={20} color="var(--mui-palette-text-secondary)" style={{ marginTop: 2, flexShrink: 0 }} />
               <Typography variant="body2" color="text.secondary">
-                Cuộc trò chuyện này sẽ được chuyển vào mục <strong>Đoạn chat bị hạn chế</strong> và không hiện ở danh sách chính.
+                {tr(
+                  "Cuộc trò chuyện này sẽ được chuyển vào mục Đoạn chat bị hạn chế và không hiện ở danh sách chính.",
+                  "This conversation will be moved to Restricted Chats and hidden from your main chat list."
+                )}
               </Typography>
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
               <EyeOff size={20} color="var(--mui-palette-text-secondary)" style={{ marginTop: 2, flexShrink: 0 }} />
               <Typography variant="body2" color="text.secondary">
-                {partnerName} sẽ <strong>không biết</strong> khi nào bạn đang online hoặc khi bạn đã đọc tin nhắn của họ.
+                {tr(
+                  `${partnerName} sẽ không biết khi nào bạn đang online hoặc khi bạn đã đọc tin nhắn của họ.`,
+                  `${partnerName} won't see when you're online or when you've read their messages.`
+                )}
               </Typography>
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
               <BellOff size={20} color="var(--mui-palette-text-secondary)" style={{ marginTop: 2, flexShrink: 0 }} />
               <Typography variant="body2" color="text.secondary">
-                Tắt toàn bộ chuông và thông báo khi người này gửi tin nhắn đến.
+                {tr(
+                  "Tắt toàn bộ chuông và thông báo khi người này gửi tin nhắn đến.",
+                  "Mute all sounds and notifications when this person sends messages."
+                )}
               </Typography>
             </Box>
 
             <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
               <ShieldAlert size={20} color="var(--mui-palette-text-secondary)" style={{ marginTop: 2, flexShrink: 0 }} />
               <Typography variant="body2" color="text.secondary">
-                Họ sẽ không được thông báo rằng bạn đã hạn chế họ. Bạn có thể bỏ hạn chế bất cứ lúc nào.
+                {tr(
+                  "Họ sẽ không được thông báo rằng bạn đã hạn chế họ. Bạn có thể bỏ hạn chế bất cứ lúc nào.",
+                  "They won't be notified that you restricted them. You can unrestrict them anytime."
+                )}
               </Typography>
             </Box>
           </Box>
         ) : (
           <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", mt: 1 }}>
-            Khi bỏ hạn chế, cuộc trò chuyện với <strong>{partnerName}</strong> sẽ trở lại danh sách chính và bạn sẽ nhận lại thông báo bình thường.
+            {tr(
+              `Khi bỏ hạn chế, cuộc trò chuyện với ${partnerName} sẽ trở lại danh sách chính và bạn sẽ nhận lại thông báo bình thường.`,
+              `When unrestricted, your conversation with ${partnerName} will return to the main chat list and notifications will resume.`
+            )}
           </Typography>
         )}
       </DialogContent>
@@ -100,7 +119,7 @@ export default function RestrictInfoDialog({
           onClick={onClose}
           sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 600 }}
         >
-          Hủy
+          {tr("Hủy", "Cancel")}
         </Button>
         <Button
           fullWidth
@@ -112,7 +131,7 @@ export default function RestrictInfoDialog({
           }}
           sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 700 }}
         >
-          {isRestricted ? "Bỏ hạn chế" : "Hạn chế"}
+          {isRestricted ? tr("Bỏ hạn chế", "Unrestrict") : tr("Hạn chế", "Restrict")}
         </Button>
       </DialogActions>
     </Dialog>

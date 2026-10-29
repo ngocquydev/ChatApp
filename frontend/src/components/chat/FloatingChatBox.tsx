@@ -51,6 +51,7 @@ import ImageLightbox from "@/components/posts/ImageLightbox";
 import ThemeSelectDialog from "@/components/chat/app/ThemeSelectDialog";
 import RestrictInfoDialog from "@/components/chat/app/RestrictInfoDialog";
 import { getChatTheme } from "@/components/chat/app/chatThemes";
+import { useTranslation } from "@/i18n/useTranslation";
 import FloatingChatHeaderMenu from "./FloatingChatHeaderMenu";
 import ReadReceiptsDialog from "./ReadReceiptsDialog";
 
@@ -84,6 +85,7 @@ export default function FloatingChatBox({
   onToggleMinimize,
 }: FloatingChatBoxProps) {
   const router = useRouter();
+  const { tr } = useTranslation();
   const { user: currentUser } = useAuthStore();
   const { socket, onlineUserIds, startConversationWithUser } = useChatStore();
   const { setConversationId, incrementUnread, clearUnread } = useChatBoxStore();
@@ -699,8 +701,8 @@ export default function FloatingChatBox({
           component="div"
           aria-label={
             session.isMinimized
-              ? `Mở rộng hộp chat với ${targetUser.name}`
-              : `Mở tùy chọn đoạn chat với ${targetUser.name}`
+              ? tr(`Mở rộng hộp chat với ${targetUser.name}`, `Expand chat with ${targetUser.name}`)
+              : tr(`Mở tùy chọn đoạn chat với ${targetUser.name}`, `Open chat options with ${targetUser.name}`)
           }
           onClick={(e) => {
             if (session.isMinimized) {
@@ -778,7 +780,7 @@ export default function FloatingChatBox({
                   lineHeight: 1.15,
                 }}
               >
-                {isOnline ? "Đang hoạt động" : "Ngoại tuyến"}
+                {isOnline ? tr("Đang hoạt động", "Online") : tr("Ngoại tuyến", "Offline")}
               </Typography>
             )}
           </Box>
@@ -787,10 +789,10 @@ export default function FloatingChatBox({
         {/* Nút Tùy chọn (3 chấm), Thu nhỏ (-) & Đóng (×) chuẩn Facebook */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
           {!session.isMinimized && (
-            <Tooltip title="Tùy chọn đoạn chat">
+            <Tooltip title={tr("Tùy chọn đoạn chat", "Chat options")}>
               <IconButton
                 size="small"
-                aria-label="Tùy chọn đoạn chat"
+                aria-label={tr("Tùy chọn đoạn chat", "Chat options")}
                 onClick={(e) => {
                   e.stopPropagation();
                   setMenuAnchorEl(e.currentTarget);
@@ -806,10 +808,10 @@ export default function FloatingChatBox({
             </Tooltip>
           )}
 
-          <Tooltip title={session.isMinimized ? "Mở rộng" : "Thu nhỏ"}>
+          <Tooltip title={session.isMinimized ? tr("Mở rộng", "Expand") : tr("Thu nhỏ", "Minimize")}>
             <IconButton
               size="small"
-              aria-label={session.isMinimized ? "Mở rộng hộp chat" : "Thu nhỏ hộp chat"}
+              aria-label={session.isMinimized ? tr("Mở rộng hộp chat", "Expand chat") : tr("Thu nhỏ hộp chat", "Minimize chat")}
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleMinimize();
@@ -824,10 +826,10 @@ export default function FloatingChatBox({
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Đóng đoạn chat">
+          <Tooltip title={tr("Đóng đoạn chat", "Close chat")}>
             <IconButton
               size="small"
-              aria-label="Đóng hộp chat"
+              aria-label={tr("Đóng hộp chat", "Close chat")}
               onClick={(e) => {
                 e.stopPropagation();
                 onClose();
@@ -873,7 +875,7 @@ export default function FloatingChatBox({
           <Box
             role="log"
             aria-live="polite"
-            aria-label={`Tin nhắn với ${targetUser.name}`}
+            aria-label={tr(`Tin nhắn với ${targetUser.name}`, `Messages with ${targetUser.name}`)}
             sx={{
               flex: 1,
               overflowY: "auto",
@@ -898,7 +900,7 @@ export default function FloatingChatBox({
                 }}
               >
                 <CircularProgress size={24} />
-                <Typography variant="caption">Đang tải tin nhắn…</Typography>
+                <Typography variant="caption">{tr("Đang tải tin nhắn…", "Loading messages…")}</Typography>
               </Box>
             ) : messages.length === 0 ? (
               <Box
@@ -924,12 +926,12 @@ export default function FloatingChatBox({
                   variant="caption"
                   sx={{ color: chatTheme.metaTextColor, mb: 2, display: "block", maxWidth: 200 }}
                 >
-                  Các bạn đã kết nối trên ChatApp. Hãy bắt đầu cuộc trò chuyện!
+                  {tr("Các bạn đã kết nối trên ChatApp. Hãy bắt đầu cuộc trò chuyện!", "You're connected on ChatApp. Start a conversation!")}
                 </Typography>
                 <Button
                   size="small"
                   variant="outlined"
-                  onClick={() => void handleSendMessage("👋 Chào bạn!")}
+                  onClick={() => void handleSendMessage(tr("👋 Chào bạn!", "👋 Hello!"))}
                   sx={{
                     borderRadius: "20px",
                     px: 2,
@@ -939,7 +941,7 @@ export default function FloatingChatBox({
                     bgcolor: "background.paper",
                   }}
                 >
-                  👋 Nói xin chào!
+                  {tr("👋 Nói xin chào!", "👋 Say hello!")}
                 </Button>
               </Box>
             ) : (
@@ -1053,7 +1055,7 @@ export default function FloatingChatBox({
                                 lineHeight: 1.38,
                               }}
                             >
-                              Tin nhắn đã bị thu hồi
+                              {tr("Tin nhắn đã bị thu hồi", "Message unsent")}
                             </Box>
                           ) : isMedia ? (
                             <Box
@@ -1074,13 +1076,13 @@ export default function FloatingChatBox({
                               ) : (
                                 <ButtonBase
                                   onClick={() => setLightboxUrl(trimmed)}
-                                  aria-label="Phóng to ảnh trong tin nhắn"
+                                  aria-label={tr("Phóng to ảnh trong tin nhắn", "Zoom message image")}
                                   sx={{ display: "block", width: "100%" }}
                                 >
                                   <Box
                                     component="img"
                                     src={trimmed}
-                                    alt="Ảnh trong tin nhắn"
+                                    alt={tr("Ảnh trong tin nhắn", "Message image")}
                                     loading="lazy"
                                     sx={{ maxWidth: "100%", maxHeight: 200, display: "block" }}
                                   />
@@ -1108,7 +1110,7 @@ export default function FloatingChatBox({
                         </Tooltip>
 
                         {isMe && !msg.isDeleted && (
-                          <Tooltip title="Thu hồi tin nhắn">
+                          <Tooltip title={tr("Thu hồi tin nhắn", "Unsend message")}>
                             <IconButton
                               className="msg-delete-btn"
                               size="small"
@@ -1123,7 +1125,7 @@ export default function FloatingChatBox({
                                   bgcolor: "action.hover",
                                 },
                               }}
-                              aria-label="Thu hồi tin nhắn"
+                              aria-label={tr("Thu hồi tin nhắn", "Unsend message")}
                             >
                               <Trash2 size={13} />
                             </IconButton>
@@ -1135,17 +1137,17 @@ export default function FloatingChatBox({
                       {isMe && isLastMsg && !isRestricted && (
                         <Box sx={{ display: "flex", alignItems: "center", mt: 0.35, pr: 0.25 }}>
                           {isSeen ? (
-                            <Tooltip title={`Đã xem lúc ${formatTime(partnerSeenAt || msg.readAt || msg.createdAt)}`}>
+                            <Tooltip title={`${tr("Đã xem lúc", "Seen at")} ${formatTime(partnerSeenAt || msg.readAt || msg.createdAt)}`}>
                               <Avatar
                                 src={targetUser.avatar || ""}
-                                alt={`Đã xem bởi ${targetUser.name}`}
+                                alt={tr(`Đã xem bởi ${targetUser.name}`, `Seen by ${targetUser.name}`)}
                                 sx={{ width: 14, height: 14, fontSize: "0.5rem", bgcolor: "var(--mui-palette-brand-500)" }}
                               >
                                 {(targetUser.name || "U")[0].toUpperCase()}
                               </Avatar>
                             </Tooltip>
                           ) : (
-                            <Tooltip title="Đã gửi">
+                            <Tooltip title={tr("Đã gửi", "Sent")}>
                               <CheckCheck size={12} color={chatTheme.metaTextColor} />
                             </Tooltip>
                           )}
@@ -1169,7 +1171,7 @@ export default function FloatingChatBox({
                 </Avatar>
                 <Box
                   role="status"
-                  aria-label={`${targetUser.name} đang soạn tin nhắn`}
+                  aria-label={tr(`${targetUser.name} đang soạn tin nhắn`, `${targetUser.name} is typing`)}
                   sx={{
                     display: "flex",
                     alignItems: "center",
@@ -1218,8 +1220,8 @@ export default function FloatingChatBox({
             >
               <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500, fontSize: "0.78rem" }}>
                 {isBlockedByMe
-                  ? "Bạn đã chặn người dùng này. Bỏ chặn để tiếp tục trò chuyện."
-                  : "Người dùng này hiện không thể nhận tin nhắn vào lúc này."}
+                  ? tr("Bạn đã chặn người dùng này. Bỏ chặn để tiếp tục trò chuyện.", "You have blocked this user. Unblock to continue chatting.")
+                  : tr("Người dùng này hiện không thể nhận tin nhắn vào lúc này.", "This user cannot receive messages right now.")}
               </Typography>
               {isBlockedByMe && (
                 <Button
@@ -1229,7 +1231,7 @@ export default function FloatingChatBox({
                   onClick={handleToggleBlock}
                   sx={{ fontSize: "0.75rem", py: 0.3, px: 1.5, borderRadius: "8px" }}
                 >
-                  Bỏ chặn
+                  {tr("Bỏ chặn", "Unblock")}
                 </Button>
               )}
             </Box>
@@ -1251,14 +1253,14 @@ export default function FloatingChatBox({
                 accept="image/*,video/*"
                 hidden
                 onChange={handleMediaSelect}
-                aria-label="Chọn ảnh hoặc video để gửi"
+                aria-label={tr("Chọn ảnh hoặc video để gửi", "Choose image or video to send")}
               />
-              <Tooltip title={uploadingMedia ? "Đang tải tệp lên…" : "Đính kèm ảnh hoặc video"}>
+              <Tooltip title={uploadingMedia ? tr("Đang tải tệp lên…", "Uploading file…") : tr("Đính kèm ảnh hoặc video", "Attach image or video")}>
                 <span>
                   <IconButton
                     size="small"
                     disabled={uploadingMedia}
-                    aria-label="Đính kèm ảnh hoặc video"
+                    aria-label={tr("Đính kèm ảnh hoặc video", "Attach image or video")}
                     onClick={() => fileInputRef.current?.click()}
                     sx={{ color: "primary.main", p: 0.65 }}
                   >
@@ -1267,10 +1269,10 @@ export default function FloatingChatBox({
                 </span>
               </Tooltip>
 
-              <Tooltip title="Đổi chủ đề cuộc trò chuyện">
+              <Tooltip title={tr("Đổi chủ đề cuộc trò chuyện", "Change chat theme")}>
                 <IconButton
                   size="small"
-                  aria-label="Đổi chủ đề cuộc trò chuyện"
+                  aria-label={tr("Đổi chủ đề cuộc trò chuyện", "Change chat theme")}
                   onClick={() => setOpenThemeDialog(true)}
                   sx={{ color: "primary.main", p: 0.65 }}
                 >
@@ -1287,14 +1289,14 @@ export default function FloatingChatBox({
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 slotProps={{
-                  htmlInput: { "aria-label": "Nội dung tin nhắn" },
+                  htmlInput: { "aria-label": tr("Nội dung tin nhắn", "Message content") },
                   input: {
                     endAdornment: (
                       <InputAdornment position="end">
-                        <Tooltip title="Chọn biểu tượng cảm xúc">
+                        <Tooltip title={tr("Chọn biểu tượng cảm xúc", "Choose emoji")}>
                           <IconButton
                             size="small"
-                            aria-label="Chọn biểu tượng cảm xúc"
+                            aria-label={tr("Chọn biểu tượng cảm xúc", "Choose emoji")}
                             onClick={handleOpenEmoji}
                             sx={{ color: "primary.main", p: 0.4, mr: -0.5 }}
                           >
@@ -1326,10 +1328,10 @@ export default function FloatingChatBox({
 
               {/* Nút Like 👍 nếu rỗng, hoặc nút Send nếu có chữ */}
               {inputText.trim() ? (
-                <Tooltip title="Gửi (Enter)">
+                <Tooltip title={tr("Gửi (Enter)", "Send (Enter)")}>
                   <IconButton
                     size="small"
-                    aria-label="Gửi tin nhắn"
+                    aria-label={tr("Gửi tin nhắn", "Send message")}
                     onClick={() => void handleSendMessage()}
                     sx={{
                       color: "primary.main",
@@ -1341,10 +1343,10 @@ export default function FloatingChatBox({
                   </IconButton>
                 </Tooltip>
               ) : (
-                <Tooltip title="Gửi biểu tượng thích">
+                <Tooltip title={tr("Gửi biểu tượng thích", "Send a like")}>
                   <IconButton
                     size="small"
-                    aria-label="Gửi biểu tượng thích"
+                    aria-label={tr("Gửi biểu tượng thích", "Send a like")}
                     onClick={() => void handleSendMessage("👍")}
                     sx={{
                       color: "primary.main",
@@ -1380,7 +1382,7 @@ export default function FloatingChatBox({
             }}
           >
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, mb: 1, display: "block" }}>
-              Biểu tượng cảm xúc
+              {tr("Biểu tượng cảm xúc", "Emojis")}
             </Typography>
             <Box
               sx={{
@@ -1392,7 +1394,7 @@ export default function FloatingChatBox({
               {POPULAR_EMOJIS.map((emoji) => (
                 <ButtonBase
                   key={emoji}
-                  aria-label={`Chèn biểu tượng ${emoji}`}
+                  aria-label={tr(`Chèn biểu tượng ${emoji}`, `Insert emoji ${emoji}`)}
                   onClick={() => handleSelectEmoji(emoji)}
                   sx={{
                     fontSize: "1.25rem",
@@ -1415,7 +1417,7 @@ export default function FloatingChatBox({
 
       <ImageLightbox
         src={lightboxUrl}
-        alt="Ảnh trong tin nhắn"
+        alt={tr("Ảnh trong tin nhắn", "Message image")}
         onClose={() => setLightboxUrl(null)}
       />
 
@@ -1448,14 +1450,14 @@ export default function FloatingChatBox({
       {/* Dialog Xác Nhận Chặn / Bỏ Chặn */}
       <ConfirmDialog
         open={openBlockConfirm}
-        title={isBlockedByMe ? "Bỏ chặn người dùng?" : `Chặn ${targetUser.name}?`}
+        title={isBlockedByMe ? tr("Bỏ chặn người dùng?", "Unblock user?") : tr(`Chặn ${targetUser.name}?`, `Block ${targetUser.name}?`)}
         description={
           isBlockedByMe
-            ? "Sau khi bỏ chặn, hai bạn sẽ có thể gửi và nhận tin nhắn bình thường."
-            : "Người này sẽ không thể gửi tin nhắn cho bạn và bạn cũng không thể gửi tin nhắn cho họ cho đến khi bỏ chặn."
+            ? tr("Sau khi bỏ chặn, hai bạn sẽ có thể gửi và nhận tin nhắn bình thường.", "After unblocking, you will be able to send and receive messages normally.")
+            : tr("Người này sẽ không thể gửi tin nhắn cho bạn và bạn cũng không thể gửi tin nhắn cho họ cho đến khi bỏ chặn.", "This user won't be able to message you and you won't be able to message them until you unblock them.")
         }
-        confirmLabel={isBlockedByMe ? "Bỏ chặn" : "Chặn người dùng"}
-        cancelLabel="Hủy"
+        confirmLabel={isBlockedByMe ? tr("Bỏ chặn", "Unblock") : tr("Chặn người dùng", "Block user")}
+        cancelLabel={tr("Hủy", "Cancel")}
         onClose={() => setOpenBlockConfirm(false)}
         onConfirm={handleToggleBlock}
       />
@@ -1463,10 +1465,10 @@ export default function FloatingChatBox({
       {/* Dialog Xác Nhận Thu Hồi Tin Nhắn */}
       <ConfirmDialog
         open={Boolean(deleteMsgId)}
-        title="Thu hồi tin nhắn?"
-        description="Tin nhắn này sẽ bị thu hồi với tất cả mọi người trong cuộc trò chuyện."
-        confirmLabel="Thu hồi"
-        cancelLabel="Hủy"
+        title={tr("Thu hồi tin nhắn?", "Unsend message?")}
+        description={tr("Tin nhắn này sẽ bị thu hồi với tất cả mọi người trong cuộc trò chuyện.", "This message will be unsent for everyone in the conversation.")}
+        confirmLabel={tr("Thu hồi", "Unsend")}
+        cancelLabel={tr("Hủy", "Cancel")}
         onClose={() => setDeleteMsgId(null)}
         onConfirm={() => {
           if (deleteMsgId) {

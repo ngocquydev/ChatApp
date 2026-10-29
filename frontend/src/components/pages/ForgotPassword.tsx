@@ -29,8 +29,11 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useTranslation } from "@/i18n/useTranslation";
+import LanguageToggle from "../common/LanguageToggle";
 
 export default function ForgotPassword() {
+  const { tr } = useTranslation();
   const router = useRouter();
   const { forgotPassword, verifyOtp, resetPassword } = useAuthStore();
 
@@ -101,27 +104,27 @@ export default function ForgotPassword() {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) {
-      showToast("Vui lòng nhập địa chỉ email của bạn!", "error");
+      showToast(tr("Vui lòng nhập địa chỉ email của bạn!", "Please enter your email address!"), "error");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(cleanEmail)) {
-      showToast("Định dạng email không hợp lệ!", "error");
+      showToast(tr("Định dạng email không hợp lệ!", "Invalid email format!"), "error");
       return;
     }
 
     setIsLoading(true);
     try {
       await forgotPassword(cleanEmail);
-      showToast("Mã xác thực đã được gửi tới email của bạn!", "success");
+      showToast(tr("Mã xác thực đã được gửi tới email của bạn!", "Verification code has been sent to your email!"), "success");
       setStep(2);
       setCountdown(60);
       setIsCounting(true);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Không thể gửi mã xác thực. Vui lòng thử lại!";
+        tr("Không thể gửi mã xác thực. Vui lòng thử lại!", "Failed to send verification code. Please try again!");
       showToast(msg, "error");
     } finally {
       setIsLoading(false);
@@ -163,7 +166,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     const otpCode = otpDigits.join("");
     if (otpCode.length < 6) {
-      showToast("Vui lòng nhập đủ 6 chữ số mã xác thực!", "error");
+      showToast(tr("Vui lòng nhập đủ 6 chữ số mã xác thực!", "Please enter all 6 digits of the verification code!"), "error");
       return;
     }
 
@@ -171,12 +174,12 @@ export default function ForgotPassword() {
     try {
       const res = await verifyOtp(email.trim().toLowerCase(), otpCode);
       setResetToken(res.resetToken);
-      showToast("Xác thực OTP thành công! Vui lòng đặt mật khẩu mới.", "success");
+      showToast(tr("Xác thực OTP thành công! Vui lòng đặt mật khẩu mới.", "OTP verified! Please set your new password."), "success");
       setStep(3);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Mã OTP không chính xác hoặc đã hết hạn!";
+        tr("Mã OTP không chính xác hoặc đã hết hạn!", "Invalid or expired OTP code!");
       showToast(msg, "error");
     } finally {
       setIsLoading(false);
@@ -189,7 +192,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
     try {
       await forgotPassword(email.trim().toLowerCase());
-      showToast("Đã gửi lại mã OTP mới tới email của bạn!", "success");
+      showToast(tr("Đã gửi lại mã OTP mới tới email của bạn!", "A new OTP code has been sent to your email!"), "success");
       setCountdown(60);
       setIsCounting(true);
       setOtpDigits(["", "", "", "", "", ""]);
@@ -197,7 +200,7 @@ export default function ForgotPassword() {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Gửi lại mã thất bại. Vui lòng thử lại sau!";
+        tr("Gửi lại mã thất bại. Vui lòng thử lại sau!", "Failed to resend code. Please try again later!");
       showToast(msg, "error");
     } finally {
       setIsLoading(false);
@@ -217,28 +220,34 @@ export default function ForgotPassword() {
   const passwordScore = calculatePasswordStrength(newPassword);
 
   const getStrengthLabel = (score: number) => {
-    if (score === 0) return { label: "Chưa nhập", color: "var(--mui-palette-neutral-400)" };
-    if (score <= 25) return { label: "Yếu", color: "var(--mui-palette-tone-ef4444)" };
-    if (score <= 50) return { label: "Trung bình", color: "var(--mui-palette-tone-f59e0b)" };
-    if (score <= 75) return { label: "Mạnh", color: "var(--mui-palette-brand-500)" };
-    return { label: "Rất an toàn", color: "var(--mui-palette-tone-10b981)" };
+    if (score === 0) return { label: tr("Chưa nhập", "Not entered"), color: "var(--mui-palette-neutral-400)" };
+    if (score <= 25) return { label: tr("Yếu", "Weak"), color: "var(--mui-palette-tone-ef4444)" };
+    if (score <= 50) return { label: tr("Trung bình", "Medium"), color: "var(--mui-palette-tone-f59e0b)" };
+    if (score <= 75) return { label: tr("Mạnh", "Strong"), color: "var(--mui-palette-brand-500)" };
+    return { label: tr("Rất an toàn", "Very strong"), color: "var(--mui-palette-tone-10b981)" };
   };
 
   // STEP 3: Handle Reset Password
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPassword || newPassword.length < 8) {
-      showToast("Mật khẩu mới phải có ít nhất 8 ký tự!", "error");
+      showToast(tr("Mật khẩu mới phải có ít nhất 8 ký tự!", "New password must be at least 8 characters!"), "error");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showToast("Mật khẩu xác nhận không khớp!", "error");
+      showToast(tr("Mật khẩu xác nhận không khớp!", "Confirmation password does not match!"), "error");
       return;
     }
 
     if (passwordScore < 75) {
-      showToast("Mật khẩu cần có ít nhất chữ hoa, chữ thường, số và ký tự đặc biệt!", "error");
+      showToast(
+        tr(
+          "Mật khẩu cần có ít nhất chữ hoa, chữ thường, số và ký tự đặc biệt!",
+          "Password must include uppercase, lowercase, digit, and special character!"
+        ),
+        "error"
+      );
       return;
     }
 
@@ -249,7 +258,7 @@ export default function ForgotPassword() {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Không thể đặt lại mật khẩu. Vui lòng thử lại!";
+        tr("Không thể đặt lại mật khẩu. Vui lòng thử lại!", "Failed to reset password. Please try again!");
       showToast(msg, "error");
     } finally {
       setIsLoading(false);
@@ -280,6 +289,10 @@ export default function ForgotPassword() {
         },
       }}
     >
+      <Box sx={{ position: "absolute", top: 16, right: 16 }}>
+        <LanguageToggle />
+      </Box>
+
       <Paper
         elevation={0}
         sx={{
@@ -334,13 +347,13 @@ export default function ForgotPassword() {
             <KeyRound size={28} />
           </Box>
           <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--mui-palette-common-white)", letterSpacing: "-0.02em" }}>
-            Khôi phục mật khẩu
+            {tr("Khôi phục mật khẩu", "Password Recovery")}
           </Typography>
           <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-400)", mt: 0.5 }}>
-            {step === 1 && "Nhập email tài khoản của bạn để nhận mã xác thực"}
-            {step === 2 && "Nhập mã OTP 6 chữ số đã được gửi tới email"}
-            {step === 3 && "Thiết lập mật khẩu bảo mật mới cho tài khoản"}
-            {step === 4 && "Hoàn tất! Mật khẩu của bạn đã được thay đổi"}
+            {step === 1 && tr("Nhập email tài khoản của bạn để nhận mã xác thực", "Enter your account email to receive a verification code")}
+            {step === 2 && tr("Nhập mã OTP 6 chữ số đã được gửi tới email", "Enter the 6-digit OTP code sent to your email")}
+            {step === 3 && tr("Thiết lập mật khẩu bảo mật mới cho tài khoản", "Set up a new secure password for your account")}
+            {step === 4 && tr("Hoàn tất! Mật khẩu của bạn đã được thay đổi", "Done! Your password has been updated")}
           </Typography>
         </Box>
 
@@ -369,7 +382,7 @@ export default function ForgotPassword() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                 <TextField
                   fullWidth
-                  label="Địa chỉ email đăng ký"
+                  label={tr("Địa chỉ email đăng ký", "Registered email address")}
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -413,7 +426,10 @@ export default function ForgotPassword() {
                 >
                   <Sparkles size={18} color="var(--mui-palette-brand-500)" style={{ marginTop: 2, flexShrink: 0 }} />
                   <Typography variant="caption" sx={{ color: "var(--mui-palette-brand-300)", lineHeight: 1.5 }}>
-                    Mã xác thực gồm 6 chữ số sẽ được gửi tới email của bạn. Mã có hiệu lực trong 5 phút.
+                    {tr(
+                      "Mã xác thực gồm 6 chữ số sẽ được gửi tới email của bạn. Mã có hiệu lực trong 5 phút.",
+                      "A 6-digit verification code will be sent to your email. Valid for 5 minutes."
+                    )}
                   </Typography>
                 </Box>
 
@@ -432,7 +448,7 @@ export default function ForgotPassword() {
                     boxShadow: "0 8px 20px -4px rgba(37, 99, 235, 0.5)",
                   }}
                 >
-                  {isLoading ? "Đang gửi mã..." : "Gửi mã OTP qua Email"}
+                  {isLoading ? tr("Đang gửi mã...", "Sending code...") : tr("Gửi mã OTP qua Email", "Send OTP via Email")}
                 </Button>
 
                 <Box sx={{ textAlign: "center", mt: 1 }}>
@@ -448,7 +464,7 @@ export default function ForgotPassword() {
                       fontWeight: 600,
                     }}
                   >
-                    <ArrowLeft size={16} /> Quay lại trang Đăng nhập
+                    <ArrowLeft size={16} /> {tr("Quay lại trang Đăng nhập", "Back to Sign in")}
                   </Link>
                 </Box>
               </Box>
@@ -481,7 +497,7 @@ export default function ForgotPassword() {
                     onClick={() => setStep(1)}
                     sx={{ textTransform: "none", fontSize: "0.75rem", color: "var(--mui-palette-brand-500)", p: 0.5 }}
                   >
-                    Đổi email
+                    {tr("Đổi email", "Change email")}
                   </Button>
                 </Box>
 
@@ -533,7 +549,7 @@ export default function ForgotPassword() {
                 <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 1 }}>
                   {isCounting ? (
                     <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                      Chưa nhận được mã? Gửi lại sau{" "}
+                      {tr("Chưa nhận được mã? Gửi lại sau", "Didn't receive the code? Resend in")}{" "}
                       <strong style={{ color: "var(--mui-palette-brand-500)" }}>{countdown}s</strong>
                     </Typography>
                   ) : (
@@ -549,7 +565,7 @@ export default function ForgotPassword() {
                         fontSize: "0.8125rem",
                       }}
                     >
-                      Gửi lại mã OTP
+                      {tr("Gửi lại mã OTP", "Resend OTP code")}
                     </Button>
                   )}
                 </Box>
@@ -569,7 +585,7 @@ export default function ForgotPassword() {
                     boxShadow: "0 8px 20px -4px rgba(37, 99, 235, 0.5)",
                   }}
                 >
-                  {isLoading ? "Đang xác thực..." : "Xác nhận mã OTP"}
+                  {isLoading ? tr("Đang xác thực...", "Verifying...") : tr("Xác nhận mã OTP", "Verify OTP code")}
                 </Button>
 
                 <Box sx={{ textAlign: "center" }}>
@@ -578,7 +594,7 @@ export default function ForgotPassword() {
                     startIcon={<ArrowLeft size={16} />}
                     sx={{ color: "var(--mui-palette-neutral-400)", textTransform: "none", fontSize: "0.875rem", fontWeight: 600 }}
                   >
-                    Quay lại bước trước
+                    {tr("Quay lại bước trước", "Back to previous step")}
                   </Button>
                 </Box>
               </Box>
@@ -595,11 +611,11 @@ export default function ForgotPassword() {
                 <Box>
                   <TextField
                     fullWidth
-                    label="Mật khẩu mới"
+                    label={tr("Mật khẩu mới", "New password")}
                     type={showNewPassword ? "text" : "password"}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Nhập mật khẩu mới..."
+                    placeholder={tr("Nhập mật khẩu mới...", "Enter new password...")}
                     slotProps={{
                       input: {
                         startAdornment: (
@@ -613,6 +629,7 @@ export default function ForgotPassword() {
                               onClick={() => setShowNewPassword(!showNewPassword)}
                               edge="end"
                               size="small"
+                              aria-label={showNewPassword ? tr("Ẩn mật khẩu", "Hide password") : tr("Hiện mật khẩu", "Show password")}
                               sx={{ color: "var(--mui-palette-neutral-400)" }}
                             >
                               {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -643,7 +660,7 @@ export default function ForgotPassword() {
                     <Box sx={{ mt: 1.5, px: 0.5 }}>
                       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
                         <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                          Độ mạnh:
+                          {tr("Độ mạnh:", "Strength:")}
                         </Typography>
                         <Typography
                           variant="caption"
@@ -672,14 +689,16 @@ export default function ForgotPassword() {
                 {/* Confirm Password */}
                 <TextField
                   fullWidth
-                  label="Xác nhận mật khẩu mới"
+                  label={tr("Xác nhận mật khẩu mới", "Confirm new password")}
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Nhập lại mật khẩu mới..."
+                  placeholder={tr("Nhập lại mật khẩu mới...", "Re-enter new password...")}
                   error={Boolean(confirmPassword && confirmPassword !== newPassword)}
                   helperText={
-                    confirmPassword && confirmPassword !== newPassword ? "Mật khẩu xác nhận không khớp!" : ""
+                    confirmPassword && confirmPassword !== newPassword
+                      ? tr("Mật khẩu xác nhận không khớp!", "Confirmation password does not match!")
+                      : ""
                   }
                   slotProps={{
                     input: {
@@ -694,6 +713,7 @@ export default function ForgotPassword() {
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             edge="end"
                             size="small"
+                            aria-label={showConfirmPassword ? tr("Ẩn mật khẩu", "Hide password") : tr("Hiện mật khẩu", "Show password")}
                             sx={{ color: "var(--mui-palette-neutral-400)" }}
                           >
                             {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -722,20 +742,20 @@ export default function ForgotPassword() {
                 {/* Checklist */}
                 <Box sx={{ p: 1.5, borderRadius: "12px", bgcolor: "rgba(30, 41, 59, 0.5)", fontSize: "0.75rem" }}>
                   <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", display: "block", mb: 0.5, fontWeight: 700 }}>
-                    Yêu cầu mật khẩu:
+                    {tr("Yêu cầu mật khẩu:", "Password requirements:")}
                   </Typography>
                   <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0.5 }}>
                     <Box sx={{ color: newPassword.length >= 8 ? "var(--mui-palette-tone-10b981)" : "var(--mui-palette-neutral-500)" }}>
-                      ● Tối thiểu 8 ký tự
+                      {tr("● Tối thiểu 8 ký tự", "● At least 8 characters")}
                     </Box>
                     <Box sx={{ color: /[A-Z]/.test(newPassword) && /[a-z]/.test(newPassword) ? "var(--mui-palette-tone-10b981)" : "var(--mui-palette-neutral-500)" }}>
-                      ● Chữ hoa và chữ thường
+                      {tr("● Chữ hoa và chữ thường", "● Upper & lowercase")}
                     </Box>
                     <Box sx={{ color: /\d/.test(newPassword) ? "var(--mui-palette-tone-10b981)" : "var(--mui-palette-neutral-500)" }}>
-                      ● Ít nhất một chữ số
+                      {tr("● Ít nhất một chữ số", "● At least one digit")}
                     </Box>
                     <Box sx={{ color: /[^a-zA-Z0-9]/.test(newPassword) ? "var(--mui-palette-tone-10b981)" : "var(--mui-palette-neutral-500)" }}>
-                      ● Ký tự đặc biệt (@, #, $...)
+                      {tr("● Ký tự đặc biệt (@, #, $...)", "● Special character (@, #, $...)")}
                     </Box>
                   </Box>
                 </Box>
@@ -755,7 +775,7 @@ export default function ForgotPassword() {
                     boxShadow: "0 8px 20px -4px rgba(16, 185, 129, 0.5)",
                   }}
                 >
-                  {isLoading ? "Đang cập nhật..." : "Đổi mật khẩu"}
+                  {isLoading ? tr("Đang cập nhật...", "Updating...") : tr("Đổi mật khẩu", "Change password")}
                 </Button>
               </Box>
             </form>
@@ -783,10 +803,13 @@ export default function ForgotPassword() {
               </Box>
 
               <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-common-white)", mb: 1 }}>
-                Đổi mật khẩu thành công!
+                {tr("Đổi mật khẩu thành công!", "Password changed successfully!")}
               </Typography>
               <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-400)", mb: 3.5, lineHeight: 1.6 }}>
-                Mật khẩu tài khoản của bạn đã được cập nhật an toàn. Mọi phiên đăng nhập cũ đã được thu hồi.
+                {tr(
+                  "Mật khẩu tài khoản của bạn đã được cập nhật an toàn. Mọi phiên đăng nhập cũ đã được thu hồi.",
+                  "Your account password has been securely updated. All previous sessions have been revoked."
+                )}
               </Typography>
 
               <Button
@@ -801,7 +824,7 @@ export default function ForgotPassword() {
                   background: "linear-gradient(135deg, var(--mui-palette-brand-600) 0%, var(--mui-palette-brand-700) 100%)",
                 }}
               >
-                Đăng nhập ngay ({redirectCount}s)
+                {tr(`Đăng nhập ngay (${redirectCount}s)`, `Sign in now (${redirectCount}s)`)}
               </Button>
             </Box>
           </Box>

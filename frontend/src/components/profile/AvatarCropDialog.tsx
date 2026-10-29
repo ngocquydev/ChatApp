@@ -14,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import { RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
+import { useTranslation } from "@/i18n/useTranslation";
 
 interface AvatarCropDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export default function AvatarCropDialog({
   onConfirmCrop,
   loading = false,
 }: AvatarCropDialogProps) {
+  const { tr } = useTranslation();
   const uid = useId();
   const imgRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -220,11 +222,11 @@ export default function AvatarCropDialog({
         }}
       >
         <Typography variant="h6" component="span" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
-          Cắt ảnh đại diện
+          {tr("Cắt ảnh đại diện", "Crop profile picture")}
         </Typography>
         <IconButton
           size="small"
-          aria-label="Đóng"
+          aria-label={tr("Đóng", "Close")}
           onClick={onClose}
           disabled={isBusy}
           sx={{ color: "text.secondary" }}
@@ -261,7 +263,7 @@ export default function AvatarCropDialog({
             component="img"
             ref={imgRef}
             src={imageSrc}
-            alt="Ảnh cắt đại diện"
+            alt={tr("Ảnh cắt đại diện", "Cropped avatar preview")}
             onLoad={handleImageLoad}
             draggable={false}
             sx={{
@@ -298,7 +300,10 @@ export default function AvatarCropDialog({
           color="text.secondary"
           sx={{ mt: 1.5, textAlign: "center", display: "block" }}
         >
-          Kéo để căn chỉnh vị trí · Cuộn chuột hoặc dùng thanh trượt để phóng to
+          {tr(
+            "Kéo để căn chỉnh vị trí · Cuộn chuột hoặc dùng thanh trượt để phóng to",
+            "Drag to adjust position · Scroll or use slider to zoom"
+          )}
         </Typography>
 
         {/* Thanh trượt điều khiển Zoom */}
@@ -310,7 +315,7 @@ export default function AvatarCropDialog({
               min={1}
               max={3}
               step={0.02}
-              aria-label="Thu phóng ảnh"
+              aria-label={tr("Thu phóng ảnh", "Zoom image")}
               onChange={(_, val) => setZoom(val as number)}
               disabled={isBusy}
               sx={{
@@ -326,7 +331,7 @@ export default function AvatarCropDialog({
               size="small"
               onClick={handleReset}
               disabled={isBusy}
-              aria-label="Đặt lại vị trí và thu phóng"
+              aria-label={tr("Đặt lại vị trí và thu phóng", "Reset position and zoom")}
               sx={{ color: "text.secondary" }}
             >
               <RotateCcw size={16} aria-hidden />
@@ -337,7 +342,7 @@ export default function AvatarCropDialog({
 
       <DialogActions sx={{ px: 2.5, pb: 2.5, pt: 0, justifyContent: "space-between" }}>
         <Button onClick={onClose} disabled={isBusy} color="inherit">
-          Hủy
+          {tr("Hủy", "Cancel")}
         </Button>
         <Button
           variant="contained"
@@ -346,7 +351,7 @@ export default function AvatarCropDialog({
           startIcon={isBusy ? <CircularProgress size={16} color="inherit" /> : null}
           sx={{ px: 3, fontWeight: 700 }}
         >
-          {isBusy ? "Đang lưu…" : "Cắt và Lưu"}
+          {isBusy ? tr("Đang lưu…", "Saving…") : tr("Cắt và Lưu", "Crop & Save")}
         </Button>
       </DialogActions>
     </Dialog>

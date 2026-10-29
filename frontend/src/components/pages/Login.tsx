@@ -26,31 +26,38 @@ import {
 } from "@mui/material";
 import { useMotionValue, useTransform, animate } from "motion/react";
 import { Mail, Lock, Eye, EyeOff, Sparkles, ArrowRight } from "lucide-react";
-import login from "@/data/loginData";
+import { getLoginData } from "@/data/loginData";
 import { useAuthStore } from "../../store/useAuthStore";
 import useSocialAuth from "../../hooks/useSocialAuth";
 import TurnstileWidget, { TurnstileRef } from "../common/TurnstileWidget";
 import { GoogleIcon, FacebookIcon } from "../common/SocialIcons";
 import ColorModeToggle from "../common/ColorModeToggle";
+import LanguageToggle from "../common/LanguageToggle";
 import BrandLogo from "../common/BrandLogo";
+import { useTranslation } from "@/i18n/useTranslation";
 
-const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Vui lòng nhập địa chỉ email")
-    .email("Định dạng email không hợp lệ"),
+function createLoginSchema(tr: (viText: string, enText: string) => string) {
+  return z.object({
+    email: z
+      .string()
+      .min(1, tr("Vui lòng nhập địa chỉ email", "Please enter your email address"))
+      .email(tr("Định dạng email không hợp lệ", "Invalid email format")),
 
-  password: z
-    .string()
-    .min(1, "Vui lòng nhập mật khẩu")
-    .min(8, "Mật khẩu phải chứa ít nhất 8 ký tự")
-    .regex(/[a-z]/, "Mật khẩu phải chứa ít nhất một chữ cái thường")
-    .regex(/[A-Z]/, "Mật khẩu phải chứa ít nhất một chữ cái hoa")
-    .regex(/[0-9]/, "Mật khẩu phải chứa ít nhất một chữ số")
-    .regex(/[^a-zA-Z0-9]/, "Mật khẩu phải chứa ít nhất một ký tự đặc biệt"),
-});
+    password: z
+      .string()
+      .min(1, tr("Vui lòng nhập mật khẩu", "Please enter your password"))
+      .min(8, tr("Mật khẩu phải chứa ít nhất 8 ký tự", "Password must be at least 8 characters"))
+      .regex(/[a-z]/, tr("Mật khẩu phải chứa ít nhất một chữ cái thường", "Password must contain at least one lowercase letter"))
+      .regex(/[A-Z]/, tr("Mật khẩu phải chứa ít nhất một chữ cái hoa", "Password must contain at least one uppercase letter"))
+      .regex(/[0-9]/, tr("Mật khẩu phải chứa ít nhất một chữ số", "Password must contain at least one digit"))
+      .regex(/[^a-zA-Z0-9]/, tr("Mật khẩu phải chứa ít nhất một ký tự đặc biệt", "Password must contain at least one special character")),
+  });
+}
 
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = {
+  email: string;
+  password: string;
+};
 
 function SmoothTypewriter({
   words = ["Chào mừng bạn!", "Hôm nay thế nào?"],
@@ -119,6 +126,8 @@ function SmoothTypewriter({
 }
 
 export default function Login() {
+  const { language, tr } = useTranslation();
+  const login = getLoginData(language);
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -161,7 +170,7 @@ export default function Login() {
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(createLoginSchema(tr)),
     defaultValues: {
       email: "",
       password: "",
@@ -189,8 +198,10 @@ export default function Login() {
       setAlertInfo({
         open: true,
         type: "warning",
-        message:
+        message: tr(
           "Vui lòng hoàn thành xác minh bảo mật Cloudflare Turnstile trước khi đăng nhập!",
+          "Please complete the Cloudflare Turnstile security check before signing in!"
+        ),
       });
       return;
     }
@@ -218,7 +229,7 @@ export default function Login() {
       setTurnstileToken("");
 
       const error = err as { response?: { data?: { message?: string | string[] } }; message?: string };
-      let message = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!";
+      let message = tr("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!", "Sign in failed. Please check your credentials!");
       if (error.response?.data?.message) {
         message = Array.isArray(error.response.data.message)
           ? error.response.data.message.join(", ")
@@ -244,7 +255,11 @@ export default function Login() {
     onError: (message) =>
       setAlertInfo({
         open: true,
-        type: message === "Email này đã được đăng ký" ? "warning" : "error",
+        type:
+          message === "Email này đã được đăng ký" ||
+          message === "This email is already registered"
+            ? "warning"
+            : "error",
         message,
       }),
   });
@@ -515,9 +530,19 @@ export default function Login() {
           backgroundColor: "var(--mui-palette-background-paper)",
         }}
       >
-        <ColorModeToggle
-          sx={{ position: "absolute", top: 12, right: 12, color: "text.secondary" }}
-        />
+        <Box
+          sx={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <LanguageToggle />
+          <ColorModeToggle sx={{ color: "text.secondary" }} />
+        </Box>
         <Box
           sx={{
             width: "100%",
@@ -696,7 +721,9 @@ export default function Login() {
                     <InputAdornment position="end" sx={{ mr: 0.5 }}>
                       <IconButton
                         aria-label={
-                          showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+                          showPassword
+                            ? tr("Ẩn mật khẩu", "Hide password")
+                            : tr("Hiện mật khẩu", "Show password")
                         }
                         onClick={() => setShowPassword((prev) => !prev)}
                         edge="end"
@@ -812,7 +839,7 @@ export default function Login() {
                   }}
                 >
                   <CircularProgress size={18} color="inherit" />
-                  <span>Đang đăng nhập...</span>
+                  <span>{tr("Đang đăng nhập...", "Signing in...")}</span>
                 </Box>
               ) : (
                 login.form.loginButton
@@ -878,7 +905,7 @@ export default function Login() {
                   },
                 }}
               >
-                {isGoogleLoading ? "Đang xử lý..." : login.form.googleButton}
+                {isGoogleLoading ? tr("Đang xử lý...", "Processing...") : login.form.googleButton}
               </Button>
 
               <Button
@@ -916,7 +943,7 @@ export default function Login() {
                   },
                 }}
               >
-                {isFacebookLoading ? "Đang xử lý..." : login.form.facebookButton}
+                {isFacebookLoading ? tr("Đang xử lý...", "Processing...") : login.form.facebookButton}
               </Button>
             </Box>
 

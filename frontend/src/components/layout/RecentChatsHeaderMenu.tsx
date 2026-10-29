@@ -2,6 +2,7 @@
 
 import { ListItemIcon, ListItemText, Menu, MenuItem, Typography } from "@mui/material";
 import { CheckCheck, Maximize2, Volume2, VolumeX } from "lucide-react";
+import { useTranslation } from "@/i18n/useTranslation";
 
 interface RecentChatsHeaderMenuProps {
   anchorEl: HTMLElement | null;
@@ -20,6 +21,7 @@ export default function RecentChatsHeaderMenu({
   onMarkAllAsRead,
   onOpenFullChat,
 }: RecentChatsHeaderMenuProps) {
+  const { tr } = useTranslation();
   const itemSx = { py: 1, px: 1.5, borderRadius: "8px", gap: 0.5 };
   const labelSx = { fontWeight: 600, fontSize: "0.85rem" };
 
@@ -60,7 +62,7 @@ export default function RecentChatsHeaderMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            Đánh dấu tất cả là đã đọc
+            {tr("Đánh dấu tất cả là đã đọc", "Mark all as read")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -77,7 +79,7 @@ export default function RecentChatsHeaderMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            {isMuted ? "Bật âm thanh tin nhắn" : "Tắt âm thanh tin nhắn"}
+            {isMuted ? tr("Bật âm thanh tin nhắn", "Unmute message sounds") : tr("Tắt âm thanh tin nhắn", "Mute message sounds")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -94,7 +96,7 @@ export default function RecentChatsHeaderMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            Xem tất cả trong Messenger
+            {tr("Xem tất cả trong Messenger", "See all in Messenger")}
           </Typography>
         </ListItemText>
       </MenuItem>

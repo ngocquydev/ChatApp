@@ -14,6 +14,7 @@ import {
   User,
   UserX,
 } from "lucide-react";
+import { useTranslation } from "@/i18n/useTranslation";
 
 interface FloatingChatHeaderMenuProps {
   anchorEl: HTMLElement | null;
@@ -50,6 +51,7 @@ export default function FloatingChatHeaderMenu({
   onArchiveChat,
   onCloseChat,
 }: FloatingChatHeaderMenuProps) {
+  const { tr } = useTranslation();
   const itemSx = { py: 1, px: 1.5, borderRadius: "10px", gap: 0.5 };
   const labelSx = { fontWeight: 600, fontSize: "0.86rem" };
 
@@ -89,7 +91,7 @@ export default function FloatingChatHeaderMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            Mở trong Messenger
+            {tr("Mở trong Messenger", "Open in Messenger")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -106,7 +108,7 @@ export default function FloatingChatHeaderMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            Xem trang cá nhân
+            {tr("Xem trang cá nhân", "View profile")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -123,7 +125,7 @@ export default function FloatingChatHeaderMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            Đổi chủ đề
+            {tr("Đổi chủ đề", "Change theme")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -142,7 +144,7 @@ export default function FloatingChatHeaderMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            {isMuted ? "Bật thông báo" : "Tắt thông báo"}
+            {isMuted ? tr("Bật thông báo", "Unmute notifications") : tr("Tắt thông báo", "Mute notifications")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -159,7 +161,7 @@ export default function FloatingChatHeaderMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            {isBlockedByMe ? "Bỏ chặn" : "Chặn"}
+            {isBlockedByMe ? tr("Bỏ chặn", "Unblock") : tr("Chặn", "Block")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -177,12 +179,12 @@ export default function FloatingChatHeaderMenu({
         <ListItemText
           primary={
             <Typography variant="body2" sx={labelSx}>
-              Thông báo đã đọc
+              {tr("Thông báo đã đọc", "Read receipts")}
             </Typography>
           }
           secondary={
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.74rem" }}>
-              {readReceiptsEnabled ? "Bật" : "Tắt"}
+              {readReceiptsEnabled ? tr("Bật", "On") : tr("Tắt", "Off")}
             </Typography>
           }
         />
@@ -201,7 +203,7 @@ export default function FloatingChatHeaderMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            {isRestricted ? "Bỏ hạn chế" : "Hạn chế"}
+            {isRestricted ? tr("Bỏ hạn chế", "Unrestrict") : tr("Hạn chế", "Restrict")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -220,7 +222,7 @@ export default function FloatingChatHeaderMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            {isRestricted ? "Bỏ lưu trữ đoạn chat" : "Lưu trữ đoạn chat"}
+            {isRestricted ? tr("Bỏ lưu trữ đoạn chat", "Unarchive chat") : tr("Lưu trữ đoạn chat", "Archive chat")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -237,7 +239,7 @@ export default function FloatingChatHeaderMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={{ ...labelSx, color: "error.main" }}>
-            Đóng đoạn chat
+            {tr("Đóng đoạn chat", "Close chat")}
           </Typography>
         </ListItemText>
       </MenuItem>

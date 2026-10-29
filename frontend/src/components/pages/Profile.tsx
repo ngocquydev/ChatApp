@@ -68,6 +68,7 @@ import {
   Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { useTranslation } from "@/i18n/useTranslation";
 import { useAuthStore } from "../../store/useAuthStore";
 import { uploadAvatar, uploadCover } from "@/services/postsApi";
 import AuthGuard from "../common/AuthGuard";
@@ -96,30 +97,35 @@ const COVER_THEMES = [
   {
     id: "sunset",
     name: "Hoàng Hôn Tím",
+    nameEn: "Purple Sunset",
     gradient: "linear-gradient(135deg, var(--mui-palette-tone-fx-4f46e5) 0%, var(--mui-palette-tone-7c3aed) 45%, var(--mui-palette-tone-db2777) 80%, var(--mui-palette-tone-f97316) 100%)",
     accent: "var(--mui-palette-tone-7c3aed)",
   },
   {
     id: "aurora",
     name: "Cực Quang Xanh",
+    nameEn: "Cyan Aurora",
     gradient: "linear-gradient(135deg, var(--mui-palette-tone-fx-0284c7) 0%, var(--mui-palette-tone-06b6d4) 45%, var(--mui-palette-tone-10b981) 85%, var(--mui-palette-tone-34d399) 100%)",
     accent: "var(--mui-palette-tone-06b6d4)",
   },
   {
     id: "midnight",
     name: "Dạ Khúc Huyền Bí",
+    nameEn: "Mystic Midnight",
     gradient: "linear-gradient(135deg, var(--mui-palette-tone-0f172a) 0%, var(--mui-palette-tone-1e1b4b) 50%, var(--mui-palette-tone-312e81) 100%)",
     accent: "var(--mui-palette-tone-6366f1)",
   },
   {
     id: "emerald",
     name: "Ngọc Lục Bảo",
+    nameEn: "Emerald Green",
     gradient: "linear-gradient(135deg, var(--mui-palette-tone-fx-065f46) 0%, var(--mui-palette-tone-fx-059669) 50%, var(--mui-palette-tone-10b981) 100%)",
     accent: "var(--mui-palette-tone-10b981)",
   },
   {
     id: "crimson",
     name: "Hồng Ruby",
+    nameEn: "Ruby Crimson",
     gradient: "linear-gradient(135deg, var(--mui-palette-tone-881337) 0%, var(--mui-palette-tone-fx-be123c) 50%, var(--mui-palette-tone-f43f5e) 100%)",
     accent: "var(--mui-palette-tone-f43f5e)",
   },
@@ -127,6 +133,7 @@ const COVER_THEMES = [
 
 function ProfileContent() {
   const router = useRouter();
+  const { tr, language } = useTranslation();
   const avatarInputId = useId();
   const { user, updateProfile, changePassword, logout } = useAuthStore();
 
@@ -238,27 +245,32 @@ function ProfileContent() {
         // bỏ qua nếu lỗi
       }
     }
-    showToast(`Đã đổi chủ đề ảnh bìa sang: ${COVER_THEMES[index].name}`);
+    showToast(
+      tr(
+        `Đã đổi chủ đề ảnh bìa sang: ${COVER_THEMES[index].name}`,
+        `Cover theme changed to: ${COVER_THEMES[index].nameEn}`
+      )
+    );
   };
 
   // Copy helpers
   const handleCopyText = (text: string, label: string) => {
     if (navigator?.clipboard) {
       navigator.clipboard.writeText(text);
-      showToast(`Đã sao chép ${label} vào bộ nhớ tạm!`);
+      showToast(tr(`Đã sao chép ${label} vào bộ nhớ tạm!`, `Copied ${label} to clipboard!`));
     }
   };
 
   const handleShareProfile = () => {
     const url = typeof window !== "undefined" ? window.location.href : "https://chatapp.io/profile";
-    handleCopyText(url, "liên kết hồ sơ cá nhân");
+    handleCopyText(url, tr("liên kết hồ sơ cá nhân", "profile link"));
   };
 
   // Handle Save Profile
   const handleSaveProfile = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!name.trim()) {
-      showToast("Tên hiển thị không được để trống!", "error");
+      showToast(tr("Tên hiển thị không được để trống!", "Display name cannot be empty!"), "error");
       return;
     }
 
@@ -271,11 +283,11 @@ function ProfileContent() {
         bio: bio.trim(),
         avatar: avatarUrl.trim(),
       });
-      showToast("Cập nhật thông tin hồ sơ thành công!");
+      showToast(tr("Cập nhật thông tin hồ sơ thành công!", "Profile updated successfully!"));
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Có lỗi xảy ra khi cập nhật hồ sơ!";
+        tr("Có lỗi xảy ra khi cập nhật hồ sơ!", "Failed to update profile!");
       showToast(msg, "error");
     } finally {
       setIsUpdating(false);
@@ -285,7 +297,7 @@ function ProfileContent() {
   // Handle Save Avatar from Dialog
   const handleConfirmAvatar = async () => {
     if (!selectedAvatarPreview) {
-      showToast("Vui lòng chọn hoặc nhập ảnh đại diện!", "error");
+      showToast(tr("Vui lòng chọn hoặc nhập ảnh đại diện!", "Please select or enter an avatar!"), "error");
       return;
     }
     setAvatarUrl(selectedAvatarPreview);
@@ -295,11 +307,11 @@ function ProfileContent() {
         avatar: selectedAvatarPreview,
       });
       setIsAvatarDialogOpen(false);
-      showToast("Ảnh đại diện đã được cập nhật thành công!");
+      showToast(tr("Ảnh đại diện đã được cập nhật thành công!", "Profile picture updated successfully!"));
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Không thể cập nhật ảnh đại diện!";
+        tr("Không thể cập nhật ảnh đại diện!", "Failed to update profile picture!");
       showToast(msg, "error");
     } finally {
       setIsUpdating(false);
@@ -313,12 +325,12 @@ function ProfileContent() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      showToast("Vui lòng chọn file hình ảnh (PNG, JPG, WEBP)!", "error");
+      showToast(tr("Vui lòng chọn file hình ảnh (PNG, JPG, WEBP)!", "Please select an image file (PNG, JPG, WEBP)!"), "error");
       return;
     }
 
     if (file.size > 15 * 1024 * 1024) {
-      showToast("Kích thước file ảnh không được vượt quá 15MB!", "error");
+      showToast(tr("Kích thước file ảnh không được vượt quá 15MB!", "Image size must not exceed 15MB!"), "error");
       return;
     }
 
@@ -334,7 +346,7 @@ function ProfileContent() {
   // Hoàn tất crop ảnh và lưu làm avatar
   const handleConfirmCropAvatar = async (croppedBlob: Blob) => {
     setIsCroppingUpload(true);
-    showToast("Đang tải ảnh đại diện lên Cloudinary…", "info");
+    showToast(tr("Đang tải ảnh đại diện lên Cloudinary…", "Uploading profile picture to Cloudinary…"), "info");
     try {
       const url = await uploadAvatar(croppedBlob);
       setAvatarUrl(url);
@@ -342,9 +354,9 @@ function ProfileContent() {
       await updateProfile({ avatar: url });
       setCropModal({ open: false, imageSrc: null });
       setIsAvatarDialogOpen(false);
-      showToast("Cập nhật ảnh đại diện thành công!");
+      showToast(tr("Cập nhật ảnh đại diện thành công!", "Profile picture updated successfully!"));
     } catch {
-      showToast("Không thể tải ảnh lên Cloudinary. Vui lòng thử lại!", "error");
+      showToast(tr("Không thể tải ảnh lên Cloudinary. Vui lòng thử lại!", "Failed to upload image. Please try again!"), "error");
     } finally {
       setIsCroppingUpload(false);
     }
@@ -357,24 +369,24 @@ function ProfileContent() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      showToast("Vui lòng chọn file hình ảnh (PNG, JPG, WEBP)!", "error");
+      showToast(tr("Vui lòng chọn file hình ảnh (PNG, JPG, WEBP)!", "Please select an image file (PNG, JPG, WEBP)!"), "error");
       return;
     }
 
     if (file.size > 15 * 1024 * 1024) {
-      showToast("Kích thước file ảnh bìa không được vượt quá 15MB!", "error");
+      showToast(tr("Kích thước file ảnh bìa không được vượt quá 15MB!", "Cover image size must not exceed 15MB!"), "error");
       return;
     }
 
     setIsUpdating(true);
     setCoverMenuAnchor(null);
-    showToast("Đang tải ảnh bìa lên Cloudinary…", "info");
+    showToast(tr("Đang tải ảnh bìa lên Cloudinary…", "Uploading cover photo to Cloudinary…"), "info");
     try {
       const coverUrl = await uploadCover(file);
       await updateProfile({ cover: coverUrl });
-      showToast("Ảnh bìa trang cá nhân đã được cập nhật thành công!");
+      showToast(tr("Ảnh bìa trang cá nhân đã được cập nhật thành công!", "Cover photo updated successfully!"));
     } catch {
-      showToast("Không thể tải ảnh bìa lên. Vui lòng thử lại!", "error");
+      showToast(tr("Không thể tải ảnh bìa lên. Vui lòng thử lại!", "Failed to upload cover photo. Please try again!"), "error");
     } finally {
       setIsUpdating(false);
     }
@@ -393,11 +405,11 @@ function ProfileContent() {
   const passwordStrength = calculatePasswordStrength(newPassword);
 
   const getPasswordStrengthLabel = (score: number) => {
-    if (score === 0) return { label: "Chưa nhập", color: "var(--mui-palette-neutral-400)" };
-    if (score <= 25) return { label: "Yếu", color: "var(--mui-palette-tone-ef4444)" };
-    if (score <= 50) return { label: "Trung bình", color: "var(--mui-palette-tone-f59e0b)" };
-    if (score <= 75) return { label: "Mạnh", color: "var(--mui-palette-brand-500)" };
-    return { label: "Rất an toàn", color: "var(--mui-palette-tone-10b981)" };
+    if (score === 0) return { label: tr("Chưa nhập", "Not entered"), color: "var(--mui-palette-neutral-400)" };
+    if (score <= 25) return { label: tr("Yếu", "Weak"), color: "var(--mui-palette-tone-ef4444)" };
+    if (score <= 50) return { label: tr("Trung bình", "Medium"), color: "var(--mui-palette-tone-f59e0b)" };
+    if (score <= 75) return { label: tr("Mạnh", "Strong"), color: "var(--mui-palette-brand-500)" };
+    return { label: tr("Rất an toàn", "Very secure"), color: "var(--mui-palette-tone-10b981)" };
   };
 
   // Handle Change Password
@@ -405,22 +417,22 @@ function ProfileContent() {
     e.preventDefault();
 
     if (!currentPassword) {
-      showToast("Vui lòng nhập mật khẩu hiện tại!", "error");
+      showToast(tr("Vui lòng nhập mật khẩu hiện tại!", "Please enter your current password!"), "error");
       return;
     }
 
     if (!newPassword || newPassword.length < 8) {
-      showToast("Mật khẩu mới phải có tối thiểu 8 ký tự!", "error");
+      showToast(tr("Mật khẩu mới phải có tối thiểu 8 ký tự!", "New password must be at least 8 characters!"), "error");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showToast("Mật khẩu xác nhận không khớp với mật khẩu mới!", "error");
+      showToast(tr("Mật khẩu xác nhận không khớp với mật khẩu mới!", "Password confirmation does not match!"), "error");
       return;
     }
 
     if (passwordStrength < 75) {
-      showToast("Mật khẩu mới cần có ít nhất chữ hoa, chữ thường, số và ký tự đặc biệt!", "error");
+      showToast(tr("Mật khẩu mới cần có ít nhất chữ hoa, chữ thường, số và ký tự đặc biệt!", "New password needs uppercase, lowercase, number, and special character!"), "error");
       return;
     }
 
@@ -430,14 +442,14 @@ function ProfileContent() {
         currentPassword,
         newPassword,
       });
-      showToast("Đổi mật khẩu tài khoản thành công!");
+      showToast(tr("Đổi mật khẩu tài khoản thành công!", "Password changed successfully!"));
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại!";
+        tr("Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại!", "Failed to change password. Please check your current password!");
       showToast(msg, "error");
     } finally {
       setIsChangingPassword(false);
@@ -452,7 +464,7 @@ function ProfileContent() {
       router.push("/login");
     } catch (error) {
       console.error("Lỗi khi đăng xuất:", error);
-      showToast("Đã xảy ra lỗi khi đăng xuất!", "error");
+      showToast(tr("Đã xảy ra lỗi khi đăng xuất!", "Error logging out!"), "error");
     } finally {
       setIsLoggingOut(false);
       setIsLogoutDialogOpen(false);
@@ -461,11 +473,11 @@ function ProfileContent() {
 
   // Formatted date
   const joinDate = user?.createdAt
-    ? new Date(user.createdAt as string).toLocaleDateString("vi-VN", {
+    ? new Date(user.createdAt as string).toLocaleDateString(language === "en" ? "en-US" : "vi-VN", {
         month: "long",
         year: "numeric",
       })
-    : "Tháng 10, 2026";
+    : tr("Tháng 10, 2026", "October 2026");
 
   const isGoogleLinked = Boolean(user?.firebaseUid);
   const activeCover = COVER_THEMES[currentCoverIndex] || COVER_THEMES[0];
@@ -559,7 +571,7 @@ function ProfileContent() {
                   },
                 }}
               >
-                Đổi ảnh bìa
+                {tr("Đổi ảnh bìa", "Change cover")}
               </Button>
 
               <input
@@ -600,14 +612,14 @@ function ProfileContent() {
                   }}
                 >
                   <Camera size={18} />
-                  Tải ảnh từ máy tính
+                  {tr("Tải ảnh từ máy tính", "Upload photo")}
                 </MenuItem>
                 <Divider sx={{ my: 0.5 }} />
                 <Typography
                   variant="caption"
                   sx={{ px: 2, py: 1, fontWeight: 700, color: "var(--mui-palette-neutral-500)", display: "block" }}
                 >
-                  HOẶC CHỌN CHỦ ĐỀ MÀU
+                  {tr("HOẶC CHỌN CHỦ ĐỀ MÀU", "OR CHOOSE COLOR THEME")}
                 </Typography>
                 {COVER_THEMES.map((theme, idx) => (
                   <MenuItem
@@ -633,7 +645,7 @@ function ProfileContent() {
                         boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
                       }}
                     />
-                    {theme.name}
+                    {tr(theme.name, theme.nameEn)}
                   </MenuItem>
                 ))}
               </Menu>
@@ -713,13 +725,13 @@ function ProfileContent() {
                   >
                     <Camera size={26} />
                     <Typography variant="caption" sx={{ mt: 0.5, fontWeight: 600 }}>
-                      Thay đổi
+                      {tr("Thay đổi", "Change")}
                     </Typography>
                   </Box>
                 </Box>
 
                 {/* Online Indicator Badge */}
-                <Tooltip title="Đang trực tuyến" arrow>
+                <Tooltip title={tr("Đang trực tuyến", "Online")} arrow>
                   <Box
                     sx={{
                       position: "absolute",
@@ -777,7 +789,7 @@ function ProfileContent() {
                     },
                   }}
                 >
-                  Chia sẻ
+                  {tr("Chia sẻ", "Share")}
                 </Button>
 
                 <Button
@@ -796,7 +808,7 @@ function ProfileContent() {
                     },
                   }}
                 >
-                  Chỉnh sửa hồ sơ
+                  {tr("Chỉnh sửa hồ sơ", "Edit profile")}
                 </Button>
 
                 <Button
@@ -814,7 +826,7 @@ function ProfileContent() {
                     },
                   }}
                 >
-                  Đăng xuất
+                  {tr("Đăng xuất", "Log out")}
                 </Button>
               </Box>
             </Box>
@@ -840,10 +852,10 @@ function ProfileContent() {
                     fontSize: { xs: "1.65rem", sm: "2rem" },
                   }}
                 >
-                  {user?.name || "Người dùng ChatApp"}
+                  {user?.name || tr("Người dùng ChatApp", "ChatApp User")}
                 </Typography>
 
-                <Tooltip title="Tài khoản đã xác thực" arrow>
+                <Tooltip title={tr("Tài khoản đã xác thực", "Verified account")} arrow>
                   <Box sx={{ display: "inline-flex", color: "var(--mui-palette-brand-600)" }}>
                     <CheckCircle2 size={24} fill="var(--mui-palette-brand-600)" color="var(--mui-palette-common-white)" />
                   </Box>
@@ -852,7 +864,7 @@ function ProfileContent() {
                 {user?.role === "admin" ? (
                   <Chip
                     icon={<Sparkles size={14} color="var(--mui-palette-common-white)" />}
-                    label="Quản trị viên"
+                    label={tr("Quản trị viên", "Administrator")}
                     size="small"
                     sx={{
                       background: "linear-gradient(135deg, var(--mui-palette-tone-f59e0b) 0%, var(--mui-palette-tone-fx-d97706) 100%)",
@@ -865,7 +877,7 @@ function ProfileContent() {
                 ) : (
                   <Chip
                     icon={<BadgeCheck size={14} color="var(--mui-palette-common-white)" />}
-                    label="Thành viên chính thức"
+                    label={tr("Thành viên chính thức", "Official Member")}
                     size="small"
                     sx={{
                       background: "linear-gradient(135deg, var(--mui-palette-brand-500) 0%, var(--mui-palette-brand-700) 100%)",
@@ -907,15 +919,17 @@ function ProfileContent() {
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                     <Calendar size={15} />
                     <span>
-                      Sinh nhật:{" "}
-                      {new Date(user.dateOfBirth as string).toLocaleDateString("vi-VN")}
+                      {tr("Sinh nhật:", "Birthday:")}{" "}
+                      {new Date(user.dateOfBirth as string).toLocaleDateString(language === "en" ? "en-US" : "vi-VN")}
                     </span>
                   </Box>
                 )}
 
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                   <Calendar size={15} />
-                  <span>Tham gia: {joinDate}</span>
+                  <span>
+                    {tr("Tham gia:", "Joined:")} {joinDate}
+                  </span>
                 </Box>
               </Box>
 
@@ -942,7 +956,10 @@ function ProfileContent() {
                 >
                   {user?.bio
                     ? (user.bio as string)
-                    : "Chưa có tiểu sử giới thiệu. Nhấn vào 'Chỉnh sửa hồ sơ' để chia sẻ thêm về bạn với mọi người!"}
+                    : tr(
+                        "Chưa có tiểu sử giới thiệu. Nhấn vào 'Chỉnh sửa hồ sơ' để chia sẻ thêm về bạn với mọi người!",
+                        "No bio yet. Click 'Edit profile' to share more about yourself!"
+                      )}
                 </Typography>
               </Box>
             </Box>
@@ -986,7 +1003,7 @@ function ProfileContent() {
               </Box>
               <Box>
                 <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
-                  Tin nhắn realtime
+                  {tr("Tin nhắn realtime", "Realtime messages")}
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
                   1,420+
@@ -1030,10 +1047,10 @@ function ProfileContent() {
               </Box>
               <Box>
                 <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
-                  Bạn bè kết nối
+                  {tr("Bạn bè kết nối", "Connected friends")}
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
-                  48 bạn bè
+                  {tr("48 bạn bè", "48 friends")}
                 </Typography>
               </Box>
             </Paper>
@@ -1074,10 +1091,10 @@ function ProfileContent() {
               </Box>
               <Box>
                 <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
-                  Độ bảo mật
+                  {tr("Độ bảo mật", "Security score")}
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
-                  98% Rất cao
+                  {tr("98% Rất cao", "98% Very high")}
                 </Typography>
               </Box>
             </Paper>
@@ -1118,10 +1135,10 @@ function ProfileContent() {
               </Box>
               <Box>
                 <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
-                  Trạng thái
+                  {tr("Trạng thái", "Status")}
                 </Typography>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-tone-10b981)" }}>
-                  Trực tuyến
+                  {tr("Trực tuyến", "Online")}
                 </Typography>
               </Box>
             </Paper>
@@ -1166,11 +1183,11 @@ function ProfileContent() {
                 },
               }}
             >
-              <Tab icon={<Newspaper size={18} />} iconPosition="start" label="Bài viết" />
-              <Tab icon={<UserIcon size={18} />} iconPosition="start" label="Tổng quan" />
-              <Tab icon={<Edit3 size={18} />} iconPosition="start" label="Chỉnh sửa thông tin" />
-              <Tab icon={<Shield size={18} />} iconPosition="start" label="Bảo mật & Mật khẩu" />
-              <Tab icon={<Sliders size={18} />} iconPosition="start" label="Cài đặt & Tùy chọn" />
+              <Tab icon={<Newspaper size={18} />} iconPosition="start" label={tr("Bài viết", "Posts")} />
+              <Tab icon={<UserIcon size={18} />} iconPosition="start" label={tr("Tổng quan", "Overview")} />
+              <Tab icon={<Edit3 size={18} />} iconPosition="start" label={tr("Chỉnh sửa thông tin", "Edit Info")} />
+              <Tab icon={<Shield size={18} />} iconPosition="start" label={tr("Bảo mật & Mật khẩu", "Security & Password")} />
+              <Tab icon={<Sliders size={18} />} iconPosition="start" label={tr("Cài đặt & Tùy chọn", "Settings & Preferences")} />
             </Tabs>
           </Box>
 
@@ -1188,7 +1205,7 @@ function ProfileContent() {
                 {/* Left: Chi tiết tài khoản */}
                 <Grid size={{ xs: 12, md: 7 }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 2.5 }}>
-                    Thông tin định danh
+                    {tr("Thông tin định danh", "Identity Information")}
                   </Typography>
 
                   <Box
@@ -1216,14 +1233,14 @@ function ProfileContent() {
                         </Box>
                         <Box>
                           <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
-                            Họ và tên
+                            {tr("Họ và tên", "Full name")}
                           </Typography>
                           <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
-                            {user?.name || "Chưa cập nhật"}
+                            {user?.name || tr("Chưa cập nhật", "Not updated")}
                           </Typography>
                         </Box>
                       </Box>
-                      <Chip label="Hiển thị công khai" size="small" sx={{ bgcolor: "var(--mui-palette-neutral-200)", fontSize: "0.75rem" }} />
+                      <Chip label={tr("Hiển thị công khai", "Public")} size="small" sx={{ bgcolor: "var(--mui-palette-neutral-200)", fontSize: "0.75rem" }} />
                     </Box>
 
                     {/* Item: Email */}
@@ -1244,16 +1261,16 @@ function ProfileContent() {
                         </Box>
                         <Box>
                           <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
-                            Địa chỉ Email
+                            {tr("Địa chỉ Email", "Email address")}
                           </Typography>
                           <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
-                            {user?.email || "Chưa có"}
+                            {user?.email || tr("Chưa có", "Not set")}
                           </Typography>
                         </Box>
                       </Box>
                       <Chip
                         icon={<Check size={14} />}
-                        label="Đã xác thực"
+                        label={tr("Đã xác thực", "Verified")}
                         size="small"
                         color="success"
                         sx={{ fontWeight: 600, fontSize: "0.75rem" }}
@@ -1278,10 +1295,10 @@ function ProfileContent() {
                         </Box>
                         <Box>
                           <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
-                            Số điện thoại
+                            {tr("Số điện thoại", "Phone number")}
                           </Typography>
                           <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
-                            {user?.phone ? (user.phone as string) : "Chưa thiết lập"}
+                            {user?.phone ? (user.phone as string) : tr("Chưa thiết lập", "Not set")}
                           </Typography>
                         </Box>
                       </Box>
@@ -1291,7 +1308,7 @@ function ProfileContent() {
                           onClick={() => setActiveTab(TAB_EDIT)}
                           sx={{ textTransform: "none", fontWeight: 600 }}
                         >
-                          Thêm số
+                          {tr("Thêm số", "Add phone")}
                         </Button>
                       )}
                     </Box>
@@ -1314,12 +1331,12 @@ function ProfileContent() {
                         </Box>
                         <Box>
                           <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
-                            Ngày sinh
+                            {tr("Ngày sinh", "Date of birth")}
                           </Typography>
                           <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
                             {user?.dateOfBirth
-                              ? new Date(user.dateOfBirth as string).toLocaleDateString("vi-VN")
-                              : "Chưa thiết lập"}
+                              ? new Date(user.dateOfBirth as string).toLocaleDateString(language === "en" ? "en-US" : "vi-VN")
+                              : tr("Chưa thiết lập", "Not set")}
                           </Typography>
                         </Box>
                       </Box>
@@ -1329,7 +1346,7 @@ function ProfileContent() {
                           onClick={() => setActiveTab(TAB_EDIT)}
                           sx={{ textTransform: "none", fontWeight: 600 }}
                         >
-                          Cập nhật
+                          {tr("Cập nhật", "Update")}
                         </Button>
                       )}
                     </Box>
@@ -1352,7 +1369,7 @@ function ProfileContent() {
                         </Box>
                         <Box>
                           <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
-                            Mã định danh (User ID)
+                            {tr("Mã định danh (User ID)", "User ID")}
                           </Typography>
                           <Typography
                             variant="body2"
@@ -1366,11 +1383,11 @@ function ProfileContent() {
                           </Typography>
                         </Box>
                       </Box>
-                      <Tooltip title="Sao chép ID" arrow>
+                      <Tooltip title={tr("Sao chép ID", "Copy ID")} arrow>
                         <IconButton
                           size="small"
                           onClick={() =>
-                            handleCopyText(String(user?._id || user?.id || ""), "Mã định danh")
+                            handleCopyText(String(user?._id || user?.id || ""), tr("Mã định danh", "User ID"))
                           }
                           sx={{ color: "var(--mui-palette-neutral-500)" }}
                         >
@@ -1397,10 +1414,10 @@ function ProfileContent() {
                         </Box>
                         <Box>
                           <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
-                            Phương thức đăng nhập
+                            {tr("Phương thức đăng nhập", "Sign-in method")}
                           </Typography>
                           <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
-                            {isGoogleLinked ? "Google Account (Firebase OAuth)" : "Mật khẩu hệ thống ChatApp"}
+                            {isGoogleLinked ? "Google Account (Firebase OAuth)" : tr("Mật khẩu hệ thống ChatApp", "ChatApp System Password")}
                           </Typography>
                         </Box>
                       </Box>
@@ -1417,7 +1434,7 @@ function ProfileContent() {
                 {/* Right: Huy hiệu & Hoạt động gần đây */}
                 <Grid size={{ xs: 12, md: 5 }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 2.5 }}>
-                    Huy hiệu danh dự
+                    {tr("Huy hiệu danh dự", "Honor Badges")}
                   </Typography>
 
                   <Grid container spacing={1.5} sx={{ mb: 4 }}>
@@ -1434,10 +1451,10 @@ function ProfileContent() {
                       >
                         <Typography sx={{ fontSize: "1.75rem", mb: 0.5 }}>🚀</Typography>
                         <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
-                          Tiên Phong
+                          {tr("Tiên Phong", "Pioneer")}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", display: "block" }}>
-                          Thành viên mùa 1
+                          {tr("Thành viên mùa 1", "Season 1 Member")}
                         </Typography>
                       </Box>
                     </Grid>
@@ -1455,10 +1472,10 @@ function ProfileContent() {
                       >
                         <Typography sx={{ fontSize: "1.75rem", mb: 0.5 }}>🛡️</Typography>
                         <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
-                          Bảo Mật Cao
+                          {tr("Bảo Mật Cao", "High Security")}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", display: "block" }}>
-                          Email & Token hợp lệ
+                          {tr("Email & Token hợp lệ", "Valid Email & Token")}
                         </Typography>
                       </Box>
                     </Grid>
@@ -1476,10 +1493,10 @@ function ProfileContent() {
                       >
                         <Typography sx={{ fontSize: "1.75rem", mb: 0.5 }}>💬</Typography>
                         <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
-                          Sôi Nổi
+                          {tr("Sôi Nổi", "Active")}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", display: "block" }}>
-                          Hoạt động tích cực
+                          {tr("Hoạt động tích cực", "High engagement")}
                         </Typography>
                       </Box>
                     </Grid>
@@ -1500,7 +1517,7 @@ function ProfileContent() {
                           VIP ChatApp
                         </Typography>
                         <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", display: "block" }}>
-                          Được chứng thực
+                          {tr("Được chứng thực", "Verified VIP")}
                         </Typography>
                       </Box>
                     </Grid>
@@ -1508,7 +1525,7 @@ function ProfileContent() {
 
                   {/* Hoạt động gần đây */}
                   <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 2 }}>
-                    Hoạt động gần đây
+                    {tr("Hoạt động gần đây", "Recent Activity")}
                   </Typography>
 
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
@@ -1524,10 +1541,10 @@ function ProfileContent() {
                       />
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-800)" }}>
-                          Đăng nhập phiên làm việc hiện tại
+                          {tr("Đăng nhập phiên làm việc hiện tại", "Signed in to current session")}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                          Vừa xong • Trình duyệt web
+                          {tr("Vừa xong • Trình duyệt web", "Just now • Web browser")}
                         </Typography>
                       </Box>
                     </Box>
@@ -1544,10 +1561,10 @@ function ProfileContent() {
                       />
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-800)" }}>
-                          Đồng bộ trạng thái hồ sơ cá nhân
+                          {tr("Đồng bộ trạng thái hồ sơ cá nhân", "Synced personal profile status")}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                          Hôm nay
+                          {tr("Hôm nay", "Today")}
                         </Typography>
                       </Box>
                     </Box>
@@ -1564,10 +1581,10 @@ function ProfileContent() {
                       />
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-800)" }}>
-                          Kết nối máy chủ Realtime Chat
+                          {tr("Kết nối máy chủ Realtime Chat", "Connected to Realtime Chat server")}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                          Sẵn sàng trò chuyện
+                          {tr("Sẵn sàng trò chuyện", "Ready to chat")}
                         </Typography>
                       </Box>
                     </Box>
@@ -1612,7 +1629,7 @@ function ProfileContent() {
                       </Avatar>
 
                       <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
-                        {name || "Họ và tên"}
+                        {name || tr("Họ và tên", "Full name")}
                       </Typography>
                       <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", mb: 2.5 }}>
                         {user?.email}
@@ -1629,7 +1646,7 @@ function ProfileContent() {
                           textTransform: "none",
                         }}
                       >
-                        Đổi ảnh đại diện
+                        {tr("Đổi ảnh đại diện", "Change avatar")}
                       </Button>
                     </Box>
                   </Grid>
@@ -1637,17 +1654,17 @@ function ProfileContent() {
                   {/* Right Column: Fields */}
                   <Grid size={{ xs: 12, md: 8 }}>
                     <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 2.5 }}>
-                      Cập nhật hồ sơ
+                      {tr("Cập nhật hồ sơ", "Update Profile")}
                     </Typography>
 
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                       {/* Name input */}
                       <TextField
                         fullWidth
-                        label="Họ và tên hiển thị"
+                        label={tr("Họ và tên hiển thị", "Display name")}
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="Nhập họ và tên..."
+                        placeholder={tr("Nhập họ và tên...", "Enter full name...")}
                         slotProps={{
                           input: {
                             startAdornment: (
@@ -1662,10 +1679,10 @@ function ProfileContent() {
                       {/* Phone input */}
                       <TextField
                         fullWidth
-                        label="Số điện thoại"
+                        label={tr("Số điện thoại", "Phone number")}
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="Ví dụ: 0987654321"
+                        placeholder={tr("Ví dụ: 0987654321", "E.g., 0987654321")}
                         slotProps={{
                           input: {
                             startAdornment: (
@@ -1680,7 +1697,7 @@ function ProfileContent() {
                       {/* Date of Birth input */}
                       <TextField
                         fullWidth
-                        label="Ngày sinh"
+                        label={tr("Ngày sinh", "Date of birth")}
                         type="date"
                         value={dateOfBirth}
                         onChange={(e) => setDateOfBirth(e.target.value)}
@@ -1702,13 +1719,16 @@ function ProfileContent() {
                       {/* Bio input */}
                       <TextField
                         fullWidth
-                        label="Tiểu sử / Giới thiệu bản thân"
+                        label={tr("Tiểu sử / Giới thiệu bản thân", "Bio / About me")}
                         multiline
                         rows={4}
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
-                        placeholder="Viết một vài dòng chia sẻ về sở thích, công việc hoặc phương châm của bạn..."
-                        helperText={`${bio.length}/300 ký tự`}
+                        placeholder={tr(
+                          "Viết một vài dòng chia sẻ về sở thích, công việc hoặc phương châm của bạn...",
+                          "Write a few lines about your hobbies, work, or motto..."
+                        )}
+                        helperText={`${bio.length}/300 ${tr("ký tự", "characters")}`}
                         slotProps={{
                           htmlInput: {
                             maxLength: 300,
@@ -1734,7 +1754,7 @@ function ProfileContent() {
                             boxShadow: "0 8px 16px -4px rgba(37, 99, 235, 0.4)",
                           }}
                         >
-                          {isUpdating ? "Đang lưu..." : "Lưu thay đổi"}
+                          {isUpdating ? tr("Đang lưu...", "Saving...") : tr("Lưu thay đổi", "Save changes")}
                         </Button>
 
                         <Button
@@ -1758,7 +1778,7 @@ function ProfileContent() {
                             color: "var(--mui-palette-neutral-500)",
                           }}
                         >
-                          Khôi phục ban đầu
+                          {tr("Khôi phục ban đầu", "Reset")}
                         </Button>
                       </Box>
                     </Box>
@@ -1775,10 +1795,13 @@ function ProfileContent() {
                 {/* Đổi mật khẩu nếu là tài khoản thường */}
                 <Grid size={{ xs: 12, md: 7 }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 1 }}>
-                    Bảo mật tài khoản & Đổi mật khẩu
+                    {tr("Bảo mật tài khoản & Đổi mật khẩu", "Account Security & Change Password")}
                   </Typography>
                   <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-500)", mb: 3 }}>
-                    Để bảo vệ an toàn cho tài khoản, hãy sử dụng mật khẩu mạnh kết hợp chữ hoa, chữ thường, số và ký tự đặc biệt.
+                    {tr(
+                      "Để bảo vệ an toàn cho tài khoản, hãy sử dụng mật khẩu mạnh kết hợp chữ hoa, chữ thường, số và ký tự đặc biệt.",
+                      "To protect your account, use a strong password combining uppercase, lowercase, numbers, and special characters."
+                    )}
                   </Typography>
 
                   {isGoogleLinked ? (
@@ -1801,15 +1824,21 @@ function ProfileContent() {
                         </Box>
                         <Box>
                           <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--mui-palette-brand-900)" }}>
-                            Tài khoản liên kết an toàn qua Google Firebase
+                            {tr("Tài khoản liên kết an toàn qua Google Firebase", "Account securely linked via Google Firebase")}
                           </Typography>
                           <Typography variant="body2" sx={{ color: "var(--mui-palette-brand-500)" }}>
-                            Tài khoản của bạn được chứng thực và bảo vệ trực tiếp bởi hệ thống Google Security.
+                            {tr(
+                              "Tài khoản của bạn được chứng thực và bảo vệ trực tiếp bởi hệ thống Google Security.",
+                              "Your account is authenticated and protected directly by Google Security."
+                            )}
                           </Typography>
                         </Box>
                       </Box>
                       <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-600)" }}>
-                        Bạn không cần đổi mật khẩu tại đây. Mật khẩu và bảo mật 2 lớp của bạn được quản lý an toàn trên tài khoản Google của bạn.
+                        {tr(
+                          "Bạn không cần đổi mật khẩu tại đây. Mật khẩu và bảo mật 2 lớp của bạn được quản lý an toàn trên tài khoản Google của bạn.",
+                          "You do not need to change your password here. Your password and 2FA are managed securely on your Google account."
+                        )}
                       </Typography>
                     </Paper>
                   ) : (
@@ -1818,11 +1847,11 @@ function ProfileContent() {
                       <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                         <TextField
                           fullWidth
-                          label="Mật khẩu hiện tại"
+                          label={tr("Mật khẩu hiện tại", "Current password")}
                           type={showCurrentPassword ? "text" : "password"}
                           value={currentPassword}
                           onChange={(e) => setCurrentPassword(e.target.value)}
-                          placeholder="Nhập mật khẩu hiện tại của bạn"
+                          placeholder={tr("Nhập mật khẩu hiện tại của bạn", "Enter your current password")}
                           slotProps={{
                             input: {
                               startAdornment: (
@@ -1848,11 +1877,14 @@ function ProfileContent() {
                         <Box>
                           <TextField
                             fullWidth
-                            label="Mật khẩu mới"
+                            label={tr("Mật khẩu mới", "New password")}
                             type={showNewPassword ? "text" : "password"}
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
-                            placeholder="Tối thiểu 8 ký tự, chữ hoa, số & ký tự đặc biệt"
+                            placeholder={tr(
+                              "Tối thiểu 8 ký tự, chữ hoa, số & ký tự đặc biệt",
+                              "At least 8 characters, uppercase, number & special char"
+                            )}
                             slotProps={{
                               input: {
                                 startAdornment: (
@@ -1880,7 +1912,7 @@ function ProfileContent() {
                             <Box sx={{ mt: 1.5, px: 0.5 }}>
                               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
                                 <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-500)" }}>
-                                  Độ an toàn mật khẩu:
+                                  {tr("Độ an toàn mật khẩu:", "Password strength:")}
                                 </Typography>
                                 <Typography
                                   variant="caption"
@@ -1911,15 +1943,15 @@ function ProfileContent() {
 
                         <TextField
                           fullWidth
-                          label="Xác nhận mật khẩu mới"
+                          label={tr("Xác nhận mật khẩu mới", "Confirm new password")}
                           type={showConfirmPassword ? "text" : "password"}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Nhập lại mật khẩu mới"
+                          placeholder={tr("Nhập lại mật khẩu mới", "Re-enter new password")}
                           error={Boolean(confirmPassword && confirmPassword !== newPassword)}
                           helperText={
                             confirmPassword && confirmPassword !== newPassword
-                              ? "Mật khẩu xác nhận không khớp!"
+                              ? tr("Mật khẩu xác nhận không khớp!", "Passwords do not match!")
                               : ""
                           }
                           slotProps={{
@@ -1965,7 +1997,7 @@ function ProfileContent() {
                               boxShadow: "0 8px 16px -4px rgba(16, 185, 129, 0.4)",
                             }}
                           >
-                            {isChangingPassword ? "Đang xử lý..." : "Cập nhật mật khẩu"}
+                            {isChangingPassword ? tr("Đang xử lý...", "Processing...") : tr("Cập nhật mật khẩu", "Update password")}
                           </Button>
                         </Box>
                       </Box>
@@ -1976,7 +2008,7 @@ function ProfileContent() {
                 {/* Right Column: Security Sessions */}
                 <Grid size={{ xs: 12, md: 5 }}>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 2 }}>
-                    Phiên đăng nhập & Thiết bị
+                    {tr("Phiên đăng nhập & Thiết bị", "Active Sessions & Devices")}
                   </Typography>
 
                   <Paper
@@ -2008,10 +2040,10 @@ function ProfileContent() {
                       </Box>
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)" }}>
-                          Windows PC • Trình duyệt hiện tại
+                          {tr("Windows PC • Trình duyệt hiện tại", "Windows PC • Current browser")}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "var(--mui-palette-tone-10b981)", fontWeight: 600 }}>
-                          ● Đang hoạt động
+                          {tr("● Đang hoạt động", "● Active now")}
                         </Typography>
                       </Box>
                     </Box>
@@ -2020,7 +2052,7 @@ function ProfileContent() {
 
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
-                        Địa chỉ IP kết nối:
+                        {tr("Địa chỉ IP kết nối:", "Connected IP:")}
                       </Typography>
                       <Typography variant="caption" sx={{ fontFamily: "monospace", fontWeight: 600 }}>
                         127.0.0.1 (Localhost)
@@ -2029,10 +2061,10 @@ function ProfileContent() {
 
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
-                        Thời gian hết hạn phiên:
+                        {tr("Thời gian hết hạn phiên:", "Session expiration:")}
                       </Typography>
                       <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-600)" }}>
-                        7 ngày (Tự động gia hạn)
+                        {tr("7 ngày (Tự động gia hạn)", "7 days (Auto-renew)")}
                       </Typography>
                     </Box>
 
@@ -2049,7 +2081,7 @@ function ProfileContent() {
                         fontWeight: 600,
                       }}
                     >
-                      Đăng xuất phiên làm việc
+                      {tr("Đăng xuất phiên làm việc", "Sign out of session")}
                     </Button>
                   </Paper>
                 </Grid>
@@ -2061,7 +2093,7 @@ function ProfileContent() {
           {activeTab === TAB_SETTINGS && (
             <Box sx={{ p: { xs: 2.5, sm: 4 } }}>
               <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-900)", mb: 3 }}>
-                Cài đặt & Tùy chọn trải nghiệm
+                {tr("Cài đặt & Tùy chọn trải nghiệm", "Settings & Experience Preferences")}
               </Typography>
 
               <Grid container spacing={3}>
@@ -2079,7 +2111,7 @@ function ProfileContent() {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
                       <Bell size={20} color="var(--mui-palette-brand-600)" />
                       <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
-                        Thông báo & Âm thanh
+                        {tr("Thông báo & Âm thanh", "Notifications & Sounds")}
                       </Typography>
                     </Box>
 
@@ -2095,10 +2127,10 @@ function ProfileContent() {
                         label={
                           <Box>
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              Âm thanh tin nhắn đến
+                              {tr("Âm thanh tin nhắn đến", "Incoming message sound")}
                             </Typography>
                             <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
-                              Phát âm thanh thông báo mỗi khi có tin nhắn mới
+                              {tr("Phát âm thanh thông báo mỗi khi có tin nhắn mới", "Play a notification sound when a new message arrives")}
                             </Typography>
                           </Box>
                         }
@@ -2117,10 +2149,10 @@ function ProfileContent() {
                         label={
                           <Box>
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              Thông báo đẩy trên trình duyệt
+                              {tr("Thông báo đẩy trên trình duyệt", "Browser push notifications")}
                             </Typography>
                             <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
-                              Nhận thông báo kể cả khi bạn không mở tab chat
+                              {tr("Nhận thông báo kể cả khi bạn không mở tab chat", "Receive notifications even when the chat tab is not active")}
                             </Typography>
                           </Box>
                         }
@@ -2139,10 +2171,10 @@ function ProfileContent() {
                         label={
                           <Box>
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              Xem trước nội dung tin nhắn
+                              {tr("Xem trước nội dung tin nhắn", "Preview message content")}
                             </Typography>
                             <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
-                              Hiển thị nội dung chi tiết trong popup thông báo
+                              {tr("Hiển thị nội dung chi tiết trong popup thông báo", "Show detailed message content in notification popups")}
                             </Typography>
                           </Box>
                         }
@@ -2165,7 +2197,7 @@ function ProfileContent() {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
                       <Shield size={20} color="var(--mui-palette-tone-10b981)" />
                       <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
-                        Quyền riêng tư
+                        {tr("Quyền riêng tư", "Privacy")}
                       </Typography>
                     </Box>
 
@@ -2181,10 +2213,10 @@ function ProfileContent() {
                         label={
                           <Box>
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              Hiển thị trạng thái Đang hoạt động
+                              {tr("Hiển thị trạng thái Đang hoạt động", "Show Active Status")}
                             </Typography>
                             <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
-                              Cho phép bạn bè biết khi bạn đang trực tuyến
+                              {tr("Cho phép bạn bè biết khi bạn đang trực tuyến", "Let friends know when you are online")}
                             </Typography>
                           </Box>
                         }
@@ -2203,10 +2235,10 @@ function ProfileContent() {
                         label={
                           <Box>
                             <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              Cho phép tìm kiếm qua số điện thoại
+                              {tr("Cho phép tìm kiếm qua số điện thoại", "Allow search by phone number")}
                             </Typography>
                             <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
-                              Bạn bè có thể tìm thấy bạn bằng số điện thoại
+                              {tr("Bạn bè có thể tìm thấy bạn bằng số điện thoại", "Friends can find you using your phone number")}
                             </Typography>
                           </Box>
                         }
@@ -2235,7 +2267,7 @@ function ProfileContent() {
           }}
         >
           <DialogTitle sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
-            Thay đổi ảnh đại diện
+            {tr("Thay đổi ảnh đại diện", "Change Profile Picture")}
           </DialogTitle>
           <DialogContent>
             {/* Live Preview Circle */}
@@ -2254,7 +2286,7 @@ function ProfileContent() {
                 {(name || "U").charAt(0).toUpperCase()}
               </Avatar>
               <Typography variant="caption" sx={{ mt: 1, color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
-                Xem trước ảnh đại diện
+                {tr("Xem trước ảnh đại diện", "Avatar preview")}
               </Typography>
             </Box>
 
@@ -2272,8 +2304,8 @@ function ProfileContent() {
                   },
                 }}
               >
-                <Tab label="Bộ sưu tập Avatar" />
-                <Tab label="Tải ảnh lên / Nhập URL" />
+                <Tab label={tr("Bộ sưu tập Avatar", "Preset Avatars")} />
+                <Tab label={tr("Tải ảnh lên / Nhập URL", "Upload / Enter URL")} />
               </Tabs>
             </Box>
 
@@ -2349,23 +2381,23 @@ function ProfileContent() {
                   />
                   <Camera size={32} color="var(--mui-palette-neutral-500)" style={{ margin: "0 auto 8px" }} />
                   <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-800)" }}>
-                    Nhấn vào đây để tải ảnh từ máy tính (kéo cắt giống Facebook)
+                    {tr("Nhấn vào đây để tải ảnh từ máy tính (kéo cắt giống Facebook)", "Click here to upload from your computer (crop like Facebook)")}
                   </Typography>
                   <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                    Hỗ trợ kéo vị trí, thu phóng theo ý muốn
+                    {tr("Hỗ trợ kéo vị trí, thu phóng theo ý muốn", "Drag to position and zoom freely")}
                   </Typography>
                 </Box>
 
                 <Divider>
                   <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                    HOẶC
+                    {tr("HOẶC", "OR")}
                   </Typography>
                 </Divider>
 
                 <TextField
                   fullWidth
                   size="small"
-                  label="Dán đường dẫn ảnh trực tiếp (URL)"
+                  label={tr("Dán đường dẫn ảnh trực tiếp (URL)", "Paste direct image URL")}
                   value={selectedAvatarPreview}
                   onChange={(e) => setSelectedAvatarPreview(e.target.value)}
                   placeholder="https://example.com/my-photo.jpg"
@@ -2378,7 +2410,7 @@ function ProfileContent() {
               onClick={() => setIsAvatarDialogOpen(false)}
               sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}
             >
-              Hủy
+              {tr("Hủy", "Cancel")}
             </Button>
             <Button
               variant="contained"
@@ -2390,7 +2422,7 @@ function ProfileContent() {
                 px: 2.5,
               }}
             >
-              {isUpdating ? "Đang lưu..." : "Xác nhận & Lưu"}
+              {isUpdating ? tr("Đang lưu...", "Saving...") : tr("Xác nhận & Lưu", "Confirm & Save")}
             </Button>
           </DialogActions>
         </Dialog>
@@ -2419,12 +2451,13 @@ function ProfileContent() {
           }}
         >
           <DialogTitle sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
-            Xác nhận đăng xuất
+            {tr("Xác nhận đăng xuất", "Confirm Logout")}
           </DialogTitle>
           <DialogContent>
             <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-500)", lineHeight: 1.6 }}>
-              Bạn có chắc chắn muốn đăng xuất khỏi tài khoản{" "}
-              <strong>{user?.name || user?.email}</strong>? Bạn sẽ cần đăng nhập lại để tiếp tục trò chuyện.
+              {tr("Bạn có chắc chắn muốn đăng xuất khỏi tài khoản ", "Are you sure you want to log out of ")}
+              <strong>{user?.name || user?.email}</strong>
+              {tr("? Bạn sẽ cần đăng nhập lại để tiếp tục trò chuyện.", "? You will need to sign in again to continue chatting.")}
             </Typography>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -2433,7 +2466,7 @@ function ProfileContent() {
               onClick={() => setIsLogoutDialogOpen(false)}
               sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}
             >
-              Ở lại
+              {tr("Ở lại", "Stay")}
             </Button>
             <Button
               variant="contained"
@@ -2449,7 +2482,7 @@ function ProfileContent() {
                 px: 2.5,
               }}
             >
-              {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
+              {isLoggingOut ? tr("Đang đăng xuất...", "Logging out...") : tr("Đăng xuất", "Log out")}
             </Button>
           </DialogActions>
         </Dialog>

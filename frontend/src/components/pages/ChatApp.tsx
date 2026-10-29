@@ -8,6 +8,7 @@ import { useSoundStore } from "@/store/useSoundStore";
 import { ChatUser, useChatStore } from "@/store/useChatStore";
 import { useFriendStore } from "@/store/useFriendStore";
 import { APP_BAR_HEIGHT, colors, v } from "@/theme/tokens";
+import { useTranslation } from "@/i18n/useTranslation";
 import EmptyState from "@/components/common/EmptyState";
 import ConversationList from "@/components/chat/app/ConversationList";
 import FriendsPanel from "@/components/chat/app/FriendsPanel";
@@ -30,6 +31,7 @@ interface ToastState {
  */
 export default function ChatApp() {
   const { user } = useAuthStore();
+  const { tr } = useTranslation();
   const { isMuted, toggleMute } = useSoundStore();
   const {
     connectSocket,
@@ -137,7 +139,7 @@ export default function ChatApp() {
       {/* ==================== SIDEBAR ==================== */}
       <Box
         component="aside"
-        aria-label="Hội thoại và bạn bè"
+        aria-label={tr("Hội thoại và bạn bè", "Chats and friends")}
         sx={{
           width: { xs: "100%", sm: 320, md: 380 },
           flexShrink: 0,
@@ -152,7 +154,7 @@ export default function ChatApp() {
       >
         <Box sx={{ px: 2, pt: 2, pb: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
           <Typography variant="h5" component="h1" sx={{ fontWeight: 800 }}>
-            Tin nhắn
+            {tr("Tin nhắn", "Messages")}
           </Typography>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
@@ -162,13 +164,13 @@ export default function ChatApp() {
               icon={<Circle size={8} color={colors.online} fill={colors.online} />}
               sx={{ bgcolor: v.tone("f0fdf4"), color: v.tone("166534"), fontSize: "0.72rem" }}
             />
-            <Tooltip title="Tìm bạn mới">
+            <Tooltip title={tr("Tìm bạn mới", "Find new friends")}>
               <IconButton
                 onClick={() => {
                   clearSearchResults();
                   setOpenAddFriend(true);
                 }}
-                aria-label="Tìm bạn mới"
+                aria-label={tr("Tìm bạn mới", "Find new friends")}
                 sx={{ bgcolor: "action.selected", color: "primary.main", "&:hover": { bgcolor: "action.focus" } }}
               >
                 <UserPlus size={18} />
@@ -181,7 +183,7 @@ export default function ChatApp() {
           value={sidebarTab}
           onChange={(_, val: 0 | 1) => setSidebarTab(val)}
           variant="fullWidth"
-          aria-label="Chuyển đổi giữa hội thoại và bạn bè"
+          aria-label={tr("Chuyển đổi giữa hội thoại và bạn bè", "Switch between chats and friends")}
           sx={{ borderBottom: "1px solid", borderColor: "divider", minHeight: 44 }}
         >
           <Tab
@@ -189,7 +191,7 @@ export default function ChatApp() {
             aria-controls="sidebar-panel-0"
             icon={<MessageSquare size={16} />}
             iconPosition="start"
-            label="Hội thoại"
+            label={tr("Hội thoại", "Chats")}
           />
           <Tab
             id="sidebar-tab-1"
@@ -205,7 +207,7 @@ export default function ChatApp() {
               </Badge>
             }
             iconPosition="start"
-            label="Bạn bè"
+            label={tr("Bạn bè", "Friends")}
           />
         </Tabs>
 
@@ -248,7 +250,7 @@ export default function ChatApp() {
       {/* ==================== KHUNG CHAT ==================== */}
       <Box
         component="section"
-        aria-label="Khung trò chuyện"
+        aria-label={tr("Khung trò chuyện", "Chat area")}
         sx={{
           flex: 1,
           minWidth: 0,
@@ -261,8 +263,11 @@ export default function ChatApp() {
           <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", p: 3 }}>
             <EmptyState
               icon={<MessageSquare size={28} />}
-              title="Chọn một cuộc trò chuyện"
-              description="Chọn hội thoại ở danh sách bên trái hoặc mở tab Bạn bè để bắt đầu nhắn tin theo thời gian thực."
+              title={tr("Chọn một cuộc trò chuyện", "Select a conversation")}
+              description={tr(
+                "Chọn hội thoại ở danh sách bên trái hoặc mở tab Bạn bè để bắt đầu nhắn tin theo thời gian thực.",
+                "Select a chat on the left or open the Friends tab to start messaging in real time."
+              )}
             />
           </Box>
         ) : (
@@ -280,22 +285,24 @@ export default function ChatApp() {
               onBack={clearActiveConversation}
               onSelectTheme={async (themeId) => {
                 await updateActiveConversationTheme(themeId);
-                showToast("Đã thay đổi chủ đề đoạn chat", "success");
+                showToast(tr("Đã thay đổi chủ đề đoạn chat", "Chat theme updated"), "success");
               }}
               onToggleBlock={async () => {
                 if (isBlockedByMe) {
                   await unblockActiveConversation();
-                  showToast("Đã bỏ chặn người dùng", "success");
+                  showToast(tr("Đã bỏ chặn người dùng", "User unblocked"), "success");
                 } else {
                   await blockActiveConversation();
-                  showToast("Đã chặn người dùng", "success");
+                  showToast(tr("Đã chặn người dùng", "User blocked"), "success");
                 }
               }}
               onToggleRestrict={async () => {
                 const nextState = !isRestricted;
                 await restrictActiveConversation(nextState);
                 showToast(
-                  nextState ? "Đã chuyển vào đoạn chat bị hạn chế" : "Đã bỏ hạn chế người dùng",
+                  nextState
+                    ? tr("Đã chuyển vào đoạn chat bị hạn chế", "Moved to restricted chats")
+                    : tr("Đã bỏ hạn chế người dùng", "User unrestricted"),
                   "success"
                 );
               }}
@@ -310,7 +317,7 @@ export default function ChatApp() {
               theme={activeConversation.theme || "default"}
               onDeleteMessage={async (msgId) => {
                 await deleteChatMessage(msgId);
-                showToast("Đã thu hồi tin nhắn", "info");
+                showToast(tr("Đã thu hồi tin nhắn", "Message unsent"), "info");
               }}
             />
             <MessageComposer
@@ -321,7 +328,7 @@ export default function ChatApp() {
               isBlockedByMe={isBlockedByMe}
               onUnblock={async () => {
                 await unblockActiveConversation();
-                showToast("Đã bỏ chặn người dùng", "success");
+                showToast(tr("Đã bỏ chặn người dùng", "User unblocked"), "success");
               }}
             />
           </>

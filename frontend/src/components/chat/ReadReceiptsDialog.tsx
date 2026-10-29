@@ -11,6 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Eye, X } from "lucide-react";
+import { useTranslation } from "@/i18n/useTranslation";
 import { v } from "@/theme/tokens";
 
 interface ReadReceiptsDialogProps {
@@ -28,6 +29,7 @@ export default function ReadReceiptsDialog({
   onClose,
   onToggle,
 }: ReadReceiptsDialogProps) {
+  const { tr } = useTranslation();
   return (
     <Dialog
       open={open}
@@ -71,10 +73,10 @@ export default function ReadReceiptsDialog({
             <Eye size={20} aria-hidden />
           </Box>
           <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
-            Thông báo đã đọc
+            {tr("Thông báo đã đọc", "Read receipts")}
           </Typography>
         </Box>
-        <IconButton size="small" aria-label="Đóng hộp thoại" onClick={onClose}>
+        <IconButton size="small" aria-label={tr("Đóng hộp thoại", "Close dialog")} onClick={onClose}>
           <X size={18} />
         </IconButton>
       </DialogTitle>
@@ -82,8 +84,14 @@ export default function ReadReceiptsDialog({
       <DialogContent sx={{ px: 2, pt: 1, pb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5, lineHeight: 1.55 }}>
           {partnerName
-            ? `Cho phép ${partnerName} biết khi bạn đã đọc tin nhắn của họ. Nếu tắt tính năng này, bạn cũng sẽ không biết khi nào người khác đọc tin nhắn của bạn.`
-            : "Cho phép mọi người biết khi bạn đã đọc tin nhắn của họ. Nếu tắt tính năng này, bạn cũng sẽ không biết khi nào người khác đọc tin nhắn của bạn."}
+            ? tr(
+                `Cho phép ${partnerName} biết khi bạn đã đọc tin nhắn của họ. Nếu tắt tính năng này, bạn cũng sẽ không biết khi nào người khác đọc tin nhắn của bạn.`,
+                `Let ${partnerName} know when you've read their messages. If you turn this off, you also won't see when others have read your messages.`
+              )
+            : tr(
+                "Cho phép mọi người biết khi bạn đã đọc tin nhắn của họ. Nếu tắt tính năng này, bạn cũng sẽ không biết khi nào người khác đọc tin nhắn của bạn.",
+                "Let people know when you've read their messages. If you turn this off, you also won't see when others have read your messages."
+              )}
         </Typography>
 
         <Box
@@ -100,17 +108,19 @@ export default function ReadReceiptsDialog({
         >
           <Box sx={{ pr: 1.5 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: "0.92rem" }}>
-              Hiển thị thông báo đã đọc
+              {tr("Hiển thị thông báo đã đọc", "Show read receipts")}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
-              {enabled ? "Người khác sẽ thấy khi bạn đã xem tin nhắn" : "Trạng thái đã xem của bạn đang được ẩn"}
+              {enabled
+                ? tr("Người khác sẽ thấy khi bạn đã xem tin nhắn", "Others will see when you've read their messages")
+                : tr("Trạng thái đã xem của bạn đang được ẩn", "Your read status is currently hidden")}
             </Typography>
           </Box>
           <Switch
             checked={enabled}
             onChange={(e) => onToggle(e.target.checked)}
             color="primary"
-            slotProps={{ input: { "aria-label": "Bật hoặc tắt thông báo đã đọc" } }}
+            slotProps={{ input: { "aria-label": tr("Bật hoặc tắt thông báo đã đọc", "Toggle read receipts") } }}
           />
         </Box>
 
@@ -125,7 +135,7 @@ export default function ReadReceiptsDialog({
               textTransform: "none",
             }}
           >
-            Xong
+            {tr("Xong", "Done")}
           </Button>
         </Box>
       </DialogContent>

@@ -1,5 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../store/useAuthStore";
+import { useTranslation } from "@/i18n/useTranslation";
 
 interface UseSocialAuthOptions {
   onSuccess?: () => void;
@@ -8,6 +9,7 @@ interface UseSocialAuthOptions {
 
 export const useSocialAuth = ({ onSuccess, onError }: UseSocialAuthOptions = {}) => {
   const router = useRouter();
+  const { tr } = useTranslation();
 
   const {
     loginWithGoogle,
@@ -33,9 +35,9 @@ export const useSocialAuth = ({ onSuccess, onError }: UseSocialAuthOptions = {})
         return;
       }
 
-      let message = "Đăng nhập Google thất bại! Vui lòng thử lại.";
+      let message = tr("Đăng nhập Google thất bại! Vui lòng thử lại.", "Google sign-in failed! Please try again.");
       if (error?.code === "auth/account-exists-with-different-credential") {
-        message = "Email này đã được đăng ký";
+        message = tr("Email này đã được đăng ký", "This email is already registered");
       } else if (error?.response?.data?.message) {
         message = Array.isArray(error.response.data.message)
           ? error.response.data.message.join(", ")
@@ -67,9 +69,9 @@ export const useSocialAuth = ({ onSuccess, onError }: UseSocialAuthOptions = {})
         return;
       }
 
-      let message = "Đăng nhập Facebook thất bại! Vui lòng thử lại.";
+      let message = tr("Đăng nhập Facebook thất bại! Vui lòng thử lại.", "Facebook sign-in failed! Please try again.");
       if (error?.code === "auth/account-exists-with-different-credential") {
-        message = "Email này đã được đăng ký";
+        message = tr("Email này đã được đăng ký", "This email is already registered");
       } else if (error?.response?.data?.message) {
         message = Array.isArray(error.response.data.message)
           ? error.response.data.message.join(", ")

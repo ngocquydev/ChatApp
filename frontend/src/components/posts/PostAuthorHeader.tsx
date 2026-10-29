@@ -4,6 +4,7 @@ import NextLink from "next/link";
 import type { ReactNode } from "react";
 import { Box, Link, Tooltip, Typography } from "@mui/material";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
+import { useTranslation } from "@/i18n/useTranslation";
 import type { PostAuthor, PostPrivacy } from "@/services/postsApi";
 import { formatFullDateTime, formatRelativeTime } from "@/utils/formatTime";
 import { PrivacyLabel } from "./PrivacyPicker";
@@ -34,9 +35,10 @@ export default function PostAuthorHeader({
   action,
 }: PostAuthorHeaderProps) {
   const href = profileHref(author._id, currentUserId);
+  const { tr } = useTranslation();
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-      <Link component={NextLink} href={href} aria-label={`Xem trang cá nhân của ${author.name}`} underline="none" sx={{ display: "flex" }}>
+      <Link component={NextLink} href={href} aria-label={tr(`Xem trang cá nhân của ${author.name}`, `View ${author.name}'s profile`)} underline="none" sx={{ display: "flex" }}>
         <PresenceAvatar name={author.name} src={author.avatar} size={size} priority={priority} hidePresence />
       </Link>
       <Box sx={{ minWidth: 0, flex: 1 }}>

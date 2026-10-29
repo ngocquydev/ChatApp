@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Box, CircularProgress, IconButton, TextField, Tooltip } from "@mui/material";
 import { Image as ImageIcon, SendHorizontal, X } from "lucide-react";
+import { useTranslation } from "@/i18n/useTranslation";
 import { COMMENT_MAX_LENGTH, MAX_IMAGE_BYTES } from "@/services/postsApi";
 
 interface CommentComposerProps {
@@ -12,6 +13,7 @@ interface CommentComposerProps {
 }
 
 export default function CommentComposer({ sending, onSubmit, onError }: CommentComposerProps) {
+  const { tr } = useTranslation();
   const [text, setText] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
@@ -30,7 +32,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > MAX_IMAGE_BYTES) {
-      onError("Tệp quá lớn. Vui lòng chọn ảnh hoặc video dưới 50MB.");
+      onError(tr("Tệp quá lớn. Vui lòng chọn ảnh hoặc video dưới 50MB.", "File is too large. Please select an image or video under 50MB."));
       return;
     }
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -82,7 +84,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
             <Box
               component="img"
               src={previewUrl}
-              alt="Ảnh đính kèm bình luận"
+              alt={tr("Ảnh đính kèm bình luận", "Attached comment image")}
               sx={{
                 width: 90,
                 height: 90,
@@ -96,7 +98,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
           )}
           <IconButton
             size="small"
-            aria-label="Hủy đính kèm"
+            aria-label={tr("Hủy đính kèm", "Remove attachment")}
             onClick={handleRemoveAttachment}
             sx={{
               position: "absolute",
@@ -130,7 +132,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
           multiline
           maxRows={4}
           size="small"
-          placeholder="Viết bình luận…"
+          placeholder={tr("Viết bình luận…", "Write a comment…")}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -139,14 +141,14 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
               void handleSend();
             }
           }}
-          slotProps={{ htmlInput: { maxLength: COMMENT_MAX_LENGTH, "aria-label": "Viết bình luận" } }}
+          slotProps={{ htmlInput: { maxLength: COMMENT_MAX_LENGTH, "aria-label": tr("Viết bình luận", "Write a comment") } }}
         />
 
-        <Tooltip title="Đính kèm ảnh hoặc video">
+        <Tooltip title={tr("Đính kèm ảnh hoặc video", "Attach photo or video")}>
           <span>
             <IconButton
               color="primary"
-              aria-label="Đính kèm ảnh hoặc video"
+              aria-label={tr("Đính kèm ảnh hoặc video", "Attach photo or video")}
               disabled={sending}
               onClick={() => fileInputRef.current?.click()}
               sx={{ p: 1 }}
@@ -156,11 +158,11 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
           </span>
         </Tooltip>
 
-        <Tooltip title="Gửi bình luận">
+        <Tooltip title={tr("Gửi bình luận", "Send comment")}>
           <span>
             <IconButton
               color="primary"
-              aria-label="Gửi bình luận"
+              aria-label={tr("Gửi bình luận", "Send comment")}
               disabled={(!trimmed && !attachedFile) || sending}
               onClick={() => void handleSend()}
               sx={{ p: 1 }}

@@ -19,6 +19,7 @@ import { useTheme } from "@mui/material/styles";
 import { Check, Clock, MessageSquare, Search, UserPlus, X } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import EmptyState from "@/components/common/EmptyState";
+import { useTranslation } from "@/i18n/useTranslation";
 import { ChatUser } from "@/store/useChatStore";
 import { UserRelationResult } from "@/store/useFriendStore";
 import { NotifyFn } from "./types";
@@ -52,6 +53,7 @@ export default function AddFriendDialog({
   onRespond,
   notify,
 }: AddFriendDialogProps) {
+  const { tr } = useTranslation();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [query, setQuery] = useState("");
@@ -89,8 +91,8 @@ export default function AddFriendDialog({
         id="add-friend-title"
         sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
       >
-        Tìm kiếm &amp; kết bạn mới
-        <IconButton size="small" onClick={onClose} aria-label="Đóng hộp thoại">
+        {tr("Tìm kiếm & kết bạn mới", "Search & Add Friends")}
+        <IconButton size="small" onClick={onClose} aria-label={tr("Đóng hộp thoại", "Close dialog")}>
           <X size={18} />
         </IconButton>
       </DialogTitle>
@@ -99,11 +101,11 @@ export default function AddFriendDialog({
         <TextField
           fullWidth
           type="search"
-          placeholder="Nhập tên người dùng cần tìm…"
+          placeholder={tr("Nhập tên người dùng cần tìm…", "Enter username to search…")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           slotProps={{
-            htmlInput: { "aria-label": "Tìm người dùng" },
+            htmlInput: { "aria-label": tr("Tìm người dùng", "Search users") },
             input: {
               startAdornment: (
                 <InputAdornment position="start">
@@ -120,23 +122,26 @@ export default function AddFriendDialog({
             <EmptyState
               compact
               icon={<Search size={26} />}
-              title="Tìm kiếm người dùng trên ChatApp"
-              description="Nhập tên, email hoặc số điện thoại để tìm và gửi lời mời kết bạn."
+              title={tr("Tìm kiếm người dùng trên ChatApp", "Search for users on ChatApp")}
+              description={tr(
+                "Nhập tên, email hoặc số điện thoại để tìm và gửi lời mời kết bạn.",
+                "Enter a name, email, or phone number to find and send a friend request."
+              )}
             />
           ) : results.length === 0 ? (
             isSearching ? (
               <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 5, gap: 1.5 }}>
                 <CircularProgress size={22} />
                 <Typography variant="body2" color="text.secondary">
-                  Đang tìm kiếm…
+                  {tr("Đang tìm kiếm…", "Searching…")}
                 </Typography>
               </Box>
             ) : (
               <EmptyState
                 compact
                 icon={<Search size={26} />}
-                title="Không tìm thấy người dùng"
-                description="Thử lại bằng tên đầy đủ hoặc địa chỉ email chính xác."
+                title={tr("Không tìm thấy người dùng", "No users found")}
+                description={tr("Thử lại bằng tên đầy đủ hoặc địa chỉ email chính xác.", "Try again with a full name or exact email address.")}
               />
             )
           ) : (
@@ -163,7 +168,7 @@ export default function AddFriendDialog({
                         {u.name}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
-                        {u.bio || "Thành viên"}
+                        {u.bio || tr("Thành viên", "Member")}
                       </Typography>
                     </Box>
 
@@ -174,7 +179,7 @@ export default function AddFriendDialog({
                         startIcon={<MessageSquare size={14} />}
                         onClick={() => onMessage(u)}
                       >
-                        Nhắn tin
+                        {tr("Nhắn tin", "Message")}
                       </Button>
                     )}
                     {u.relationStatus === "pending_sent" && (
@@ -189,7 +194,7 @@ export default function AddFriendDialog({
                           notify(res.message, "info");
                         }}
                       >
-                        Đã gửi · Hủy
+                        {tr("Đã gửi · Hủy", "Requested · Cancel")}
                       </Button>
                     )}
                     {u.relationStatus === "pending_received" && (
@@ -204,7 +209,7 @@ export default function AddFriendDialog({
                           notify(res.message, "success");
                         }}
                       >
-                        Chấp nhận
+                        {tr("Chấp nhận", "Accept")}
                       </Button>
                     )}
                     {u.relationStatus === "none" && (
@@ -217,7 +222,7 @@ export default function AddFriendDialog({
                           notify(res.message, res.success ? "success" : "error");
                         }}
                       >
-                        Kết bạn
+                        {tr("Kết bạn", "Add friend")}
                       </Button>
                     )}
                   </Box>

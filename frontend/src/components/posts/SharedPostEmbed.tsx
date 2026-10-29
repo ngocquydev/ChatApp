@@ -2,6 +2,7 @@
 
 import { Box, Typography } from "@mui/material";
 import { EyeOff } from "lucide-react";
+import { useTranslation } from "@/i18n/useTranslation";
 import { isSharedPostAvailable, type PostView } from "@/services/postsApi";
 import PostAuthorHeader from "./PostAuthorHeader";
 import PostImages from "./PostImages";
@@ -13,6 +14,7 @@ interface SharedPostEmbedProps {
 
 /** Khung bài gốc nằm trong bài chia sẻ lại. */
 export default function SharedPostEmbed({ shared, currentUserId }: SharedPostEmbedProps) {
+  const { tr } = useTranslation();
   if (!shared) return null;
 
   if (!isSharedPostAvailable(shared)) {
@@ -36,10 +38,10 @@ export default function SharedPostEmbed({ shared, currentUserId }: SharedPostEmb
         </Box>
         <Box>
           <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-            Nội dung này hiện không khả dụng
+            {tr("Nội dung này hiện không khả dụng", "This content is currently unavailable")}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Bài viết gốc đã bị xóa hoặc bạn không có quyền xem.
+            {tr("Bài viết gốc đã bị xóa hoặc bạn không có quyền xem.", "The original post was deleted or you don't have permission to view it.")}
           </Typography>
         </Box>
       </Box>

@@ -10,6 +10,7 @@ import EmptyState from "@/components/common/EmptyState";
 import ProfileTimeline from "@/components/posts/ProfileTimeline";
 import UserProfileHeader from "@/components/posts/UserProfileHeader";
 import { usePublicProfile } from "@/hooks/usePublicProfile";
+import { useTranslation } from "@/i18n/useTranslation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
 import { useFriendStore } from "@/store/useFriendStore";
@@ -19,6 +20,7 @@ type Toast = { message: string; severity: "success" | "error" | "info" } | null;
 
 function UserProfileContent({ userId }: { userId: string }) {
   const router = useRouter();
+  const { tr } = useTranslation();
   const { user: me } = useAuthStore();
   const myId = (me?._id || me?.id) as string | undefined;
   const { profile, status, error, notFound, reload, refresh } = usePublicProfile(userId);
@@ -68,7 +70,7 @@ function UserProfileContent({ userId }: { userId: string }) {
     <Box sx={{ minHeight: "100dvh", bgcolor: "background.default", pt: `${APP_BAR_HEIGHT + 16}px`, pb: 6 }}>
       <Container maxWidth="lg" sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
         {status === "loading" && (
-          <Box aria-busy="true" aria-label="Đang tải trang cá nhân">
+          <Box aria-busy="true" aria-label={tr("Đang tải trang cá nhân", "Loading profile")}>
             <Skeleton variant="rounded" height={300} sx={{ borderRadius: "16px" }} />
           </Box>
         )}
@@ -77,16 +79,16 @@ function UserProfileContent({ userId }: { userId: string }) {
           <Box sx={{ borderRadius: "16px", border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
             <EmptyState
               icon={<UserX size={26} />}
-              title={notFound ? "Không tìm thấy người dùng" : "Không tải được trang cá nhân"}
+              title={notFound ? tr("Không tìm thấy người dùng", "User not found") : tr("Không tải được trang cá nhân", "Failed to load profile")}
               description={error}
               action={
                 notFound ? (
                   <Button variant="contained" onClick={() => router.push("/")}>
-                    Về bảng tin
+                    {tr("Về bảng tin", "Back to Feed")}
                   </Button>
                 ) : (
                   <Button variant="contained" onClick={reload}>
-                    Thử lại
+                    {tr("Thử lại", "Retry")}
                   </Button>
                 )
               }
@@ -116,14 +118,16 @@ function UserProfileContent({ userId }: { userId: string }) {
 
       <ConfirmDialog
         open={confirmUnfriend}
-        title="Hủy kết bạn?"
+        title={tr("Hủy kết bạn?", "Unfriend?")}
         description={
           <>
-            Bạn sẽ không còn là bạn bè với <strong>{profile?.user.name}</strong>. Bạn sẽ không thấy bài viết dành cho bạn bè của họ nữa.
+            {tr("Bạn sẽ không còn là bạn bè với ", "You will no longer be friends with ")}
+            <strong>{profile?.user.name}</strong>
+            {tr(". Bạn sẽ không thấy bài viết dành cho bạn bè của họ nữa.", ". You will no longer see their friends-only posts.")}
           </>
         }
-        confirmLabel="Hủy kết bạn"
-        cancelLabel="Giữ kết bạn"
+        confirmLabel={tr("Hủy kết bạn", "Unfriend")}
+        cancelLabel={tr("Giữ kết bạn", "Keep friend")}
         pending={pending}
         onClose={() => setConfirmUnfriend(false)}
         onConfirm={() => {

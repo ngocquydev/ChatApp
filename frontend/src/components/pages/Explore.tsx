@@ -23,6 +23,7 @@ import { Compass, MapPin, Search, Sparkles, UserCheck, UserPlus, Users, X } from
 import EmptyState from "@/components/common/EmptyState";
 import ExploreUserCard, { ExploreCardData } from "@/components/explore/ExploreUserCard";
 import { buildExploreItems } from "@/components/explore/exploreHelpers";
+import { useTranslation } from "@/i18n/useTranslation";
 import { useChatBoxStore } from "@/store/useChatBoxStore";
 import { ChatUser, useChatStore } from "@/store/useChatStore";
 import { useFriendStore } from "@/store/useFriendStore";
@@ -30,6 +31,7 @@ import { APP_BAR_HEIGHT, v } from "@/theme/tokens";
 
 export default function Explore() {
   const router = useRouter();
+  const { tr, language } = useTranslation();
   const [tab, setTab] = useState(0);
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState<{ text: string; severity: "success" | "info" | "warning" } | null>(null);
@@ -78,19 +80,27 @@ export default function Explore() {
 
   const handleRequestLocation = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
-      setToast({ text: "Trình duyệt của bạn không hỗ trợ định vị vị trí.", severity: "warning" });
+      setToast({
+        text: tr("Trình duyệt của bạn không hỗ trợ định vị vị trí.", "Your browser does not support geolocation."),
+        severity: "warning",
+      });
       return;
     }
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const ok = await updateLocation(pos.coords.latitude, pos.coords.longitude);
         setToast({
-          text: ok ? "Đã cập nhật vị trí và làm mới gợi ý quanh đây." : "Không thể cập nhật vị trí lúc này.",
+          text: ok
+            ? tr("Đã cập nhật vị trí và làm mới gợi ý quanh đây.", "Location updated and nearby suggestions refreshed.")
+            : tr("Không thể cập nhật vị trí lúc này.", "Could not update location right now."),
           severity: ok ? "success" : "warning",
         });
       },
       () => {
-        setToast({ text: "Không lấy được vị trí hiện tại. Đang hiển thị gợi ý mặc định.", severity: "info" });
+        setToast({
+          text: tr("Không lấy được vị trí hiện tại. Đang hiển thị gợi ý mặc định.", "Could not get current location. Showing default suggestions."),
+          severity: "info",
+        });
         void fetchRecommendations();
       },
       { timeout: 10000, enableHighAccuracy: true },
@@ -126,8 +136,9 @@ export default function Explore() {
         sentRequests,
         friends,
         onlineUserIds,
+        language,
       }),
-    [isSearchingMode, tab, searchResults, recommendations, receivedRequests, sentRequests, friends, onlineUserIds],
+    [isSearchingMode, tab, searchResults, recommendations, receivedRequests, sentRequests, friends, onlineUserIds, language],
   );
 
   return (
@@ -153,11 +164,14 @@ export default function Explore() {
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
               <Compass size={22} color={v.brand[600]} aria-hidden />
               <Typography variant="h5" component="h1" sx={{ fontWeight: 800 }}>
-                Khám phá bạn bè
+                {tr("Khám phá bạn bè", "Explore Friends")}
               </Typography>
             </Box>
             <Typography variant="body2" color="text.secondary">
-              Tìm kiếm người quen, kết nối bạn bè quanh đây và quản lý lời mời kết bạn.
+              {tr(
+                "Tìm kiếm người quen, kết nối bạn bè quanh đây và quản lý lời mời kết bạn.",
+                "Find people you know, connect with friends nearby, and manage friend requests."
+              )}
             </Typography>
           </Box>
           <Button
@@ -167,18 +181,22 @@ export default function Explore() {
             startIcon={isLocating ? <CircularProgress size={16} color="inherit" /> : <MapPin size={16} aria-hidden />}
             sx={{ borderRadius: "12px", py: 1, px: 2, alignSelf: { xs: "flex-start", md: "center" } }}
           >
-            {isLocating ? "Đang định vị…" : userLocation ? "Cập nhật vị trí quanh đây" : "Tìm bạn bè quanh đây"}
+            {isLocating
+              ? tr("Đang định vị…", "Locating…")
+              : userLocation
+                ? tr("Cập nhật vị trí quanh đây", "Update nearby location")
+                : tr("Tìm bạn bè quanh đây", "Find friends nearby")}
           </Button>
         </Paper>
 
         <TextField
           fullWidth
-          placeholder="Nhập tên hoặc email người dùng cần tìm…"
+          placeholder={tr("Nhập tên hoặc email người dùng cần tìm…", "Enter name or email to search…")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           sx={{ mb: 2.5, "& .MuiOutlinedInput-root": { bgcolor: "background.paper", borderRadius: "12px" } }}
           slotProps={{
-            htmlInput: { "aria-label": "Tìm kiếm người dùng trên hệ thống" },
+            htmlInput: { "aria-label": tr("Tìm kiếm người dùng trên hệ thống", "Search users on the platform") },
             input: {
               startAdornment: (
                 <InputAdornment position="start">
@@ -187,7 +205,7 @@ export default function Explore() {
               ),
               endAdornment: query ? (
                 <InputAdornment position="end">
-                  <IconButton size="small" aria-label="Xóa từ khóa tìm kiếm" onClick={() => setQuery("")}>
+                  <IconButton size="small" aria-label={tr("Xóa từ khóa tìm kiếm", "Clear search query")} onClick={() => setQuery("")}>
                     <X size={16} aria-hidden />
                   </IconButton>
                 </InputAdornment>
@@ -204,20 +222,28 @@ export default function Explore() {
             scrollButtons="auto"
             sx={{ mb: 2.5, borderBottom: "1px solid", borderColor: "divider" }}
           >
-            <Tab icon={<Sparkles size={16} aria-hidden />} iconPosition="start" label={`Gợi ý cho bạn (${recommendations.length})`} />
+            <Tab
+              icon={<Sparkles size={16} aria-hidden />}
+              iconPosition="start"
+              label={tr(`Gợi ý cho bạn (${recommendations.length})`, `Suggestions for you (${recommendations.length})`)}
+            />
             <Tab
               icon={<UserPlus size={16} aria-hidden />}
               iconPosition="start"
               label={
                 <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}>
-                  <span>Lời mời kết bạn</span>
+                  <span>{tr("Lời mời kết bạn", "Friend Requests")}</span>
                   {receivedRequests.length > 0 && (
                     <Chip label={receivedRequests.length} size="small" color="error" sx={{ height: 20, fontWeight: 700 }} />
                   )}
                 </Box>
               }
             />
-            <Tab icon={<Users size={16} aria-hidden />} iconPosition="start" label={`Bạn bè (${friends.length})`} />
+            <Tab
+              icon={<Users size={16} aria-hidden />}
+              iconPosition="start"
+              label={tr(`Bạn bè (${friends.length})`, `Friends (${friends.length})`)}
+            />
           </Tabs>
         )}
 
@@ -232,21 +258,21 @@ export default function Explore() {
             icon={isSearchingMode ? <Search size={24} /> : tab === 0 ? <Sparkles size={24} /> : tab === 1 ? <UserCheck size={24} /> : <Users size={24} />}
             title={
               isSearchingMode
-                ? `Không tìm thấy “${query.trim()}”`
+                ? tr(`Không tìm thấy “${query.trim()}”`, `No results for “${query.trim()}”`)
                 : tab === 0
-                  ? "Chưa có gợi ý kết bạn mới"
+                  ? tr("Chưa có gợi ý kết bạn mới", "No new friend suggestions")
                   : tab === 1
-                    ? "Không có lời mời kết bạn"
-                    : "Chưa có bạn bè nào"
+                    ? tr("Không có lời mời kết bạn", "No friend requests")
+                    : tr("Chưa có bạn bè nào", "No friends yet")
             }
             description={
               isSearchingMode
-                ? "Hãy thử tìm bằng tên hiển thị khác hoặc kiểm tra lại chính tả."
+                ? tr("Hãy thử tìm bằng tên hiển thị khác hoặc kiểm tra lại chính tả.", "Try searching with a different display name or check your spelling.")
                 : tab === 0
-                  ? "Hãy bật định vị quanh đây hoặc sử dụng ô tìm kiếm phía trên để kết nối với bạn bè."
+                  ? tr("Hãy bật định vị quanh đây hoặc sử dụng ô tìm kiếm phía trên để kết nối với bạn bè.", "Enable nearby location or use the search box above to connect with friends.")
                   : tab === 1
-                    ? "Khi có người gửi lời mời kết bạn hoặc bạn gửi lời mời mới, danh sách sẽ hiển thị tại đây."
-                    : "Hãy chuyển sang tab Gợi ý cho bạn để kết nối và trò chuyện cùng mọi người."
+                    ? tr("Khi có người gửi lời mời kết bạn hoặc bạn gửi lời mời mới, danh sách sẽ hiển thị tại đây.", "When someone sends you a friend request or you send a new one, it will appear here.")
+                    : tr("Hãy chuyển sang tab Gợi ý cho bạn để kết nối và trò chuyện cùng mọi người.", "Switch to the Suggestions tab to connect and chat with people.")
             }
           />
         ) : (

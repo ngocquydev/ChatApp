@@ -6,6 +6,7 @@ import { Alert, Box, Button, LinearProgress, Link, List, ListItem, Skeleton, Typ
 import { Check, Clock, SearchX, UserPlus } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import EmptyState from "@/components/common/EmptyState";
+import { useTranslation } from "@/i18n/useTranslation";
 import { UserRelationResult } from "@/store/useFriendStore";
 
 /** Số kết quả hiện trước khi bấm "Xem tất cả" */
@@ -38,6 +39,7 @@ function ResultRow({
 }: Pick<UserSearchResultsProps, "onSendRequest" | "onCancelRequest" | "onRespond" | "onMessage"> & {
   user: UserRelationResult;
 }) {
+  const { tr } = useTranslation();
   return (
     <ListItem
       sx={{
@@ -56,7 +58,7 @@ function ResultRow({
         href={`/profile/${user._id}`}
         underline="none"
         color="inherit"
-        aria-label={`Xem trang cá nhân của ${user.name}`}
+        aria-label={tr(`Xem trang cá nhân của ${user.name}`, `View ${user.name}'s profile`)}
         sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0, flex: 1 }}
       >
         <PresenceAvatar name={user.name} src={user.avatar} size={38} hidePresence />
@@ -65,7 +67,7 @@ function ResultRow({
             {user.name}
           </Typography>
           <Typography variant="caption" noWrap color="text.secondary" sx={{ display: "block" }}>
-            {user.bio || "Thành viên"}
+            {user.bio || tr("Thành viên", "Member")}
           </Typography>
         </Box>
       </Link>
@@ -79,7 +81,7 @@ function ResultRow({
             onClick={() => onSendRequest(user._id)}
             sx={{ fontSize: "0.75rem", py: 0.4 }}
           >
-            Kết bạn
+            {tr("Kết bạn", "Add friend")}
           </Button>
         )}
         {user.relationStatus === "pending_sent" && (
@@ -91,7 +93,7 @@ function ResultRow({
             onClick={() => user.requestId && onCancelRequest(user.requestId)}
             sx={{ fontSize: "0.72rem", py: 0.4, color: "text.secondary" }}
           >
-            Đã gửi (Hủy)
+            {tr("Đã gửi (Hủy)", "Requested (Cancel)")}
           </Button>
         )}
         {user.relationStatus === "pending_received" && (
@@ -103,7 +105,7 @@ function ResultRow({
               onClick={() => user.requestId && onRespond(user.requestId, "accept")}
               sx={{ fontSize: "0.72rem", py: 0.3, px: 1 }}
             >
-              Chấp nhận
+              {tr("Chấp nhận", "Accept")}
             </Button>
             <Button
               size="small"
@@ -112,7 +114,7 @@ function ResultRow({
               onClick={() => user.requestId && onRespond(user.requestId, "reject")}
               sx={{ fontSize: "0.72rem", py: 0.3, px: 0.8 }}
             >
-              Từ chối
+              {tr("Từ chối", "Decline")}
             </Button>
           </Box>
         )}
@@ -123,7 +125,7 @@ function ResultRow({
             onClick={() => onMessage(user)}
             sx={{ fontSize: "0.75rem", py: 0.4 }}
           >
-            Nhắn tin
+            {tr("Nhắn tin", "Message")}
           </Button>
         )}
       </Box>
@@ -132,8 +134,9 @@ function ResultRow({
 }
 
 function SkeletonRows({ count }: { count: number }) {
+  const { tr } = useTranslation();
   return (
-    <Box aria-busy="true" aria-label="Đang tìm kiếm người dùng" sx={{ py: 0.5 }}>
+    <Box aria-busy="true" aria-label={tr("Đang tìm kiếm người dùng", "Searching users")} sx={{ py: 0.5 }}>
       {Array.from({ length: count }).map((_, i) => (
         <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 1, py: 1 }}>
           <Skeleton variant="circular" width={38} height={38} />
@@ -168,6 +171,7 @@ export default function UserSearchResults({
   onRespond,
   onMessage,
 }: UserSearchResultsProps) {
+  const { tr } = useTranslation();
   // Khung cuộn là root của IntersectionObserver
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -209,7 +213,7 @@ export default function UserSearchResults({
               severity="error"
               action={
                 <Button color="inherit" size="small" onClick={onRetry}>
-                  Thử lại
+                  {tr("Thử lại", "Retry")}
                 </Button>
               }
             >
@@ -219,19 +223,19 @@ export default function UserSearchResults({
             <EmptyState
               compact
               icon={<SearchX size={26} />}
-              title="Không tìm thấy ai"
-              description={`Không có người dùng nào khớp với “${query}”.`}
+              title={tr("Không tìm thấy ai", "No users found")}
+              description={tr(`Không có người dùng nào khớp với “${query}”.`, `No users matched “${query}”.`)}
             />
           )
         ) : (
           <>
             <Box sx={{ px: 1, mb: 1 }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
-                KẾT QUẢ TÌM KIẾM ({results.length}
+                {tr("KẾT QUẢ TÌM KIẾM", "SEARCH RESULTS")} ({results.length}
                 {hasMore ? "+" : ""})
               </Typography>
             </Box>
-            <List disablePadding aria-label="Kết quả tìm kiếm người dùng">
+            <List disablePadding aria-label={tr("Kết quả tìm kiếm người dùng", "User search results")}>
               {visible.map((u) => (
                 <ResultRow
                   key={u._id}
@@ -246,7 +250,7 @@ export default function UserSearchResults({
 
             {showExpandButton && (
               <Button fullWidth size="small" onClick={onExpand} sx={{ mt: 0.5, fontWeight: 700 }}>
-                Xem tất cả kết quả
+                {tr("Xem tất cả kết quả", "See all results")}
               </Button>
             )}
 
@@ -261,7 +265,7 @@ export default function UserSearchResults({
                     sx={{ mt: 1 }}
                     action={
                       <Button color="inherit" size="small" onClick={onRetry}>
-                        Thử lại
+                        {tr("Thử lại", "Retry")}
                       </Button>
                     }
                   >
@@ -270,7 +274,7 @@ export default function UserSearchResults({
                 )}
                 {!hasMore && !isSearchingMore && !error && (
                   <Typography variant="caption" color="text.secondary" sx={{ display: "block", textAlign: "center", py: 1 }}>
-                    Đã hiển thị tất cả kết quả
+                    {tr("Đã hiển thị tất cả kết quả", "All results shown")}
                   </Typography>
                 )}
               </>

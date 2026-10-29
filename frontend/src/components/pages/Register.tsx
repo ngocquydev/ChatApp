@@ -38,66 +38,81 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import useSocialAuth from "../../hooks/useSocialAuth";
-import registerData from "@/data/registerData";
+import { getRegisterData } from "@/data/registerData";
 import { GoogleIcon, FacebookIcon } from "../common/SocialIcons";
 import ColorModeToggle from "../common/ColorModeToggle";
+import LanguageToggle from "../common/LanguageToggle";
 import BrandLogo from "../common/BrandLogo";
+import { useTranslation } from "@/i18n/useTranslation";
 
-const registerSchema = z
-  .object({
-    name: z
-      .string()
-      .min(1, "Vui lòng nhập họ và tên")
-      .min(2, "Họ và tên phải có ít nhất 2 ký tự")
-      .regex(/^[a-zA-Z0-9À-ỹ\s._-]+$/, "Tên không được chứa ký tự đặc biệt không hợp lệ"),
+function createRegisterSchema(tr: (viText: string, enText: string) => string) {
+  return z
+    .object({
+      name: z
+        .string()
+        .min(1, tr("Vui lòng nhập họ và tên", "Please enter your full name"))
+        .min(2, tr("Họ và tên phải có ít nhất 2 ký tự", "Full name must be at least 2 characters"))
+        .regex(/^[a-zA-Z0-9À-ỹ\s._-]+$/, tr("Tên không được chứa ký tự đặc biệt không hợp lệ", "Name must not contain invalid special characters")),
 
-    email: z
-      .string()
-      .min(1, "Vui lòng nhập địa chỉ email")
-      .email("Định dạng email không hợp lệ"),
+      email: z
+        .string()
+        .min(1, tr("Vui lòng nhập địa chỉ email", "Please enter your email address"))
+        .email(tr("Định dạng email không hợp lệ", "Invalid email format")),
 
-    phone: z
-      .string()
-      .optional()
-      .refine(
-        (val) => !val || /^(0[3|5|7|8|9])+([0-9]{8})$/.test(val),
-        "Số điện thoại không hợp lệ (Ví dụ: 0987654321)"
-      ),
+      phone: z
+        .string()
+        .optional()
+        .refine(
+          (val) => !val || /^(0[3|5|7|8|9])+([0-9]{8})$/.test(val),
+          tr("Số điện thoại không hợp lệ (Ví dụ: 0987654321)", "Invalid phone number (e.g., 0987654321)")
+        ),
 
-    dateOfBirth: z
-      .string()
-      .optional()
-      .refine(
-        (val) => {
-          if (!val) return true;
-          const date = new Date(val);
-          const now = new Date();
-          return !isNaN(date.getTime()) && date <= now;
-        },
-        "Ngày sinh không hợp lệ hoặc không thể ở tương lai"
-      ),
+      dateOfBirth: z
+        .string()
+        .optional()
+        .refine(
+          (val) => {
+            if (!val) return true;
+            const date = new Date(val);
+            const now = new Date();
+            return !isNaN(date.getTime()) && date <= now;
+          },
+          tr("Ngày sinh không hợp lệ hoặc không thể ở tương lai", "Invalid date of birth or cannot be in the future")
+        ),
 
-    password: z
-      .string()
-      .min(1, "Vui lòng nhập mật khẩu")
-      .min(8, "Mật khẩu phải chứa ít nhất 8 ký tự")
-      .regex(/[a-z]/, "Mật khẩu phải chứa ít nhất một chữ cái thường")
-      .regex(/[A-Z]/, "Mật khẩu phải chứa ít nhất một chữ cái hoa")
-      .regex(/[0-9]/, "Mật khẩu phải chứa ít nhất một chữ số")
-      .regex(/[^a-zA-Z0-9]/, "Mật khẩu phải chứa ít nhất một ký tự đặc biệt"),
+      password: z
+        .string()
+        .min(1, tr("Vui lòng nhập mật khẩu", "Please enter your password"))
+        .min(8, tr("Mật khẩu phải chứa ít nhất 8 ký tự", "Password must be at least 8 characters"))
+        .regex(/[a-z]/, tr("Mật khẩu phải chứa ít nhất một chữ cái thường", "Password must contain at least one lowercase letter"))
+        .regex(/[A-Z]/, tr("Mật khẩu phải chứa ít nhất một chữ cái hoa", "Password must contain at least one uppercase letter"))
+        .regex(/[0-9]/, tr("Mật khẩu phải chứa ít nhất một chữ số", "Password must contain at least one digit"))
+        .regex(/[^a-zA-Z0-9]/, tr("Mật khẩu phải chứa ít nhất một ký tự đặc biệt", "Password must contain at least one special character")),
 
-    confirmPassword: z.string().min(1, "Vui lòng xác nhận mật khẩu"),
+      confirmPassword: z.string().min(1, tr("Vui lòng xác nhận mật khẩu", "Please confirm your password")),
 
-    terms: z.boolean().refine((val) => val === true, {
-      message: "Bạn cần đồng ý với Điều khoản dịch vụ và Chính sách bảo mật",
-    }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Mật khẩu xác nhận không khớp!",
-    path: ["confirmPassword"],
-  });
+      terms: z.boolean().refine((val) => val === true, {
+        message: tr(
+          "Bạn cần đồng ý với Điều khoản dịch vụ và Chính sách bảo mật",
+          "You must agree to the Terms of Service and Privacy Policy"
+        ),
+      }),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: tr("Mật khẩu xác nhận không khớp!", "Confirmation password does not match!"),
+      path: ["confirmPassword"],
+    });
+}
 
-type RegisterFormData = z.infer<typeof registerSchema>;
+type RegisterFormData = {
+  name: string;
+  email: string;
+  phone?: string;
+  dateOfBirth?: string;
+  password: string;
+  confirmPassword: string;
+  terms: boolean;
+};
 
 function SmoothTypewriter({
   words = ["Bắt đầu hành trình mới!"],
@@ -159,6 +174,8 @@ function SmoothTypewriter({
 }
 
 export default function Register() {
+  const { language, tr } = useTranslation();
+  const registerData = getRegisterData(language);
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -186,7 +203,7 @@ export default function Register() {
     watch,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(createRegisterSchema(tr)),
     defaultValues: {
       name: "",
       email: "",
@@ -209,9 +226,9 @@ export default function Register() {
     if (/[0-9]/.test(pwd)) score += 20;
     if (/[^a-zA-Z0-9]/.test(pwd)) score += 20;
 
-    if (score <= 40) return { score, label: "Yếu", color: "var(--mui-palette-tone-ef4444)" };
-    if (score <= 80) return { score, label: "Trung bình", color: "var(--mui-palette-tone-f59e0b)" };
-    return { score, label: "Rất mạnh", color: "var(--mui-palette-tone-10b981)" };
+    if (score <= 40) return { score, label: tr("Yếu", "Weak"), color: "var(--mui-palette-tone-ef4444)" };
+    if (score <= 80) return { score, label: tr("Trung bình", "Medium"), color: "var(--mui-palette-tone-f59e0b)" };
+    return { score, label: tr("Rất mạnh", "Very strong"), color: "var(--mui-palette-tone-10b981)" };
   };
 
   const strength = calculatePasswordStrength(watchedPassword || "");
@@ -243,7 +260,7 @@ export default function Register() {
       setAlertInfo({
         open: true,
         type: "success",
-        message: "Đăng ký tài khoản thành công! Đang chuyển hướng...",
+        message: tr("Đăng ký tài khoản thành công! Đang chuyển hướng...", "Account created successfully! Redirecting..."),
       });
 
       setTimeout(() => {
@@ -252,7 +269,7 @@ export default function Register() {
     } catch (err: unknown) {
       console.error("Lỗi đăng ký:", err);
       const error = err as { response?: { data?: { message?: string | string[] } }; message?: string };
-      let message = "Đăng ký không thành công. Vui lòng kiểm tra lại thông tin!";
+      let message = tr("Đăng ký không thành công. Vui lòng kiểm tra lại thông tin!", "Registration failed. Please check your information!");
       if (error.response?.data?.message) {
         message = Array.isArray(error.response.data.message)
           ? error.response.data.message.join(", ")
@@ -278,7 +295,11 @@ export default function Register() {
     onError: (message) =>
       setAlertInfo({
         open: true,
-        type: message === "Email này đã được đăng ký" ? "warning" : "error",
+        type:
+          message === "Email này đã được đăng ký" ||
+          message === "This email is already registered"
+            ? "warning"
+            : "error",
         message,
       }),
   });
@@ -477,7 +498,7 @@ export default function Register() {
                 {registerData.position}
               </Typography>
               <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                Gia nhập ngay để trải nghiệm nền tảng
+                {tr("Gia nhập ngay để trải nghiệm nền tảng", "Join now to experience the platform")}
               </Typography>
             </Box>
           </Box>
@@ -497,9 +518,19 @@ export default function Register() {
           position: "relative",
         }}
       >
-        <ColorModeToggle
-          sx={{ position: "absolute", top: 12, right: 12, color: "text.secondary" }}
-        />
+        <Box
+          sx={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <LanguageToggle />
+          <ColorModeToggle sx={{ color: "text.secondary" }} />
+        </Box>
         <Box sx={{ width: "100%", maxWidth: { xs: "100%", sm: 480 } }}>
           {/* Logo hiển thị trên mobile */}
           <Box sx={{ display: { xs: "flex", md: "none" }, justifyContent: "center", mb: 3 }}>
@@ -781,7 +812,9 @@ export default function Register() {
                           onClick={() => setShowPassword((prev) => !prev)}
                           edge="end"
                           aria-label={
-                            showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"
+                            showPassword
+                              ? tr("Ẩn mật khẩu", "Hide password")
+                              : tr("Hiện mật khẩu", "Show password")
                           }
                         >
                           {showPassword ? (
@@ -827,7 +860,7 @@ export default function Register() {
                     }}
                   >
                     <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)" }}>
-                      Độ mạnh:
+                      {tr("Độ mạnh:", "Strength:")}
                     </Typography>
                     <Typography
                       variant="caption"
@@ -890,8 +923,8 @@ export default function Register() {
                           edge="end"
                           aria-label={
                             showConfirmPassword
-                              ? "Ẩn mật khẩu"
-                              : "Hiện mật khẩu"
+                              ? tr("Ẩn mật khẩu", "Hide password")
+                              : tr("Hiện mật khẩu", "Show password")
                           }
                         >
                           {showConfirmPassword ? (
@@ -999,7 +1032,7 @@ export default function Register() {
               }}
             >
               {isSubmitting || isLoggingIn
-                ? "Đang tạo tài khoản..."
+                ? tr("Đang tạo tài khoản...", "Creating account...")
                 : registerData.form.registerButton}
             </Button>
 
@@ -1047,7 +1080,7 @@ export default function Register() {
                   },
                 }}
               >
-                {isGoogleLoading ? "Đang xử lý..." : registerData.form.googleButton}
+                {isGoogleLoading ? tr("Đang xử lý...", "Processing...") : registerData.form.googleButton}
               </Button>
 
               <Button
@@ -1078,7 +1111,7 @@ export default function Register() {
                   },
                 }}
               >
-                {isFacebookLoading ? "Đang xử lý..." : registerData.form.facebookButton}
+                {isFacebookLoading ? tr("Đang xử lý...", "Processing...") : registerData.form.facebookButton}
               </Button>
             </Box>
 

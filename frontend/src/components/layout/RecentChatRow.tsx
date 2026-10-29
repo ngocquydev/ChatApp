@@ -3,28 +3,41 @@
 import { Box, ButtonBase, IconButton, Typography } from "@mui/material";
 import { MoreHorizontal } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
+import { useLanguageStore } from "@/i18n/useLanguageStore";
+import { useTranslation } from "@/i18n/useTranslation";
 import { ConversationItem } from "@/store/useChatStore";
 
 const CLOUDINARY_MEDIA_RE = /^https:\/\/res\.cloudinary\.com\/.+\/(image|video)\/upload\/.+$/i;
 
 export function formatChatPreview(text?: string, isDeleted?: boolean): string {
-  if (isDeleted) return "Tin nhắn đã bị thu hồi";
-  if (!text) return "Chưa có tin nhắn";
+  const isEn = useLanguageStore.getState().language === "en";
+  if (isDeleted) return isEn ? "Message unsent" : "Tin nhắn đã bị thu hồi";
+  if (!text) return isEn ? "No messages yet" : "Chưa có tin nhắn";
   const match = text.trim().match(CLOUDINARY_MEDIA_RE);
-  if (match) return match[1].toLowerCase() === "video" ? "🎬 Đã gửi một video" : "📷 Đã gửi một hình ảnh";
+  if (match) {
+    if (match[1].toLowerCase() === "video") {
+      return isEn ? "🎬 Sent a video" : "🎬 Đã gửi một video";
+    }
+    return isEn ? "📷 Sent a photo" : "📷 Đã gửi một hình ảnh";
+  }
   return text;
 }
 
 export function formatChatShortTime(iso?: string): string {
   if (!iso) return "";
+  const isEn = useLanguageStore.getState().language === "en";
   const date = new Date(iso);
   const diffMin = Math.floor((Date.now() - date.getTime()) / 60000);
-  if (diffMin < 1) return "Vừa xong";
-  if (diffMin < 60) return `${diffMin} phút`;
+  if (diffMin < 1) return isEn ? "Just now" : "Vừa xong";
+  if (diffMin < 60) return isEn ? `${diffMin}m` : `${diffMin} phút`;
   const diffHours = Math.floor(diffMin / 60);
   if (diffHours < 24) return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const diffDays = Math.floor(diffHours / 24);
-  return diffDays < 7 ? `${diffDays} ngày` : date.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
+  return diffDays < 7
+    ? isEn
+      ? `${diffDays}d`
+      : `${diffDays} ngày`
+    : date.toLocaleDateString(isEn ? "en-US" : "vi-VN", { day: "2-digit", month: "2-digit" });
 }
 
 interface RecentChatRowProps {
@@ -46,6 +59,7 @@ export default function RecentChatRow({
   onSelect,
   onOpenMenu,
 }: RecentChatRowProps) {
+  const { tr } = useTranslation();
   const other = conv.participants.find((p) => String(p._id || p.id) !== currentUserId) || conv.participants[0];
   const isSentByMe = String(conv.lastMessage?.senderId || "") === currentUserId;
   const preview = formatChatPreview(conv.lastMessage?.text, conv.lastMessage?.isDeleted);
@@ -66,7 +80,7 @@ export default function RecentChatRow({
     >
       <ButtonBase
         component="div"
-        aria-label={`Mở đoạn chat với ${other?.name || "Người dùng"}`}
+        aria-label={tr(`Mở đoạn chat với ${other?.name || "Người dùng"}`, `Open chat with ${other?.name || "User"}`)}
         onClick={() => onSelect(conv)}
         sx={{
           flex: 1,
@@ -82,7 +96,7 @@ export default function RecentChatRow({
         <PresenceAvatar name={other?.name} src={other?.avatar} size={50} online={isOnline} />
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="subtitle2" noWrap sx={{ fontWeight: isUnread ? 700 : 600, fontSize: "0.92rem" }}>
-            {other?.name || "Người dùng"}
+            {other?.name || tr("Người dùng", "User")}
           </Typography>
           <Typography
             variant="body2"
@@ -94,7 +108,7 @@ export default function RecentChatRow({
               fontStyle: conv.lastMessage?.isDeleted ? "italic" : "normal",
             }}
           >
-            {conv.lastMessage && isSentByMe && !conv.lastMessage.isDeleted ? `Bạn: ${preview}` : preview}
+            {conv.lastMessage && isSentByMe && !conv.lastMessage.isDeleted ? `${tr("Bạn", "You")}: ${preview}` : preview}
             {timeStr ? ` · ${timeStr}` : ""}
           </Typography>
         </Box>
@@ -105,7 +119,7 @@ export default function RecentChatRow({
         <IconButton
           className="conv-more-btn"
           size="small"
-          aria-label={`Tùy chọn đoạn chat với ${other?.name || "Người dùng"}`}
+          aria-label={tr(`Tùy chọn đoạn chat với ${other?.name || "Người dùng"}`, `Chat options for ${other?.name || "User"}`)}
           onClick={(e) => {
             e.stopPropagation();
             onOpenMenu(e.currentTarget, conv);
@@ -127,7 +141,7 @@ export default function RecentChatRow({
 
         {isUnread && (
           <Box
-            aria-label="Chưa đọc"
+            aria-label={tr("Chưa đọc", "Unread")}
             sx={{
               width: 10,
               height: 10,

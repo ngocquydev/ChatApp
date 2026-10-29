@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
+import { useTranslation } from "@/i18n/useTranslation";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -21,11 +22,12 @@ export default function ConfirmDialog({
   title,
   description,
   confirmLabel,
-  cancelLabel = "Giữ lại",
+  cancelLabel,
   pending = false,
   onConfirm,
   onClose,
 }: ConfirmDialogProps) {
+  const { tr } = useTranslation();
   return (
     <Dialog
       open={open}
@@ -43,10 +45,10 @@ export default function ConfirmDialog({
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={pending} color="inherit">
-          {cancelLabel}
+          {cancelLabel ?? tr("Giữ lại", "Cancel")}
         </Button>
         <Button onClick={onConfirm} disabled={pending} color="error" variant="contained">
-          {pending ? "Đang xử lý…" : confirmLabel}
+          {pending ? tr("Đang xử lý…", "Processing…") : confirmLabel}
         </Button>
       </DialogActions>
     </Dialog>

@@ -34,6 +34,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
+import { useTranslation } from "@/i18n/useTranslation";
 import {
   useFriendStore,
   UserRelationResult,
@@ -58,6 +59,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
   const [searchFriend, setSearchFriend] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [geoNotice, setGeoNotice] = useState<string | null>(null);
+  const { tr } = useTranslation();
 
   const {
     friends,
@@ -95,7 +97,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
   const handleRequestLocation = () => {
     setGeoNotice(null);
     if (typeof window === "undefined" || !navigator.geolocation) {
-      setGeoNotice("Trình duyệt của bạn không hỗ trợ định vị vị trí.");
+      setGeoNotice(tr("Trình duyệt của bạn không hỗ trợ định vị vị trí.", "Your browser does not support geolocation."));
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -105,7 +107,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
       },
       (err) => {
         console.warn("Không thể lấy tọa độ hiện tại:", err);
-        setGeoNotice("Không lấy được vị trí hiện tại. Đang hiển thị gợi ý mặc định.");
+        setGeoNotice(tr("Không lấy được vị trí hiện tại. Đang hiển thị gợi ý mặc định.", "Could not get current location. Showing default suggestions."));
         fetchRecommendations();
       },
       { timeout: 10000, enableHighAccuracy: true }
@@ -201,12 +203,12 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
           <Tab
             icon={<Users size={16} />}
             iconPosition="start"
-            label={`Bạn bè (${friends.length})`}
+            label={tr(`Bạn bè (${friends.length})`, `Friends (${friends.length})`)}
           />
           <Tab
             icon={<UserPlus size={16} />}
             iconPosition="start"
-            label="Tìm bạn"
+            label={tr("Tìm bạn", "Find Friends")}
           />
         </Tabs>
       </Box>
@@ -224,7 +226,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
             }}
           >
             <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-500)" }}>
-              NGƯỜI LIÊN HỆ
+              {tr("NGƯỜI LIÊN HỆ", "CONTACTS")}
             </Typography>
             <Box
               sx={{
@@ -248,7 +250,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
           <TextField
             fullWidth
             size="small"
-            placeholder="Tìm trong danh sách bạn..."
+            placeholder={tr("Tìm trong danh sách bạn...", "Search in friends list...")}
             value={searchFriend}
             onChange={(e) => setSearchFriend(e.target.value)}
             sx={{
@@ -302,10 +304,10 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
               <Box sx={{ textAlign: "center", py: 4, px: 2 }}>
                 <Users size={36} color="var(--mui-palette-neutral-400)" style={{ marginBottom: 8 }} />
                 <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-600)", mb: 0.5 }}>
-                  Chưa có bạn bè nào
+                  {tr("Chưa có bạn bè nào", "No friends yet")}
                 </Typography>
                 <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", display: "block", mb: 2 }}>
-                  Hãy tìm kiếm bạn bè trên hệ thống để kết nối và trò chuyện!
+                  {tr("Hãy tìm kiếm bạn bè trên hệ thống để kết nối và trò chuyện!", "Search for friends on the platform to connect and chat!")}
                 </Typography>
                 <Button
                   variant="outlined"
@@ -314,7 +316,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   onClick={() => setActiveTab(1)}
                   sx={{ textTransform: "none", borderRadius: "8px", fontWeight: 600 }}
                 >
-                  Tìm bạn ngay
+                  {tr("Tìm bạn ngay", "Find friends now")}
                 </Button>
               </Box>
             )}
@@ -322,7 +324,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
             {!isLoadingFriends && friends.length > 0 && filteredFriends.length === 0 && (
               <Box sx={{ textAlign: "center", py: 3 }}>
                 <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                  Không tìm thấy bạn bè khớp với &quot;{searchFriend}&quot;
+                  {tr(`Không tìm thấy bạn bè khớp với "${searchFriend}"`, `No friends matching "${searchFriend}"`)}
                 </Typography>
               </Box>
             )}
@@ -337,7 +339,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   <ButtonBase
                     component="div"
                     key={f.friendshipId || friend._id}
-                    aria-label={`Trò chuyện với ${friend.name}`}
+                    aria-label={tr(`Trò chuyện với ${friend.name}`, `Chat with ${friend.name}`)}
                     onClick={() => handleStartChat(friend)}
                     sx={{
                       width: "100%",
@@ -379,14 +381,14 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                           fontWeight: isOnline ? 600 : 400,
                         }}
                       >
-                        {isOnline ? "Đang hoạt động" : "Ngoại tuyến"}
+                        {isOnline ? tr("Đang hoạt động", "Online") : tr("Ngoại tuyến", "Offline")}
                       </Typography>
                     </Box>
 
-                    <Tooltip title="Nhắn tin">
+                    <Tooltip title={tr("Nhắn tin", "Message")}>
                       <IconButton
                         size="small"
-                        aria-label={`Nhắn tin với ${friend.name}`}
+                        aria-label={tr(`Nhắn tin với ${friend.name}`, `Message ${friend.name}`)}
                         sx={{ color: "var(--mui-palette-brand-500)" }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -410,7 +412,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
             <TextField
               fullWidth
               size="small"
-              placeholder="Nhập tên người dùng cần tìm…"
+              placeholder={tr("Nhập tên người dùng cần tìm…", "Enter username to search…")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{
@@ -483,10 +485,12 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                     <Compass size={20} color="var(--mui-palette-brand-600)" />
                     <Box sx={{ flex: 1 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--mui-palette-brand-900)", fontSize: "0.82rem" }}>
-                        Tìm bạn bè quanh đây
+                        {tr("Tìm bạn bè quanh đây", "Find friends nearby")}
                       </Typography>
                       <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-600)", fontSize: "0.72rem", display: "block" }}>
-                        {userLocation ? "Đã định vị vị trí hiện tại của bạn" : "Ưu tiên người ở gần, có bạn chung & uy tín"}
+                        {userLocation
+                          ? tr("Đã định vị vị trí hiện tại của bạn", "Current location detected")
+                          : tr("Ưu tiên người ở gần, có bạn chung & uy tín", "Prioritizes nearby people, mutual friends & trusted users")}
                       </Typography>
                     </Box>
                   </Box>
@@ -508,7 +512,11 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       "&:hover": { bgcolor: "var(--mui-palette-brand-700)" },
                     }}
                   >
-                    {isLocating ? "Đang định vị…" : (userLocation ? "Cập nhật lại vị trí" : "Bật định vị & Gợi ý quanh đây")}
+                    {isLocating
+                      ? tr("Đang định vị…", "Locating…")
+                      : userLocation
+                      ? tr("Cập nhật lại vị trí", "Update location")
+                      : tr("Bật định vị & Gợi ý quanh đây", "Enable location & Nearby suggestions")}
                   </Button>
                   {geoNotice && (
                     <Alert severity="info" onClose={() => setGeoNotice(null)} sx={{ py: 0, px: 1, fontSize: "0.72rem" }}>
@@ -534,11 +542,11 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       noWrap
                       sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.85rem" }}
                     >
-                      Những người bạn có thể biết
+                      {tr("Những người bạn có thể biết", "People you may know")}
                     </Typography>
                   </Box>
                   <Chip
-                    label={`${recommendations.length} gợi ý`}
+                    label={tr(`${recommendations.length} gợi ý`, `${recommendations.length} suggestions`)}
                     size="small"
                     sx={{
                       height: 20,
@@ -561,7 +569,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                 {!isLoadingRecommendations && recommendations.length === 0 && (
                   <Box sx={{ textAlign: "center", py: 3, px: 2 }}>
                     <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                      Chưa có gợi ý nào mới. Hãy thử bật định vị hoặc tìm kiếm theo tên!
+                      {tr("Chưa có gợi ý nào mới. Hãy thử bật định vị hoặc tìm kiếm theo tên!", "No new suggestions yet. Try enabling location or searching by name!")}
                     </Typography>
                   </Box>
                 )}
@@ -589,7 +597,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       <ButtonBase
                         component={NextLink}
                         href={`/profile/${rec._id}`}
-                        aria-label={`Xem trang cá nhân của ${rec.name}`}
+                        aria-label={tr(`Xem trang cá nhân của ${rec.name}`, `View ${rec.name}'s profile`)}
                         sx={{ borderRadius: "50%", flexShrink: 0 }}
                       >
                         <PresenceAvatar
@@ -638,7 +646,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                               }}
                             >
                               <Users size={12} />
-                              <span>{rec.mutualFriendsCount} bạn chung</span>
+                              <span>{tr(`${rec.mutualFriendsCount} bạn chung`, `${rec.mutualFriendsCount} mutual friends`)}</span>
                             </Box>
                           )}
 
@@ -684,7 +692,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                               }}
                             >
                               <ShieldCheck size={12} />
-                              <span>Tài khoản uy tín</span>
+                              <span>{tr("Tài khoản uy tín", "Trusted account")}</span>
                             </Box>
                           )}
                         </Box>
@@ -711,12 +719,12 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                               "&:hover": { bgcolor: "var(--mui-palette-brand-700)" },
                             }}
                           >
-                            Kết bạn
+                            {tr("Kết bạn", "Add friend")}
                           </Button>
                         )}
 
                         {rec.relationStatus === "pending_sent" && (
-                          <Tooltip title="Nhấp để hủy lời mời">
+                          <Tooltip title={tr("Nhấp để hủy lời mời", "Click to cancel request")}>
                             <Button
                               size="small"
                               variant="outlined"
@@ -734,7 +742,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              Đã gửi
+                              {tr("Đã gửi", "Requested")}
                             </Button>
                           </Tooltip>
                         )}
@@ -756,7 +764,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                               whiteSpace: "nowrap",
                             }}
                           >
-                            Nhắn tin
+                            {tr("Nhắn tin", "Message")}
                           </Button>
                         )}
                       </Box>
@@ -769,7 +777,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
               <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 4, gap: 1 }}>
                 <CircularProgress size={20} />
                 <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                  Đang tìm kiếm người dùng...
+                  {tr("Đang tìm kiếm người dùng...", "Searching users...")}
                 </Typography>
               </Box>
             )}
@@ -777,7 +785,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
             {searchQuery.trim() && !isSearching && searchResults.length === 0 && (
               <Box sx={{ textAlign: "center", py: 4 }}>
                 <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-400)" }}>
-                  Không tìm thấy người dùng nào phù hợp với &quot;{searchQuery}&quot;
+                  {tr(`Không tìm thấy người dùng nào phù hợp với "${searchQuery}"`, `No users found matching "${searchQuery}"`)}
                 </Typography>
               </Box>
             )}
@@ -798,7 +806,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                 <ButtonBase
                   component={NextLink}
                   href={`/profile/${user._id}`}
-                  aria-label={`Xem trang cá nhân của ${user.name}`}
+                  aria-label={tr(`Xem trang cá nhân của ${user.name}`, `View ${user.name}'s profile`)}
                   sx={{ borderRadius: "50%", flexShrink: 0 }}
                 >
                   <PresenceAvatar
@@ -831,7 +839,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                     noWrap
                     sx={{ color: "var(--mui-palette-neutral-500)", display: "block", fontSize: "0.74rem" }}
                   >
-                    {user.bio || "Thành viên"}
+                    {user.bio || tr("Thành viên", "Member")}
                   </Typography>
                 </Box>
 
@@ -856,12 +864,12 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         "&:hover": { bgcolor: "var(--mui-palette-brand-700)" },
                       }}
                     >
-                      Kết bạn
+                      {tr("Kết bạn", "Add friend")}
                     </Button>
                   )}
 
                   {user.relationStatus === "pending_sent" && (
-                    <Tooltip title="Nhấp để hủy lời mời">
+                    <Tooltip title={tr("Nhấp để hủy lời mời", "Click to cancel request")}>
                       <Button
                         size="small"
                         variant="outlined"
@@ -877,7 +885,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                           color: "var(--mui-palette-neutral-500)",
                         }}
                       >
-                        Đã gửi
+                        {tr("Đã gửi", "Requested")}
                       </Button>
                     </Tooltip>
                   )}
@@ -887,7 +895,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       <IconButton
                         size="small"
                         color="primary"
-                        aria-label={`Đồng ý kết bạn với ${user.name}`}
+                        aria-label={tr(`Đồng ý kết bạn với ${user.name}`, `Accept friend request from ${user.name}`)}
                         onClick={() => handleRespond(user.requestId || "", "accept")}
                         sx={{ bgcolor: "var(--mui-palette-brand-50)", p: 0.5 }}
                       >
@@ -896,7 +904,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                       <IconButton
                         size="small"
                         color="error"
-                        aria-label={`Từ chối kết bạn với ${user.name}`}
+                        aria-label={tr(`Từ chối kết bạn với ${user.name}`, `Decline friend request from ${user.name}`)}
                         onClick={() => handleRespond(user.requestId || "", "reject")}
                         sx={{ bgcolor: "var(--mui-palette-tone-fef2f2)", p: 0.5 }}
                       >
@@ -920,7 +928,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         borderRadius: "8px",
                       }}
                     >
-                      Nhắn tin
+                      {tr("Nhắn tin", "Message")}
                     </Button>
                   )}
                 </Box>

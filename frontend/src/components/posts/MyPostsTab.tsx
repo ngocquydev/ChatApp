@@ -2,6 +2,7 @@
 
 import { Alert, Button, Box } from "@mui/material";
 import { usePublicProfile } from "@/hooks/usePublicProfile";
+import { useTranslation } from "@/i18n/useTranslation";
 import { useAuthStore } from "@/store/useAuthStore";
 import ProfileTimeline from "./ProfileTimeline";
 
@@ -15,6 +16,7 @@ export default function MyPostsTab() {
 }
 
 function MyPostsTabContent({ userId }: { userId: string }) {
+  const { tr } = useTranslation();
   const { profile, status, error, reload } = usePublicProfile(userId);
   return (
     <Box>
@@ -24,7 +26,7 @@ function MyPostsTabContent({ userId }: { userId: string }) {
           sx={{ mb: 2 }}
           action={
             <Button color="inherit" size="small" onClick={reload}>
-              Thử lại
+              {tr("Thử lại", "Retry")}
             </Button>
           }
         >

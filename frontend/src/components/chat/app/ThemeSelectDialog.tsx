@@ -2,6 +2,7 @@
 
 import { Box, ButtonBase, Dialog, DialogContent, DialogTitle, IconButton, Typography } from "@mui/material";
 import { Check, Palette, X } from "lucide-react";
+import { useTranslation } from "@/i18n/useTranslation";
 import { CHAT_THEMES } from "./chatThemes";
 
 interface ThemeSelectDialogProps {
@@ -17,6 +18,7 @@ export default function ThemeSelectDialog({
   onSelectTheme,
   onClose,
 }: ThemeSelectDialogProps) {
+  const { tr } = useTranslation();
   const themesList = Object.values(CHAT_THEMES);
 
   return (
@@ -51,17 +53,20 @@ export default function ThemeSelectDialog({
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Palette size={20} color="var(--mui-palette-primary-main)" aria-hidden />
           <Typography variant="h6" component="span" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
-            Chủ đề cuộc trò chuyện
+            {tr("Chủ đề cuộc trò chuyện", "Chat Theme")}
           </Typography>
         </Box>
-        <IconButton onClick={onClose} size="small" aria-label="Đóng bảng chọn chủ đề">
+        <IconButton onClick={onClose} size="small" aria-label={tr("Đóng bảng chọn chủ đề", "Close theme selector")}>
           <X size={18} />
         </IconButton>
       </DialogTitle>
 
       <DialogContent sx={{ px: 2.5, pb: 2.5, pt: 0.5 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: "0.875rem" }}>
-          Chọn hình nền và bảng màu bong bóng tin nhắn cho cả hai người trong cuộc trò chuyện.
+          {tr(
+            "Chọn hình nền và bảng màu bong bóng tin nhắn cho cả hai người trong cuộc trò chuyện.",
+            "Choose a wallpaper and message bubble color palette for both participants in this conversation."
+          )}
         </Typography>
 
         <Box

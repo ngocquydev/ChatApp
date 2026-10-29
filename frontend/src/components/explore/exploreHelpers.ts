@@ -5,6 +5,7 @@ import {
   FriendRequestItem,
   UserRelationResult,
 } from "@/store/useFriendStore";
+import { useLanguageStore } from "@/i18n/useLanguageStore";
 
 export function buildExploreItems(params: {
   isSearchingMode: boolean;
@@ -15,7 +16,9 @@ export function buildExploreItems(params: {
   sentRequests: FriendRequestItem[];
   friends: FriendItem[];
   onlineUserIds: string[];
+  language?: string;
 }): ExploreCardData[] {
+  const isEn = (params.language ?? useLanguageStore.getState().language) === "en";
   const {
     isSearchingMode,
     tab,
@@ -66,7 +69,7 @@ export function buildExploreItems(params: {
               online: onlineUserIds.includes(req.requesterId._id),
               relationStatus: "pending_received" as const,
               requestId: req._id,
-              subtitle: "Đã gửi lời mời kết bạn cho bạn",
+              subtitle: isEn ? "Sent you a friend request" : "Đã gửi lời mời kết bạn cho bạn",
             },
           ]
         : [],
@@ -82,7 +85,7 @@ export function buildExploreItems(params: {
               online: onlineUserIds.includes(req.recipientId._id),
               relationStatus: "pending_sent" as const,
               requestId: req._id,
-              subtitle: "Đang chờ phản hồi lời mời của bạn",
+              subtitle: isEn ? "Waiting for response to your request" : "Đang chờ phản hồi lời mời của bạn",
             },
           ]
         : [],
@@ -102,7 +105,7 @@ export function buildExploreItems(params: {
         bio: f.bio,
         online: isOnline,
         relationStatus: "friends" as const,
-        subtitle: isOnline ? "Đang hoạt động" : f.bio || "Bạn bè",
+        subtitle: isOnline ? (isEn ? "Online" : "Đang hoạt động") : f.bio || (isEn ? "Friend" : "Bạn bè"),
       },
     ];
   });

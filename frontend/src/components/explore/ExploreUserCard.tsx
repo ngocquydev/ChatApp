@@ -4,6 +4,7 @@ import NextLink from "next/link";
 import { Box, Button, ButtonBase, IconButton, Paper, Tooltip, Typography } from "@mui/material";
 import { Check, Clock, MapPin, MessageSquare, ShieldCheck, UserPlus, Users, X } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
+import { useTranslation } from "@/i18n/useTranslation";
 import { v } from "@/theme/tokens";
 
 export interface ExploreCardData {
@@ -36,6 +37,7 @@ export default function ExploreUserCard({
   onRespondRequest,
   onMessage,
 }: ExploreUserCardProps) {
+  const { tr } = useTranslation();
   return (
     <Paper
       elevation={0}
@@ -58,7 +60,7 @@ export default function ExploreUserCard({
       <ButtonBase
         component={NextLink}
         href={`/profile/${user.id}`}
-        aria-label={`Xem trang cá nhân của ${user.name}`}
+        aria-label={tr(`Xem trang cá nhân của ${user.name}`, `View profile of ${user.name}`)}
         sx={{ borderRadius: "50%", flexShrink: 0 }}
       >
         <PresenceAvatar
@@ -95,7 +97,7 @@ export default function ExploreUserCard({
           noWrap
           sx={{ display: "block", mt: 0.25 }}
         >
-          {user.subtitle || user.bio || "Thành viên ChatApp"}
+          {user.subtitle || user.bio || tr("Thành viên ChatApp", "ChatApp member")}
         </Typography>
 
         <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0.75, mt: 0.75 }}>
@@ -115,7 +117,9 @@ export default function ExploreUserCard({
               }}
             >
               <Users size={12} aria-hidden />
-              <span>{user.mutualFriendsCount} bạn chung</span>
+              <span>
+                {user.mutualFriendsCount} {tr("bạn chung", "mutual friends")}
+              </span>
             </Box>
           )}
 
@@ -161,7 +165,7 @@ export default function ExploreUserCard({
                 }}
               >
                 <ShieldCheck size={12} aria-hidden />
-                <span>Tài khoản uy tín</span>
+                <span>{tr("Tài khoản uy tín", "Trusted account")}</span>
               </Box>
             )}
         </Box>
@@ -176,12 +180,12 @@ export default function ExploreUserCard({
             startIcon={<UserPlus size={15} aria-hidden />}
             sx={{ borderRadius: "10px", px: 1.5, py: 0.75, whiteSpace: "nowrap" }}
           >
-            Kết bạn
+            {tr("Kết bạn", "Add friend")}
           </Button>
         )}
 
         {user.relationStatus === "pending_sent" && (
-          <Tooltip title="Hủy lời mời đã gửi">
+          <Tooltip title={tr("Hủy lời mời đã gửi", "Cancel sent request")}>
             <Button
               size="small"
               variant="outlined"
@@ -196,7 +200,7 @@ export default function ExploreUserCard({
                 whiteSpace: "nowrap",
               }}
             >
-              Đã gửi
+              {tr("Đã gửi", "Sent")}
             </Button>
           </Tooltip>
         )}
@@ -210,13 +214,13 @@ export default function ExploreUserCard({
               startIcon={<Check size={15} aria-hidden />}
               sx={{ borderRadius: "10px", px: 1.25, py: 0.65, whiteSpace: "nowrap" }}
             >
-              Đồng ý
+              {tr("Đồng ý", "Accept")}
             </Button>
-            <Tooltip title="Từ chối lời mời">
+            <Tooltip title={tr("Từ chối lời mời", "Decline request")}>
               <IconButton
                 size="small"
                 color="error"
-                aria-label={`Từ chối lời mời của ${user.name}`}
+                aria-label={tr(`Từ chối lời mời của ${user.name}`, `Decline request from ${user.name}`)}
                 onClick={() => user.requestId && onRespondRequest(user.requestId, "reject")}
                 sx={{ bgcolor: v.tone("fef2f2"), "&:hover": { bgcolor: v.tone("fee2e2") } }}
               >
@@ -235,7 +239,7 @@ export default function ExploreUserCard({
             startIcon={<MessageSquare size={15} aria-hidden />}
             sx={{ borderRadius: "10px", px: 1.5, py: 0.75, whiteSpace: "nowrap" }}
           >
-            Nhắn tin
+            {tr("Nhắn tin", "Message")}
           </Button>
         )}
       </Box>

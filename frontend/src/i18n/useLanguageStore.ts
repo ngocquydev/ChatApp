@@ -88,3 +88,4 @@ if (typeof window !== "undefined") {
   useLanguageStore.setState({ language: initial });
   document.documentElement.lang = initial;
 }
+

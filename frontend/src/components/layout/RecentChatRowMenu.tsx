@@ -12,6 +12,7 @@ import {
   User,
   UserX,
 } from "lucide-react";
+import { useTranslation } from "@/i18n/useTranslation";
 
 interface RecentChatRowMenuProps {
   anchorEl: HTMLElement | null;
@@ -44,6 +45,7 @@ export default function RecentChatRowMenu({
   onToggleRestrict,
   onHideChat,
 }: RecentChatRowMenuProps) {
+  const { tr } = useTranslation();
   const itemSx = { py: 1, px: 1.5, borderRadius: "8px", gap: 0.5 };
   const labelSx = { fontWeight: 600, fontSize: "0.85rem" };
 
@@ -84,7 +86,7 @@ export default function RecentChatRowMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            {isUnread ? "Đánh dấu là đã đọc" : "Đánh dấu là chưa đọc"}
+            {isUnread ? tr("Đánh dấu là đã đọc", "Mark as read") : tr("Đánh dấu là chưa đọc", "Mark as unread")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -101,7 +103,7 @@ export default function RecentChatRowMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            Mở phần nhắn tin
+            {tr("Mở phần nhắn tin", "Open in Messenger")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -118,7 +120,7 @@ export default function RecentChatRowMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            {isMuted ? "Bật thông báo" : "Tắt thông báo"}
+            {isMuted ? tr("Bật thông báo", "Unmute notifications") : tr("Tắt thông báo", "Mute notifications")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -135,7 +137,7 @@ export default function RecentChatRowMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            Xem trang cá nhân
+            {tr("Xem trang cá nhân", "View profile")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -154,7 +156,7 @@ export default function RecentChatRowMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            {isBlockedByMe ? "Bỏ chặn" : "Chặn"}
+            {isBlockedByMe ? tr("Bỏ chặn", "Unblock") : tr("Chặn", "Block")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -171,7 +173,7 @@ export default function RecentChatRowMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={labelSx}>
-            {isRestricted ? "Bỏ lưu trữ đoạn chat" : "Lưu trữ đoạn chat"}
+            {isRestricted ? tr("Bỏ lưu trữ đoạn chat", "Unarchive chat") : tr("Lưu trữ đoạn chat", "Archive chat")}
           </Typography>
         </ListItemText>
       </MenuItem>
@@ -188,7 +190,7 @@ export default function RecentChatRowMenu({
         </ListItemIcon>
         <ListItemText>
           <Typography variant="body2" sx={{ ...labelSx, color: "error.main" }}>
-            Xóa đoạn chat
+            {tr("Xóa đoạn chat", "Delete chat")}
           </Typography>
         </ListItemText>
       </MenuItem>

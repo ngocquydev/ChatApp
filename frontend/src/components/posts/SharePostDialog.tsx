@@ -13,6 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import { apiErrorMessage, isSharedPostAvailable, POST_MAX_LENGTH, sharePost, type PostPrivacy, type PostView } from "@/services/postsApi";
+import { useTranslation } from "@/i18n/useTranslation";
 import PostAuthorHeader from "./PostAuthorHeader";
 import PrivacyPicker from "./PrivacyPicker";
 
@@ -27,6 +28,7 @@ interface SharePostDialogProps {
 /** Chia sẻ lại bài viết lên dòng thời gian của mình, kèm lời bình tùy chọn. */
 export default function SharePostDialog({ post, currentUserId, onClose, onShared }: SharePostDialogProps) {
   const uid = useId();
+  const { tr } = useTranslation();
   const [text, setText] = useState("");
   const [privacy, setPrivacy] = useState<PostPrivacy>("friends");
   const [pending, setPending] = useState(false);
@@ -55,7 +57,7 @@ export default function SharePostDialog({ post, currentUserId, onClose, onShared
       setText("");
       onShared(post, created);
     } catch (err) {
-      setError(apiErrorMessage(err, "Không chia sẻ được bài viết. Hãy thử lại."));
+      setError(apiErrorMessage(err, tr("Không chia sẻ được bài viết. Hãy thử lại.", "Could not share post. Please try again.")));
     } finally {
       setPending(false);
     }
@@ -64,7 +66,7 @@ export default function SharePostDialog({ post, currentUserId, onClose, onShared
   return (
     <Dialog open={!!post} onClose={handleClose} fullWidth maxWidth="sm" aria-labelledby={`${uid}-title`}>
       <DialogTitle id={`${uid}-title`} sx={{ fontWeight: 700 }}>
-        Chia sẻ bài viết
+        {tr("Chia sẻ bài viết", "Share post")}
       </DialogTitle>
       <DialogContent>
         <TextField
@@ -72,11 +74,11 @@ export default function SharePostDialog({ post, currentUserId, onClose, onShared
           multiline
           minRows={2}
           maxRows={6}
-          placeholder="Hãy nói gì đó về nội dung này…"
+          placeholder={tr("Hãy nói gì đó về nội dung này…", "Say something about this…")}
           value={text}
           onChange={(e) => setText(e.target.value)}
           disabled={pending}
-          slotProps={{ htmlInput: { maxLength: POST_MAX_LENGTH, "aria-label": "Lời bình khi chia sẻ" } }}
+          slotProps={{ htmlInput: { maxLength: POST_MAX_LENGTH, "aria-label": tr("Lời bình khi chia sẻ", "Share caption") } }}
         />
 
         {preview && (
@@ -92,7 +94,7 @@ export default function SharePostDialog({ post, currentUserId, onClose, onShared
             )}
             {preview.images.length > 0 && (
               <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
-                Kèm {preview.images.length} ảnh
+                {tr(`Kèm ${preview.images.length} ảnh`, `Includes ${preview.images.length} photos`)}
               </Typography>
             )}
           </Box>
@@ -106,17 +108,17 @@ export default function SharePostDialog({ post, currentUserId, onClose, onShared
 
         <Box sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1.5 }}>
           <Typography variant="body2" color="text.secondary">
-            Ai xem được:
+            {tr("Ai xem được:", "Who can see:")}
           </Typography>
           <PrivacyPicker value={privacy} onChange={setPrivacy} disabled={pending} labelId={`${uid}-privacy`} />
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button color="inherit" onClick={handleClose} disabled={pending}>
-          Hủy
+          {tr("Hủy", "Cancel")}
         </Button>
         <Button variant="contained" onClick={() => void submit()} disabled={pending}>
-          {pending ? "Đang chia sẻ…" : "Chia sẻ ngay"}
+          {pending ? tr("Đang chia sẻ…", "Sharing…") : tr("Chia sẻ ngay", "Share now")}
         </Button>
       </DialogActions>
     </Dialog>

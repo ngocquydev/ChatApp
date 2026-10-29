@@ -13,6 +13,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Image as ImageIcon, Paperclip, Send, Smile, ThumbsUp } from "lucide-react";
+import { useTranslation } from "@/i18n/useTranslation";
 import { uploadMedia } from "@/services/postsApi";
 
 const TYPING_THROTTLE_MS = 2500;
@@ -33,10 +34,11 @@ interface MessageComposerProps {
 }
 
 function ComingSoonButton({ label, children }: { label: string; children: React.ReactNode }) {
+  const { tr } = useTranslation();
   return (
-    <Tooltip title={`${label} — sắp ra mắt`}>
+    <Tooltip title={`${label} — ${tr("sắp ra mắt", "coming soon")}`}>
       <span>
-        <IconButton size="small" disabled aria-label={`${label} (sắp ra mắt)`}>
+        <IconButton size="small" disabled aria-label={`${label} (${tr("sắp ra mắt", "coming soon")})`}>
           {children}
         </IconButton>
       </span>
@@ -51,6 +53,7 @@ export default function MessageComposer({
   isBlockedByMe = false,
   onUnblock,
 }: MessageComposerProps) {
+  const { tr } = useTranslation();
   const [text, setText] = useState("");
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -145,12 +148,12 @@ export default function MessageComposer({
       >
         <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
           {isBlockedByMe
-            ? "Bạn đã chặn người dùng này. Bỏ chặn để tiếp tục trò chuyện."
-            : "Người dùng này hiện không thể nhận tin nhắn vào lúc này."}
+            ? tr("Bạn đã chặn người dùng này. Bỏ chặn để tiếp tục trò chuyện.", "You have blocked this user. Unblock to continue chatting.")
+            : tr("Người dùng này hiện không thể nhận tin nhắn vào lúc này.", "This user cannot receive messages right now.")}
         </Typography>
         {isBlockedByMe && onUnblock && (
           <Button variant="outlined" size="small" color="primary" onClick={onUnblock} sx={{ borderRadius: "8px" }}>
-            Bỏ chặn
+            {tr("Bỏ chặn", "Unblock")}
           </Button>
         )}
       </Box>
@@ -182,14 +185,14 @@ export default function MessageComposer({
             accept="image/*,video/*"
             hidden
             onChange={handleMediaSelect}
-            aria-label="Chọn ảnh hoặc video để gửi"
+            aria-label={tr("Chọn ảnh hoặc video để gửi", "Choose image or video to send")}
           />
-          <Tooltip title={uploadingMedia ? "Đang tải tệp lên…" : "Gửi ảnh hoặc video"}>
+          <Tooltip title={uploadingMedia ? tr("Đang tải tệp lên…", "Uploading file…") : tr("Gửi ảnh hoặc video", "Send image or video")}>
             <span>
               <IconButton
                 size="small"
                 disabled={uploadingMedia}
-                aria-label="Gửi ảnh hoặc video"
+                aria-label={tr("Gửi ảnh hoặc video", "Send image or video")}
                 onClick={() => fileInputRef.current?.click()}
                 sx={{ color: "primary.main" }}
               >
@@ -198,7 +201,7 @@ export default function MessageComposer({
             </span>
           </Tooltip>
           <Box sx={{ display: { xs: "none", sm: "inline-flex" } }}>
-            <ComingSoonButton label="Đính kèm tệp khác">
+            <ComingSoonButton label={tr("Đính kèm tệp khác", "Attach other files")}>
               <Paperclip size={19} />
             </ComingSoonButton>
           </Box>
@@ -233,15 +236,15 @@ export default function MessageComposer({
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKeyDown}
             slotProps={{
-              htmlInput: { "aria-label": "Nội dung tin nhắn", enterKeyHint: "send" },
+              htmlInput: { "aria-label": tr("Nội dung tin nhắn", "Message content"), enterKeyHint: "send" },
               input: { disableUnderline: true, sx: { py: 0.65, fontSize: "0.9375rem" } },
             }}
           />
 
-          <Tooltip title="Chọn biểu tượng cảm xúc">
+          <Tooltip title={tr("Chọn biểu tượng cảm xúc", "Choose emoji")}>
             <IconButton
               size="small"
-              aria-label="Chọn biểu tượng cảm xúc"
+              aria-label={tr("Chọn biểu tượng cảm xúc", "Choose emoji")}
               onClick={(e: MouseEvent<HTMLButtonElement>) => setEmojiAnchorEl(e.currentTarget)}
               sx={{ color: "primary.main", mb: 0.25 }}
             >
@@ -251,10 +254,10 @@ export default function MessageComposer({
         </Box>
 
         {canSend ? (
-          <Tooltip title="Gửi (Enter)">
+          <Tooltip title={tr("Gửi (Enter)", "Send (Enter)")}>
             <IconButton
               onClick={() => void submit()}
-              aria-label="Gửi tin nhắn"
+              aria-label={tr("Gửi tin nhắn", "Send message")}
               sx={{
                 mb: 0.25,
                 width: 38,
@@ -267,10 +270,10 @@ export default function MessageComposer({
             </IconButton>
           </Tooltip>
         ) : (
-          <Tooltip title="Gửi biểu tượng thích">
+          <Tooltip title={tr("Gửi biểu tượng thích", "Send a like")}>
             <IconButton
               onClick={() => void submit("👍")}
-              aria-label="Gửi biểu tượng thích"
+              aria-label={tr("Gửi biểu tượng thích", "Send a like")}
               sx={{
                 mb: 0.25,
                 width: 38,
@@ -303,13 +306,13 @@ export default function MessageComposer({
         }}
       >
         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, mb: 1, display: "block" }}>
-          Biểu tượng cảm xúc
+          {tr("Biểu tượng cảm xúc", "Emojis")}
         </Typography>
         <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 0.5 }}>
           {POPULAR_EMOJIS.map((emoji) => (
             <ButtonBase
               key={emoji}
-              aria-label={`Chèn biểu tượng ${emoji}`}
+              aria-label={tr(`Chèn biểu tượng ${emoji}`, `Insert emoji ${emoji}`)}
               onClick={() => {
                 handleChange(`${text}${emoji}`);
                 setEmojiAnchorEl(null);
@@ -333,7 +336,7 @@ export default function MessageComposer({
         color="text.secondary"
         sx={{ display: { xs: "none", md: "block" }, mt: 0.5, px: 1.5, fontSize: "0.7rem" }}
       >
-        Enter để gửi · Shift + Enter để xuống dòng
+        {tr("Enter để gửi · Shift + Enter để xuống dòng", "Enter to send · Shift + Enter for new line")}
       </Typography>
     </Box>
   );

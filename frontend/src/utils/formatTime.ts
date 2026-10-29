@@ -1,4 +1,12 @@
-const LOCALE = "vi-VN";
+import { useLanguageStore } from "@/i18n/useLanguageStore";
+
+function getCurrentLanguage(): "vi" | "en" {
+  return useLanguageStore.getState().language;
+}
+
+function getLocale(lang: "vi" | "en" = getCurrentLanguage()): string {
+  return lang === "en" ? "en-US" : "vi-VN";
+}
 
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 
@@ -14,7 +22,8 @@ export function formatClockTime(dateStr?: string): string {
   if (!dateStr) return "";
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit", hour12: false });
+  const lang = getCurrentLanguage();
+  return date.toLocaleTimeString(getLocale(lang), { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 /** Nhãn gọn cho danh sách hội thoại: giờ nếu hôm nay, "Hôm qua", thứ trong tuần, hoặc dd/MM. */
@@ -22,11 +31,12 @@ export function formatConversationTime(dateStr?: string): string {
   if (!dateStr) return "";
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return "";
+  const lang = getCurrentLanguage();
   const diff = calendarDayDiff(date);
   if (diff <= 0) return formatClockTime(dateStr);
-  if (diff === 1) return "Hôm qua";
-  if (diff < 7) return date.toLocaleDateString(LOCALE, { weekday: "short" });
-  return date.toLocaleDateString(LOCALE, { day: "2-digit", month: "2-digit" });
+  if (diff === 1) return lang === "en" ? "Yesterday" : "Hôm qua";
+  if (diff < 7) return date.toLocaleDateString(getLocale(lang), { weekday: "short" });
+  return date.toLocaleDateString(getLocale(lang), { day: "2-digit", month: "2-digit" });
 }
 
 /** Nhãn ngăn cách ngày trong khung chat: "Hôm nay", "Hôm qua", "25/10/2026". */
@@ -34,10 +44,11 @@ export function formatDaySeparator(dateStr?: string): string {
   if (!dateStr) return "";
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return "";
+  const lang = getCurrentLanguage();
   const diff = calendarDayDiff(date);
-  if (diff <= 0) return "Hôm nay";
-  if (diff === 1) return "Hôm qua";
-  return date.toLocaleDateString(LOCALE, { day: "2-digit", month: "2-digit", year: "numeric" });
+  if (diff <= 0) return lang === "en" ? "Today" : "Hôm nay";
+  if (diff === 1) return lang === "en" ? "Yesterday" : "Hôm qua";
+  return date.toLocaleDateString(getLocale(lang), { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 /** Khoá ngày (yyyy-mm-dd, theo giờ địa phương) để nhóm tin nhắn. */
@@ -53,16 +64,29 @@ export function formatRelativeTime(dateStr?: string, now: Date = new Date()): st
   if (!dateStr) return "";
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return "";
+  const lang = getCurrentLanguage();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (seconds < 60) return "Vừa xong";
+  if (seconds < 60) return lang === "en" ? "Just now" : "Vừa xong";
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} phút trước`;
+  if (minutes < 60) {
+    return lang === "en"
+      ? `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`
+      : `${minutes} phút trước`;
+  }
   const diffDays = calendarDayDiff(date, now);
   const hours = Math.floor(minutes / 60);
-  if (diffDays <= 0 && hours < 24) return `${hours} giờ trước`;
-  if (diffDays === 1) return "Hôm qua";
-  if (diffDays < 7) return `${diffDays} ngày trước`;
-  return date.toLocaleDateString(LOCALE, { day: "2-digit", month: "2-digit", year: "numeric" });
+  if (diffDays <= 0 && hours < 24) {
+    return lang === "en"
+      ? `${hours} ${hours === 1 ? "hour" : "hours"} ago`
+      : `${hours} giờ trước`;
+  }
+  if (diffDays === 1) return lang === "en" ? "Yesterday" : "Hôm qua";
+  if (diffDays < 7) {
+    return lang === "en"
+      ? `${diffDays} ${diffDays === 1 ? "day" : "days"} ago`
+      : `${diffDays} ngày trước`;
+  }
+  return date.toLocaleDateString(getLocale(lang), { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 /** Ngày giờ đầy đủ, dùng cho tooltip/`title` của nhãn thời gian. */
@@ -70,7 +94,8 @@ export function formatFullDateTime(dateStr?: string): string {
   if (!dateStr) return "";
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString(LOCALE, {
+  const lang = getCurrentLanguage();
+  return date.toLocaleString(getLocale(lang), {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

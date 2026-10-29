@@ -19,6 +19,7 @@ import {
 import { Check, MessageSquare, UserPlus, UserX, Users, X } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import EmptyState from "@/components/common/EmptyState";
+import { useTranslation } from "@/i18n/useTranslation";
 import { ChatUser } from "@/store/useChatStore";
 import { FriendItem, FriendRequestItem } from "@/store/useFriendStore";
 import { NotifyFn } from "./types";
@@ -69,6 +70,7 @@ export default function FriendsPanel({
   onAddFriend,
   notify,
 }: FriendsPanelProps) {
+  const { tr } = useTranslation();
   const [pendingUnfriend, setPendingUnfriend] = useState<ChatUser | null>(null);
   const [isUnfriending, setIsUnfriending] = useState(false);
 
@@ -90,7 +92,7 @@ export default function FriendsPanel({
           size="small"
           value={subTab}
           onChange={(_, val: 0 | 1 | null) => val !== null && onSubTabChange(val)}
-          aria-label="Chế độ xem bạn bè"
+          aria-label={tr("Chế độ xem bạn bè", "Friends view mode")}
           sx={{
             bgcolor: "background.default",
             p: 0.5,
@@ -111,15 +113,15 @@ export default function FriendsPanel({
             },
           }}
         >
-          <ToggleButton value={0}>Bạn bè ({friends.length})</ToggleButton>
-          <ToggleButton value={1}>Lời mời ({receivedRequests.length})</ToggleButton>
+          <ToggleButton value={0}>{tr(`Bạn bè (${friends.length})`, `Friends (${friends.length})`)}</ToggleButton>
+          <ToggleButton value={1}>{tr(`Lời mời (${receivedRequests.length})`, `Requests (${receivedRequests.length})`)}</ToggleButton>
         </ToggleButtonGroup>
       </Box>
 
       <Box sx={{ flex: 1, overflowY: "auto", px: 1, pb: 1 }}>
         {subTab === 0 &&
           (isLoadingFriends && friends.length === 0 ? (
-            <Box aria-busy="true" aria-label="Đang tải danh sách bạn bè" sx={{ p: 1 }}>
+            <Box aria-busy="true" aria-label={tr("Đang tải danh sách bạn bè", "Loading friends list")} sx={{ p: 1 }}>
               {Array.from({ length: 5 }).map((_, i) => (
                 <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 1.25 }}>
                   <Skeleton variant="circular" width={44} height={44} />
@@ -134,16 +136,16 @@ export default function FriendsPanel({
             <EmptyState
               compact
               icon={<Users size={26} />}
-              title="Bạn chưa có bạn bè nào"
-              description="Tìm kiếm và gửi lời mời kết bạn để bắt đầu trò chuyện."
+              title={tr("Bạn chưa có bạn bè nào", "You have no friends yet")}
+              description={tr("Tìm kiếm và gửi lời mời kết bạn để bắt đầu trò chuyện.", "Search and send friend requests to start chatting.")}
               action={
                 <Button variant="contained" size="small" startIcon={<UserPlus size={16} />} onClick={onAddFriend}>
-                  Tìm bạn mới
+                  {tr("Tìm bạn mới", "Find new friends")}
                 </Button>
               }
             />
           ) : (
-            <Box component="ul" sx={{ listStyle: "none", m: 0, p: 0 }} aria-label="Danh sách bạn bè">
+            <Box component="ul" sx={{ listStyle: "none", m: 0, p: 0 }} aria-label={tr("Danh sách bạn bè", "Friends list")}>
               {friends.map((item) => {
                 const f = item.friend;
                 const isOnline = onlineUserIds.includes(f._id);
@@ -173,7 +175,7 @@ export default function FriendsPanel({
                           noWrap
                           sx={{ display: "block", color: isOnline ? "success.main" : "text.secondary", fontWeight: 500 }}
                         >
-                          {isOnline ? "Đang hoạt động" : "Ngoại tuyến"}
+                          {isOnline ? tr("Đang hoạt động", "Online") : tr("Ngoại tuyến", "Offline")}
                         </Typography>
                       </Box>
                     </Box>
@@ -184,16 +186,16 @@ export default function FriendsPanel({
                         variant="contained"
                         onClick={() => onMessage(f)}
                         startIcon={<MessageSquare size={14} />}
-                        aria-label={`Nhắn tin cho ${f.name}`}
+                        aria-label={tr(`Nhắn tin cho ${f.name}`, `Message ${f.name}`)}
                         sx={{ px: 1.5 }}
                       >
-                        Nhắn tin
+                        {tr("Nhắn tin", "Message")}
                       </Button>
-                      <Tooltip title="Hủy kết bạn">
+                      <Tooltip title={tr("Hủy kết bạn", "Unfriend")}>
                         <IconButton
                           size="small"
                           onClick={() => setPendingUnfriend(f)}
-                          aria-label={`Hủy kết bạn với ${f.name}`}
+                          aria-label={tr(`Hủy kết bạn với ${f.name}`, `Unfriend ${f.name}`)}
                           sx={{ color: "text.secondary", "&:hover": { color: "error.main", bgcolor: "action.hover" } }}
                         >
                           <UserX size={16} />
@@ -208,10 +210,10 @@ export default function FriendsPanel({
 
         {subTab === 1 && (
           <Box>
-            <SectionLabel>Đã nhận ({receivedRequests.length})</SectionLabel>
+            <SectionLabel>{tr(`Đã nhận (${receivedRequests.length})`, `Received (${receivedRequests.length})`)}</SectionLabel>
             {receivedRequests.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ px: 1, pb: 2 }}>
-                Không có lời mời nào đang chờ duyệt.
+                {tr("Không có lời mời nào đang chờ duyệt.", "No pending friend requests.")}
               </Typography>
             ) : (
               receivedRequests.map((req) => {
@@ -229,7 +231,7 @@ export default function FriendsPanel({
                           {requester.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
-                          {requester.bio || "Thành viên"}
+                          {requester.bio || tr("Thành viên", "Member")}
                         </Typography>
                       </Box>
                     </Box>
@@ -245,7 +247,7 @@ export default function FriendsPanel({
                           notify(res.message, res.success ? "success" : "error");
                         }}
                       >
-                        Chấp nhận
+                        {tr("Chấp nhận", "Accept")}
                       </Button>
                       <Button
                         fullWidth
@@ -259,7 +261,7 @@ export default function FriendsPanel({
                         }}
                         sx={{ borderColor: "divider", color: "text.secondary" }}
                       >
-                        Từ chối
+                        {tr("Từ chối", "Decline")}
                       </Button>
                     </Box>
                   </Box>
@@ -267,10 +269,10 @@ export default function FriendsPanel({
               })
             )}
 
-            <SectionLabel>Đã gửi ({sentRequests.length})</SectionLabel>
+            <SectionLabel>{tr(`Đã gửi (${sentRequests.length})`, `Sent (${sentRequests.length})`)}</SectionLabel>
             {sentRequests.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ px: 1 }}>
-                Bạn chưa gửi lời mời kết bạn nào.
+                {tr("Bạn chưa gửi lời mời kết bạn nào.", "You haven't sent any friend requests.")}
               </Typography>
             ) : (
               sentRequests.map((req) => {
@@ -303,7 +305,7 @@ export default function FriendsPanel({
                         notify(res.message, "info");
                       }}
                     >
-                      Hủy lời mời
+                      {tr("Hủy lời mời", "Cancel request")}
                     </Button>
                   </Box>
                 );
@@ -322,18 +324,20 @@ export default function FriendsPanel({
         aria-labelledby="unfriend-title"
         aria-describedby="unfriend-desc"
       >
-        <DialogTitle id="unfriend-title">Hủy kết bạn?</DialogTitle>
+        <DialogTitle id="unfriend-title">{tr("Hủy kết bạn?", "Unfriend?")}</DialogTitle>
         <DialogContent>
           <DialogContentText id="unfriend-desc">
-            Bạn sẽ không còn là bạn bè với <strong>{pendingUnfriend?.name}</strong>. Bạn có thể kết bạn lại bất cứ lúc nào.
+            {tr("Bạn sẽ không còn là bạn bè với ", "You will no longer be friends with ")}
+            <strong>{pendingUnfriend?.name}</strong>
+            {tr(". Bạn có thể kết bạn lại bất cứ lúc nào.", ". You can add them back anytime.")}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button color="inherit" onClick={() => setPendingUnfriend(null)} disabled={isUnfriending} sx={{ color: "text.secondary" }}>
-            Giữ lại
+            {tr("Giữ lại", "Cancel")}
           </Button>
           <Button color="error" variant="contained" onClick={confirmUnfriend} disabled={isUnfriending}>
-            Hủy kết bạn
+            {tr("Hủy kết bạn", "Unfriend")}
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { Box, Button, Typography } from "@mui/material";
+import { useTranslation } from "@/i18n/useTranslation";
 
 export default function NotFound() {
+  const { tr } = useTranslation();
   return (
     <Box
       sx={{
@@ -33,11 +37,13 @@ export default function NotFound() {
           color: "var(--mui-palette-neutral-900)",
         }}
       >
-        Trang không tồn tại
+        {tr("Trang không tồn tại", "Page Not Found")}
       </Typography>
       <Typography variant="body1" sx={{ color: "var(--mui-palette-neutral-500)", maxWidth: 460 }}>
-        Địa chỉ bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển sang đường
-        dẫn khác.
+        {tr(
+          "Địa chỉ bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển sang đường dẫn khác.",
+          "The page you are looking for does not exist or has been moved to another URL."
+        )}
       </Typography>
       <Link href="/" style={{ textDecoration: "none" }}>
         <Button
@@ -52,7 +58,7 @@ export default function NotFound() {
             fontWeight: 600,
           }}
         >
-          Về trang chủ
+          {tr("Về trang chủ", "Back to Home")}
         </Button>
       </Link>
     </Box>

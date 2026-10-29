@@ -17,6 +17,7 @@ import {
 import { Bell, BellOff, CheckCheck, Trash2 } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import EmptyState from "@/components/common/EmptyState";
+import { useTranslation } from "@/i18n/useTranslation";
 import { useNotificationStore } from "@/store/useNotificationStore";
 import { formatRelativeTime } from "@/utils/formatTime";
 import type { NotificationItem } from "@/services/notificationsApi";
@@ -24,6 +25,7 @@ import type { NotificationItem } from "@/services/notificationsApi";
 export default function NotificationBell() {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const { tr } = useTranslation();
 
   const {
     notifications,
@@ -71,11 +73,11 @@ export default function NotificationBell() {
 
   return (
     <>
-      <Tooltip title="Thông báo">
+      <Tooltip title={tr("Thông báo", "Notifications")}>
         <IconButton
           color="inherit"
           onClick={handleOpen}
-          aria-label="Thông báo hệ thống"
+          aria-label={tr("Thông báo hệ thống", "System notifications")}
           aria-haspopup="true"
           aria-expanded={isOpen}
           sx={{
@@ -145,7 +147,7 @@ export default function NotificationBell() {
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: "0.95rem" }}>
-              Thông báo
+              {tr("Thông báo", "Notifications")}
             </Typography>
             {unreadCount > 0 && (
               <Box
@@ -171,7 +173,7 @@ export default function NotificationBell() {
               onClick={() => void markAllAsRead()}
               sx={{ fontSize: "0.75rem", textTransform: "none", py: 0.2 }}
             >
-              Đã đọc tất cả
+              {tr("Đã đọc tất cả", "Mark all as read")}
             </Button>
           )}
         </Box>
@@ -194,8 +196,8 @@ export default function NotificationBell() {
             <EmptyState
               compact
               icon={<BellOff size={28} />}
-              title="Chưa có thông báo nào"
-              description="Bạn sẽ nhận được thông báo khi có người kết bạn hoặc tương tác."
+              title={tr("Chưa có thông báo nào", "No notifications yet")}
+              description={tr("Bạn sẽ nhận được thông báo khi có người kết bạn hoặc tương tác.", "You'll receive notifications when someone adds you or interacts with your posts.")}
             />
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
@@ -269,7 +271,7 @@ export default function NotificationBell() {
 
                     <IconButton
                       size="small"
-                      aria-label="Xóa thông báo"
+                      aria-label={tr("Xóa thông báo", "Delete notification")}
                       onClick={(e) => handleDeleteItem(e, item._id)}
                       sx={{
                         opacity: 0.5,
@@ -291,7 +293,7 @@ export default function NotificationBell() {
                   disabled={isLoadingMore}
                   sx={{ mt: 1, fontSize: "0.8rem", fontWeight: 600 }}
                 >
-                  {isLoadingMore ? <CircularProgress size={16} /> : "Xem thêm thông báo"}
+                  {isLoadingMore ? <CircularProgress size={16} /> : tr("Xem thêm thông báo", "Load more notifications")}
                 </Button>
               )}
             </Box>

@@ -23,6 +23,7 @@ import {
 import { Heart, MessageCircle, X } from "lucide-react";
 import EmptyState from "@/components/common/EmptyState";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
+import { useTranslation } from "@/i18n/useTranslation";
 import {
   apiErrorMessage,
   fetchPostCommenters,
@@ -48,6 +49,7 @@ export default function PostEngagersDialog({
   onClose,
 }: PostEngagersDialogProps) {
   const uid = useId();
+  const { tr } = useTranslation();
   const { user: currentUser } = useAuthStore();
   const currentUserId = (currentUser?._id || currentUser?.id) as string | undefined;
 
@@ -79,11 +81,11 @@ export default function PostEngagersDialog({
       const data = await fetchPostLikes(postId);
       setLikes(data);
     } catch (err) {
-      setErrorLikes(apiErrorMessage(err, "Không tải được danh sách người thích."));
+      setErrorLikes(apiErrorMessage(err, tr("Không tải được danh sách người thích.", "Could not load likes list.")));
     } finally {
       setLoadingLikes(false);
     }
-  }, [postId]);
+  }, [postId, tr]);
 
   const loadCommenters = useCallback(async () => {
     if (!postId) return;
@@ -93,11 +95,11 @@ export default function PostEngagersDialog({
       const data = await fetchPostCommenters(postId);
       setCommenters(data);
     } catch (err) {
-      setErrorCommenters(apiErrorMessage(err, "Không tải được danh sách người bình luận."));
+      setErrorCommenters(apiErrorMessage(err, tr("Không tải được danh sách người bình luận.", "Could not load commenters list.")));
     } finally {
       setLoadingCommenters(false);
     }
-  }, [postId]);
+  }, [postId, tr]);
 
   useEffect(() => {
     if (!open || !postId) return;
@@ -136,12 +138,12 @@ export default function PostEngagersDialog({
         <Tabs
           value={tab}
           onChange={(_, next: EngagerTab) => setTab(next)}
-          aria-label="Chọn xem người thích hoặc người bình luận"
+          aria-label={tr("Chọn xem người thích hoặc người bình luận", "View likes or commenters")}
           sx={{ px: 2, minHeight: 48 }}
         >
           <Tab
             value="likes"
-            label="Lượt thích"
+            label={tr("Lượt thích", "Likes")}
             icon={<Heart size={16} aria-hidden />}
             iconPosition="start"
             id={`${uid}-tab-likes`}
@@ -149,14 +151,14 @@ export default function PostEngagersDialog({
           />
           <Tab
             value="commenters"
-            label="Bình luận"
+            label={tr("Bình luận", "Commenters")}
             icon={<MessageCircle size={16} aria-hidden />}
             iconPosition="start"
             id={`${uid}-tab-commenters`}
             aria-controls={`${uid}-panel-commenters`}
           />
         </Tabs>
-        <IconButton size="small" aria-label="Đóng" onClick={onClose} sx={{ mr: 1.5 }}>
+        <IconButton size="small" aria-label={tr("Đóng", "Close")} onClick={onClose} sx={{ mr: 1.5 }}>
           <X size={18} aria-hidden />
         </IconButton>
       </DialogTitle>
@@ -179,7 +181,7 @@ export default function PostEngagersDialog({
               severity="error"
               action={
                 <Button color="inherit" size="small" onClick={() => void handleRetry()}>
-                  Thử lại
+                  {tr("Thử lại", "Retry")}
                 </Button>
               }
             >
@@ -192,18 +194,18 @@ export default function PostEngagersDialog({
           <Box sx={{ py: 4, px: 2 }}>
             <EmptyState
               icon={tab === "likes" ? <Heart size={26} /> : <MessageCircle size={26} />}
-              title={tab === "likes" ? "Chưa có lượt thích" : "Chưa có người bình luận"}
+              title={tab === "likes" ? tr("Chưa có lượt thích", "No likes yet") : tr("Chưa có người bình luận", "No commenters yet")}
               description={
                 tab === "likes"
-                  ? "Chưa có ai thích bài viết này."
-                  : "Chưa có ai tham gia bình luận về bài viết này."
+                  ? tr("Chưa có ai thích bài viết này.", "No one has liked this post yet.")
+                  : tr("Chưa có ai tham gia bình luận về bài viết này.", "No one has commented on this post yet.")
               }
             />
           </Box>
         )}
 
         {!currentLoading && !currentError && currentList && currentList.length > 0 && (
-          <List disablePadding aria-label={tab === "likes" ? "Danh sách người đã thích" : "Danh sách người đã bình luận"}>
+          <List disablePadding aria-label={tab === "likes" ? tr("Danh sách người đã thích", "People who liked") : tr("Danh sách người đã bình luận", "People who commented")}>
             {currentList.map((author) => {
               const href = profileHref(author._id, currentUserId);
               return (

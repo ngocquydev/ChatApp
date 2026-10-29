@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useLanguageStore } from "./useLanguageStore";
 
 export function useTranslation() {
@@ -6,8 +7,14 @@ export function useTranslation() {
   const toggleLanguage = useLanguageStore((state) => state.toggleLanguage);
   const t = useLanguageStore((state) => state.t);
 
+  const tr = useCallback(
+    (viText: string, enText: string): string => (language === "vi" ? viText : enText),
+    [language]
+  );
+
   return {
     t,
+    tr,
     language,
     setLanguage,
     toggleLanguage,
@@ -15,3 +22,5 @@ export function useTranslation() {
     isEnglish: language === "en",
   };
 }
+
+

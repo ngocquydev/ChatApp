@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Box, ButtonBase, IconButton, Tooltip, Typography } from "@mui/material";
 import { Trash2 } from "lucide-react";
 import ImageLightbox from "@/components/posts/ImageLightbox";
+import { useTranslation } from "@/i18n/useTranslation";
 import { isVideoUrl, mediaUrl, type CommentView } from "@/services/postsApi";
 import { formatFullDateTime, formatRelativeTime } from "@/utils/formatTime";
 import PostAuthorHeader from "./PostAuthorHeader";
@@ -21,6 +22,7 @@ export default function CommentItem({
   canDelete,
   onDelete,
 }: CommentItemProps) {
+  const { tr } = useTranslation();
   const [lightbox, setLightbox] = useState<string | null>(null);
   const hasMedia = Boolean(comment.mediaUrl);
   const isVideo = hasMedia && (comment.mediaType === "video" || isVideoUrl(comment.mediaUrl));
@@ -57,13 +59,13 @@ export default function CommentItem({
               ) : (
                 <ButtonBase
                   onClick={() => setLightbox(fullMediaUrl)}
-                  aria-label="Phóng to ảnh bình luận"
+                  aria-label={tr("Phóng to ảnh bình luận", "Zoom comment image")}
                   sx={{ display: "block", borderRadius: "10px", overflow: "hidden" }}
                 >
                   <Box
                     component="img"
                     src={fullMediaUrl}
-                    alt="Ảnh trong bình luận"
+                    alt={tr("Ảnh trong bình luận", "Image in comment")}
                     loading="lazy"
                     sx={{
                       maxWidth: "100%",
@@ -90,7 +92,7 @@ export default function CommentItem({
       {canDelete && (
         <IconButton
           size="small"
-          aria-label={`Xóa bình luận của ${comment.author.name}`}
+          aria-label={tr(`Xóa bình luận của ${comment.author.name}`, `Delete comment by ${comment.author.name}`)}
           onClick={() => onDelete(comment)}
           sx={{ mt: 0.5, color: "text.secondary", "&:hover": { color: "error.main" } }}
         >
@@ -101,7 +103,7 @@ export default function CommentItem({
       {lightbox && (
         <ImageLightbox
           src={lightbox}
-          alt="Ảnh trong bình luận"
+          alt={tr("Ảnh trong bình luận", "Image in comment")}
           onClose={() => setLightbox(null)}
         />
       )}

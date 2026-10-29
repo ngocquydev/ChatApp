@@ -2,6 +2,7 @@
 
 import { Box, Dialog, IconButton } from "@mui/material";
 import { X } from "lucide-react";
+import { useTranslation } from "@/i18n/useTranslation";
 import { isVideoUrl } from "@/services/postsApi";
 
 interface ImageLightboxProps {
@@ -13,6 +14,7 @@ interface ImageLightboxProps {
 
 /** Xem ảnh/video lớn trong hộp thoại nền đen. */
 export default function ImageLightbox({ src, alt, onClose }: ImageLightboxProps) {
+  const { tr } = useTranslation();
   const isVideo = isVideoUrl(src);
 
   return (
@@ -36,7 +38,7 @@ export default function ImageLightbox({ src, alt, onClose }: ImageLightboxProps)
             <Box component="img" src={src} alt={alt} sx={{ maxWidth: "100%", maxHeight: "90dvh", objectFit: "contain" }} />
           )}
           <IconButton
-            aria-label="Đóng"
+            aria-label={tr("Đóng", "Close")}
             onClick={onClose}
             sx={{ position: "absolute", top: 8, right: 8, bgcolor: "common.black", color: "common.white", "&:hover": { bgcolor: "grey.800" } }}
           >

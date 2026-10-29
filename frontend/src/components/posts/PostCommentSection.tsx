@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Alert, Box, Button, Skeleton, Typography } from "@mui/material";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { usePagedList } from "@/hooks/usePagedList";
+import { useTranslation } from "@/i18n/useTranslation";
 import {
   addComment,
   apiErrorMessage,
@@ -32,9 +33,10 @@ export default function PostCommentSection({
   currentUserId,
   onCountChange,
 }: PostCommentSectionProps) {
+  const { tr } = useTranslation();
   const list = usePagedList<CommentView>(
     (after) => fetchComments(postId, { limit: COMMENT_PAGE_SIZE, after }),
-    (err) => apiErrorMessage(err, "Không tải được bình luận."),
+    (err) => apiErrorMessage(err, tr("Không tải được bình luận.", "Could not load comments.")),
   );
 
   const [sending, setSending] = useState(false);
@@ -58,7 +60,7 @@ export default function PostCommentSection({
       list.append(comment);
       onCountChange(1);
     } catch (err) {
-      setActionError(apiErrorMessage(err, "Không gửi được bình luận."));
+      setActionError(apiErrorMessage(err, tr("Không gửi được bình luận.", "Could not send comment.")));
     } finally {
       setSending(false);
     }
@@ -73,7 +75,7 @@ export default function PostCommentSection({
       onCountChange(-1);
       setToDelete(null);
     } catch (err) {
-      setActionError(apiErrorMessage(err, "Không xóa được bình luận."));
+      setActionError(apiErrorMessage(err, tr("Không xóa được bình luận.", "Could not delete comment.")));
       setToDelete(null);
     } finally {
       setDeleting(false);
@@ -83,7 +85,7 @@ export default function PostCommentSection({
   return (
     <Box sx={{ pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
       {list.status === "loading" && (
-        <Box aria-busy="true" aria-label="Đang tải bình luận" sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <Box aria-busy="true" aria-label={tr("Đang tải bình luận", "Loading comments")} sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           <Skeleton variant="rounded" height={52} />
           <Skeleton variant="rounded" height={52} width="80%" />
         </Box>
@@ -94,7 +96,7 @@ export default function PostCommentSection({
           severity="error"
           action={
             <Button color="inherit" size="small" onClick={list.reload}>
-              Thử lại
+              {tr("Thử lại", "Retry")}
             </Button>
           }
         >
@@ -106,10 +108,10 @@ export default function PostCommentSection({
         <>
           {list.items.length === 0 ? (
             <Typography variant="body2" color="text.secondary" sx={{ py: 0.5 }}>
-              Chưa có bình luận nào. Hãy là người đầu tiên!
+              {tr("Chưa có bình luận nào. Hãy là người đầu tiên!", "No comments yet. Be the first to comment!")}
             </Typography>
           ) : (
-            <Box component="ul" aria-label="Bình luận" sx={{ p: 0, m: 0, display: "flex", flexDirection: "column", gap: 1.25 }}>
+            <Box component="ul" aria-label={tr("Bình luận", "Comments")} sx={{ p: 0, m: 0, display: "flex", flexDirection: "column", gap: 1.25 }}>
               {[...list.items]
                 .sort((a, b) => a._id.localeCompare(b._id))
                 .map((c) => (
@@ -126,7 +128,7 @@ export default function PostCommentSection({
 
           {list.hasMore && (
             <Button size="small" onClick={list.loadMore} disabled={list.isLoadingMore} sx={{ mt: 1, fontWeight: 600 }}>
-              {list.isLoadingMore ? "Đang tải…" : "Xem thêm bình luận"}
+              {list.isLoadingMore ? tr("Đang tải…", "Loading…") : tr("Xem thêm bình luận", "View more comments")}
             </Button>
           )}
           {list.loadMoreError && (
@@ -152,17 +154,19 @@ export default function PostCommentSection({
 
       <ConfirmDialog
         open={!!toDelete}
-        title="Xóa bình luận?"
+        title={tr("Xóa bình luận?", "Delete comment?")}
         description={
           toDelete ? (
             <>
-              Bình luận của <strong>{toDelete.author.name}</strong> sẽ bị xóa và không thể khôi phục.
+              {tr("Bình luận của ", "Comment by ")}
+              <strong>{toDelete.author.name}</strong>
+              {tr(" sẽ bị xóa và không thể khôi phục.", " will be permanently deleted.")}
             </>
           ) : (
             ""
           )
         }
-        confirmLabel="Xóa bình luận"
+        confirmLabel={tr("Xóa bình luận", "Delete comment")}
         pending={deleting}
         onConfirm={() => void confirmDelete()}
         onClose={() => setToDelete(null)}

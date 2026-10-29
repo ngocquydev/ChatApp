@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Box, Button, ButtonBase, IconButton, InputAdornment, Popover, TextField, Tooltip, Typography } from "@mui/material";
 import { Maximize2, MoreHorizontal, Search, SquarePen, X } from "lucide-react";
 import api from "@/services/api";
+import { useTranslation } from "@/i18n/useTranslation";
 import { useChatBoxStore } from "@/store/useChatBoxStore";
 import { ConversationItem, useChatStore } from "@/store/useChatStore";
 import { useSoundStore } from "@/store/useSoundStore";
@@ -19,6 +20,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
   const { conversations, onlineUserIds, selectConversation, fetchConversations } = useChatStore();
   const { openChat } = useChatBoxStore();
   const { isMuted, toggleMute } = useSoundStore();
+  const { tr } = useTranslation();
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unread">("all");
@@ -70,25 +72,25 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
       <Box sx={{ px: 2, pt: 2, pb: 1.25 }}>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
           <Typography variant="h6" sx={{ fontWeight: 800, fontSize: "1.35rem", letterSpacing: "-0.02em" }}>
-            Đoạn chat
+            {tr("Đoạn chat", "Chats")}
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Tooltip title="Tùy chọn đoạn chat">
+            <Tooltip title={tr("Tùy chọn đoạn chat", "Chat options")}>
               <IconButton
                 size="small"
                 onClick={(e) => setHeaderMenuAnchor(e.currentTarget)}
-                aria-label="Tùy chọn đoạn chat"
+                aria-label={tr("Tùy chọn đoạn chat", "Chat options")}
               >
                 <MoreHorizontal size={18} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Xem tất cả trong phòng chat">
-              <IconButton size="small" aria-label="Xem tất cả trong phòng chat" onClick={() => { onClose(); router.push("/chat"); }}>
+            <Tooltip title={tr("Xem tất cả trong phòng chat", "See all in Messenger")}>
+              <IconButton size="small" aria-label={tr("Xem tất cả trong phòng chat", "See all in Messenger")} onClick={() => { onClose(); router.push("/chat"); }}>
                 <Maximize2 size={17} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Tin nhắn mới">
-              <IconButton size="small" aria-label="Tin nhắn mới" onClick={() => { onClose(); router.push("/explore"); }}>
+            <Tooltip title={tr("Tin nhắn mới", "New message")}>
+              <IconButton size="small" aria-label={tr("Tin nhắn mới", "New message")} onClick={() => { onClose(); router.push("/explore"); }}>
                 <SquarePen size={17} />
               </IconButton>
             </Tooltip>
@@ -98,7 +100,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
         <TextField
           fullWidth
           size="small"
-          placeholder="Tìm kiếm trên Messenger"
+          placeholder={tr("Tìm kiếm trên Messenger", "Search Messenger")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           sx={{
@@ -111,7 +113,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
             },
           }}
           slotProps={{
-            htmlInput: { "aria-label": "Tìm kiếm trên Messenger" },
+            htmlInput: { "aria-label": tr("Tìm kiếm trên Messenger", "Search Messenger") },
             input: {
               startAdornment: (
                 <InputAdornment position="start">
@@ -120,7 +122,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
               ),
               endAdornment: query ? (
                 <InputAdornment position="end">
-                  <IconButton size="small" aria-label="Xóa tìm kiếm" onClick={() => setQuery("")}>
+                  <IconButton size="small" aria-label={tr("Xóa tìm kiếm", "Clear search")} onClick={() => setQuery("")}>
                     <X size={14} aria-hidden />
                   </IconButton>
                 </InputAdornment>
@@ -130,7 +132,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
         />
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {([{ id: "all", label: "Tất cả" }, { id: "unread", label: "Chưa đọc" }] as const).map((item) => {
+          {([{ id: "all", label: tr("Tất cả", "All") }, { id: "unread", label: tr("Chưa đọc", "Unread") }] as const).map((item) => {
             const active = filter === item.id;
             return (
               <ButtonBase
@@ -158,10 +160,10 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
         {visibleList.length === 0 ? (
           <Box sx={{ textAlign: "center", py: 5, px: 2 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              {filter === "unread" ? "Không có đoạn chat chưa đọc" : "Không tìm thấy cuộc trò chuyện nào"}
+              {filter === "unread" ? tr("Không có đoạn chat chưa đọc", "No unread chats") : tr("Không tìm thấy cuộc trò chuyện nào", "No conversations found")}
             </Typography>
             <Button size="small" variant="outlined" onClick={() => { onClose(); router.push("/chat"); }} sx={{ borderRadius: "10px" }}>
-              Mở phòng chat
+              {tr("Mở phòng chat", "Open Messenger")}
             </Button>
           </Box>
         ) : (
@@ -189,7 +191,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
           onClick={() => { onClose(); router.push("/chat"); }}
           sx={{ color: "primary.main", fontWeight: 700, fontSize: "0.84rem", py: 0.5, px: 1.5, borderRadius: "8px" }}
         >
-          Xem tất cả trong Messenger
+          {tr("Xem tất cả trong Messenger", "See all in Messenger")}
         </ButtonBase>
       </Box>
 
