@@ -49,6 +49,8 @@ describe('FriendsService', () => {
       expire: vi.fn().mockResolvedValue(1),
       set: vi.fn().mockResolvedValue('OK'),
       get: vi.fn().mockResolvedValue(null),
+      zrem: vi.fn().mockResolvedValue(1),
+      zrevrangebyscore: vi.fn().mockResolvedValue([]),
     };
 
     const mockRedisService = {

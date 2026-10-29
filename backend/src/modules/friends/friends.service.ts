@@ -225,6 +225,11 @@ export class FriendsService {
       this.syncFriendsSet(request.requesterId.toString()).catch(() => {});
       this.neo4jService?.addFriendship(userId, request.requesterId.toString()).catch(() => {});
 
+      // Lambda Architecture Speed Layer: Xóa nhau khỏi Redis ZSET gợi ý bạn bè (ZREM)
+      const requesterIdStr = request.requesterId.toString();
+      this.redisService.client.zrem?.(`rec:user:${userId}`, requesterIdStr)?.catch?.(() => {});
+      this.redisService.client.zrem?.(`rec:user:${requesterIdStr}`, userId)?.catch?.(() => {});
+
       // Báo cho người đã gửi lời mời (kèm tên/avatar người chấp nhận)
       this.emitFriendEvent(
         request.requesterId.toString(),
@@ -606,7 +611,31 @@ export class FriendsService {
     }
 
     // 4. Thu thập hồ bơi ứng viên (Candidate Pool)
-    const candidateMap = new Map<string, { distanceKm?: number }>();
+    const candidateMap = new Map<string, { distanceKm?: number; lambdaScore?: number }>();
+
+    // 4.0. Nguồn 0: Lambda Serving Layer (Redis ZSET rec:user:{id} tính bởi Spark Adamic-Adar + Kafka)
+    try {
+      const lambdaResults = await this.redisService.client.zrevrangebyscore?.(
+        `rec:user:${currentUserId}`,
+        '+inf',
+        '-inf',
+        'WITHSCORES',
+        'LIMIT',
+        0,
+        50,
+      );
+      if (Array.isArray(lambdaResults) && lambdaResults.length > 0) {
+        for (let i = 0; i < lambdaResults.length; i += 2) {
+          const cId = lambdaResults[i];
+          const lScore = parseFloat(lambdaResults[i + 1]);
+          if (cId && !excludedIds.has(cId) && !candidateMap.has(cId)) {
+            candidateMap.set(cId, { lambdaScore: lScore });
+          }
+        }
+      }
+    } catch {
+      // Bỏ qua nếu Redis ZSET rỗng (kích hoạt Cold-Start Fallback phía dưới)
+    }
 
     // 4.1. Nguồn 1: Người dùng ở gần vị trí (Redis Geospatial GEORADIUS)
     if (typeof currentLat === 'number' && typeof currentLng === 'number') {
@@ -774,12 +803,22 @@ export class FriendsService {
       }
 
       // D. Tổng điểm
-      const totalScore = mutualScore + geoScore + trustScore;
+      // D. Điểm Lambda Adamic-Adar (tính toán phân tán từ Spark Batch / Kafka Speed Layer)
+      let lambdaBonus = 0;
+      if (meta?.lambdaScore && meta.lambdaScore > 0) {
+        lambdaBonus = Math.min(Math.round(meta.lambdaScore * 25), 100);
+      }
+
+      // Tổng điểm
+      const totalScore = mutualScore + geoScore + trustScore + lambdaBonus;
 
       // E. Lý do gợi ý thân thiện
       const reasons: string[] = [];
       if (mutualCount > 0) {
         reasons.push(`${mutualCount} bạn chung`);
+      }
+      if (meta?.lambdaScore && meta.lambdaScore > 0 && mutualCount === 0) {
+        reasons.push('Đồ thị bạn bè (Adamic-Adar)');
       }
       if (dist !== undefined) {
         reasons.push(

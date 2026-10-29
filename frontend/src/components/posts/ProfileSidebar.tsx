@@ -9,6 +9,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { mediaUrl, type PhotoItem, type PublicProfile } from "@/services/postsApi";
 import ImageLightbox from "./ImageLightbox";
 import { profileHref } from "./PostAuthorHeader";
+import ProfileRecommendationsCard from "./ProfileRecommendationsCard";
 
 interface ProfileSidebarProps {
   profile: PublicProfile | null;
@@ -157,6 +158,8 @@ export default function ProfileSidebar({ profile, photos, currentUserId, isOwner
           </Box>
         )}
       </Paper>
+
+      <ProfileRecommendationsCard cardSx={cardSx} />
 
       <ImageLightbox src={lightbox} alt={tr("Ảnh trong hồ sơ", "Profile photo")} onClose={() => setLightbox(null)} />
     </Box>
