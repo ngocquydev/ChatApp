@@ -91,7 +91,6 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
         template = template.replace(new RegExp(`\\{${paramKey}\\}`, "g"), String(val));
       }
     }
-
     return template;
   },
 }));

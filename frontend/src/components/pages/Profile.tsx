@@ -1152,7 +1152,7 @@ function ProfileContent() {
             borderRadius: "24px",
             border: "1px solid rgba(226, 232, 240, 0.9)",
             bgcolor: "var(--mui-palette-background-paper)",
-            overflow: { xs: "hidden", md: "visible" },
+            overflow: "visible",
             boxShadow: "0 15px 35px -15px rgba(0,0,0,0.05)",
           }}
         >
@@ -1202,7 +1202,7 @@ function ProfileContent() {
 
           {/* TAB 0: BÀI VIẾT (DÒNG THỜI GIAN) */}
           {activeTab === TAB_POSTS && (
-            <Box sx={{ p: { xs: 1.5, sm: 3 }, bgcolor: "background.default" }}>
+            <Box sx={{ p: { xs: 1.5, sm: 3 }, bgcolor: "background.default", borderRadius: "0 0 24px 24px" }}>
               <MyPostsTab />
             </Box>
           )}

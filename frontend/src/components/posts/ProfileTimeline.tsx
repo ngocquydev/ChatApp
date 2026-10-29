@@ -42,20 +42,21 @@ export default function ProfileTimeline({ userId, isOwner, profile, currentUserI
   const name = profile?.user.name;
 
   return (
-    <Grid container spacing={2.5} sx={{ alignItems: "flex-start" }}>
+    <Grid container spacing={2.5}>
       <Grid
         size={{ xs: 12, md: 5 }}
         sx={{
-          position: { xs: "static", md: "sticky" },
-          top: { xs: "auto", md: `${APP_BAR_HEIGHT + 16}px` },
-          alignSelf: "flex-start",
-          zIndex: 1,
+          alignSelf: "stretch",
         }}
       >
         <Box
           sx={{
+            position: { xs: "static", md: "sticky" },
+            top: { xs: "auto", md: `${APP_BAR_HEIGHT + 16}px` },
             maxHeight: { md: `calc(100dvh - ${APP_BAR_HEIGHT + 32}px)` },
             overflowY: { md: "auto" },
+            pr: { md: 0.5 },
+            zIndex: 2,
             scrollbarWidth: "thin",
             "&::-webkit-scrollbar": { width: 4 },
             "&::-webkit-scrollbar-thumb": {
