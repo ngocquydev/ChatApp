@@ -51,6 +51,8 @@ export interface CommentView {
   postId: string;
   author: PostAuthorView;
   content: string;
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video';
   createdAt?: Date;
 }
 
@@ -473,14 +475,26 @@ export class PostsService {
     return { items, hasMore, nextCursor: hasMore ? items[items.length - 1]._id : null };
   }
 
-  async addComment(viewerId: string, postId: string, rawContent: string): Promise<CommentView> {
+  async addComment(
+    viewerId: string,
+    postId: string,
+    rawContent?: string,
+    mediaUrl?: string,
+    mediaType?: 'image' | 'video',
+  ): Promise<CommentView> {
     const content = (rawContent ?? '').trim();
-    if (!content) throw new BadRequestException('Bình luận không được để trống');
+    const cleanMedia = (mediaUrl ?? '').trim();
+    if (!content && !cleanMedia) throw new BadRequestException('Bình luận không được để trống');
     const post = await this.loadVisiblePost(postId, viewerId);
+    const isVideo = cleanMedia ? (mediaType === 'video' || /\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i.test(cleanMedia) || cleanMedia.includes('/video/upload/')) : false;
+    const resolvedType: 'image' | 'video' | undefined = cleanMedia ? (isVideo ? 'video' : 'image') : undefined;
+
     const created = await this.commentModel.create({
       postId: post._id,
       authorId: new Types.ObjectId(viewerId),
       content,
+      mediaUrl: cleanMedia || undefined,
+      mediaType: resolvedType,
     });
     await this.postModel.updateOne({ _id: post._id }, { $inc: { commentCount: 1 } }).exec();
     const authors = await this.loadAuthors([created.authorId]);
@@ -544,6 +558,8 @@ export class PostsService {
       postId: row.postId.toString(),
       author: authors.get(row.authorId.toString()) ?? PostsService.unknownAuthor(row.authorId),
       content: row.content,
+      mediaUrl: row.mediaUrl,
+      mediaType: row.mediaType,
       createdAt: row.createdAt,
     };
   }

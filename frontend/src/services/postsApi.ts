@@ -38,6 +38,8 @@ export interface CommentView {
   postId: string;
   author: PostAuthor;
   content: string;
+  mediaUrl?: string;
+  mediaType?: "image" | "video";
   createdAt?: string;
 }
 
@@ -214,8 +216,16 @@ export async function fetchComments(
   return data;
 }
 
-export async function addComment(postId: string, content: string): Promise<CommentView> {
-  const { data } = await api.post(`/posts/${postId}/comments`, { content });
+export async function addComment(
+  postId: string,
+  content?: string,
+  media?: { url: string; type?: "image" | "video" },
+): Promise<CommentView> {
+  const { data } = await api.post(`/posts/${postId}/comments`, {
+    content: content || undefined,
+    mediaUrl: media?.url,
+    mediaType: media?.type,
+  });
   return data.comment;
 }
 

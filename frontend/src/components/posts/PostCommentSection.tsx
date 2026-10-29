@@ -1,30 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  IconButton,
-  Skeleton,
-  TextField,
-  Tooltip,
-  Typography,
-} from "@mui/material";
-import { SendHorizontal, Trash2 } from "lucide-react";
+import { Alert, Box, Button, Skeleton, Typography } from "@mui/material";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { usePagedList } from "@/hooks/usePagedList";
 import {
   addComment,
   apiErrorMessage,
-  COMMENT_MAX_LENGTH,
   deleteComment,
   fetchComments,
+  uploadMedia,
   type CommentView,
 } from "@/services/postsApi";
-import { formatFullDateTime, formatRelativeTime } from "@/utils/formatTime";
-import PostAuthorHeader from "./PostAuthorHeader";
+import CommentComposer from "./CommentComposer";
+import CommentItem from "./CommentItem";
 
 const COMMENT_PAGE_SIZE = 5;
 
@@ -36,47 +25,7 @@ interface PostCommentSectionProps {
   onCountChange: (delta: number) => void;
 }
 
-function CommentItem({
-  comment,
-  currentUserId,
-  canDelete,
-  onDelete,
-}: {
-  comment: CommentView;
-  currentUserId?: string;
-  canDelete: boolean;
-  onDelete: (comment: CommentView) => void;
-}) {
-  return (
-    <Box component="li" sx={{ display: "flex", gap: 1, alignItems: "flex-start", listStyle: "none" }}>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Box sx={{ bgcolor: "action.hover", borderRadius: "12px", px: 1.5, py: 1 }}>
-          <PostAuthorHeader author={comment.author} currentUserId={currentUserId} size={28} />
-          <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-            {comment.content}
-          </Typography>
-        </Box>
-        <Tooltip title={formatFullDateTime(comment.createdAt)}>
-          <Typography variant="caption" color="text.secondary" sx={{ ml: 1.5 }}>
-            {formatRelativeTime(comment.createdAt)}
-          </Typography>
-        </Tooltip>
-      </Box>
-      {canDelete && (
-        <IconButton
-          size="small"
-          aria-label={`Xóa bình luận của ${comment.author.name}`}
-          onClick={() => onDelete(comment)}
-          sx={{ mt: 0.5 }}
-        >
-          <Trash2 size={16} aria-hidden />
-        </IconButton>
-      )}
-    </Box>
-  );
-}
-
-/** Danh sách + ô nhập bình luận của một bài viết (tải khi mở, "Xem thêm" để tải tiếp). */
+/** Danh sách + ô nhập bình luận của một bài viết (hỗ trợ đính kèm ảnh / video). */
 export default function PostCommentSection({
   postId,
   postAuthorId,
@@ -88,23 +37,25 @@ export default function PostCommentSection({
     (err) => apiErrorMessage(err, "Không tải được bình luận."),
   );
 
-  const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<CommentView | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const trimmed = text.trim();
-
-  const submit = async () => {
-    if (!trimmed || sending) return;
+  const handleSubmit = async (content: string, file: File | null, isVideo: boolean) => {
     setSending(true);
     setActionError(null);
     try {
-      const comment = await addComment(postId, trimmed);
-      // Luôn hiện ngay bình luận vừa gửi; thứ tự theo _id (ObjectId tăng dần theo thời gian) được giữ khi tải thêm
+      let media: { url: string; type?: "image" | "video" } | undefined;
+      if (file) {
+        const uploaded = await uploadMedia(file);
+        media = {
+          url: uploaded.url,
+          type: uploaded.resource_type === "video" || isVideo ? "video" : "image",
+        };
+      }
+      const comment = await addComment(postId, content || undefined, media);
       list.append(comment);
-      setText("");
       onCountChange(1);
     } catch (err) {
       setActionError(apiErrorMessage(err, "Không gửi được bình luận."));
@@ -192,33 +143,12 @@ export default function PostCommentSection({
         </Alert>
       )}
 
-      <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end", mt: 1.5 }}>
-        <TextField
-          fullWidth
-          multiline
-          maxRows={4}
-          size="small"
-          placeholder="Viết bình luận…"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            // Không gửi khi đang gõ IME (Telex/VNI dùng Enter để chốt từ)
-            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              void submit();
-            }
-          }}
-          slotProps={{ htmlInput: { maxLength: COMMENT_MAX_LENGTH, "aria-label": "Viết bình luận" } }}
-        />
-        <IconButton
-          color="primary"
-          aria-label="Gửi bình luận"
-          disabled={!trimmed || sending}
-          onClick={() => void submit()}
-        >
-          {sending ? <CircularProgress size={20} /> : <SendHorizontal size={20} aria-hidden />}
-        </IconButton>
-      </Box>
+      {/* Ô nhập bình luận kèm đính kèm ảnh hoặc video */}
+      <CommentComposer
+        sending={sending}
+        onSubmit={handleSubmit}
+        onError={(msg) => setActionError(msg)}
+      />
 
       <ConfirmDialog
         open={!!toDelete}

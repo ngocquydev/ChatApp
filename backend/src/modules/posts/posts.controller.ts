@@ -209,6 +209,8 @@ export class PostsController {
       this.extractUserId(req),
       postId,
       dto.content,
+      dto.mediaUrl,
+      dto.mediaType,
     );
     return { success: true, comment };
   }

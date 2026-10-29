@@ -85,9 +85,20 @@ export class SharePostDto {
 
 export class CreateCommentDto {
   @ApiPropertyOptional({ description: 'Nội dung bình luận (1–1000 ký tự)' })
+  @IsOptional()
   @IsString()
   @MaxLength(1000)
-  content: string;
+  content?: string;
+
+  @ApiPropertyOptional({ description: 'Đường dẫn ảnh hoặc video đính kèm trong bình luận' })
+  @IsOptional()
+  @IsString()
+  mediaUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Loại tệp media (image hoặc video)', enum: ['image', 'video'] })
+  @IsOptional()
+  @IsIn(['image', 'video'])
+  mediaType?: 'image' | 'video';
 }
 
 export class PageQueryDto {

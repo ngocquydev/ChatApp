@@ -243,10 +243,39 @@ describe('PostsService', () => {
   });
 
   describe('bình luận', () => {
-    it('từ chối bình luận rỗng', async () => {
+    it('từ chối bình luận rỗng không có media', async () => {
       await expect(service.addComment(me, oid().toString(), '   ')).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    it('cho phép bình luận chỉ có ảnh hoặc video', async () => {
+      const postId = oid();
+      postModel.findOne.mockReturnValue(
+        q({ _id: postId, authorId: new Types.ObjectId(other), privacy: 'public' }),
+      );
+      commentModel.create.mockResolvedValue({
+        _id: oid(),
+        postId,
+        authorId: new Types.ObjectId(me),
+        content: '',
+        mediaUrl: 'https://res.cloudinary.com/test/image/upload/sample.jpg',
+        mediaType: 'image',
+        createdAt: new Date(),
+      });
+      usersService.findByIds.mockResolvedValue([
+        { _id: new Types.ObjectId(me), name: 'Me', avatar: '' },
+      ]);
+      const res = await service.addComment(
+        me,
+        postId.toString(),
+        '',
+        'https://res.cloudinary.com/test/image/upload/sample.jpg',
+        'image',
+      );
+      expect(res.mediaUrl).toBe('https://res.cloudinary.com/test/image/upload/sample.jpg');
+      expect(res.mediaType).toBe('image');
+      expect(postModel.updateOne).toHaveBeenCalled();
     });
 
     it('chỉ tác giả bình luận hoặc chủ bài mới được xóa bình luận', async () => {

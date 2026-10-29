@@ -11,8 +11,14 @@ export class PostComment {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   authorId: Types.ObjectId;
 
-  @Prop({ type: String, required: true, maxlength: 1000 })
+  @Prop({ type: String, required: false, default: '', maxlength: 1000 })
   content: string;
+
+  @Prop({ type: String, required: false })
+  mediaUrl?: string;
+
+  @Prop({ type: String, required: false, enum: ['image', 'video'] })
+  mediaType?: 'image' | 'video';
 
   createdAt?: Date;
 }
