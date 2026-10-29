@@ -1152,12 +1152,21 @@ function ProfileContent() {
             borderRadius: "24px",
             border: "1px solid rgba(226, 232, 240, 0.9)",
             bgcolor: "var(--mui-palette-background-paper)",
-            overflow: "hidden",
+            overflow: { xs: "hidden", md: "visible" },
             boxShadow: "0 15px 35px -15px rgba(0,0,0,0.05)",
           }}
         >
           {/* Tabs Header */}
-          <Box sx={{ borderBottom: 1, borderColor: "divider", px: 3, pt: 1.5, bgcolor: "var(--mui-palette-neutral-50)" }}>
+          <Box
+            sx={{
+              borderBottom: 1,
+              borderColor: "divider",
+              px: 3,
+              pt: 1.5,
+              bgcolor: "var(--mui-palette-neutral-50)",
+              borderRadius: "24px 24px 0 0",
+            }}
+          >
             <Tabs
               value={activeTab}
               onChange={(_, val) => setActiveTab(val)}
