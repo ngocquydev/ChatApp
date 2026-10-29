@@ -16,3 +16,4 @@ export const config = {
     friendKeyPrefix: process.env.REDIS_FRIEND_PREFIX || 'user:',
   },
 };
+

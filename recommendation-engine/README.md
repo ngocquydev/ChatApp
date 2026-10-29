@@ -164,3 +164,4 @@ cd ..
 node scripts/test_pipeline_e2e.js
 ```
 Kết quả kiểm thử thực tế đạt độ trễ **3.86ms** (< 10ms chuẩn thiết kế).
+

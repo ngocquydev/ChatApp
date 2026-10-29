@@ -22,3 +22,4 @@ export class RecommendationController {
     return this.recommendationService.getRecommendations(userId, limit);
   }
 }
+

@@ -15,3 +15,4 @@ import { UserProfile, UserProfileSchema } from './schemas/user-profile.schema';
   exports: [RecommendationService],
 })
 export class RecommendationModule {}
+

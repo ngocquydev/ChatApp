@@ -16,3 +16,4 @@ export class RecommendationResponseDto {
   count: number;
   data: RecommendationItemDto[];
 }
+

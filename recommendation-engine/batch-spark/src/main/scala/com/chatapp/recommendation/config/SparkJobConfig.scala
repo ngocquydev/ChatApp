@@ -68,3 +68,4 @@ object SparkJobConfig {
     OParser.parse(parser, args, SparkJobConfig())
   }
 }
+

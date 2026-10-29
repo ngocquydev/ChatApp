@@ -212,3 +212,4 @@ object AdamicAdarBatchJob {
     logger.info("Ghi dữ liệu xuống Redis hoàn tất thành công.")
   }
 }
+

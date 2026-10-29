@@ -73,30 +73,32 @@ export class RecommendationService {
       });
       const mutualFriendsResults = (await pipeline.exec()) || [];
 
-      const recommendations: RecommendationItemDto[] = candidateList
-        .map((candidate, idx) => {
-          const profile = profileMap.get(candidate.candidateId);
-          if (!profile) return null;
+      const rawList = candidateList.map((candidate, idx): RecommendationItemDto | null => {
+        const profile = profileMap.get(candidate.candidateId);
+        if (!profile) return null;
 
-          const mutualArray = (mutualFriendsResults[idx]?.[1] as string[]) || [];
-          const mutualCount = mutualArray.length;
+        const mutualArray = (mutualFriendsResults[idx]?.[1] as string[]) || [];
+        const mutualCount = mutualArray.length;
 
-          const reason =
-            mutualCount > 0
-              ? `Có ${mutualCount} bạn chung`
-              : `Điểm gắn kết Adamic-Adar: ${candidate.score.toFixed(2)}`;
+        const reason =
+          mutualCount > 0
+            ? `Có ${mutualCount} bạn chung`
+            : `Điểm gắn kết Adamic-Adar: ${candidate.score.toFixed(2)}`;
 
-          return {
-            userId: String(profile._id),
-            name: profile.name,
-            avatar: profile.avatar,
-            bio: profile.bio,
-            mutualFriendsCount: mutualCount,
-            score: candidate.score,
-            reason,
-          };
-        })
-        .filter((item): item is RecommendationItemDto => item !== null);
+        return {
+          userId: String(profile._id),
+          name: profile.name,
+          avatar: profile.avatar,
+          bio: profile.bio,
+          mutualFriendsCount: mutualCount,
+          score: candidate.score,
+          reason,
+        };
+      });
+
+      const recommendations: RecommendationItemDto[] = rawList.filter(
+        (item): item is RecommendationItemDto => item !== null,
+      );
 
       const latency = Date.now() - startTime;
       return {
@@ -140,7 +142,7 @@ export class RecommendationService {
    * Giải thuật Cold-Start: Kết hợp Geospatial 2dsphere (bán kính 10km) và Tương đồng Sở thích
    */
   private async resolveColdStart(userId: string, limit: number): Promise<RecommendationItemDto[]> {
-    let targetUser: UserProfileDocument | null = null;
+    let targetUser: any = null;
 
     if (Types.ObjectId.isValid(userId)) {
       targetUser = await this.userProfileModel.findById(userId).lean();
@@ -249,7 +251,7 @@ export class RecommendationService {
     return scoredList.slice(0, limit);
   }
 
-  private async fetchProfilesByIds(ids: string[]): Promise<UserProfileDocument[]> {
+  private async fetchProfilesByIds(ids: string[]): Promise<any[]> {
     const validObjectIds = ids.filter((id) => Types.ObjectId.isValid(id));
     return this.userProfileModel
       .find({
@@ -259,3 +261,4 @@ export class RecommendationService {
       .lean();
   }
 }
+

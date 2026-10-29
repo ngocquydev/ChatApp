@@ -49,3 +49,4 @@ class AdamicAdarJobSpec extends AnyFunSuite with Matchers with BeforeAndAfterAll
     expectedScore should be > 1.0
   }
 }
+

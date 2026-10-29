@@ -108,3 +108,4 @@ object RedisPipelineSink extends Serializable {
     }
   }
 }
+

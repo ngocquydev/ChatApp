@@ -42,3 +42,4 @@ export const UserProfileSchema = SchemaFactory.createForClass(UserProfile);
 // Đánh chỉ mục 2dsphere bắt buộc cho truy vấn vị trí địa lý bán kính 10km (Geo-Proximity)
 UserProfileSchema.index({ location: '2dsphere' });
 UserProfileSchema.index({ interests: 1 });
+
