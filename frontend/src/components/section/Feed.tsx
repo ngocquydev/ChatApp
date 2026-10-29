@@ -5,11 +5,14 @@ import { Box, Button, Typography } from "@mui/material";
 import { Compass } from "lucide-react";
 import PostFeed from "@/components/posts/PostFeed";
 import { fetchFeed } from "@/services/postsApi";
+import { useTranslation } from "@/i18n/useTranslation";
 
 const PAGE_SIZE = 10;
 
 /** Bảng tin: bài của bạn và bạn bè, đăng bài mới, cuộn vô hạn. Dữ liệu thật từ API /posts/feed. */
 function Feed() {
+  const { t } = useTranslation();
+
   return (
     <Box
       sx={{
@@ -24,7 +27,7 @@ function Feed() {
     >
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
         <Typography variant="h5" component="h1" sx={{ fontWeight: 800 }}>
-          Bảng tin
+          {t("feed.title")}
         </Typography>
         <Button
           component={NextLink}
@@ -34,18 +37,18 @@ function Feed() {
           startIcon={<Compass size={16} aria-hidden />}
           sx={{ display: { xs: "inline-flex", md: "none" }, borderRadius: "10px" }}
         >
-          Khám phá bạn bè
+          {t("feed.exploreFriends")}
         </Button>
       </Box>
 
       <PostFeed
         loadPage={(after) => fetchFeed({ limit: PAGE_SIZE, after })}
         canCompose
-        emptyTitle="Bảng tin còn trống"
-        emptyDescription="Hãy đăng bài đầu tiên của bạn, hoặc kết bạn để xem bài viết của bạn bè."
+        emptyTitle={t("feed.noPostsTitle")}
+        emptyDescription={t("feed.noPostsDesc")}
         emptyAction={
           <Button component={NextLink} href="/explore" variant="outlined">
-            Khám phá bạn bè
+            {t("feed.exploreFriends")}
           </Button>
         }
       />

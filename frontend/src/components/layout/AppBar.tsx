@@ -50,6 +50,8 @@ import { useFriendStore } from "../../store/useFriendStore";
 import { useChatStore } from "../../store/useChatStore";
 import BrandLogo from "../common/BrandLogo";
 import ColorModeToggle from "../common/ColorModeToggle";
+import LanguageToggle from "../common/LanguageToggle";
+import { useTranslation } from "@/i18n/useTranslation";
 import NotificationBell from "../notifications/NotificationBell";
 import RecentChatsPopover from "./RecentChatsPopover";
 import UserSearchResults, { SEARCH_PREVIEW_COUNT } from "./UserSearchResults";
@@ -72,6 +74,7 @@ function ResponsiveAppBar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const { t } = useTranslation();
 
   // State tìm kiếm người dùng toàn hệ thống
   const [searchQuery, setSearchQuery] = useState("");
@@ -160,21 +163,21 @@ function ResponsiveAppBar() {
   };
 
   const settings = [
-    { label: user?.name ? `Tên: ${user.name}` : "Tài khoản", disabled: true },
+    { label: user?.name ? `${user.name}` : t("nav.profile"), disabled: true },
     {
-      label: "Hồ sơ cá nhân",
+      label: t("nav.profile"),
       action: () => {
         router.push("/profile");
       },
     },
     {
-      label: "Cài đặt",
+      label: t("nav.settings"),
       action: () => {
         router.push("/profile");
       },
     },
     {
-      label: "Đăng xuất",
+      label: t("nav.logout"),
       action: () => {
         handleLogout();
       },
@@ -182,19 +185,19 @@ function ResponsiveAppBar() {
   ];
 
   const pages: NavPage[] = [
-    { id: "home", label: "Trang chủ", icon: <Home size={20} />, href: "/" },
+    { id: "home", label: t("nav.home"), icon: <Home size={20} />, href: "/" },
     {
       id: "explore",
-      label: "Khám phá",
+      label: t("nav.explore"),
       icon: <Compass size={20} />,
       href: "/explore",
     },
     {
       id: "friends",
-      label: "Bạn bè",
+      label: t("nav.friends"),
       icon: <UserPlus size={20} />,
     },
-    { id: "chat", label: "Tin nhắn", icon: <MessageSquare size={20} />, href: "/chat" },
+    { id: "chat", label: t("nav.messages"), icon: <MessageSquare size={20} />, href: "/chat" },
   ];
 
   return (
@@ -699,6 +702,11 @@ function ResponsiveAppBar() {
               <NotificationBell />
             </Box>
 
+            {/* Đổi ngôn ngữ VI / EN */}
+            <Box sx={{ display: { xs: "none", md: "flex" }, mr: 0.5 }}>
+              <LanguageToggle />
+            </Box>
+
             {/* Đổi giao diện sáng/tối (mobile: nằm trong Drawer) */}
             <Box sx={{ display: { xs: "none", md: "flex" }, mr: 0.5 }}>
               <ColorModeToggle />
@@ -786,6 +794,7 @@ function ResponsiveAppBar() {
         >
           <BrandLogo href="" size={32} />
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <LanguageToggle size="small" />
             <ColorModeToggle />
             <IconButton onClick={handleDrawerToggle} aria-label="Đóng menu" sx={{ color: "inherit" }}>
               <X size={20} />

@@ -15,6 +15,7 @@ import {
   type PostView,
 } from "@/services/postsApi";
 import PrivacyPicker from "./PrivacyPicker";
+import { useTranslation } from "@/i18n/useTranslation";
 
 interface Attachment {
   key: string;
@@ -54,6 +55,7 @@ export default function PostComposer({
   onCreated,
 }: PostComposerProps) {
   const uid = useId();
+  const { t, isVietnamese } = useTranslation();
   const [text, setText] = useState("");
   const [privacy, setPrivacy] = useState<PostPrivacy>(defaultPrivacy);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -183,7 +185,11 @@ export default function PostComposer({
             minRows={2}
             maxRows={10}
             variant="standard"
-            placeholder={userName ? `${userName} ơi, bạn đang nghĩ gì?` : "Bạn đang nghĩ gì?"}
+            placeholder={
+              userName
+                ? (isVietnamese ? `${userName} ơi, bạn đang nghĩ gì thế?` : `${userName}, what's on your mind?`)
+                : t("feed.whatsOnYourMind")
+            }
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={posting}
@@ -260,8 +266,8 @@ export default function PostComposer({
             startIcon={<ImagePlus size={18} color="var(--mui-palette-success-main)" aria-hidden />}
             sx={{ fontWeight: 600, color: "text.secondary", borderRadius: "10px", px: 1.25 }}
           >
-            Ảnh / Video
-            <input hidden type="file" accept={ACCEPT} multiple onChange={handleFiles} aria-label="Chọn ảnh hoặc video đính kèm" />
+            {t("feed.photosVideos")}
+            <input hidden type="file" accept={ACCEPT} multiple onChange={handleFiles} aria-label={t("feed.photosVideos")} />
           </Button>
           <PrivacyPicker value={privacy} onChange={handlePrivacyChange} disabled={posting} labelId={`${uid}-privacy`} />
         </Box>
@@ -271,7 +277,7 @@ export default function PostComposer({
           onClick={() => void submit()}
           sx={{ borderRadius: "10px", px: 2.5, fontWeight: 700 }}
         >
-          {posting ? "Đang đăng…" : uploading > 0 ? "Đang tải lên…" : "Đăng bài"}
+          {posting ? t("feed.posting") : uploading > 0 ? (isVietnamese ? "Đang tải lên…" : "Uploading…") : t("feed.post")}
         </Button>
       </Box>
     </Paper>

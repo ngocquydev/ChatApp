@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
 import { useFriendStore } from "@/store/useFriendStore";
 import { useNotificationStore } from "@/store/useNotificationStore";
+import { useTranslation } from "@/i18n/useTranslation";
 
 const FloatingChatDock = dynamic(() => import("@/components/chat/FloatingChatDock"), {
   ssr: false,
@@ -27,6 +28,7 @@ export default function ClientShell({ children }: ClientShellProps) {
   const { connectSocket } = useChatStore();
   const { fetchFriends, fetchRequests } = useFriendStore();
   const { fetchUnreadCount } = useNotificationStore();
+  const { t } = useTranslation();
 
   const hideAppBarRoutes = ["/login", "/register", "/forgot-password"];
   const shouldHideAppBar = hideAppBarRoutes.some(
@@ -49,7 +51,7 @@ export default function ClientShell({ children }: ClientShellProps) {
   return (
     <>
       <a href="#main-content" className="skip-link">
-        Bỏ qua điều hướng, tới nội dung chính
+        {t("nav.skipToContent")}
       </a>
       {!shouldHideAppBar && <ResponsiveAppBar />}
       <main id="main-content" tabIndex={-1} style={{ outline: "none" }}>

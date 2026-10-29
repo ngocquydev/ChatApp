@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Box, Button, ButtonBase, Card, IconButton, ListItemIcon, Menu, MenuItem, Tooltip, Typography } from "@mui/material";
 import { Heart, MessageCircle, MoreHorizontal, Pencil, Share2, Trash2 } from "lucide-react";
 import { isSharedPostAvailable, type PostView } from "@/services/postsApi";
+import { useTranslation } from "@/i18n/useTranslation";
 import PostAuthorHeader from "./PostAuthorHeader";
 import PostCommentSection from "./PostCommentSection";
 import PostImages from "./PostImages";
@@ -52,6 +53,7 @@ export default function PostCard({
   const [showComments, setShowComments] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const { t } = useTranslation();
 
   const isOwn = post.author._id === currentUserId;
   const shareable = canSharePost(post, currentUserId);
@@ -101,7 +103,7 @@ export default function PostCard({
                     <ListItemIcon sx={{ color: "inherit", minWidth: 32 }}>
                       <Pencil size={18} aria-hidden />
                     </ListItemIcon>
-                    Chỉnh sửa bài viết
+                    {t("common.edit")}
                   </MenuItem>
                   <MenuItem
                     onClick={() => {
@@ -113,7 +115,7 @@ export default function PostCard({
                     <ListItemIcon sx={{ color: "inherit", minWidth: 32 }}>
                       <Trash2 size={18} aria-hidden />
                     </ListItemIcon>
-                    Xóa bài viết
+                    {t("common.delete")}
                   </MenuItem>
                 </Menu>
               </>
@@ -126,7 +128,7 @@ export default function PostCard({
             {text}
             {long && (
               <Button size="small" onClick={() => setExpanded((v) => !v)} sx={{ ml: 0.5, p: 0, minWidth: 0, fontWeight: 700 }}>
-                {expanded ? "Thu gọn" : "Xem thêm"}
+                {expanded ? t("common.seeLess") : t("common.seeMore")}
               </Button>
             )}
           </Typography>
@@ -189,17 +191,17 @@ export default function PostCard({
             {post.commentCount > 0 && (
               <ButtonBase
                 onClick={() => onOpenEngagers?.(post._id, "commenters")}
-                aria-label={`Xem danh sách ${post.commentCount} bình luận`}
+                aria-label={t("feed.commentsCount", { count: post.commentCount })}
                 sx={{ borderRadius: "6px", p: 0.25, "&:hover": { textDecoration: "underline" } }}
               >
                 <Typography variant="body2" color="text.secondary">
-                  {post.commentCount} bình luận
+                  {t("feed.commentsCount", { count: post.commentCount })}
                 </Typography>
               </ButtonBase>
             )}
             {post.shareCount > 0 && (
               <Typography variant="body2" color="text.secondary">
-                {post.shareCount} lượt chia sẻ
+                {t("feed.sharesCount", { count: post.shareCount })}
               </Typography>
             )}
           </Box>
@@ -241,7 +243,7 @@ export default function PostCard({
             "&:hover": { bgcolor: "action.hover" },
           }}
         >
-          Thích
+          {t("feed.like")}
         </Button>
         <Button
           color="inherit"
@@ -261,9 +263,9 @@ export default function PostCard({
             "&:hover": { bgcolor: "action.hover" },
           }}
         >
-          Bình luận
+          {t("feed.comment")}
         </Button>
-        <Tooltip title={shareable ? "" : "Chỉ chia sẻ lại được bài viết công khai"}>
+        <Tooltip title={shareable ? "" : (t("feed.privacyFriends"))}>
           <Box component="span" sx={{ flex: 1, minWidth: 0, display: "flex" }}>
             <Button
               fullWidth
@@ -284,7 +286,7 @@ export default function PostCard({
                 "&:hover": { bgcolor: "action.hover" },
               }}
             >
-              Chia sẻ
+              {t("common.share")}
             </Button>
           </Box>
         </Tooltip>

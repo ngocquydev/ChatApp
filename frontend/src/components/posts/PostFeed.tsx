@@ -15,6 +15,7 @@ import {
   type PostView,
 } from "@/services/postsApi";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useTranslation } from "@/i18n/useTranslation";
 import PostCard from "./PostCard";
 import PostComposer from "./PostComposer";
 import SharePostDialog from "./SharePostDialog";
@@ -61,6 +62,7 @@ export default function PostFeed({
   onOwnPostsChanged,
 }: PostFeedProps) {
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const currentUserId = (user?._id || user?.id) as string | undefined;
 
   const list = usePagedList<PostView>(loadPage, (err) => apiErrorMessage(err, "Không tải được bài viết."));
@@ -154,7 +156,7 @@ export default function PostFeed({
             severity="error"
             action={
               <Button color="inherit" size="small" onClick={list.reload}>
-                Thử lại
+                {t("common.retry")}
               </Button>
             }
           >
@@ -198,7 +200,7 @@ export default function PostFeed({
                 severity="error"
                 action={
                   <Button color="inherit" size="small" onClick={list.loadMore}>
-                    Thử lại
+                    {t("common.retry")}
                   </Button>
                 }
               >
@@ -207,7 +209,7 @@ export default function PostFeed({
             )}
             {!list.hasMore && !list.isLoadingMore && (
               <Typography variant="caption" color="text.secondary" sx={{ textAlign: "center", py: 1 }}>
-                Bạn đã xem hết bài viết.
+                {t("feed.endOfPosts")}
               </Typography>
             )}
           </>
@@ -241,9 +243,9 @@ export default function PostFeed({
 
       <ConfirmDialog
         open={!!toDelete}
-        title="Xóa bài viết?"
-        description="Bài viết sẽ bị xóa khỏi dòng thời gian của bạn. Các bài chia sẻ lại bài này sẽ hiển thị “nội dung không khả dụng”."
-        confirmLabel="Xóa bài viết"
+        title={t("feed.deletePostTitle")}
+        description={t("feed.deletePostDesc")}
+        confirmLabel={t("common.delete")}
         pending={deleting}
         onConfirm={() => void confirmDelete()}
         onClose={() => setToDelete(null)}
