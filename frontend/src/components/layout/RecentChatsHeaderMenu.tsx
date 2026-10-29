@@ -1,7 +1,7 @@
 "use client";
 
 import { ListItemIcon, ListItemText, Menu, MenuItem, Typography } from "@mui/material";
-import { CheckCheck, Maximize2, ShieldAlert, Volume2, VolumeX } from "lucide-react";
+import { CheckCheck, Maximize2, Volume2, VolumeX } from "lucide-react";
 
 interface RecentChatsHeaderMenuProps {
   anchorEl: HTMLElement | null;
@@ -29,6 +29,8 @@ export default function RecentChatsHeaderMenu({
       open={Boolean(anchorEl)}
       onClose={onClose}
       disableScrollLock
+      autoFocus={false}
+      disableRestoreFocus
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       transformOrigin={{ vertical: "top", horizontal: "right" }}
       slotProps={{
@@ -48,8 +50,8 @@ export default function RecentChatsHeaderMenu({
     >
       <MenuItem
         onClick={() => {
-          onClose();
           onMarkAllAsRead();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -65,8 +67,8 @@ export default function RecentChatsHeaderMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onToggleMute();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -82,8 +84,8 @@ export default function RecentChatsHeaderMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onOpenFullChat();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -99,4 +101,3 @@ export default function RecentChatsHeaderMenu({
     </Menu>
   );
 }
-

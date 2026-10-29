@@ -53,6 +53,8 @@ export default function RecentChatRowMenu({
       open={Boolean(anchorEl)}
       onClose={onClose}
       disableScrollLock
+      autoFocus={false}
+      disableRestoreFocus
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       transformOrigin={{ vertical: "top", horizontal: "right" }}
       slotProps={{
@@ -72,8 +74,8 @@ export default function RecentChatRowMenu({
     >
       <MenuItem
         onClick={() => {
-          onClose();
           onToggleUnread();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -89,8 +91,8 @@ export default function RecentChatRowMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onOpenInMessenger();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -106,8 +108,8 @@ export default function RecentChatRowMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onToggleMute();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -123,8 +125,8 @@ export default function RecentChatRowMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onViewProfile();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -142,8 +144,8 @@ export default function RecentChatRowMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onToggleBlock();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -159,8 +161,8 @@ export default function RecentChatRowMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onToggleRestrict();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -176,8 +178,8 @@ export default function RecentChatRowMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onHideChat();
+          onClose();
         }}
         sx={{ ...itemSx, color: "error.main" }}
       >
@@ -193,4 +195,3 @@ export default function RecentChatRowMenu({
     </Menu>
   );
 }
-

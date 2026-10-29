@@ -54,11 +54,14 @@ export default function RecentChatRow({
   return (
     <Box
       sx={{
-        position: "relative",
+        display: "flex",
+        alignItems: "center",
         borderRadius: "12px",
         mb: 0.25,
+        pr: 1,
+        position: "relative",
         "&:hover": { bgcolor: "action.hover" },
-        "&:hover .conv-more-btn": { opacity: 1, pointerEvents: "auto" },
+        "&:hover .conv-more-btn": { opacity: 1 },
       }}
     >
       <ButtonBase
@@ -66,13 +69,13 @@ export default function RecentChatRow({
         aria-label={`Mở đoạn chat với ${other?.name || "Người dùng"}`}
         onClick={() => onSelect(conv)}
         sx={{
-          width: "100%",
+          flex: 1,
+          minWidth: 0,
           textAlign: "left",
           justifyContent: "flex-start",
           alignItems: "center",
           gap: 1.5,
           p: 1.1,
-          pr: 6,
           borderRadius: "12px",
         }}
       >
@@ -97,56 +100,44 @@ export default function RecentChatRow({
         </Box>
       </ButtonBase>
 
-      <IconButton
-        className="conv-more-btn"
-        size="small"
-        aria-label={`Tùy chọn đoạn chat với ${other?.name || "Người dùng"}`}
-        onMouseDown={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onOpenMenu(e.currentTarget, conv);
-        }}
-        sx={{
-          position: "absolute",
-          right: isUnread ? 24 : 10,
-          top: "50%",
-          transform: "translateY(-50%)",
-          opacity: isMenuOpen ? 1 : 0,
-          pointerEvents: isMenuOpen ? "auto" : "none",
-          transition: "opacity 0.15s ease",
-          width: 32,
-          height: 32,
-          bgcolor: "background.paper",
-          border: "1px solid",
-          borderColor: "divider",
-          zIndex: 5,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-          "&:hover": { bgcolor: "action.selected" },
-        }}
-      >
-        <MoreHorizontal size={16} />
-      </IconButton>
-
-      {isUnread && (
-        <Box
-          aria-label="Chưa đọc"
-          sx={{
-            position: "absolute",
-            right: 10,
-            top: "50%",
-            transform: "translateY(-50%)",
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            bgcolor: "primary.main",
+      {/* Cụm nút tùy chọn 3 chấm và chấm chưa đọc tách riêng hoàn toàn khỏi ButtonBase */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexShrink: 0, pl: 0.5 }}>
+        <IconButton
+          className="conv-more-btn"
+          size="small"
+          aria-label={`Tùy chọn đoạn chat với ${other?.name || "Người dùng"}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenMenu(e.currentTarget, conv);
           }}
-        />
-      )}
+          sx={{
+            width: 32,
+            height: 32,
+            bgcolor: "background.paper",
+            border: "1px solid",
+            borderColor: "divider",
+            opacity: isMenuOpen ? 1 : 0,
+            transition: "opacity 0.15s ease",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+            "&:hover": { bgcolor: "action.selected" },
+          }}
+        >
+          <MoreHorizontal size={16} />
+        </IconButton>
+
+        {isUnread && (
+          <Box
+            aria-label="Chưa đọc"
+            sx={{
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              bgcolor: "primary.main",
+              flexShrink: 0,
+            }}
+          />
+        )}
+      </Box>
     </Box>
   );
 }
-

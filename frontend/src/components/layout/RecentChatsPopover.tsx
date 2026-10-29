@@ -61,6 +61,8 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
       anchorEl={anchorEl}
       onClose={onClose}
       disableScrollLock
+      autoFocus={false}
+      disableRestoreFocus
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       transformOrigin={{ vertical: "top", horizontal: "right" }}
       slotProps={{ paper: { sx: { width: { xs: 340, sm: 375 }, maxHeight: 540, borderRadius: "16px", mt: 1, display: "flex", flexDirection: "column", overflow: "hidden", border: "1px solid", borderColor: "divider" } } }}

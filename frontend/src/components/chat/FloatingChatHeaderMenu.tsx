@@ -59,6 +59,8 @@ export default function FloatingChatHeaderMenu({
       open={Boolean(anchorEl)}
       onClose={onClose}
       disableScrollLock
+      autoFocus={false}
+      disableRestoreFocus
       transformOrigin={{ horizontal: "left", vertical: "top" }}
       anchorOrigin={{ horizontal: "left", vertical: "bottom" }}
       slotProps={{
@@ -77,8 +79,8 @@ export default function FloatingChatHeaderMenu({
     >
       <MenuItem
         onClick={() => {
-          onClose();
           onOpenFullChat();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -94,8 +96,8 @@ export default function FloatingChatHeaderMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onViewProfile();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -111,8 +113,8 @@ export default function FloatingChatHeaderMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onOpenTheme();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -130,8 +132,8 @@ export default function FloatingChatHeaderMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onToggleMute();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -147,8 +149,8 @@ export default function FloatingChatHeaderMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onOpenBlock();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -164,8 +166,8 @@ export default function FloatingChatHeaderMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onOpenReadReceipts();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -189,8 +191,8 @@ export default function FloatingChatHeaderMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onOpenRestrict();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -208,8 +210,8 @@ export default function FloatingChatHeaderMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onArchiveChat();
+          onClose();
         }}
         sx={itemSx}
       >
@@ -225,8 +227,8 @@ export default function FloatingChatHeaderMenu({
 
       <MenuItem
         onClick={() => {
-          onClose();
           onCloseChat();
+          onClose();
         }}
         sx={{ ...itemSx, color: "error.main" }}
       >
