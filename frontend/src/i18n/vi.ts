@@ -37,6 +37,7 @@ export const vi: TranslationDictionary = {
     theme: "Giao diện",
     skipToContent: "Bỏ qua điều hướng, tới nội dung chính",
     openSettings: "Mở cài đặt",
+    searchPlaceholder: "Tìm bạn bè, đồng nghiệp…",
   },
   feed: {
     title: "Bảng tin",

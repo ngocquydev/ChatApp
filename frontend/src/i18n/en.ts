@@ -37,6 +37,7 @@ export const en: TranslationDictionary = {
     theme: "Theme",
     skipToContent: "Skip to main content",
     openSettings: "Open settings",
+    searchPlaceholder: "Search friends, colleagues…",
   },
   feed: {
     title: "News Feed",

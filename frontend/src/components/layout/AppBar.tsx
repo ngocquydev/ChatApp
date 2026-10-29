@@ -241,7 +241,7 @@ function ResponsiveAppBar() {
               <TextField
                 fullWidth
                 size="small"
-                placeholder={t("nav.searchPlaceholder")}
+                placeholder={t("nav.searchPlaceholder") || tr("Tìm bạn bè, đồng nghiệp…", "Search friends, colleagues…")}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);

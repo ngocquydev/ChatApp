@@ -37,6 +37,7 @@ export interface TranslationDictionary {
     theme: string;
     skipToContent: string;
     openSettings: string;
+    searchPlaceholder: string;
   };
   feed: {
     title: string;
