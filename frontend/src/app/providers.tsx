@@ -6,9 +6,20 @@ import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import theme from "@/theme/theme";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useLanguageStore } from "@/i18n/useLanguageStore";
 
 interface ProvidersProps {
   children: ReactNode;
+}
+
+function LanguageInitializer({ children }: { children: ReactNode }) {
+  const hydrateLanguage = useLanguageStore((state) => state.hydrateLanguage);
+
+  useEffect(() => {
+    hydrateLanguage();
+  }, [hydrateLanguage]);
+
+  return <>{children}</>;
 }
 
 function AuthInitializer({ children }: { children: ReactNode }) {
@@ -44,7 +55,9 @@ export default function Providers({ children }: ProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme} defaultMode="system">
         <CssBaseline enableColorScheme />
-        <AuthInitializer>{children}</AuthInitializer>
+        <LanguageInitializer>
+          <AuthInitializer>{children}</AuthInitializer>
+        </LanguageInitializer>
       </ThemeProvider>
     </QueryClientProvider>
   );

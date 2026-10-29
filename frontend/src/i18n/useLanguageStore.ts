@@ -5,8 +5,10 @@ import type { SupportedLanguage, TranslationDictionary } from "./types";
 
 interface LanguageState {
   language: SupportedLanguage;
+  isHydrated: boolean;
   setLanguage: (lang: SupportedLanguage) => void;
   toggleLanguage: () => void;
+  hydrateLanguage: () => void;
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
@@ -42,6 +44,7 @@ function resolveNestedKey(obj: unknown, path: string): string | null {
 
 export const useLanguageStore = create<LanguageState>((set, get) => ({
   language: "vi",
+  isHydrated: false,
 
   setLanguage: (lang) => {
     if (typeof window !== "undefined") {
@@ -52,12 +55,23 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
         // ignore
       }
     }
-    set({ language: lang });
+    set({ language: lang, isHydrated: true });
   },
 
   toggleLanguage: () => {
     const next = get().language === "vi" ? "en" : "vi";
     get().setLanguage(next);
+  },
+
+  hydrateLanguage: () => {
+    if (typeof window === "undefined") return;
+    const initial = getInitialLanguage();
+    if (initial !== get().language) {
+      set({ language: initial, isHydrated: true });
+      document.documentElement.lang = initial;
+    } else {
+      set({ isHydrated: true });
+    }
   },
 
   t: (key, params) => {
@@ -81,11 +95,4 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
     return template;
   },
 }));
-
-// Hydrate saved language when script runs in browser
-if (typeof window !== "undefined") {
-  const initial = getInitialLanguage();
-  useLanguageStore.setState({ language: initial });
-  document.documentElement.lang = initial;
-}
 

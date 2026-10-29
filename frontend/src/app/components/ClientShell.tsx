@@ -50,7 +50,7 @@ export default function ClientShell({ children }: ClientShellProps) {
 
   return (
     <>
-      <a href="#main-content" className="skip-link">
+      <a href="#main-content" className="skip-link" suppressHydrationWarning>
         {t("nav.skipToContent")}
       </a>
       {!shouldHideAppBar && <ResponsiveAppBar />}
