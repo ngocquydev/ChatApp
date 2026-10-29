@@ -75,14 +75,37 @@ Hệ thống ứng dụng trò chuyện và mạng xã hội thời gian thực 
 - Chế độ **sáng/tối** tự theo hệ điều hành, đổi nhanh bằng nút ở thanh điều hướng.
 - Toàn bộ màu đi qua token (`src/theme/tokens.ts`); ESLint chặn mã hex trực tiếp trong component.
 
+### 7. Hỗ trợ Song ngữ Toàn diện VI / EN (Full Bilingual Support)
+- **Hạ tầng i18n phản ứng tức thời**: Quản lý trạng thái ngôn ngữ qua Zustand (`useLanguageStore`, `useTranslation`), hỗ trợ chuyển đổi mượt mà giữa Tiếng Việt (`vi`) và Tiếng Anh (`en`) qua nút bấm `LanguageToggle`.
+- **Phủ sóng 100% giao diện người dùng**: Chuyển đổi ngôn ngữ đồng bộ trên mọi trang và thành phần:
+  - Thanh điều hướng (AppBar), menu hồ sơ, chuông thông báo, kết quả tìm kiếm thời gian thực.
+  - Bảng tin (PostFeed), khung tạo bài viết, hộp thoại chia sẻ, bình luận, đính kèm media.
+  - Danh bạ bạn bè, trạng thái trực tuyến/ngoại tuyến, tab người liên hệ.
+  - Trang tin nhắn (ChatApp), danh sách cuộc hội thoại, cửa sổ chat nổi (FloatingChatBox), hộp thoại đổi chủ đề.
+  - Trang khám phá người dùng (Explore), bộ lọc quan hệ bạn bè.
+  - Hồ sơ cá nhân (Profile, UserProfile), trình cắt ảnh đại diện công thái học.
+  - Trang xác thực (Đăng nhập, Đăng ký, Quên mật khẩu) bao gồm cả nhãn form và thông báo kiểm tra Zod Schema.
+- **Bộ định dạng thời gian động (`formatTime.ts`)**: Tự động chuyển đổi mốc thời gian tương đối (`vừa xong` ↔ `just now`, `5 phút trước` ↔ `5m ago`, `2 ngày trước` ↔ `2d ago`, `Hôm nay` ↔ `Today`) theo ngôn ngữ người dùng lựa chọn.
+
+### 8. Thuật toán Kiểm duyệt Nội dung & Phòng chống Bot / Tài khoản ảo (Moderation & Trust Engine)
+- **Phát hiện nội dung văn bản độc hại (NLP Classifier)**:
+  - Phân loại văn bản đa tiêu chí: Ngôn từ gây thù ghét (*hate speech*), từ ngữ xúc phạm/độc hại (*toxic language*) và thư rác (*spam*).
+  - Hỗ trợ phân tích ngữ cảnh song ngữ Tiếng Việt & Tiếng Anh với ngưỡng tin cậy xác suất và cảnh báo vi phạm.
+- **Quét & Phân tích hình ảnh/video nhạy cảm (Vision Models)**:
+  - Mô hình thị giác máy tính quét nhận diện nội dung nhạy cảm, bạo lực hoặc không phù hợp trước khi cho phép đăng tải.
+- **Phát hiện Bot & Tài khoản ảo bất thường (Anomaly Detection)**:
+  - **Isolation Forest**: Thuật toán rừng cô lập chia cắt không gian đặc trưng hành vi người dùng (tần suất gửi lời mời kết bạn, chu kỳ thích/bình luận siêu tốc, phân bố thời gian hoạt động bất thường) để phát hiện điểm dị biệt.
+  - **Autoencoder**: Mạng nơ-ron tái tạo vector hành vi; các tài khoản có sai số tái tạo (Reconstruction Error) vượt ngưỡng sẽ tự động bị gắn cờ bot/tài khoản ảo.
+- **Độ tin cậy & Kiểm thử**: Bộ 17 test case chuyên sâu (`moderation.service.spec.ts`) bảo đảm độ chính xác và tính ổn định cao.
+
 ---
 
 ## 🏗️ Kiến trúc hệ thống & Công nghệ
 
 | Tầng | Công nghệ / Thư viện chính |
 | :--- | :--- |
-| **Frontend** | Next.js 16 (App Router + Turbopack), React 19, TypeScript, Material UI (MUI v9) + @mui/material-nextjs, Emotion, Zustand, Socket.IO Client, MQTT.js, Protobuf.js, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase Client SDK, Lucide React, Motion |
-| **Backend** | NestJS (Express), TypeScript, WebSockets (@nestjs/websockets, @nestjs/platform-socket.io), Passport.js (JWT Strategy), Mongoose (MongoDB), Redis (IoRedis), Firebase Admin SDK, Cloudflare Turnstile, Class Validator |
+| **Frontend** | Next.js 16 (App Router + Turbopack), React 19, TypeScript, Material UI (MUI v9) + @mui/material-nextjs, Emotion, Zustand, Socket.IO Client, MQTT.js, Protobuf.js, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase Client SDK, Lucide React, Motion, i18n Bilingual VI/EN Store |
+| **Backend** | NestJS (Express), TypeScript, WebSockets (@nestjs/websockets, @nestjs/platform-socket.io), Passport.js (JWT Strategy), Mongoose (MongoDB), Redis (IoRedis), Firebase Admin SDK, Cloudflare Turnstile, Class Validator, AI Moderation & Trust Engine (NLP Transformer, Vision Scanner, Isolation Forest & Autoencoder Anomaly Detection) |
 | **Cơ sở dữ liệu & Cache** | MongoDB (lưu trữ người dùng, quan hệ bạn bè, cuộc hội thoại và tin nhắn), Redis (Blacklist token, session người dùng, rate limiting) |
 | **DevOps & Môi trường** | Docker & Docker Compose, GitHub Actions CI, Git Pre-Push Quality Gate |
 
@@ -116,6 +139,10 @@ chat/
 │   │   │   │   ├── friends.service.ts
 │   │   │   │   └── friends.service.spec.ts
 │   │   │   ├── mail/            # Module gửi email thông báo và OTP
+│   │   │   ├── moderation/      # Hệ thống kiểm duyệt AI & Phát hiện Bot (NLP, Vision, Isolation Forest, Autoencoder)
+│   │   │   │   ├── algorithms/  # Thuật toán Isolation Forest, Autoencoder, Vision Moderator
+│   │   │   │   ├── moderation.service.ts
+│   │   │   │   └── moderation.service.spec.ts
 │   │   │   ├── redis/           # Module kết nối Redis, Blacklist & Session
 │   │   │   ├── posts/           # Bài viết, thích, bình luận, chia sẻ, tải ảnh (quyền riêng tư, phân trang cursor)
 │   │   │   └── users/           # Quản lý hồ sơ User & tìm kiếm người dùng
@@ -140,12 +167,13 @@ chat/
     │   │   ├── sitemap.ts       # Sinh XML Sitemap động theo chuẩn Next.js
     │   │   └── page.tsx         # Trang chủ kết nối bảng tin & danh bạ
     │   ├── components/
-    │   │   ├── common/          # Component dùng chung (AuthGuard, BrandLogo, PresenceAvatar, EmptyState, ConfirmDialog, ColorModeToggle)
+    │   │   ├── common/          # Component dùng chung (AuthGuard, BrandLogo, PresenceAvatar, EmptyState, ConfirmDialog, ColorModeToggle, LanguageToggle)
     │   │   ├── posts/           # Bài viết: PostFeed, PostCard, PostComposer, PrivacyPicker, ProfileSidebar...
     │   │   ├── layout/          # AppBar với Search dropdown mượt mà, Drawer menu
     │   │   ├── pages/           # Login, Register, Home, ChatApp, ForgotPassword views
     │   │   └── section/         # Feed, FloatingChatBox, Radar, PersonCall (Sidebar)
     │   ├── hooks/               # Custom Hooks (useSocialAuth, usePagedList, useInfiniteSentinel, usePublicProfile...)
+    │   ├── i18n/                # Hạ tầng song ngữ: vi.ts, en.ts, useLanguageStore, useTranslation
     │   ├── services/            # Axios API client, Socket.io & MQTT/Protobuf Client
     │   ├── store/               # Zustand Stores (useAuthStore, useChatStore, useFriendStore)
     │   └── theme/               # Material UI Theme + design tokens (sáng/tối)
@@ -580,6 +608,22 @@ npm run build          # Build kiểm tra Next.js Turbopack production bundle
    - [x] **Bộ 5 Chủ đề & Hình nền cuộc trò chuyện (Chat Themes & Wallpapers)**: Mặc định, Hẹn hò, Bầu trời, Bóng đêm, Biển cả với hiệu ứng gradient và bong bóng chat, đồng bộ realtime qua Socket.IO.
    - [x] **Hạn chế người dùng kín đáo chuẩn Facebook Messenger (Restrict)**: Người bị hạn chế không biết; tự động ẩn trạng thái "Đã xem" khi đọc tin nhắn; ẩn trạng thái Online; chuyển sang danh mục *"Bị hạn chế"* riêng biệt trên thanh danh sách cuộc trò chuyện.
 
+14. **Hỗ trợ Song ngữ Toàn diện VI / EN (Full Bilingual Support)**:
+   - [x] Hạ tầng i18n phản ứng thời gian thực qua Zustand Store (`useLanguageStore`, `useTranslation`).
+   - [x] Nút chuyển đổi nhanh ngôn ngữ `LanguageToggle` tại thanh điều hướng, Drawer và toàn bộ các trang.
+   - [x] Bản địa hóa 100% giao diện: AppBar, Bảng tin, Bình luận, Tin nhắn, Chat nổi, Danh bạ, Khám phá, Hồ sơ cá nhân, Đăng nhập, Đăng ký, Quên mật khẩu.
+   - [x] Tự động hóa định dạng thời gian động theo ngôn ngữ đã chọn (`formatTime.ts`).
+
+15. **Hệ thống Kiểm duyệt Nội dung & Phòng chống Bot / Tài khoản ảo (Moderation & Trust Engine)**:
+   - [x] Bộ lọc ngôn ngữ tự nhiên NLP phân loại văn bản độc hại, ngôn từ thù ghét, spam song ngữ VI/EN.
+   - [x] Quét và phát hiện hình ảnh/video bạo lực, nhạy cảm (Vision Models).
+   - [x] Áp dụng thuật toán học máy Isolation Forest & Autoencoder phát hiện bất thường bot/tài khoản ảo.
+   - [x] Kiểm thử toàn diện 17/17 test cases cho dịch vụ kiểm duyệt (`moderation.service.spec.ts`).
+
+16. **Khôi phục Mật khẩu & Quản lý Hồ sơ**:
+   - [x] Luồng khôi phục mật khẩu qua Email OTP 4 bước (`/forgot-password`).
+   - [x] Cắt và cập nhật ảnh đại diện cá nhân công thái học (`AvatarCropDialog`).
+
 ---
 
 ### 📌 Lộ trình phát triển tiếp theo (Roadmap)
@@ -595,11 +639,34 @@ npm run build          # Build kiểm tra Next.js Turbopack production bundle
   - [ ] Chuyển lưu trữ ảnh bài viết từ ổ đĩa sang dịch vụ đám mây (Cloudinary / AWS S3 / Firebase Storage) kèm kiểm soát quyền truy cập ảnh theo quyền riêng tư bài viết.
 - [ ] **Thông báo đẩy (Push Notifications)**:
   - [ ] Web Push Notifications khi người dùng không mở tab trình duyệt.
-- [ ] **Cập nhật Hồ sơ cá nhân**:
-  - [ ] Trang cập nhật thông tin cá nhân & đổi ảnh đại diện (`/profile`).
-  - [ ] Tính năng Quên mật khẩu & Đặt lại mật khẩu qua Email OTP (`/forgot-password`).
+- [x] **Cập nhật Hồ sơ cá nhân**:
+  - [x] Trang cập nhật thông tin cá nhân & cắt đổi ảnh đại diện (`AvatarCropDialog` tại `/profile`).
+  - [x] Tính năng Quên mật khẩu & Đặt lại mật khẩu qua Email OTP (`/forgot-password`).
 
 ---
 
 ## 👥 Đóng góp & Phát triển
+
+### 📜 Quy chuẩn Commit Git (Git Commit Conventions)
+Để duy trì lịch sử git chuyên nghiệp, phục vụ tích hợp liên tục (CI/CD) và hỗ trợ các công cụ sinh changelog tự động, toàn bộ commit message vào kho mã nguồn **BẮT BUỘC 100% BẰNG TIẾNG ANH (ENGLISH ONLY)** theo chuẩn **Conventional Commits**:
+
+```bash
+git commit -m "<type>(<scope>): <short imperative description in English>"
+```
+
+- **Quy tắc bắt buộc:**
+  - **Không sử dụng tiếng Việt** trong commit message.
+  - Sử dụng thể mệnh lệnh ở thì hiện tại (ví dụ: `add`, `fix`, `update`, `remove` thay vì `added`, `fixes`, `updated`).
+  - Viết thường chữ cái đầu tiên sau dấu hai chấm; không kết thúc bằng dấu chấm câu.
+- **Các type thông dụng:**
+  - `feat`: Tính năng mới (ví dụ: `feat(i18n): add full bilingual support VI/EN across all pages`)
+  - `fix`: Sửa lỗi (ví dụ: `fix(auth): prevent infinite redirect loop on expired refresh token`)
+  - `refactor`: Tái cấu trúc mã nguồn không làm đổi tính năng (ví dụ: `refactor(posts): extract comment composer into separate component`)
+  - `perf`: Tối ưu hiệu năng (ví dụ: `perf(search): optimize query debounce and avoid re-renders`)
+  - `test`: Thêm hoặc sửa kiểm thử (ví dụ: `test(moderation): add unit tests for isolation forest anomaly detection`)
+  - `docs`: Cập nhật tài liệu (ví dụ: `docs(readme): document moderation engine and commit guidelines`)
+  - `chore`: Cập nhật công cụ, cấu hình, dependencies (ví dụ: `chore(deps): update package versions`)
+  - `style`: Định dạng mã nguồn (khoảng trắng, dấu chấm phẩy...) không ảnh hưởng logic
+  - `ci`: Thay đổi cấu hình CI/CD hoặc workflow GitHub Actions
+
 Mọi đóng góp, báo lỗi (issue) và yêu cầu tính năng mới (pull request) đều được hoan nghênh để hoàn thiện hệ sinh thái ứng dụng chat ngày một mạnh mẽ hơn!

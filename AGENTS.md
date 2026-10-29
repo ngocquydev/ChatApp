@@ -4,12 +4,12 @@
 
 ## 1. Dự án
 
-Ứng dụng chat realtime + mạng xã hội, giao diện tiếng Việt.
+Ứng dụng chat realtime + mạng xã hội, hỗ trợ song ngữ Tiếng Việt & Tiếng Anh (VI/EN), tích hợp hệ thống kiểm duyệt nội dung độc hại & chống bot thông minh.
 
 | Thành phần | Công nghệ | Chạy |
 |---|---|---|
-| `frontend/` | Next.js 16 (App Router), React 19, MUI v9, Zustand, Socket.IO + MQTT, RHF + Zod | `npm run dev` (cổng 5173) |
-| `backend/` | NestJS, MongoDB, Redis, Socket.IO, Swagger | `npm run start:dev` (cổng 3000) |
+| `frontend/` | Next.js 16 (App Router), React 19, MUI v9, Zustand, Socket.IO + MQTT, RHF + Zod, i18n VI/EN | `npm run dev` (cổng 5173) |
+| `backend/` | NestJS, MongoDB, Redis, Socket.IO, Swagger, Moderation & Trust Engine (NLP, Vision, Isolation Forest, Autoencoder) | `npm run start:dev` (cổng 3000) |
 | Hạ tầng | Docker (Mongo, Redis) | `docker compose up -d` (từ gốc repo) |
 | Cổng chất lượng | lint + typecheck + test bảo mật/RAM/N+1 | `scripts/check.ps1` (Windows) / `scripts/check.sh` |
 
@@ -21,8 +21,19 @@ Trước khi push: `scripts/check.ps1`. Với frontend tối thiểu: `npm run t
 2. Việc đụng ≥ 2 file → `incremental-implementation`; yêu cầu mơ hồ → `interview-me` / `spec-driven-development`.
 3. Sửa đúng phạm vi yêu cầu. Giữ nguyên comment/docstring không liên quan. Không tự ý đổi hành vi nghiệp vụ.
 4. **TỰ ĐỘNG KIỂM TRA & PUSH GIT:** Khi xong việc, AI **bắt buộc tự động** chạy toàn bộ Quality Gates (§5), tạo commit chuẩn và chạy `git push origin main`. **Tuyệt đối không dừng lại hỏi người dùng có muốn push hay không.**
-5. Nếu gặp lỗi khi kiểm tra hoặc push: tự động đọc log, sửa dứt điểm và chạy lại cho đến khi push thành công. Không hạ chuẩn để qua cổng: cấm `@ts-ignore`, `eslint-disable`, xóa/skip test, `any` tràn lan (`constraint-driven-development`).
-6. Sau khi đã push thành công lên `origin/main` mới báo cáo kết quả kèm bằng chứng cụ thể.
+5. **QUY TẮC COMMIT GIT (BẮT BUỘC 100% TIẾNG ANH):**
+   - Mọi commit message (cả tiêu đề và nội dung) **bắt buộc 100% viết bằng tiếng Anh** (`English only`). **CẤM TUYỆT ĐỐI** viết message commit bằng tiếng Việt hoặc bất kỳ ngôn ngữ nào khác.
+   - Tuân theo chuẩn **Conventional Commits**:
+     `<type>(<scope>): <short imperative description in English>`
+     - Ví dụ chuẩn:
+       - `feat(i18n): add full VI/EN bilingual support across all screens`
+       - `fix(auth): handle expired refresh token in axios interceptor`
+       - `refactor(posts): extract comment item into dedicated component`
+       - `docs(readme): document moderation engine and commit guidelines`
+       - `test(moderation): add unit tests for isolation forest anomaly detection`
+     - Các loại type được phép: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `chore`, `style`, `ci`.
+6. Nếu gặp lỗi khi kiểm tra hoặc push: tự động đọc log, sửa dứt điểm và chạy lại cho đến khi push thành công. Không hạ chuẩn để qua cổng: cấm `@ts-ignore`, `eslint-disable`, xóa/skip test, `any` tràn lan (`constraint-driven-development`).
+7. Sau khi đã push thành công lên `origin/main` mới báo cáo kết quả kèm bằng chứng cụ thể.
 
 ## 3. Chọn skill theo loại việc
 
