@@ -2,8 +2,17 @@
 const nextConfig = {
   reactStrictMode: true,
   agentRules: false,
+  compress: true,
+  poweredByHeader: false,
   experimental: {
     agentUpgrade: "security",
+    optimizePackageImports: [
+      "@mui/material",
+      "@mui/icons-material",
+      "@mui/material-nextjs",
+      "lucide-react",
+      "date-fns",
+    ],
   },
   transpilePackages: ["@mui/material", "@mui/icons-material", "@mui/material-nextjs"],
   images: {

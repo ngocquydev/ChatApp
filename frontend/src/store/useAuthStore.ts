@@ -64,6 +64,43 @@ export interface AuthState {
   logout: () => Promise<void>;
 }
 
+const CACHED_USER_KEY = "cached_user";
+
+function getStoredUser(): UserProfile | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CACHED_USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistStoredUser(user: UserProfile | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (user) {
+      localStorage.setItem("has_session", "true");
+      const safe: UserProfile = {
+        _id: user._id,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        cover: user.cover,
+        bio: user.bio,
+        role: user.role,
+      };
+      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(safe));
+    } else {
+      localStorage.removeItem("has_session");
+      localStorage.removeItem(CACHED_USER_KEY);
+    }
+  } catch {
+    // QuotaExceeded or privacy mode
+  }
+}
+
 let checkAuthPromise: Promise<unknown> | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -75,6 +112,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isFacebookLoading: false,
 
   setAuth: (user) => {
+    persistStoredUser(user);
     set({
       user,
       isAuthenticated: !!user,
@@ -82,21 +120,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   checkAuth: async () => {
-    // Tránh gọi API trùng lặp nếu đang có 1 request checkAuth đang chạy
     if (checkAuthPromise) {
       return checkAuthPromise;
     }
 
-    // Nếu ở client mà không có cờ session (chưa đăng nhập), bỏ qua để không gọi API thừa và tránh lỗi 401
     if (typeof window !== "undefined") {
       const hasSession = localStorage.getItem("has_session") === "true";
       if (!hasSession) {
+        persistStoredUser(null);
         set({
           user: null,
           isAuthenticated: false,
           isCheckingAuth: false,
         });
         return null;
+      }
+      // Nạp ngay thông tin người dùng từ bộ nhớ đệm để hiển thị tức thì, tránh chặn LCP
+      const cached = getStoredUser();
+      if (cached && !get().user) {
+        set({ user: cached, isAuthenticated: true });
       }
     }
 
@@ -106,18 +148,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         const resUser = await api.get("/auth/profile");
         const profile = resUser.data?.profile || resUser.data;
-        if (typeof window !== "undefined") {
-          localStorage.setItem("has_session", "true");
-        }
+        persistStoredUser(profile);
         set({
           user: profile,
           isAuthenticated: true,
         });
         return resUser.data;
       } catch (error) {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("has_session");
-        }
+        persistStoredUser(null);
         set({
           user: null,
           isAuthenticated: false,
@@ -148,10 +186,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const profile =
         res.data?.profile || (await api.get("/auth/profile")).data?.profile;
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("has_session", "true");
-      }
-
+      persistStoredUser(profile);
       set({
         user: profile,
         isAuthenticated: true,
@@ -201,10 +236,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const profile =
         res.data?.profile || (await api.get("/auth/profile")).data?.profile;
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("has_session", "true");
-      }
-
+      persistStoredUser(profile);
       set({
         user: profile,
         isAuthenticated: true,
@@ -226,10 +258,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const profile =
         res.data?.profile || (await api.get("/auth/profile")).data?.profile;
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("has_session", "true");
-      }
-
+      persistStoredUser(profile);
       set({
         user: profile,
         isAuthenticated: true,
@@ -247,9 +276,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   updateProfile: async (data) => {
     const res = await api.patch("/auth/profile", data);
     const updatedProfile = res.data?.profile || res.data;
-    set((state) => ({
-      user: state.user ? { ...state.user, ...updatedProfile } : updatedProfile,
-    }));
+    const nextUser = get().user ? { ...get().user, ...updatedProfile } : updatedProfile;
+    persistStoredUser(nextUser);
+    set({ user: nextUser });
     return updatedProfile;
   },
 
@@ -282,9 +311,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error("Lỗi khi đăng xuất backend:", error);
     } finally {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("has_session");
-      }
+      persistStoredUser(null);
       try {
         await signOut(auth);
       } catch (firebaseError) {

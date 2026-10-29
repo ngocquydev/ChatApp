@@ -14,6 +14,7 @@ const CONTENT_PREVIEW_CHARS = 420;
 interface PostCardProps {
   post: PostView;
   currentUserId?: string;
+  priority?: boolean;
   onToggleLike: (post: PostView) => void;
   onRequestEdit?: (post: PostView) => void;
   onRequestDelete: (post: PostView) => void;
@@ -40,6 +41,7 @@ export function canSharePost(post: PostView, currentUserId?: string): boolean {
 export default function PostCard({
   post,
   currentUserId,
+  priority = false,
   onToggleLike,
   onRequestEdit,
   onRequestDelete,
@@ -76,6 +78,7 @@ export default function PostCard({
           currentUserId={currentUserId}
           createdAt={post.createdAt}
           privacy={post.privacy}
+          priority={priority}
           action={
             isOwn ? (
               <>
@@ -114,7 +117,7 @@ export default function PostCard({
                   </MenuItem>
                 </Menu>
               </>
-            ) : undefined
+            ) : null
           }
         />
 
@@ -132,7 +135,7 @@ export default function PostCard({
         <SharedPostEmbed shared={post.sharedPost} currentUserId={currentUserId} />
       </Box>
 
-      <PostImages images={post.images} altPrefix={post.author.name} />
+      <PostImages images={post.images} altPrefix={post.author.name} priority={priority} />
 
       {(post.likeCount > 0 || post.commentCount > 0 || post.shareCount > 0) && (
         <Box
@@ -162,41 +165,40 @@ export default function PostCard({
                 }}
               >
                 <Box
-                  component="span"
                   sx={{
                     width: 20,
                     height: 20,
                     borderRadius: "50%",
                     bgcolor: "error.main",
-                    color: "common.white",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    color: "common.white",
                   }}
                 >
-                  <Heart size={11} fill="currentColor" aria-hidden />
+                  <Heart size={11} fill="currentColor" strokeWidth={0} />
                 </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  {post.likeCount} lượt thích
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  {post.likeCount}
                 </Typography>
               </ButtonBase>
             )}
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, ml: "auto" }}>
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
             {post.commentCount > 0 && (
               <ButtonBase
                 onClick={() => onOpenEngagers?.(post._id, "commenters")}
-                aria-label="Xem danh sách người đã bình luận bài viết"
-                sx={{ borderRadius: "4px", p: 0.25, "&:hover": { textDecoration: "underline" } }}
+                aria-label={`Xem danh sách ${post.commentCount} bình luận`}
+                sx={{ borderRadius: "6px", p: 0.25, "&:hover": { textDecoration: "underline" } }}
               >
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                <Typography variant="body2" color="text.secondary">
                   {post.commentCount} bình luận
                 </Typography>
               </ButtonBase>
             )}
             {post.shareCount > 0 && (
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+              <Typography variant="body2" color="text.secondary">
                 {post.shareCount} lượt chia sẻ
               </Typography>
             )}
@@ -206,22 +208,26 @@ export default function PostCard({
 
       <Box
         sx={{
-          px: { xs: 0.5, sm: 1 },
-          py: 0.5,
           display: "flex",
-          gap: { xs: 0.5, sm: 1 },
-          alignItems: "center",
           borderTop: "1px solid",
           borderColor: "divider",
-          mx: { xs: 1, sm: 2 },
-          mt: 0.5,
+          px: 1,
+          py: 0.5,
+          gap: 0.5,
         }}
       >
         <Button
-          color={post.likedByMe ? "error" : "inherit"}
+          color="inherit"
           aria-pressed={post.likedByMe}
           onClick={() => onToggleLike(post)}
-          startIcon={<Heart size={18} aria-hidden fill={post.likedByMe ? "currentColor" : "none"} />}
+          startIcon={
+            <Heart
+              size={18}
+              fill={post.likedByMe ? "currentColor" : "none"}
+              color={post.likedByMe ? "currentColor" : undefined}
+              aria-hidden
+            />
+          }
           sx={{
             flex: 1,
             minWidth: 0,

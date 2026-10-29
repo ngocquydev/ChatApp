@@ -173,10 +173,11 @@ export default function PostFeed({
           </Box>
         )}
 
-        {list.items.map((post) => (
+        {list.items.map((post, index) => (
           <PostCard
             key={post._id}
             post={post}
+            priority={index === 0}
             currentUserId={currentUserId}
             onToggleLike={(p) => void handleToggleLike(p)}
             onRequestEdit={setToEdit}

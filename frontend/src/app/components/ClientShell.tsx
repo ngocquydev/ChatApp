@@ -1,14 +1,21 @@
 "use client";
 
 import { ReactNode, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import ResponsiveAppBar from "@/components/layout/AppBar";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
 import { useFriendStore } from "@/store/useFriendStore";
 import { useNotificationStore } from "@/store/useNotificationStore";
-import FloatingChatDock from "@/components/chat/FloatingChatDock";
-import FriendNoticeToast from "@/components/common/FriendNoticeToast";
+
+const FloatingChatDock = dynamic(() => import("@/components/chat/FloatingChatDock"), {
+  ssr: false,
+});
+
+const FriendNoticeToast = dynamic(() => import("@/components/common/FriendNoticeToast"), {
+  ssr: false,
+});
 
 interface ClientShellProps {
   children: ReactNode;

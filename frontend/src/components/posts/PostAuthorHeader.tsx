@@ -19,6 +19,7 @@ interface PostAuthorHeaderProps {
   createdAt?: string;
   privacy?: PostPrivacy;
   size?: number;
+  priority?: boolean;
   /** Phần tử đặt bên phải (menu ⋯) */
   action?: ReactNode;
 }
@@ -29,13 +30,14 @@ export default function PostAuthorHeader({
   createdAt,
   privacy,
   size = 40,
+  priority = false,
   action,
 }: PostAuthorHeaderProps) {
   const href = profileHref(author._id, currentUserId);
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
       <Link component={NextLink} href={href} aria-label={`Xem trang cá nhân của ${author.name}`} underline="none" sx={{ display: "flex" }}>
-        <PresenceAvatar name={author.name} src={author.avatar} size={size} hidePresence />
+        <PresenceAvatar name={author.name} src={author.avatar} size={size} priority={priority} hidePresence />
       </Link>
       <Box sx={{ minWidth: 0, flex: 1 }}>
         <Link

@@ -34,6 +34,7 @@ interface PresenceAvatarProps {
   src?: string;
   online?: boolean;
   size?: number;
+  priority?: boolean;
   /** Ẩn chấm trạng thái (vd. trong danh sách lời mời). */
   hidePresence?: boolean;
 }
@@ -44,10 +45,20 @@ export default function PresenceAvatar({
   src,
   online = false,
   size = 44,
+  priority = false,
   hidePresence = false,
 }: PresenceAvatarProps) {
   const avatar = (
-    <Avatar src={src} alt={name || "Người dùng"} sx={{ width: size, height: size, fontSize: size * 0.4 }}>
+    <Avatar
+      src={src}
+      alt={name || "Người dùng"}
+      slotProps={{
+        img: {
+          loading: priority ? "eager" : "lazy",
+        },
+      }}
+      sx={{ width: size, height: size, fontSize: size * 0.4 }}
+    >
       {name?.trim()?.[0]?.toUpperCase()}
     </Avatar>
   );

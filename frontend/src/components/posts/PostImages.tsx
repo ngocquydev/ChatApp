@@ -9,10 +9,12 @@ interface PostImagesProps {
   images: string[];
   /** Mô tả ngắn cho ảnh (tên tác giả) để đọc màn hình */
   altPrefix: string;
+  /** Tải trước ngay lập tức cho bài viết đầu tiên trên viewport để tối ưu LCP */
+  priority?: boolean;
 }
 
 /** Lưới 1–4 ảnh/video của bài viết; bấm để xem ảnh lớn hoặc phát video. */
-export default function PostImages({ images, altPrefix }: PostImagesProps) {
+export default function PostImages({ images, altPrefix, priority = false }: PostImagesProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   if (images.length === 0) return null;
 
@@ -48,7 +50,7 @@ export default function PostImages({ images, altPrefix }: PostImagesProps) {
                 <Box
                   component="video"
                   controls
-                  preload="metadata"
+                  preload={priority && index === 0 ? "auto" : "metadata"}
                   src={mediaUrl(src)}
                   sx={{
                     width: "100%",
@@ -80,7 +82,7 @@ export default function PostImages({ images, altPrefix }: PostImagesProps) {
                 component="img"
                 src={mediaUrl(src)}
                 alt={`Ảnh ${index + 1} của ${altPrefix}`}
-                loading="lazy"
+                loading={priority && index === 0 ? "eager" : "lazy"}
                 sx={{
                   width: "100%",
                   height: single ? "auto" : "100%",

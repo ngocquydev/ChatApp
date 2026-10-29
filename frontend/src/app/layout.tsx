@@ -82,6 +82,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+      </head>
       <body>
         {/* Phải khớp cssVariables.colorSchemeSelector = "data" trong theme.ts */}
         <InitColorSchemeScript attribute="data" defaultMode="system" />

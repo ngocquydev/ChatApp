@@ -2,7 +2,6 @@
 
 import { useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Box, CircularProgress, Typography } from "@mui/material";
 import { useAuthStore } from "@/store/useAuthStore";
 
 interface AuthGuardProps {
@@ -19,30 +18,19 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     }
   }, [isCheckingAuth, isAuthenticated, router]);
 
-  if (isCheckingAuth) {
-    return (
-      <Box
-        sx={{
-          minHeight: "100dvh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "var(--mui-palette-neutral-50)",
-          gap: 2,
-        }}
-      >
-        <CircularProgress size={42} thickness={4} sx={{ color: "var(--mui-palette-brand-600)" }} />
-        <Typography variant="body2" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
-          Đang xác thực phiên làm việc...
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (!isAuthenticated) {
+  // Khi đã xác nhận không có quyền truy cập, ẩn nội dung để chuyển hướng về /login
+  if (!isCheckingAuth && !isAuthenticated) {
     return null;
   }
 
+  // Nếu ở client và rõ ràng không có phiên làm việc cũ (chưa từng đăng nhập)
+  if (typeof window !== "undefined") {
+    const hasSession = localStorage.getItem("has_session") === "true";
+    if (!hasSession && !isAuthenticated) {
+      return null;
+    }
+  }
+
+  // Cho phép render nội dung (layout + skeleton) để tránh chặn LCP và cho phép API con tải song song
   return <>{children}</>;
 }
