@@ -560,7 +560,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   />
                 </Box>
 
-                {isLoadingRecommendations && (
+                {isLoadingRecommendations && recommendations.length === 0 && (
                   <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
                     <CircularProgress size={22} />
                   </Box>
@@ -574,8 +574,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   </Box>
                 )}
 
-                {!isLoadingRecommendations &&
-                  recommendations.map((rec) => (
+                {recommendations.map((rec) => (
                     <Box
                       key={rec._id}
                       sx={{

@@ -586,18 +586,35 @@ export class FriendsService {
     const limit = options.limit || 20;
     const radiusKm = options.radiusKm || 25;
 
-    // 1. Cập nhật vị trí hiện tại nếu client gửi lên
+    // Cache kết quả theo user trong 60 giây để chuyển tab/tải lại đạt độ trễ < 1ms
     let currentLat = options.lat;
     let currentLng = options.lng;
+    const cacheKey = `cache:rec:${currentUserId}:${limit}:${currentLat ?? 0}:${currentLng ?? 0}`;
+    try {
+      const cached = await this.redisService.client.get(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Bỏ qua lỗi cache read
+    }
+
+    // 1. Cập nhật vị trí hiện tại nếu client gửi lên (bất đồng bộ không chặn luồng trả lời)
     if (typeof currentLat === 'number' && typeof currentLng === 'number') {
-      await this.updateUserLocation(currentUserId, currentLat, currentLng);
+      void this.updateUserLocation(currentUserId, currentLat, currentLng).catch(() => {});
     }
 
     // 2. Lấy danh sách ID loại trừ (chính mình + các quan hệ bạn bè/pending hiện có)
     const userObjId = new Types.ObjectId(currentUserId);
-    const existingRelations = await this.friendshipModel.find({
-      $or: [{ requesterId: userObjId }, { recipientId: userObjId }],
-    });
+    const existingRelations = await this.friendshipModel
+      .find({
+        $or: [{ requesterId: userObjId }, { recipientId: userObjId }],
+      })
+      .select('requesterId recipientId')
+      .lean();
 
     const excludedIds = new Set<string>();
     excludedIds.add(currentUserId);
@@ -677,6 +694,9 @@ export class FriendsService {
           });
 
           if (results.length > 0) {
+            void this.redisService.client
+              .set(cacheKey, JSON.stringify(results), 'EX', 60)
+              .catch(() => {});
             return results;
           }
         }
@@ -765,7 +785,7 @@ export class FriendsService {
       }
     }
 
-    return coldCandidates.map(({ user, distKm, reason, score }) => ({
+    const finalResults = coldCandidates.map(({ user, distKm, reason, score }) => ({
       _id: user._id.toString(),
       name: user.name,
       email: user.email,
@@ -776,7 +796,15 @@ export class FriendsService {
       friendsCount: 0,
       score,
       recommendationReason: reason,
-      relationStatus: 'none',
+      relationStatus: 'none' as const,
     }));
+
+    if (finalResults.length > 0) {
+      void this.redisService.client
+        .set(cacheKey, JSON.stringify(finalResults), 'EX', 60)
+        .catch(() => {});
+    }
+
+    return finalResults;
   }
 }

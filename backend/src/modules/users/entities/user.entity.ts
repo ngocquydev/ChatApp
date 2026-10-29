@@ -73,3 +73,4 @@ UserSchema.index({ name: 'text' });
 UserSchema.index({ name: 1 });
 UserSchema.index({ location: '2dsphere' });
 UserSchema.index({ isDeleted: 1, isBan: 1, name: 1 });
+UserSchema.index({ isDeleted: 1, isBan: 1, createdAt: -1 });

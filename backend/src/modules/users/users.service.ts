@@ -317,6 +317,7 @@ export class UsersService {
         isBan: { $ne: true },
       })
       .select('name email avatar phone bio createdAt')
+      .lean()
       .exec();
   }
 
@@ -333,6 +334,7 @@ export class UsersService {
       .select('name email avatar phone bio createdAt')
       .sort({ createdAt: -1 })
       .limit(limit)
+      .lean()
       .exec();
   }
 
@@ -364,6 +366,7 @@ export class UsersService {
       })
       .select('name email avatar phone bio createdAt location')
       .limit(limit)
+      .lean()
       .exec();
   }
 }
