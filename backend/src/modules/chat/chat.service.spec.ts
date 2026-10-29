@@ -147,6 +147,53 @@ describe('ChatService', () => {
       expect(mockConv.save).toHaveBeenCalled();
       expect(mockConv.lastMessage?.text).toBe('Xin chào!');
     });
+
+    it('should save call message with callLog metadata and formatted text', async () => {
+      mockUsersService.findById.mockResolvedValue({ _id: userBId, name: 'User B' });
+      const mockConv = {
+        _id: conversationId,
+        participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+        unreadCounts: new Map<string, number>([[userBId, 0]]),
+        lastMessage: null as unknown as { text?: string },
+        save: vi.fn().mockResolvedValue(true),
+      };
+      vi.spyOn(service, 'getOrCreateConversation').mockResolvedValue(mockConv as unknown as never);
+
+      const createdCallMsg = {
+        _id: new Types.ObjectId(),
+        conversationId: new Types.ObjectId(conversationId),
+        senderId: new Types.ObjectId(userAId),
+        receiverId: new Types.ObjectId(userBId),
+        text: '📞 Cuộc gọi thoại (02:15)',
+        type: 'call',
+        callLog: {
+          callType: 'audio',
+          status: 'completed',
+          duration: 135,
+        },
+      };
+      mockMessageModel.create.mockResolvedValue(createdCallMsg);
+
+      const result = await service.saveCallMessage(
+        userAId,
+        userBId,
+        'audio',
+        'completed',
+        135,
+      );
+
+      expect(result).toEqual(createdCallMsg);
+      expect(mockMessageModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'call',
+          callLog: {
+            callType: 'audio',
+            status: 'completed',
+            duration: 135,
+          },
+        }),
+      );
+    });
   });
 
   describe('markAsRead', () => {

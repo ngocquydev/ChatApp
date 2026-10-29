@@ -11,6 +11,7 @@ export interface CallPartner {
   id: string;
   name: string;
   avatar?: string;
+  conversationId?: string;
 }
 
 interface CallState {
@@ -131,11 +132,11 @@ export const useCallStore = create<CallState>((set, get) => ({
     listenersInitialized = true;
 
     // Cuộc gọi đến
-    socket.on("call:incoming", (data: { callerId: string; callerName: string; callerAvatar?: string; callType: CallType }) => {
+    socket.on("call:incoming", (data: { callerId: string; callerName: string; callerAvatar?: string; callType: CallType; conversationId?: string }) => {
       const currentStatus = get().callStatus;
       if (currentStatus !== "idle") {
         // Đang bận cuộc gọi khác
-        socket.emit("call:reject", { targetUserId: data.callerId, reason: "busy" });
+        socket.emit("call:reject", { targetUserId: data.callerId, reason: "busy", callType: data.callType, conversationId: data.conversationId });
         return;
       }
 
@@ -148,6 +149,7 @@ export const useCallStore = create<CallState>((set, get) => ({
           id: data.callerId,
           name: data.callerName || "Người dùng",
           avatar: data.callerAvatar,
+          conversationId: data.conversationId,
         },
         error: null,
       });
@@ -288,6 +290,7 @@ export const useCallStore = create<CallState>((set, get) => ({
       callType: type,
       callerName: me?.name || "Người dùng",
       callerAvatar: me?.avatar,
+      conversationId: targetUser.conversationId,
     });
   },
 
@@ -345,7 +348,12 @@ export const useCallStore = create<CallState>((set, get) => ({
     const partner = get().partner;
 
     if (socket && partner) {
-      socket.emit("call:reject", { targetUserId: partner.id, reason: "declined" });
+      socket.emit("call:reject", {
+        targetUserId: partner.id,
+        reason: "declined",
+        callType: get().callType,
+        conversationId: partner.conversationId,
+      });
     }
 
     get().endCall();
@@ -353,6 +361,10 @@ export const useCallStore = create<CallState>((set, get) => ({
 
   endCall: () => {
     callAudio.stop();
+    const currentDuration = get().duration;
+    const currentStatus = get().callStatus;
+    const currentCallType = get().callType;
+
     if (durationInterval) {
       clearInterval(durationInterval);
       durationInterval = null;
@@ -361,8 +373,24 @@ export const useCallStore = create<CallState>((set, get) => ({
     const socket = useChatStore.getState().socket;
     const partner = get().partner;
 
-    if (socket && partner && get().callStatus !== "idle" && get().callStatus !== "ended") {
-      socket.emit("call:end", { targetUserId: partner.id });
+    if (socket && partner && currentStatus !== "idle" && currentStatus !== "ended") {
+      if (currentStatus === "calling") {
+        // Người gọi hủy cuộc gọi trước khi đối phương bắt máy
+        socket.emit("call:reject", {
+          targetUserId: partner.id,
+          reason: "cancelled",
+          callType: currentCallType,
+          conversationId: partner.conversationId,
+        });
+      } else {
+        // Cuộc gọi đã kết nối hoặc đang kết thúc
+        socket.emit("call:end", {
+          targetUserId: partner.id,
+          duration: currentDuration,
+          callType: currentCallType,
+          conversationId: partner.conversationId,
+        });
+      }
     }
 
     stopMediaTracks(get().localStream);

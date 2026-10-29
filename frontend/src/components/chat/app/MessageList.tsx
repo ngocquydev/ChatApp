@@ -11,6 +11,7 @@ import { dayKey, formatClockTime, formatDaySeparator } from "@/utils/formatTime"
 import { isVideoUrl } from "@/services/postsApi";
 import ImageLightbox from "../../posts/ImageLightbox";
 import { getChatTheme } from "./chatThemes";
+import CallMessageItem from "../call/CallMessageItem";
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
 
@@ -302,6 +303,27 @@ export default function MessageList({
                       }
 
                       const trimmed = msg.text?.trim() || "";
+                      const isCall = msg.type === "call" || Boolean(msg.callLog) || /^(📞|📹)\s*Cuộc gọi/i.test(trimmed);
+
+                      if (isCall) {
+                        return (
+                          <CallMessageItem
+                            message={msg}
+                            isMe={isMe}
+                            partner={
+                              partner
+                                ? {
+                                    id: String(partner._id || partner.id || ""),
+                                    name: partner.name,
+                                    avatar: partner.avatar,
+                                  }
+                                : null
+                            }
+                            conversationId={conversationId}
+                          />
+                        );
+                      }
+
                       const isMedia = /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);
                       const isVideo = isMedia && isVideoUrl(trimmed);
 

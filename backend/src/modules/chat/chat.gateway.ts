@@ -14,6 +14,7 @@ import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service.js';
 import { SendMessageDto } from './dto/send-message.dto.js';
 import { RedisService } from '../redis/redis/redis.service.js';
+import { CallStatus, CallType } from './schemas/message.schema.js';
 
 interface AuthenticatedSocket extends Socket {
   data: {
@@ -41,6 +42,19 @@ export class ChatGateway
 
   // Map theo dõi số lượng socket kết nối của mỗi userId
   private readonly userSocketMap = new Map<string, Set<string>>();
+
+  // Map theo dõi phiên cuộc gọi WebRTC 1-1 đang diễn ra
+  private readonly activeCalls = new Map<
+    string,
+    {
+      callerId: string;
+      targetUserId: string;
+      callType: CallType;
+      conversationId?: string;
+      initiatedAt: number;
+      acceptedAt?: number;
+    }
+  >();
 
   constructor(
     private readonly chatService: ChatService,
@@ -119,6 +133,41 @@ export class ChatGateway
     }
 
     this.logger.log(`User ${userId} đã ngắt kết nối Socket ${client.id}`);
+
+    // Dọn dẹp phiên cuộc gọi nếu user ngắt kết nối khi đang gọi
+    for (const [key, session] of this.activeCalls.entries()) {
+      if (session.callerId === userId || session.targetUserId === userId) {
+        this.activeCalls.delete(key);
+        const partnerId = session.callerId === userId ? session.targetUserId : session.callerId;
+        this.server.to(`user:${partnerId}`).emit('call:ended', { by: userId });
+
+        const duration = session.acceptedAt
+          ? Math.max(1, Math.round((Date.now() - session.acceptedAt) / 1000))
+          : 0;
+        const status: CallStatus = session.acceptedAt ? 'completed' : 'missed';
+
+        void this.chatService
+          .saveCallMessage(
+            session.callerId,
+            session.targetUserId,
+            session.callType,
+            status,
+            duration,
+            session.conversationId,
+          )
+          .then((msg) => {
+            this.server
+              .to(`user:${session.callerId}`)
+              .to(`user:${session.targetUserId}`)
+              .emit('message:new', msg);
+          })
+          .catch((err) => {
+            this.logger.error(
+              `Lỗi lưu log cuộc gọi ngắt kết nối: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          });
+      }
+    }
   }
 
   /**
@@ -379,10 +428,20 @@ export class ChatGateway
       callType: 'audio' | 'video';
       callerName?: string;
       callerAvatar?: string;
+      conversationId?: string;
     },
   ) {
     const callerId = client.data?.user?.sub;
     if (!callerId || !payload?.targetUserId) return;
+
+    const callKey = [callerId, payload.targetUserId].sort().join(':');
+    this.activeCalls.set(callKey, {
+      callerId,
+      targetUserId: payload.targetUserId,
+      callType: payload.callType || 'audio',
+      conversationId: payload.conversationId,
+      initiatedAt: Date.now(),
+    });
 
     this.logger.log(`Cuộc gọi [${payload.callType}] từ ${callerId} tới ${payload.targetUserId}`);
     this.server.to(`user:${payload.targetUserId}`).emit('call:incoming', {
@@ -390,6 +449,7 @@ export class ChatGateway
       callerName: payload.callerName || client.data?.user?.email,
       callerAvatar: payload.callerAvatar,
       callType: payload.callType || 'audio',
+      conversationId: payload.conversationId,
     });
   }
 
@@ -404,6 +464,12 @@ export class ChatGateway
     const calleeId = client.data?.user?.sub;
     if (!calleeId || !payload?.callerId) return;
 
+    const callKey = [calleeId, payload.callerId].sort().join(':');
+    const session = this.activeCalls.get(callKey);
+    if (session) {
+      session.acceptedAt = Date.now();
+    }
+
     this.logger.log(`Cuộc gọi được chấp nhận bởi ${calleeId} cho ${payload.callerId}`);
     this.server.to(`user:${payload.callerId}`).emit('call:accepted', {
       calleeId,
@@ -414,35 +480,110 @@ export class ChatGateway
    * Từ chối hoặc hủy cuộc gọi
    */
   @SubscribeMessage('call:reject')
-  handleCallReject(
+  async handleCallReject(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() payload: { targetUserId: string; reason?: string },
+    @MessageBody()
+    payload: {
+      targetUserId: string;
+      reason?: string;
+      callType?: 'audio' | 'video';
+      conversationId?: string;
+    },
   ) {
     const senderId = client.data?.user?.sub;
     if (!senderId || !payload?.targetUserId) return;
+
+    const callKey = [senderId, payload.targetUserId].sort().join(':');
+    const session = this.activeCalls.get(callKey);
+    this.activeCalls.delete(callKey);
 
     this.logger.log(`Cuộc gọi bị từ chối/hủy giữa ${senderId} và ${payload.targetUserId}`);
     this.server.to(`user:${payload.targetUserId}`).emit('call:rejected', {
       by: senderId,
       reason: payload.reason || 'declined',
     });
+
+    // Lưu bản ghi tin nhắn cuộc gọi vào đoạn chat
+    try {
+      const callerId = session?.callerId || (payload.reason === 'cancelled' ? senderId : payload.targetUserId);
+      const calleeId = session?.targetUserId || (payload.reason === 'cancelled' ? payload.targetUserId : senderId);
+      const callType: CallType = session?.callType || payload.callType || 'audio';
+      const status: CallStatus =
+        payload.reason === 'busy' ? 'busy' : payload.reason === 'cancelled' ? 'missed' : 'declined';
+
+      const message = await this.chatService.saveCallMessage(
+        callerId,
+        calleeId,
+        callType,
+        status,
+        0,
+        session?.conversationId || payload.conversationId,
+      );
+
+      this.server
+        .to(`user:${callerId}`)
+        .to(`user:${calleeId}`)
+        .emit('message:new', message);
+    } catch (err) {
+      this.logger.error(`Lỗi lưu log cuộc gọi reject: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   /**
    * Kết thúc cuộc gọi
    */
   @SubscribeMessage('call:end')
-  handleCallEnd(
+  async handleCallEnd(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() payload: { targetUserId: string },
+    @MessageBody()
+    payload: {
+      targetUserId: string;
+      duration?: number;
+      callType?: 'audio' | 'video';
+      conversationId?: string;
+    },
   ) {
     const senderId = client.data?.user?.sub;
     if (!senderId || !payload?.targetUserId) return;
+
+    const callKey = [senderId, payload.targetUserId].sort().join(':');
+    const session = this.activeCalls.get(callKey);
+    this.activeCalls.delete(callKey);
 
     this.logger.log(`Cuộc gọi kết thúc giữa ${senderId} và ${payload.targetUserId}`);
     this.server.to(`user:${payload.targetUserId}`).emit('call:ended', {
       by: senderId,
     });
+
+    // Lưu bản ghi tin nhắn cuộc gọi vào đoạn chat
+    try {
+      const callerId = session?.callerId || senderId;
+      const calleeId = session?.targetUserId || payload.targetUserId;
+      const callType: CallType = session?.callType || payload.callType || 'audio';
+
+      let duration = typeof payload.duration === 'number' ? payload.duration : 0;
+      if (!duration && session?.acceptedAt) {
+        duration = Math.max(1, Math.round((Date.now() - session.acceptedAt) / 1000));
+      }
+
+      const status: CallStatus = session?.acceptedAt || duration > 0 ? 'completed' : 'missed';
+
+      const message = await this.chatService.saveCallMessage(
+        callerId,
+        calleeId,
+        callType,
+        status,
+        duration,
+        session?.conversationId || payload.conversationId,
+      );
+
+      this.server
+        .to(`user:${callerId}`)
+        .to(`user:${calleeId}`)
+        .emit('message:new', message);
+    } catch (err) {
+      this.logger.error(`Lỗi lưu log cuộc gọi end: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   /**

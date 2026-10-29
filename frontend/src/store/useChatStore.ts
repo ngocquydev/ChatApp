@@ -16,6 +16,12 @@ export interface ChatUser {
   [key: string]: unknown;
 }
 
+export interface CallLogData {
+  callType: "audio" | "video";
+  status: "missed" | "declined" | "completed" | "busy" | "cancelled";
+  duration: number; // in seconds
+}
+
 export interface ChatMessage {
   _id: string;
   id?: string;
@@ -23,6 +29,8 @@ export interface ChatMessage {
   senderId: string | ChatUser;
   receiverId: string | ChatUser;
   text: string;
+  type?: "text" | "call";
+  callLog?: CallLogData | null;
   readAt?: string | null;
   isDeleted?: boolean;
   deletedAt?: string | null;

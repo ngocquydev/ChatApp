@@ -29,7 +29,7 @@ import {
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useTranslation } from "@/i18n/useTranslation";
-import { ChatUser } from "@/store/useChatStore";
+import { useChatStore, ChatUser } from "@/store/useChatStore";
 import { useCallStore } from "@/store/useCallStore";
 import { getChatTheme } from "./chatThemes";
 import ThemeSelectDialog from "./ThemeSelectDialog";
@@ -68,6 +68,7 @@ export default function ChatHeader({
 }: ChatHeaderProps) {
   const { tr } = useTranslation();
   const { startCall } = useCallStore();
+  const activeConversation = useChatStore((s) => s.activeConversation);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [openThemeDialog, setOpenThemeDialog] = useState(false);
   const [openRestrictDialog, setOpenRestrictDialog] = useState(false);
@@ -230,7 +231,12 @@ export default function ChatHeader({
               onClick={() => {
                 if (partner) {
                   void startCall(
-                    { id: String(partner._id || partner.id || ""), name: partner.name, avatar: partner.avatar },
+                    {
+                      id: String(partner._id || partner.id || ""),
+                      name: partner.name,
+                      avatar: partner.avatar,
+                      conversationId: activeConversation?._id,
+                    },
                     "audio"
                   );
                 }
@@ -248,7 +254,12 @@ export default function ChatHeader({
               onClick={() => {
                 if (partner) {
                   void startCall(
-                    { id: String(partner._id || partner.id || ""), name: partner.name, avatar: partner.avatar },
+                    {
+                      id: String(partner._id || partner.id || ""),
+                      name: partner.name,
+                      avatar: partner.avatar,
+                      conversationId: activeConversation?._id,
+                    },
                     "video"
                   );
                 }

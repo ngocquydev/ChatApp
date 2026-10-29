@@ -56,6 +56,7 @@ import { getChatTheme } from "@/components/chat/app/chatThemes";
 import { useTranslation } from "@/i18n/useTranslation";
 import FloatingChatHeaderMenu from "./FloatingChatHeaderMenu";
 import ReadReceiptsDialog from "./ReadReceiptsDialog";
+import CallMessageItem from "./call/CallMessageItem";
 
 const POPULAR_EMOJIS = [
   "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
@@ -800,7 +801,12 @@ export default function FloatingChatBox({
                   onClick={(e) => {
                     e.stopPropagation();
                     void startCall(
-                      { id: targetUserId, name: targetUser.name, avatar: targetUser.avatar },
+                      {
+                        id: targetUserId,
+                        name: targetUser.name,
+                        avatar: targetUser.avatar,
+                        conversationId: convId || undefined,
+                      },
                       "audio"
                     );
                   }}
@@ -821,7 +827,12 @@ export default function FloatingChatBox({
                   onClick={(e) => {
                     e.stopPropagation();
                     void startCall(
-                      { id: targetUserId, name: targetUser.name, avatar: targetUser.avatar },
+                      {
+                        id: targetUserId,
+                        name: targetUser.name,
+                        avatar: targetUser.avatar,
+                        conversationId: convId || undefined,
+                      },
                       "video"
                     );
                   }}
@@ -1086,6 +1097,17 @@ export default function FloatingChatBox({
                             >
                               {tr("Tin nhắn đã bị thu hồi", "Message unsent")}
                             </Box>
+                          ) : msg.type === "call" || Boolean(msg.callLog) || /^(📞|📹)\s*Cuộc gọi/i.test(trimmed) ? (
+                            <CallMessageItem
+                              message={msg}
+                              isMe={isMe}
+                              partner={{
+                                id: targetUserId,
+                                name: targetUser.name,
+                                avatar: targetUser.avatar,
+                              }}
+                              conversationId={convId || undefined}
+                            />
                           ) : isMedia ? (
                             <Box
                               sx={{

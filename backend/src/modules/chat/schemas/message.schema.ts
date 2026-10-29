@@ -1,6 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
+export type CallStatus = 'missed' | 'declined' | 'completed' | 'busy' | 'cancelled';
+export type CallType = 'audio' | 'video';
+
+export interface CallLogData {
+  callType: CallType;
+  status: CallStatus;
+  duration: number; // Thời lượng tính bằng giây
+}
+
 export type MessageDocument = Message & Document;
 
 @Schema({ timestamps: true })
@@ -35,6 +44,27 @@ export class Message {
     trim: true,
   })
   text: string;
+
+  @Prop({
+    type: String,
+    enum: ['text', 'call'],
+    default: 'text',
+  })
+  type?: 'text' | 'call';
+
+  @Prop({
+    type: {
+      callType: { type: String, enum: ['audio', 'video'], default: 'audio' },
+      status: {
+        type: String,
+        enum: ['missed', 'declined', 'completed', 'busy', 'cancelled'],
+        default: 'completed',
+      },
+      duration: { type: Number, default: 0 },
+    },
+    default: null,
+  })
+  callLog?: CallLogData | null;
 
   @Prop({
     type: Date,

@@ -3,6 +3,37 @@ import { Document, Types } from 'mongoose';
 
 export type ConversationDocument = Conversation & Document;
 
+@Schema({ _id: false })
+export class LastMessage {
+  @Prop({ type: String, required: true })
+  text: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  senderId: Types.ObjectId;
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
+
+  @Prop({ type: String, default: 'text' })
+  type?: string;
+
+  @Prop({
+    type: {
+      callType: { type: String },
+      status: { type: String },
+      duration: { type: Number },
+    },
+    default: null,
+  })
+  callLog?: {
+    callType: 'audio' | 'video';
+    status: 'missed' | 'declined' | 'completed' | 'busy' | 'cancelled';
+    duration: number;
+  } | null;
+}
+
+export const LastMessageSchema = SchemaFactory.createForClass(LastMessage);
+
 @Schema({ timestamps: true })
 export class Conversation {
   @Prop({
@@ -12,18 +43,10 @@ export class Conversation {
   participants: Types.ObjectId[];
 
   @Prop({
-    type: {
-      text: { type: String, required: true },
-      senderId: { type: Types.ObjectId, ref: 'User', required: true },
-      createdAt: { type: Date, default: Date.now },
-    },
+    type: LastMessageSchema,
     default: null,
   })
-  lastMessage?: {
-    text: string;
-    senderId: Types.ObjectId;
-    createdAt: Date;
-  } | null;
+  lastMessage?: LastMessage | null;
 
   @Prop({
     type: Map,

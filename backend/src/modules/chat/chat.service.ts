@@ -10,7 +10,13 @@ import {
   Conversation,
   ConversationDocument,
 } from './schemas/conversation.schema.js';
-import { Message, MessageDocument } from './schemas/message.schema.js';
+import {
+  Message,
+  MessageDocument,
+  CallLogData,
+  CallStatus,
+  CallType,
+} from './schemas/message.schema.js';
 import { UsersService } from '../users/users.service.js';
 
 @Injectable()
@@ -84,6 +90,10 @@ export class ChatService {
     receiverId: string,
     text: string,
     conversationId?: string,
+    options?: {
+      type?: 'text' | 'call';
+      callLog?: CallLogData | null;
+    },
   ): Promise<MessageDocument> {
     const receiver = await this.usersService.findById(receiverId);
     if (!receiver) {
@@ -111,6 +121,8 @@ export class ChatService {
       senderId: new Types.ObjectId(senderId),
       receiverId: new Types.ObjectId(receiverId),
       text: text.trim(),
+      type: options?.type || 'text',
+      callLog: options?.callLog || null,
       readAt: null,
       isDeleted: false,
       deletedAt: null,
@@ -122,6 +134,8 @@ export class ChatService {
       text: text.trim(),
       senderId: new Types.ObjectId(senderId),
       createdAt: message.createdAt || new Date(),
+      type: options?.type || 'text',
+      callLog: options?.callLog || null,
     };
 
     if (!conversation.unreadCounts) {
@@ -133,6 +147,49 @@ export class ChatService {
     await conversation.save();
 
     return message;
+  }
+
+  /**
+   * Lưu bản ghi cuộc gọi (Call log) dưới dạng một tin nhắn trong đoạn chat
+   */
+  async saveCallMessage(
+    callerId: string,
+    calleeId: string,
+    callType: CallType = 'audio',
+    status: CallStatus = 'completed',
+    duration = 0,
+    conversationId?: string,
+  ): Promise<MessageDocument> {
+    const formatDuration = (sec: number) => {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    let text = '';
+    const isVideo = callType === 'video';
+    if (status === 'completed') {
+      text = isVideo
+        ? `📹 Cuộc gọi video (${formatDuration(duration)})`
+        : `📞 Cuộc gọi thoại (${formatDuration(duration)})`;
+    } else if (status === 'missed') {
+      text = isVideo ? '📹 Cuộc gọi video nhỡ' : '📞 Cuộc gọi thoại nhỡ';
+    } else if (status === 'declined') {
+      text = isVideo ? '📹 Cuộc gọi video bị từ chối' : '📞 Cuộc gọi thoại bị từ chối';
+    } else if (status === 'busy') {
+      text = isVideo ? '📹 Cuộc gọi video máy bận' : '📞 Cuộc gọi thoại máy bận';
+    } else {
+      text = isVideo ? '📹 Cuộc gọi video đã hủy' : '📞 Cuộc gọi thoại đã hủy';
+    }
+
+    return this.saveMessage(callerId, calleeId, text, conversationId, {
+      type: 'call',
+      callLog: {
+        callType,
+        status,
+        duration,
+      },
+    });
   }
 
   /**
