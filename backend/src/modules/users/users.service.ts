@@ -335,4 +335,35 @@ export class UsersService {
       .limit(limit)
       .exec();
   }
+
+  async findNearbyUsersExcluding(
+    longitude: number,
+    latitude: number,
+    radiusKm = 25,
+    excludeIds: (string | Types.ObjectId)[] = [],
+    limit = 30,
+  ) {
+    const objectIds = excludeIds
+      .filter((id) => Types.ObjectId.isValid(id.toString()))
+      .map((id) => new Types.ObjectId(id.toString()));
+
+    return this.userModel
+      .find({
+        _id: { $nin: objectIds },
+        isDeleted: { $ne: true },
+        isBan: { $ne: true },
+        location: {
+          $near: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [longitude, latitude],
+            },
+            $maxDistance: radiusKm * 1000,
+          },
+        },
+      })
+      .select('name email avatar phone bio createdAt location')
+      .limit(limit)
+      .exec();
+  }
 }

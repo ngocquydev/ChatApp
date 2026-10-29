@@ -9,6 +9,22 @@ export class User {
   @Prop({ required: true })
   name: string;
 
+  @Prop({
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point',
+    },
+    coordinates: {
+      type: [Number],
+      required: false,
+    },
+  })
+  location?: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
+
   @Prop({ required: false })
   phone: string;
 
@@ -55,4 +71,5 @@ export class User {
 export const UserSchema = SchemaFactory.createForClass(User);
 UserSchema.index({ name: 'text' });
 UserSchema.index({ name: 1 });
+UserSchema.index({ location: '2dsphere' });
 UserSchema.index({ isDeleted: 1, isBan: 1, name: 1 });

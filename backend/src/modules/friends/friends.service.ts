@@ -13,6 +13,7 @@ import {
   FriendshipDocument,
 } from './schemas/friendship.schema.js';
 import { UsersService } from '../users/users.service.js';
+import { User } from '../users/entities/user.entity.js';
 import { ChatGateway } from '../chat/chat.gateway.js';
 import { RedisService } from '../redis/redis/redis.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
@@ -524,6 +525,18 @@ export class FriendsService {
       86400 * 7,
     );
 
+    // 3. Đồng bộ vị trí vào MongoDB User Model hỗ trợ 2dsphere Geospatial Index bền vững
+    try {
+      await this.usersService.findByIdAndUpdate(userId, {
+        location: {
+          type: 'Point',
+          coordinates: [longitude, latitude],
+        },
+      } as unknown as Partial<User>);
+    } catch {
+      // Bỏ qua lỗi cập nhật MongoDB nếu có
+    }
+
     return { success: true, message: 'Đã cập nhật vị trí địa lý thành công' };
   }
 
@@ -658,6 +671,27 @@ export class FriendsService {
             if (candidateId && !excludedIds.has(candidateId)) {
               candidateMap.set(candidateId, { distanceKm: dist });
             }
+          }
+        }
+
+        // Cold-start Fallback: Nếu Redis GEO trả về ít kết quả, truy vấn qua MongoDB 2dsphere index
+        if (candidateMap.size < 10) {
+          try {
+            const nearbyMongo = await this.usersService.findNearbyUsersExcluding(
+              currentLng,
+              currentLat,
+              radiusKm,
+              Array.from(excludedIds),
+              20,
+            );
+            for (const u of nearbyMongo) {
+              const uId = (u as { _id: { toString(): string } })._id.toString();
+              if (!candidateMap.has(uId)) {
+                candidateMap.set(uId, {});
+              }
+            }
+          } catch {
+            // Bỏ qua nếu MongoDB 2dsphere chưa có dữ liệu điểm
           }
         }
       } catch {

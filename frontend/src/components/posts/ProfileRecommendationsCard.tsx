@@ -183,3 +183,4 @@ export default function ProfileRecommendationsCard({ cardSx }: ProfileRecommenda
     </Paper>
   );
 }
+
