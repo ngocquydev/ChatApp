@@ -32,10 +32,11 @@ import {
   CheckCheck,
   ChevronUp,
   ChevronDown,
-  MoreVertical,
   Palette,
   Trash2,
   Image as ImageIcon,
+  Phone,
+  Video,
 } from "lucide-react";
 import api from "@/services/api";
 import { isVideoUrl, uploadMedia } from "@/services/postsApi";
@@ -43,6 +44,7 @@ import { mqttChatClient } from "@/services/mqttClient";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore, ChatMessage, ChatUser } from "@/store/useChatStore";
 import { useChatBoxStore, ChatBoxSession } from "@/store/useChatBoxStore";
+import { useCallStore } from "@/store/useCallStore";
 import { useSoundStore } from "@/store/useSoundStore";
 import { soundNotification } from "@/utils/soundNotification";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
@@ -90,6 +92,7 @@ export default function FloatingChatBox({
   const { socket, onlineUserIds, startConversationWithUser } = useChatStore();
   const { setConversationId, incrementUnread, clearUnread } = useChatBoxStore();
   const { isMuted, toggleMute } = useSoundStore();
+  const { startCall } = useCallStore();
 
   const [convId, setConvId] = useState<string | null>(session.conversationId || null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -786,26 +789,52 @@ export default function FloatingChatBox({
           </Box>
         </ButtonBase>
 
-        {/* Nút Tùy chọn (3 chấm), Thu nhỏ (-) & Đóng (×) chuẩn Facebook */}
+        {/* Nút Gọi thoại, Gọi video, Thu nhỏ (-) & Đóng (×) */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
           {!session.isMinimized && (
-            <Tooltip title={tr("Tùy chọn đoạn chat", "Chat options")}>
-              <IconButton
-                size="small"
-                aria-label={tr("Tùy chọn đoạn chat", "Chat options")}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuAnchorEl(e.currentTarget);
-                }}
-                sx={{
-                  color: "primary.main",
-                  p: 0.65,
-                  "&:hover": { bgcolor: "action.hover" },
-                }}
-              >
-                <MoreVertical size={18} />
-              </IconButton>
-            </Tooltip>
+            <>
+              <Tooltip title={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}>
+                <IconButton
+                  size="small"
+                  aria-label={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void startCall(
+                      { id: targetUserId, name: targetUser.name, avatar: targetUser.avatar },
+                      "audio"
+                    );
+                  }}
+                  sx={{
+                    color: "primary.main",
+                    p: 0.65,
+                    "&:hover": { bgcolor: "action.hover" },
+                  }}
+                >
+                  <Phone size={18} />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title={tr("Bắt đầu cuộc gọi video", "Start video call")}>
+                <IconButton
+                  size="small"
+                  aria-label={tr("Bắt đầu cuộc gọi video", "Start video call")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void startCall(
+                      { id: targetUserId, name: targetUser.name, avatar: targetUser.avatar },
+                      "video"
+                    );
+                  }}
+                  sx={{
+                    color: "primary.main",
+                    p: 0.65,
+                    "&:hover": { bgcolor: "action.hover" },
+                  }}
+                >
+                  <Video size={18} />
+                </IconButton>
+              </Tooltip>
+            </>
           )}
 
           <Tooltip title={session.isMinimized ? tr("Mở rộng", "Expand") : tr("Thu nhỏ", "Minimize")}>

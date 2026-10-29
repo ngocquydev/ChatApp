@@ -365,6 +365,103 @@ export class ChatGateway
     }
   }
 
+  // ───────────────────────── WebRTC 1-1 Calling Signaling ─────────────────────────
+
+  /**
+   * Khởi tạo cuộc gọi tới người dùng khác
+   */
+  @SubscribeMessage('call:initiate')
+  handleCallInitiate(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody()
+    payload: {
+      targetUserId: string;
+      callType: 'audio' | 'video';
+      callerName?: string;
+      callerAvatar?: string;
+    },
+  ) {
+    const callerId = client.data?.user?.sub;
+    if (!callerId || !payload?.targetUserId) return;
+
+    this.logger.log(`Cuộc gọi [${payload.callType}] từ ${callerId} tới ${payload.targetUserId}`);
+    this.server.to(`user:${payload.targetUserId}`).emit('call:incoming', {
+      callerId,
+      callerName: payload.callerName || client.data?.user?.email,
+      callerAvatar: payload.callerAvatar,
+      callType: payload.callType || 'audio',
+    });
+  }
+
+  /**
+   * Người nhận chấp nhận cuộc gọi
+   */
+  @SubscribeMessage('call:accept')
+  handleCallAccept(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { callerId: string },
+  ) {
+    const calleeId = client.data?.user?.sub;
+    if (!calleeId || !payload?.callerId) return;
+
+    this.logger.log(`Cuộc gọi được chấp nhận bởi ${calleeId} cho ${payload.callerId}`);
+    this.server.to(`user:${payload.callerId}`).emit('call:accepted', {
+      calleeId,
+    });
+  }
+
+  /**
+   * Từ chối hoặc hủy cuộc gọi
+   */
+  @SubscribeMessage('call:reject')
+  handleCallReject(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { targetUserId: string; reason?: string },
+  ) {
+    const senderId = client.data?.user?.sub;
+    if (!senderId || !payload?.targetUserId) return;
+
+    this.logger.log(`Cuộc gọi bị từ chối/hủy giữa ${senderId} và ${payload.targetUserId}`);
+    this.server.to(`user:${payload.targetUserId}`).emit('call:rejected', {
+      by: senderId,
+      reason: payload.reason || 'declined',
+    });
+  }
+
+  /**
+   * Kết thúc cuộc gọi
+   */
+  @SubscribeMessage('call:end')
+  handleCallEnd(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { targetUserId: string },
+  ) {
+    const senderId = client.data?.user?.sub;
+    if (!senderId || !payload?.targetUserId) return;
+
+    this.logger.log(`Cuộc gọi kết thúc giữa ${senderId} và ${payload.targetUserId}`);
+    this.server.to(`user:${payload.targetUserId}`).emit('call:ended', {
+      by: senderId,
+    });
+  }
+
+  /**
+   * Chuyển tiếp tín hiệu WebRTC (Offer, Answer, ICE Candidates)
+   */
+  @SubscribeMessage('webrtc:signal')
+  handleWebrtcSignal(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { targetUserId: string; signal: unknown },
+  ) {
+    const senderId = client.data?.user?.sub;
+    if (!senderId || !payload?.targetUserId || !payload?.signal) return;
+
+    this.server.to(`user:${payload.targetUserId}`).emit('webrtc:signal', {
+      senderId,
+      signal: payload.signal,
+    });
+  }
+
   /**
    * Trích xuất token từ handshake auth, header hoặc cookie
    */

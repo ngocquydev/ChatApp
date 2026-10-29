@@ -30,6 +30,7 @@ import PresenceAvatar from "@/components/common/PresenceAvatar";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useTranslation } from "@/i18n/useTranslation";
 import { ChatUser } from "@/store/useChatStore";
+import { useCallStore } from "@/store/useCallStore";
 import { getChatTheme } from "./chatThemes";
 import ThemeSelectDialog from "./ThemeSelectDialog";
 import RestrictInfoDialog from "./RestrictInfoDialog";
@@ -50,20 +51,6 @@ interface ChatHeaderProps {
   onToggleRestrict: () => Promise<void> | void;
 }
 
-/** Nút chưa có chức năng: hiển thị disabled kèm tooltip trung thực thay vì nút "chết". */
-function ComingSoonButton({ label, children }: { label: string; children: React.ReactNode }) {
-  const { tr } = useTranslation();
-  return (
-    <Tooltip title={`${label} — ${tr("sắp ra mắt", "coming soon")}`}>
-      <span>
-        <IconButton disabled aria-label={`${label} (${tr("sắp ra mắt", "coming soon")})`} sx={{ color: "text.secondary" }}>
-          {children}
-        </IconButton>
-      </span>
-    </Tooltip>
-  );
-}
-
 export default function ChatHeader({
   partner,
   isOnline,
@@ -80,6 +67,7 @@ export default function ChatHeader({
   onToggleRestrict,
 }: ChatHeaderProps) {
   const { tr } = useTranslation();
+  const { startCall } = useCallStore();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [openThemeDialog, setOpenThemeDialog] = useState(false);
   const [openRestrictDialog, setOpenRestrictDialog] = useState(false);
@@ -234,13 +222,42 @@ export default function ChatHeader({
           </IconButton>
         </Tooltip>
 
-        <Box sx={{ display: { xs: "none", sm: "flex" } }}>
-          <ComingSoonButton label={tr("Gọi thoại", "Voice call")}>
-            <Phone size={20} />
-          </ComingSoonButton>
-          <ComingSoonButton label={tr("Gọi video", "Video call")}>
-            <Video size={20} />
-          </ComingSoonButton>
+        <Box sx={{ display: { xs: "none", sm: "flex" }, gap: 0.25 }}>
+          <Tooltip title={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}>
+            <IconButton
+              aria-label={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}
+              disabled={!partner}
+              onClick={() => {
+                if (partner) {
+                  void startCall(
+                    { id: String(partner._id || partner.id || ""), name: partner.name, avatar: partner.avatar },
+                    "audio"
+                  );
+                }
+              }}
+              sx={{ color: "primary.main" }}
+            >
+              <Phone size={20} />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title={tr("Bắt đầu cuộc gọi video", "Start video call")}>
+            <IconButton
+              aria-label={tr("Bắt đầu cuộc gọi video", "Start video call")}
+              disabled={!partner}
+              onClick={() => {
+                if (partner) {
+                  void startCall(
+                    { id: String(partner._id || partner.id || ""), name: partner.name, avatar: partner.avatar },
+                    "video"
+                  );
+                }
+              }}
+              sx={{ color: "primary.main" }}
+            >
+              <Video size={20} />
+            </IconButton>
+          </Tooltip>
         </Box>
 
         <Tooltip title={tr("Tùy chọn cuộc trò chuyện", "Chat options")}>

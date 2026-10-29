@@ -18,6 +18,10 @@ const FriendNoticeToast = dynamic(() => import("@/components/common/FriendNotice
   ssr: false,
 });
 
+const CallModal = dynamic(() => import("@/components/chat/call/CallModal"), {
+  ssr: false,
+});
+
 interface ClientShellProps {
   children: ReactNode;
 }
@@ -59,6 +63,7 @@ export default function ClientShell({ children }: ClientShellProps) {
       </main>
       <FloatingChatDock />
       {isAuthenticated && <FriendNoticeToast />}
+      {isAuthenticated && <CallModal />}
     </>
   );
 }
