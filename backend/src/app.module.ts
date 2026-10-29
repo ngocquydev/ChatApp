@@ -15,6 +15,7 @@ import { CloudinaryModule } from './modules/cloudinary/cloudinary.module.js';
 import { UploadModule } from './modules/upload/upload.module.js';
 import { Neo4jModule } from './modules/neo4j/neo4j.module.js';
 import { AppGraphqlModule } from './modules/graphql/app-graphql.module.js';
+import { ModerationModule } from './modules/moderation/moderation.module.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -64,6 +65,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     Neo4jModule,
 
     AppGraphqlModule,
+
+    ModerationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
