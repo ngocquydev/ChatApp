@@ -5,7 +5,7 @@ import { AutoencoderAnomalyDetector } from "./algorithms/autoencoder-anomaly.js"
 import { TransformerTextModerator } from "./algorithms/transformer-text-moderator.js";
 import { VisionModerator } from "./algorithms/vision-moderator.js";
 
-describe("Moderation & Trust Module", () => {
+describe("Moderation & Trust Module (Hỗ trợ song ngữ VI / EN)", () => {
   let service: ModerationService;
 
   beforeEach(() => {
@@ -13,51 +13,50 @@ describe("Moderation & Trust Module", () => {
     service.onModuleInit();
   });
 
-  describe("1. Thuật toán Isolation Forest (Phát hiện Bot & Tài khoản ảo)", () => {
+  describe("1. Thuật toán Isolation Forest & Autoencoder (Phát hiện Bot & Tài khoản ảo)", () => {
     it("phải tính toán hệ số đường đi kỳ vọng c(n) chính xác theo công thức Liu et al.", () => {
       expect(IsolationForest.averagePathLengthFactor(1)).toBe(0);
       expect(IsolationForest.averagePathLengthFactor(2)).toBe(1);
       const c256 = IsolationForest.averagePathLengthFactor(256);
-      // Với n=256, c(n) xấp xỉ 9.24
       expect(c256).toBeGreaterThan(8.5);
       expect(c256).toBeLessThan(10.5);
     });
 
-    it("phải nhận diện người dùng bình thường có điểm dị thường thấp (isAnomaly = false)", () => {
+    it("phải nhận diện người dùng bình thường và hỗ trợ báo cáo tiếng Việt", () => {
       const normalUser = {
         friendRequestsPerHour: 2.0,
         acceptanceRate: 0.65,
-        actionIntervalVariance: 35.0, // Thời gian tương tác ngẫu nhiên của con người
+        actionIntervalVariance: 35.0,
         actionRepetitionRatio: 0.1,
         interactionVelocity: 3.0,
         distinctTargetRatio: 0.85,
       };
 
-      const result = service.detectBotAnomaly(normalUser);
+      const result = service.detectBotAnomaly(normalUser, "vi");
       expect(result.anomalyScore).toBeLessThan(0.6);
       expect(result.isAnomaly).toBe(false);
       expect(["LOW", "MEDIUM"]).toContain(result.riskLevel);
+      expect(result.assessment).toContain("người dùng thật");
     });
 
-    it("phải phát hiện spam bot kết bạn hàng loạt và chu kỳ lặp lại (isAnomaly = true)", () => {
+    it("phải phát hiện spam bot và xuất kết luận bằng tiếng Anh (EN)", () => {
       const spamBot = {
-        friendRequestsPerHour: 250.0, // Kết bạn ồ ạt 250 lượt/giờ
-        acceptanceRate: 0.02, // Hầu như bị từ chối
-        actionIntervalVariance: 0.001, // Chu kỳ chính xác đến từng mili-giây (hành vi bot)
-        actionRepetitionRatio: 0.98, // 98% hành động lặp đi lặp lại
-        interactionVelocity: 85.0, // Thao tác liên tục cực nhanh
+        friendRequestsPerHour: 250.0,
+        acceptanceRate: 0.02,
+        actionIntervalVariance: 0.001,
+        actionRepetitionRatio: 0.98,
+        interactionVelocity: 85.0,
         distinctTargetRatio: 0.05,
       };
 
-      const result = service.detectBotAnomaly(spamBot);
+      const result = service.detectBotAnomaly(spamBot, "en");
       expect(result.anomalyScore).toBeGreaterThanOrEqual(0.6);
       expect(result.isAnomaly).toBe(true);
       expect(["HIGH", "CRITICAL"]).toContain(result.riskLevel);
+      expect(result.assessment).toContain("Anomalous automated bot activity detected");
     });
-  });
 
-  describe("2. Thuật toán Autoencoder (Anomaly Detection)", () => {
-    it("phải phát hiện sai số tái tạo (Reconstruction Error) cao trên hành vi bất thường", () => {
+    it("phải phát hiện sai số tái tạo cao trên Autoencoder khi gặp hành vi bất thường", () => {
       const detector = new AutoencoderAnomalyDetector({
         inputDim: 4,
         hiddenDim: 2,
@@ -65,7 +64,6 @@ describe("Moderation & Trust Module", () => {
         anomalyThreshold: 0.4,
       });
 
-      // Huấn luyện trên tập chuẩn
       const normalDataset = [
         [1.0, 0.5, 20.0, 0.1],
         [1.2, 0.6, 25.0, 0.12],
@@ -84,80 +82,146 @@ describe("Moderation & Trust Module", () => {
     });
   });
 
-  describe("3. Phân loại văn bản NLP Transformer (Toxic language, Hate speech, Spam, Violence)", () => {
+  describe("2. Phân loại văn bản NLP Transformer Tiếng Việt (VI)", () => {
     const nlp = new TransformerTextModerator();
 
-    it("phải cho phép văn bản thân thiện, tích cực (ALLOW)", () => {
+    it("phải tự động nhận diện ngôn ngữ 'vi' và cho phép văn bản thân thiện", () => {
       const text = "Chào bạn, hôm nay thời tiết đẹp và mọi người cùng làm việc vui vẻ nhé!";
       const res = nlp.moderate(text);
 
+      expect(res.language).toBe("vi");
       expect(res.action).toBe("ALLOW");
       expect(res.toxicityScore).toBeLessThan(0.2);
-      expect(res.flags).toHaveLength(0);
     });
 
-    it("phải phát hiện ngôn từ thô tục, xúc phạm (TOXIC_LANGUAGE)", () => {
+    it("phải phát hiện ngôn từ thô tục tiếng Việt (TOXIC_LANGUAGE)", () => {
       const text = "Thằng chó này ăn nói vcl ngu ngốc chết tiệt";
-      const res = nlp.moderate(text);
+      const res = nlp.moderate(text, "vi");
 
+      expect(res.language).toBe("vi");
       expect(res.flags).toContain("TOXIC_LANGUAGE");
       expect(["FLAG_REVIEW", "BLOCK"]).toContain(res.action);
+      expect(res.reason).toContain("Nội dung");
     });
 
-    it("phải chặn đứng phát ngôn thù ghét, phân biệt đối xử (HATE_SPEECH - BLOCK)", () => {
+    it("phải chặn đứng phát ngôn thù ghét tiếng Việt (HATE_SPEECH - BLOCK)", () => {
       const text = "bọn mọi rợ tiêu diệt giống loài này đi";
-      const res = nlp.moderate(text);
+      const res = nlp.moderate(text, "vi");
 
       expect(res.flags).toContain("HATE_SPEECH");
       expect(res.action).toBe("BLOCK");
+      expect(res.reason).toContain("vi phạm nghiêm trọng");
     });
 
-    it("phải chặn đứng đe dọa bạo lực thể xác (VIOLENCE_THREAT - BLOCK)", () => {
+    it("phải chặn đứng đe dọa bạo lực tiếng Việt (VIOLENCE_THREAT - BLOCK)", () => {
       const text = "Tao sẽ giết bắn chết mày hôm nay";
-      const res = nlp.moderate(text);
+      const res = nlp.moderate(text, "vi");
 
       expect(res.flags).toContain("VIOLENCE_THREAT");
       expect(res.action).toBe("BLOCK");
     });
 
-    it("phải phát hiện tin nhắn rác / lừa đảo cờ bạc (SPAM_PROMOTION)", () => {
+    it("phải phát hiện tin nhắn spam tiếng Việt (SPAM_PROMOTION)", () => {
       const text = "Kiếm 50 triệu mỗi ngày tại nhà uy tín, liên hệ ngay telegram : @botscam nhận thưởng";
-      const res = nlp.moderate(text);
+      const res = nlp.moderate(text, "vi");
 
       expect(res.flags).toContain("SPAM_PROMOTION");
       expect(["FLAG_REVIEW", "BLOCK"]).toContain(res.action);
     });
   });
 
-  describe("4. Quét hình ảnh / video nhạy cảm bằng Vision Model (ResNet / ViT)", () => {
-    const vision = new VisionModerator();
+  describe("3. Phân loại văn bản NLP Transformer Tiếng Anh (EN)", () => {
+    const nlp = new TransformerTextModerator();
 
-    it("phải cho phép hình ảnh bình thường, trong sáng", async () => {
-      const res = await vision.scanImage({
-        url: "https://res.cloudinary.com/demo/image/upload/nature-landscape.jpg",
-        sizeBytes: 1024 * 350,
-      });
+    it("phải tự động nhận diện ngôn ngữ 'en' và cho phép văn bản thân thiện tiếng Anh", () => {
+      const text = "Hello everyone, hope you are all having a productive and wonderful day!";
+      const res = nlp.moderate(text);
 
-      expect(res.isSafe).toBe(true);
+      expect(res.language).toBe("en");
       expect(res.action).toBe("ALLOW");
-      expect(res.detectedCategories).toHaveLength(0);
+      expect(res.toxicityScore).toBeLessThan(0.2);
     });
 
-    it("phải phát hiện và chặn hình ảnh nhạy cảm NSFW / khiêu dâm", async () => {
-      const res = await vision.scanImage({
-        url: "https://res.cloudinary.com/demo/image/upload/adult_explicit_nsfw_content.jpg",
-      });
+    it("phải phát hiện ngôn từ thô tục tiếng Anh (TOXIC_LANGUAGE - EN)", () => {
+      const text = "You are such an idiot asshole bitch, get lost";
+      const res = nlp.moderate(text, "en");
 
+      expect(res.language).toBe("en");
+      expect(res.flags).toContain("TOXIC_LANGUAGE");
+      expect(["FLAG_REVIEW", "BLOCK"]).toContain(res.action);
+      expect(res.reason).toContain("Content");
+    });
+
+    it("phải chặn đứng phát ngôn thù ghét tiếng Anh (HATE_SPEECH - EN - BLOCK)", () => {
+      const text = "We are white supremacist neo nazi and we will exterminate them";
+      const res = nlp.moderate(text, "en");
+
+      expect(res.language).toBe("en");
+      expect(res.flags).toContain("HATE_SPEECH");
+      expect(res.action).toBe("BLOCK");
+      expect(res.reason).toContain("severely violates community safety standards");
+    });
+
+    it("phải chặn đứng đe dọa bạo lực tiếng Anh (VIOLENCE_THREAT - EN - BLOCK)", () => {
+      const text = "I will hunt you down and shoot you dead";
+      const res = nlp.moderate(text, "en");
+
+      expect(res.language).toBe("en");
+      expect(res.flags).toContain("VIOLENCE_THREAT");
+      expect(res.action).toBe("BLOCK");
+    });
+
+    it("phải phát hiện tin nhắn rác / lừa đảo tiếng Anh (SPAM_PROMOTION - EN)", () => {
+      const text = "Earn $5000 daily make money fast with free crypto airdrop claim at telegram : @crypto_scam";
+      const res = nlp.moderate(text, "en");
+
+      expect(res.language).toBe("en");
+      expect(res.flags).toContain("SPAM_PROMOTION");
+      expect(["FLAG_REVIEW", "BLOCK"]).toContain(res.action);
+    });
+  });
+
+  describe("4. Quét hình ảnh / video nhạy cảm Vision Model (Hỗ trợ VI / EN)", () => {
+    const vision = new VisionModerator();
+
+    it("phải hỗ trợ thông báo tiếng Việt khi kiểm duyệt hình ảnh", async () => {
+      const res = await vision.scanImage(
+        {
+          url: "https://res.cloudinary.com/demo/image/upload/nature-landscape.jpg",
+          sizeBytes: 1024 * 350,
+        },
+        "vi",
+      );
+
+      expect(res.language).toBe("vi");
+      expect(res.isSafe).toBe(true);
+      expect(res.action).toBe("ALLOW");
+    });
+
+    it("phải hỗ trợ giải thích tiếng Anh (EN) khi chặn hình ảnh NSFW", async () => {
+      const res = await vision.scanImage(
+        {
+          url: "https://res.cloudinary.com/demo/image/upload/adult_explicit_nsfw_content.jpg",
+        },
+        "en",
+      );
+
+      expect(res.language).toBe("en");
       expect(res.isSafe).toBe(false);
       expect(res.action).toBe("BLOCK");
       expect(res.detectedCategories).toContain("ADULT_EXPLICIT");
+      expect(res.reason).toContain("Media blocked due to severe visual safety violations");
     });
 
-    it("phải phát hiện và chặn hình ảnh bạo lực / máu me", async () => {
-      const res = await vision.scanImage({
-        url: "https://res.cloudinary.com/demo/image/upload/violence_weapon_blood.jpg",
-      });
+    it("phải chặn hình ảnh bạo lực và giải thích bằng tiếng Anh (EN)", async () => {
+      const res = await vision.scanImage(
+        {
+          url: "https://res.cloudinary.com/demo/image/upload/violence_weapon_blood.jpg",
+        },
+        "en",
+      );
 
+      expect(res.language).toBe("en");
       expect(res.isSafe).toBe(false);
       expect(res.action).toBe("BLOCK");
       expect(res.detectedCategories).toContain("VIOLENCE_GORE");

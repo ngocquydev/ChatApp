@@ -7,6 +7,7 @@ import { AutoencoderAnomalyDetector } from "./algorithms/autoencoder-anomaly.js"
 import {
   TransformerTextModerator,
   type TextModerationResult,
+  type ModerationLanguage,
 } from "./algorithms/transformer-text-moderator.js";
 import {
   VisionModerator,
@@ -28,7 +29,7 @@ export class ModerationService implements OnModuleInit {
   private autoencoder: AutoencoderAnomalyDetector | null = null;
 
   onModuleInit() {
-    this.logger.log("Khởi tạo mô hình Kiểm duyệt & An toàn (Moderation & Trust)...");
+    this.logger.log("Khởi tạo mô hình Kiểm duyệt & An toàn (Moderation & Trust) - Hỗ trợ song ngữ VI/EN...");
     this.initDefaultBaselineModel();
   }
 
@@ -64,26 +65,36 @@ export class ModerationService implements OnModuleInit {
   }
 
   /**
-   * Kiểm duyệt văn bản (NLP Transformer)
+   * Kiểm duyệt văn bản (NLP Transformer - hỗ trợ song ngữ VI và EN)
    */
-  public moderateText(text: string): TextModerationResult {
-    return this.textModerator.moderate(text);
+  public moderateText(
+    text: string,
+    lang: ModerationLanguage = "auto",
+  ): TextModerationResult {
+    return this.textModerator.moderate(text, lang);
   }
 
   /**
-   * Quét hình ảnh / video nhạy cảm (Vision ResNet / ViT)
+   * Quét hình ảnh / video nhạy cảm (Vision ResNet / ViT - hỗ trợ song ngữ VI và EN)
    */
-  public async moderateImage(meta: ImageInputMetadata): Promise<VisionModerationResult> {
-    return this.visionModerator.scanImage(meta);
+  public async moderateImage(
+    meta: ImageInputMetadata,
+    lang: "vi" | "en" = "vi",
+  ): Promise<VisionModerationResult> {
+    return this.visionModerator.scanImage(meta, lang);
   }
 
   /**
-   * Phát hiện Bot & Tài khoản ảo (Anomaly Detection bằng Isolation Forest)
+   * Phát hiện Bot & Tài khoản ảo (Anomaly Detection bằng Isolation Forest & Autoencoder)
    */
-  public detectBotAnomaly(sample: UserBehaviorSample): AnomalyPrediction & {
+  public detectBotAnomaly(
+    sample: UserBehaviorSample,
+    lang: "vi" | "en" = "vi",
+  ): AnomalyPrediction & {
     autoencoderAnomaly?: boolean;
     autoencoderError?: number;
     riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+    assessment: string;
   } {
     const featureVector = [
       sample.friendRequestsPerHour,
@@ -110,11 +121,21 @@ export class ModerationService implements OnModuleInit {
       riskLevel = "MEDIUM";
     }
 
+    const assessment =
+      lang === "vi"
+        ? ifResult.isAnomaly
+          ? "Phát hiện hành vi bất thường đặc trưng của Bot (tần suất spam cao, chu kỳ lặp lại cố định)."
+          : "Hành vi bình thường của người dùng thật."
+        : ifResult.isAnomaly
+          ? "Anomalous automated bot activity detected (high spam frequency, periodic burst intervals)."
+          : "Normal human user behavior pattern.";
+
     return {
       ...ifResult,
       autoencoderAnomaly: aeResult?.isAnomaly,
       autoencoderError: aeResult?.reconstructionError,
       riskLevel,
+      assessment,
     };
   }
 }

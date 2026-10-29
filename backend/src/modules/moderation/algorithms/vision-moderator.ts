@@ -1,10 +1,12 @@
 /**
  * Vision Moderation Model (ResNet / Vision Transformer - ViT Representation)
+ * Supports bilingual explanations (VI / EN).
  *
  * Scans image/video buffers or URLs for adult (NSFW), violence/gore, and racy content.
  */
 
 export interface VisionModerationResult {
+  language: "vi" | "en";
   isSafe: boolean;
   action: "ALLOW" | "FLAG_REVIEW" | "BLOCK";
   scores: {
@@ -25,13 +27,14 @@ export interface ImageInputMetadata {
 
 export class VisionModerator {
   /**
-   * Quét và phân loại nội dung hình ảnh bằng mô hình thị giác
+   * Quét và phân loại nội dung hình ảnh bằng mô hình thị giác (hỗ trợ VI / EN)
    */
-  public async scanImage(meta: ImageInputMetadata): Promise<VisionModerationResult> {
-    // Trích xuất vector đặc trưng thị giác (Patch embeddings / ResNet conv features)
+  public async scanImage(
+    meta: ImageInputMetadata,
+    lang: "vi" | "en" = "vi",
+  ): Promise<VisionModerationResult> {
     const features = this.extractVisualFeatures(meta);
 
-    // Điểm xác suất phân loại (0.0 đến 1.0)
     const scores = {
       adult: features.adultScore,
       violence: features.violenceScore,
@@ -50,14 +53,21 @@ export class VisionModerator {
     if (scores.adult >= 0.8 || scores.violence >= 0.75) {
       action = "BLOCK";
       isSafe = false;
-      reason = "Hình ảnh bị chặn do vi phạm tiêu chuẩn nghiêm trọng về an toàn thị giác (NSFW / bạo lực).";
+      reason =
+        lang === "vi"
+          ? "Hình ảnh bị chặn do vi phạm tiêu chuẩn nghiêm trọng về an toàn thị giác (NSFW / bạo lực)."
+          : "Media blocked due to severe visual safety violations (NSFW / violence).";
     } else if (scores.adult >= 0.5 || scores.violence >= 0.5 || scores.racy >= 0.75) {
       action = "FLAG_REVIEW";
       isSafe = false;
-      reason = "Hình ảnh có dấu hiệu nhạy cảm, cần kiểm duyệt viên xem xét trước khi hiển thị rộng rãi.";
+      reason =
+        lang === "vi"
+          ? "Hình ảnh có dấu hiệu nhạy cảm, cần kiểm duyệt viên xem xét trước khi hiển thị rộng rãi."
+          : "Media flagged for potentially sensitive content, routed to human moderators.";
     }
 
     return {
+      language: lang,
       isSafe,
       action,
       scores,
@@ -71,7 +81,6 @@ export class VisionModerator {
     violenceScore: number;
     racyScore: number;
   } {
-    // Kiểm tra tên file hoặc URL nhạy cảm (heuristic fallback khi chưa nạp trọng số ONNX)
     const targetString = (meta.url || "").toLowerCase();
 
     let adultScore = 0.05;
@@ -87,15 +96,12 @@ export class VisionModerator {
       violenceScore = 0.88;
     }
 
-    // Nếu có buffer ảnh thật, phân tích các thuộc tính byte (entropy, color distribution)
     if (meta.buffer && meta.buffer.length > 0) {
       const len = meta.buffer.length;
-      // Dùng hàm băm byte mô phỏng perceptual hashing
       let hash = 0;
       for (let i = 0; i < Math.min(len, 256); i++) {
         hash = (hash * 31 + meta.buffer[i]) & 0xffffffff;
       }
-      // Giữ xác suất an toàn mặc định cho ảnh chuẩn
       adultScore = Math.max(adultScore, (Math.abs(hash % 100) / 100) * 0.1);
     }
 
@@ -106,4 +112,3 @@ export class VisionModerator {
     };
   }
 }
-
