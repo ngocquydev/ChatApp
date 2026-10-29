@@ -54,12 +54,47 @@ export interface PersonCallProps {
   onSelectFriend?: (friend: ChatUser) => void;
 }
 
+const PERSON_CALL_TAB_STORAGE_KEY = "chatapp:person_call_tab";
+
+function readStoredPersonCallTab(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("personTab");
+    if (tabParam === "find" || tabParam === "1") return 1;
+    if (tabParam === "friends" || tabParam === "0") return 0;
+
+    const raw = localStorage.getItem(PERSON_CALL_TAB_STORAGE_KEY);
+    if (raw !== null) {
+      const val = Number(raw);
+      if (val === 0 || val === 1) return val;
+    }
+  } catch {
+    // Bỏ qua nếu localStorage bị chặn
+  }
+  return 0;
+}
+
 function PersonCall({ onSelectFriend }: PersonCallProps) {
-  const [activeTab, setActiveTab] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<number>(readStoredPersonCallTab);
   const [searchFriend, setSearchFriend] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [geoNotice, setGeoNotice] = useState<string | null>(null);
   const { tr } = useTranslation();
+
+  const handleTabChange = (val: number) => {
+    setActiveTab(val);
+    try {
+      localStorage.setItem(PERSON_CALL_TAB_STORAGE_KEY, String(val));
+    } catch {
+      // Bỏ qua nếu localStorage bị chặn
+    }
+  };
+
+  useEffect(() => {
+    const stored = readStoredPersonCallTab();
+    setActiveTab((prev) => (prev !== stored ? stored : prev));
+  }, []);
 
   const {
     friends,
@@ -178,7 +213,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
         <Tabs
           value={activeTab}
           onChange={(_, val) => {
-            setActiveTab(val);
+            handleTabChange(val);
             setSearchQuery("");
             clearSearchResults();
           }}
@@ -313,7 +348,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   variant="outlined"
                   size="small"
                   startIcon={<UserPlus size={14} />}
-                  onClick={() => setActiveTab(1)}
+                  onClick={() => handleTabChange(1)}
                   sx={{ textTransform: "none", borderRadius: "8px", fontWeight: 600 }}
                 >
                   {tr("Tìm bạn ngay", "Find friends now")}

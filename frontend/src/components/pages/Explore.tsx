@@ -29,12 +29,33 @@ import { ChatUser, useChatStore } from "@/store/useChatStore";
 import { useFriendStore } from "@/store/useFriendStore";
 import { APP_BAR_HEIGHT, v } from "@/theme/tokens";
 
+const EXPLORE_TAB_STORAGE_KEY = "chatapp:explore_tab";
+
+function readStoredExploreTab(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = localStorage.getItem(EXPLORE_TAB_STORAGE_KEY);
+    if (raw !== null) {
+      const val = Number(raw);
+      if (val >= 0 && val <= 2) return val;
+    }
+  } catch {
+    // Bỏ qua lỗi storage
+  }
+  return 0;
+}
+
 export default function Explore() {
   const router = useRouter();
   const { tr, language } = useTranslation();
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState<number>(readStoredExploreTab);
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState<{ text: string; severity: "success" | "info" | "warning" } | null>(null);
+
+  useEffect(() => {
+    const stored = readStoredExploreTab();
+    setTab((prev) => (prev !== stored ? stored : prev));
+  }, []);
 
   const {
     friends,
@@ -217,7 +238,14 @@ export default function Explore() {
         {!isSearchingMode && (
           <Tabs
             value={tab}
-            onChange={(_, next) => setTab(next)}
+            onChange={(_, next) => {
+              setTab(next);
+              try {
+                localStorage.setItem(EXPLORE_TAB_STORAGE_KEY, String(next));
+              } catch {
+                // Bỏ qua lỗi storage
+              }
+            }}
             variant="scrollable"
             scrollButtons="auto"
             sx={{ mb: 2.5, borderBottom: "1px solid", borderColor: "divider" }}
