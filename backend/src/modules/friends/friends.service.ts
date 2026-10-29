@@ -568,11 +568,16 @@ export class FriendsService {
   }
 
   /**
-   * Thuật toán gợi ý bạn bè thông minh kết hợp Redis Geospatial + Redis Sets + MongoDB:
-   * 1. Ưu tiên người có bạn chung (Redis SINTER)
-   * 2. Ưu tiên người ở gần / cùng khu vực (Redis GEOSEARCH / GEORADIUS)
-   * 3. Chấm điểm uy tín, ưu tiên người có nhiều bạn bè (tránh tài khoản clone / ảo)
-   * 4. Cuối cùng mới xếp người lạ vào danh sách
+   * LAMBDA ARCHITECTURE SERVING LAYER (< 5ms):
+   * 1. ƯU TIÊN 1 (Warm Users - Phục vụ từ Spark Batch / Kafka Speed Layer):
+   *    - Đọc thẳng từ Redis Sorted Set `rec:user:{userId}` lấy Top K candidate IDs.
+   *    - Lấy thông tin user (tên, avatar, bio) trong 1 batch query MongoDB.
+   *    - Trả về ngay lập tức với độ trễ cực thấp (< 5ms).
+   *
+   * 2. ƯU TIÊN 2 (Cold-Start Fallback - Người dùng mới chưa có điểm từ Spark):
+   *    - Kích hoạt khi Redis rỗng (user mới tạo, Spark chưa quét tới).
+   *    - Tìm người dùng gần bạn trong bán kính 10-25km (MongoDB 2dsphere index).
+   *    - Nếu chưa có GPS: Lấy danh sách người dùng tích cực.
    */
   async getFriendRecommendations(
     currentUserId: string,
@@ -581,14 +586,110 @@ export class FriendsService {
     const limit = options.limit || 20;
     const radiusKm = options.radiusKm || 25;
 
-    // 1. Nếu có lat, lng từ client gửi lên -> Cập nhật vị trí hiện tại
+    // 1. Cập nhật vị trí hiện tại nếu client gửi lên
     let currentLat = options.lat;
     let currentLng = options.lng;
-
     if (typeof currentLat === 'number' && typeof currentLng === 'number') {
       await this.updateUserLocation(currentUserId, currentLat, currentLng);
-    } else {
-      // Thử lấy vị trí đã lưu của user từ Redis GEO
+    }
+
+    // 2. Lấy danh sách ID loại trừ (chính mình + các quan hệ bạn bè/pending hiện có)
+    const userObjId = new Types.ObjectId(currentUserId);
+    const existingRelations = await this.friendshipModel.find({
+      $or: [{ requesterId: userObjId }, { recipientId: userObjId }],
+    });
+
+    const excludedIds = new Set<string>();
+    excludedIds.add(currentUserId);
+    for (const rel of existingRelations) {
+      const otherId =
+        rel.requesterId.toString() === currentUserId
+          ? rel.recipientId.toString()
+          : rel.requesterId.toString();
+      excludedIds.add(otherId);
+    }
+
+    // =========================================================================
+    // ƯU TIÊN 1: PHỤC VỤ TỪ SPARK BATCH / KAFKA SPEED LAYER (REDIS ZSET) < 5ms
+    // =========================================================================
+    try {
+      const lambdaResults = await this.redisService.client.zrevrangebyscore?.(
+        `rec:user:${currentUserId}`,
+        '+inf',
+        '-inf',
+        'WITHSCORES',
+        'LIMIT',
+        0,
+        limit * 2,
+      );
+
+      if (Array.isArray(lambdaResults) && lambdaResults.length > 0) {
+        const candidateMap = new Map<string, number>();
+        for (let i = 0; i < lambdaResults.length; i += 2) {
+          const cId = lambdaResults[i];
+          const score = parseFloat(lambdaResults[i + 1]);
+          if (cId && !excludedIds.has(cId) && !candidateMap.has(cId)) {
+            candidateMap.set(cId, score);
+            if (candidateMap.size >= limit) break;
+          }
+        }
+
+        if (candidateMap.size > 0) {
+          const candidateIds = Array.from(candidateMap.keys());
+          const candidateUsers = await this.usersService.findByIds(candidateIds);
+          const userMap = new Map(candidateUsers.map((u) => [u._id.toString(), u]));
+
+          // Lấy số bạn chung qua Redis pipeline SINTER
+          const clientAny = this.redisService.client as any;
+          const pipeline = typeof clientAny.pipeline === 'function' ? clientAny.pipeline() : null;
+          if (pipeline) {
+            candidateIds.forEach((cId) => {
+              pipeline.sinter(`user:${currentUserId}:friends`, `user:${cId}:friends`);
+            });
+          }
+          const mutualResults = pipeline ? await pipeline.exec() : [];
+
+          const results: FriendRecommendationResult[] = [];
+          candidateIds.forEach((cId, idx) => {
+            const user = userMap.get(cId);
+            if (!user) return;
+            const score = candidateMap.get(cId) || 0;
+            const mutualArr = Array.isArray(mutualResults?.[idx]?.[1]) ? mutualResults[idx][1] : [];
+            const mutualCount = mutualArr.length;
+
+            const reason =
+              mutualCount > 0
+                ? `${mutualCount} bạn chung`
+                : 'Đồ thị bạn bè (Adamic-Adar)';
+
+            results.push({
+              _id: cId,
+              name: user.name,
+              email: user.email,
+              avatar: user.avatar,
+              bio: user.bio,
+              mutualFriendsCount: mutualCount,
+              friendsCount: 0,
+              score: Math.round(score * 100) / 100,
+              recommendationReason: reason,
+              relationStatus: 'none',
+            });
+          });
+
+          if (results.length > 0) {
+            return results;
+          }
+        }
+      }
+    } catch {
+      // Redis ZSET lỗi hoặc rỗng -> kích hoạt Cold-Start Fallback phía dưới
+    }
+
+    // =========================================================================
+    // ƯU TIÊN 2: COLD-START STRATEGY (KHI REDIS RỖNG - USER MỚI) < 10ms
+    // =========================================================================
+    // Thử lấy tọa độ đã lưu của user nếu chưa có từ request
+    if (typeof currentLat !== 'number' || typeof currentLng !== 'number') {
       try {
         const pos = await (this.redisService.client as unknown as RedisGeoClient).geopos(
           'users:locations',
@@ -603,287 +704,79 @@ export class FriendsService {
       }
     }
 
-    // 2. Đồng bộ bạn bè của chính mình vào Redis Set
-    const myFriendIds = await this.syncFriendsSet(currentUserId);
+    const coldCandidates: {
+      user: any;
+      distKm?: number;
+      reason: string;
+      score: number;
+    }[] = [];
 
-    // 3. Lấy danh sách ID cần loại trừ (chính mình, bạn bè đã kết bạn, lời mời đang pending)
-    const userObjId = new Types.ObjectId(currentUserId);
-    const existingRelations = await this.friendshipModel.find({
-      $or: [{ requesterId: userObjId }, { recipientId: userObjId }],
-    });
-
-    const excludedIds = new Set<string>();
-    excludedIds.add(currentUserId);
-
-    for (const rel of existingRelations) {
-      const otherId =
-        rel.requesterId.toString() === currentUserId
-          ? rel.recipientId.toString()
-          : rel.requesterId.toString();
-      excludedIds.add(otherId);
-    }
-
-    // 4. Thu thập hồ bơi ứng viên (Candidate Pool)
-    const candidateMap = new Map<string, { distanceKm?: number; lambdaScore?: number }>();
-
-    // 4.0. Nguồn 0: Lambda Serving Layer (Redis ZSET rec:user:{id} tính bởi Spark Adamic-Adar + Kafka)
-    try {
-      const lambdaResults = await this.redisService.client.zrevrangebyscore?.(
-        `rec:user:${currentUserId}`,
-        '+inf',
-        '-inf',
-        'WITHSCORES',
-        'LIMIT',
-        0,
-        50,
-      );
-      if (Array.isArray(lambdaResults) && lambdaResults.length > 0) {
-        for (let i = 0; i < lambdaResults.length; i += 2) {
-          const cId = lambdaResults[i];
-          const lScore = parseFloat(lambdaResults[i + 1]);
-          if (cId && !excludedIds.has(cId) && !candidateMap.has(cId)) {
-            candidateMap.set(cId, { lambdaScore: lScore });
-          }
-        }
-      }
-    } catch {
-      // Bỏ qua nếu Redis ZSET rỗng (kích hoạt Cold-Start Fallback phía dưới)
-    }
-
-    // 4.1. Nguồn 1: Người dùng ở gần vị trí (Redis Geospatial GEORADIUS)
+    // 2.1. Tìm kiếm lân cận qua MongoDB 2dsphere index (10km - 25km)
     if (typeof currentLat === 'number' && typeof currentLng === 'number') {
       try {
-        const geoResults = await (this.redisService.client as unknown as RedisGeoClient).georadius(
-          'users:locations',
+        const nearbyUsers = await this.usersService.findNearbyUsersExcluding(
           currentLng,
           currentLat,
           radiusKm,
-          'km',
-          'WITHDIST',
-          'ASC',
+          Array.from(excludedIds),
+          limit,
         );
 
-        if (Array.isArray(geoResults)) {
-          for (const item of geoResults) {
-            const candidateId = Array.isArray(item) ? item[0] : item;
-            const dist = Array.isArray(item) && item[1] ? parseFloat(item[1]) : undefined;
-
-            if (candidateId && !excludedIds.has(candidateId)) {
-              candidateMap.set(candidateId, { distanceKm: dist });
-            }
+        for (const u of nearbyUsers) {
+          const uCoords = u.location?.coordinates;
+          let distKm: number | undefined;
+          if (Array.isArray(uCoords) && uCoords.length === 2) {
+            const dLat = ((uCoords[1] - currentLat) * Math.PI) / 180;
+            const dLon = ((uCoords[0] - currentLng) * Math.PI) / 180;
+            const a =
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos((currentLat * Math.PI) / 180) *
+                Math.cos((uCoords[1] * Math.PI) / 180) *
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2);
+            distKm = Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
           }
-        }
 
-        // Cold-start Fallback: Nếu Redis GEO trả về ít kết quả, truy vấn qua MongoDB 2dsphere index
-        if (candidateMap.size < 10) {
-          try {
-            const nearbyMongo = await this.usersService.findNearbyUsersExcluding(
-              currentLng,
-              currentLat,
-              radiusKm,
-              Array.from(excludedIds),
-              20,
-            );
-            for (const u of nearbyMongo) {
-              const uId = (u as { _id: { toString(): string } })._id.toString();
-              if (!candidateMap.has(uId)) {
-                candidateMap.set(uId, {});
-              }
-            }
-          } catch {
-            // Bỏ qua nếu MongoDB 2dsphere chưa có dữ liệu điểm
-          }
+          coldCandidates.push({
+            user: u,
+            distKm,
+            reason: distKm !== undefined ? `Cách ${distKm < 1 ? Math.round(distKm * 1000) + 'm' : distKm + ' km'}` : 'Ở gần bạn',
+            score: distKm !== undefined ? Math.max(10, Math.round(100 - distKm * 3)) : 50,
+          });
+          excludedIds.add(u._id.toString());
         }
       } catch {
-        // Bỏ qua lỗi GEO nếu chưa có dữ liệu
+        // Lỗi geo query
       }
     }
 
-    // 4.2. Nguồn 2: Bạn của bạn bè (từ Neo4j Graph DB và Redis Set - 2nd degree network)
-    if (this.neo4jService) {
-      try {
-        const neoSuggestions = await this.neo4jService.getFriendSuggestions(currentUserId, 30);
-        for (const ns of neoSuggestions) {
-          if (!excludedIds.has(ns.id) && !candidateMap.has(ns.id)) {
-            candidateMap.set(ns.id, {});
-          }
-        }
-      } catch {
-        // Fallback Redis
-      }
-    }
-
-    for (const friendId of myFriendIds.slice(0, 15)) {
-      let fofIds = await this.redisService.client.smembers(`user:${friendId}:friends`);
-      if (!fofIds || fofIds.length === 0) {
-        fofIds = await this.syncFriendsSet(friendId);
-      }
-      for (const fofId of fofIds) {
-        if (!excludedIds.has(fofId) && !candidateMap.has(fofId)) {
-          candidateMap.set(fofId, {});
-        }
-      }
-    }
-
-    // 4.3. Nguồn 3: Người dùng tích cực từ MongoDB nếu pool còn ít
-    if (candidateMap.size < 40) {
+    // 2.2. Nếu vẫn chưa đủ ứng viên: Lấy người dùng tích cực mới nhất từ MongoDB
+    if (coldCandidates.length < limit) {
       const activeUsers = await this.usersService.findActiveUsersExcluding(
         Array.from(excludedIds),
-        50,
+        limit - coldCandidates.length,
       );
       for (const u of activeUsers) {
-        const uId = u._id.toString();
-        if (!candidateMap.has(uId)) {
-          candidateMap.set(uId, {});
-        }
+        coldCandidates.push({
+          user: u,
+          reason: 'Gợi ý kết bạn',
+          score: 30,
+        });
       }
     }
 
-    if (candidateMap.size === 0) {
-      return [];
-    }
-
-    // 5. Lấy chi tiết hồ sơ các ứng viên từ MongoDB
-    const candidateIds = Array.from(candidateMap.keys());
-    const candidateUsers = await this.usersService.findByIds(candidateIds);
-
-    // 6. Chấm điểm ưu tiên (Weighted Scoring Engine)
-    const scoredList: FriendRecommendationResult[] = [];
-
-    for (const candidate of candidateUsers) {
-      const candidateId = candidate._id.toString();
-      const meta = candidateMap.get(candidateId);
-
-      // Đồng bộ bạn bè của candidate vào Redis nếu chưa có
-      let candidateFriendIds = await this.redisService.client.smembers(
-        `user:${candidateId}:friends`,
-      );
-      if (!candidateFriendIds || candidateFriendIds.length === 0) {
-        candidateFriendIds = await this.syncFriendsSet(candidateId);
-      }
-      const candidateFriendsCount = candidateFriendIds.length;
-
-      // Tính số bạn chung bằng Redis SINTER
-      const mutualFriends = await this.redisService.client.sinter(
-        `user:${currentUserId}:friends`,
-        `user:${candidateId}:friends`,
-      );
-      const mutualCount = mutualFriends.length;
-
-      // === TÍNH TOÁN ĐIỂM SỐ (SCORING) ===
-      // A. Điểm Bạn chung (Trọng số cao nhất: +35đ mỗi bạn chung, tối đa 140đ)
-      let mutualScore = 0;
-      if (mutualCount > 0) {
-        mutualScore = Math.min(mutualCount * 35, 140);
-      }
-
-      // B. Điểm Vị trí địa lý (Redis GEO)
-      let geoScore = 0;
-      const dist = meta?.distanceKm;
-      if (dist !== undefined) {
-        if (dist <= 3) {
-          geoScore = 50; // Rất gần (< 3km)
-        } else if (dist <= 10) {
-          geoScore = 30; // Gần (< 10km)
-        } else if (dist <= 25) {
-          geoScore = 15; // Cùng khu vực (< 25km)
-        } else {
-          geoScore = 5;
-        }
-      }
-
-      // C. Điểm Chống Nick Clone / Ảo & Điểm Uy tín
-      let trustScore = 0;
-      // Số lượng bạn bè
-      if (candidateFriendsCount >= 20) {
-        trustScore += 25; // Uy tín cao, kết nối rộng
-      } else if (candidateFriendsCount >= 5) {
-        trustScore += 15; // Người dùng thật
-      } else if (candidateFriendsCount >= 2) {
-        trustScore += 5;
-      } else {
-        trustScore -= 30; // 0-1 bạn bè: TRỪ ĐIỂM NẶNG vì nghi vấn nick clone / acc rác!
-      }
-
-      // Độ hoàn thiện hồ sơ cá nhân
-      if (
-        candidate.avatar &&
-        !candidate.avatar.includes('default') &&
-        candidate.avatar.trim() !== ''
-      ) {
-        trustScore += 10;
-      } else {
-        trustScore -= 10; // Không avatar: nghi vấn clone
-      }
-
-      if (candidate.bio && candidate.bio.trim().length >= 5) {
-        trustScore += 10;
-      }
-      if (candidate.phone) {
-        trustScore += 5;
-      }
-
-      // Tuổi thọ tài khoản
-      if (candidate.createdAt) {
-        const ageDays =
-          (Date.now() - new Date(candidate.createdAt).getTime()) / (1000 * 86400);
-        if (ageDays >= 30) {
-          trustScore += 15;
-        } else if (ageDays >= 7) {
-          trustScore += 10;
-        } else if (ageDays < 2) {
-          trustScore -= 20; // Vừa tạo < 48 giờ: trừ điểm clone
-        }
-      }
-
-      // D. Tổng điểm
-      // D. Điểm Lambda Adamic-Adar (tính toán phân tán từ Spark Batch / Kafka Speed Layer)
-      let lambdaBonus = 0;
-      if (meta?.lambdaScore && meta.lambdaScore > 0) {
-        lambdaBonus = Math.min(Math.round(meta.lambdaScore * 25), 100);
-      }
-
-      // Tổng điểm
-      const totalScore = mutualScore + geoScore + trustScore + lambdaBonus;
-
-      // E. Lý do gợi ý thân thiện
-      const reasons: string[] = [];
-      if (mutualCount > 0) {
-        reasons.push(`${mutualCount} bạn chung`);
-      }
-      if (meta?.lambdaScore && meta.lambdaScore > 0 && mutualCount === 0) {
-        reasons.push('Đồ thị bạn bè (Adamic-Adar)');
-      }
-      if (dist !== undefined) {
-        reasons.push(
-          dist < 1 ? `Cách ${Math.round(dist * 1000)}m` : `Cách ${dist.toFixed(1)} km`,
-        );
-      }
-      if (candidateFriendsCount >= 10 && reasons.length === 0) {
-        reasons.push(`Người dùng tích cực (${candidateFriendsCount} bạn bè)`);
-      }
-      if (reasons.length === 0) {
-        reasons.push('Gợi ý cho bạn');
-      }
-
-      scoredList.push({
-        _id: candidateId,
-        name: candidate.name,
-        email: candidate.email,
-        avatar: candidate.avatar,
-        bio: candidate.bio,
-        distanceKm: dist,
-        mutualFriendsCount: mutualCount,
-        friendsCount: candidateFriendsCount,
-        score: totalScore,
-        recommendationReason: reasons.join(' • '),
-        relationStatus: 'none',
-      });
-    }
-
-    // 7. Sắp xếp giảm dần theo tổng điểm (Điểm cao nhất lên trước)
-    scoredList.sort((a, b) => b.score - a.score);
-
-    return scoredList.slice(0, limit);
+    return coldCandidates.map(({ user, distKm, reason, score }) => ({
+      _id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      bio: user.bio,
+      distanceKm: distKm,
+      mutualFriendsCount: 0,
+      friendsCount: 0,
+      score,
+      recommendationReason: reason,
+      relationStatus: 'none',
+    }));
   }
 }
