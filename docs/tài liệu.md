@@ -1,6 +1,8 @@
 # TÀI LIỆU KỸ THUẬT HỆ THỐNG CHATAPP & THUẬT TOÁN GỢI Ý BẠN BÈ
 
 > Tài liệu mô tả chi tiết kiến trúc kỹ thuật, giao thức truyền tải tin nhắn nhị phân (Binary MQTT/Protobuf) theo mô hình Facebook Messenger, và thuật toán gợi ý bạn bè thông minh đa chiều kết hợp **Redis Geospatial**, **Redis Sets**, và **MongoDB**.
+>
+> 💡 **Khám phá thêm:** [Hình ảnh Demo (demo.md)](demo.md) | [Mục lục Tài liệu (README.md)](README.md) | [Nhắn tin Realtime (features/chat-realtime.md)](features/chat-realtime.md) | [Gợi ý Bạn bè (features/friend-recommendation.md)](features/friend-recommendation.md)
 
 ---
 
