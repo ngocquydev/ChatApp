@@ -31,6 +31,9 @@ import {
   Tooltip,
   Paper,
   Menu,
+  FormControl,
+  InputLabel,
+  Select,
   MenuItem,
 } from "@mui/material";
 import {
@@ -66,11 +69,14 @@ import {
   ShieldCheck,
   Newspaper,
   Zap,
+  GraduationCap,
+  Heart,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useAuthStore } from "../../store/useAuthStore";
 import { uploadAvatar, uploadCover } from "@/services/postsApi";
+import { RELATIONSHIP_STATUS_OPTIONS, getRelationshipLabel } from "@/utils/relationshipStatus";
 import AuthGuard from "../common/AuthGuard";
 import MyPostsTab from "../posts/MyPostsTab";
 import AvatarCropDialog from "../profile/AvatarCropDialog";
@@ -145,6 +151,8 @@ function ProfileContent() {
   const [phone, setPhone] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [bio, setBio] = useState("");
+  const [school, setSchool] = useState("");
+  const [relationshipStatus, setRelationshipStatus] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -216,6 +224,8 @@ function ProfileContent() {
         setDateOfBirth("");
       }
       setBio((user.bio as string) || "");
+      setSchool((user.school as string) || "");
+      setRelationshipStatus((user.relationshipStatus as string) || "");
       setAvatarUrl(user.avatar || "");
       setSelectedAvatarPreview(user.avatar || "");
     }
@@ -281,6 +291,8 @@ function ProfileContent() {
         phone: phone.trim(),
         dateOfBirth: dateOfBirth ? dateOfBirth : undefined,
         bio: bio.trim(),
+        school: school.trim(),
+        relationshipStatus: relationshipStatus.trim(),
         avatar: avatarUrl.trim(),
       });
       showToast(tr("Cập nhật thông tin hồ sơ thành công!", "Profile updated successfully!"));
@@ -925,6 +937,20 @@ function ProfileContent() {
                   </Box>
                 )}
 
+                {user?.school && (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                    <GraduationCap size={15} color="var(--mui-palette-brand-500)" />
+                    <span>{user.school as string}</span>
+                  </Box>
+                )}
+
+                {user?.relationshipStatus && (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                    <Heart size={15} color="var(--mui-palette-error-main)" fill="currentColor" />
+                    <span>{getRelationshipLabel(user.relationshipStatus as string, language === "en" ? "en" : "vi")}</span>
+                  </Box>
+                )}
+
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                   <Calendar size={15} />
                   <span>
@@ -1360,6 +1386,75 @@ function ProfileContent() {
                       )}
                     </Box>
 
+                    {/* Item: School / Education */}
+                    <Box
+                      sx={{
+                        p: 2,
+                        borderRadius: "14px",
+                        bgcolor: "var(--mui-palette-neutral-50)",
+                        border: "1px solid var(--mui-palette-neutral-100)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <Box sx={{ color: "var(--mui-palette-brand-500)" }}>
+                          <GraduationCap size={20} />
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
+                            {tr("Trường học / Học vấn", "Education / School")}
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
+                            {user?.school ? (user.school as string) : tr("Chưa thiết lập", "Not set")}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() => setActiveTab(TAB_EDIT)}
+                        sx={{ textTransform: "none", fontWeight: 600 }}
+                      >
+                        {user?.school ? tr("Chỉnh sửa", "Edit") : tr("Thêm trường học", "Add school")}
+                      </Button>
+                    </Box>
+
+                    {/* Item: Relationship Status */}
+                    <Box
+                      sx={{
+                        p: 2,
+                        borderRadius: "14px",
+                        bgcolor: "var(--mui-palette-neutral-50)",
+                        border: "1px solid var(--mui-palette-neutral-100)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <Box sx={{ color: "var(--mui-palette-error-main)" }}>
+                          <Heart size={20} fill="currentColor" />
+                        </Box>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 500 }}>
+                            {tr("Tình trạng mối quan hệ", "Relationship status")}
+                          </Typography>
+                          <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)" }}>
+                            {getRelationshipLabel(user?.relationshipStatus as string, language === "en" ? "en" : "vi") ||
+                              tr("Chưa thiết lập", "Not set")}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Button
+                        size="small"
+                        onClick={() => setActiveTab(TAB_EDIT)}
+                        sx={{ textTransform: "none", fontWeight: 600 }}
+                      >
+                        {user?.relationshipStatus ? tr("Chỉnh sửa", "Edit") : tr("Thiết lập", "Set status")}
+                      </Button>
+                    </Box>
+
                     {/* Item: User ID */}
                     <Box
                       sx={{
@@ -1725,6 +1820,56 @@ function ProfileContent() {
                         }}
                       />
 
+                      {/* School / Education input */}
+                      <TextField
+                        fullWidth
+                        label={tr("Trường học / Học vấn", "School / Education")}
+                        value={school}
+                        onChange={(e) => setSchool(e.target.value)}
+                        placeholder={tr("Ví dụ: Đại học Bách Khoa, THPT Chuyên...", "E.g., Harvard University, High School...")}
+                        slotProps={{
+                          input: {
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <GraduationCap size={18} color="var(--mui-palette-neutral-500)" />
+                              </InputAdornment>
+                            ),
+                          },
+                          htmlInput: {
+                            maxLength: 150,
+                          },
+                        }}
+                        helperText={tr("Chia sẻ trường học hoặc nơi đào tạo của bạn", "Share your school or alma mater")}
+                      />
+
+                      {/* Relationship Status select */}
+                      <FormControl fullWidth>
+                        <InputLabel id="relationship-status-select-label">
+                          {tr("Tình trạng mối quan hệ", "Relationship status")}
+                        </InputLabel>
+                        <Select
+                          labelId="relationship-status-select-label"
+                          value={relationshipStatus}
+                          onChange={(e) => setRelationshipStatus(e.target.value)}
+                          label={tr("Tình trạng mối quan hệ", "Relationship status")}
+                          startAdornment={
+                            <InputAdornment position="start">
+                              <Heart size={18} color="var(--mui-palette-error-main)" />
+                            </InputAdornment>
+                          }
+                          sx={{ borderRadius: "12px" }}
+                        >
+                          <MenuItem value="">
+                            <em>{tr("Chưa chọn / Để trống", "None / Unspecified")}</em>
+                          </MenuItem>
+                          {RELATIONSHIP_STATUS_OPTIONS.map((opt) => (
+                            <MenuItem key={opt.value} value={opt.value}>
+                              {language === "en" ? opt.labelEn : opt.labelVi}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+
                       {/* Bio input */}
                       <TextField
                         fullWidth
@@ -1775,6 +1920,8 @@ function ProfileContent() {
                               setName(user.name || "");
                               setPhone(user.phone || "");
                               setBio((user.bio as string) || "");
+                              setSchool((user.school as string) || "");
+                              setRelationshipStatus((user.relationshipStatus as string) || "");
                               setAvatarUrl(user.avatar || "");
                             }
                           }}

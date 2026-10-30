@@ -17,6 +17,8 @@ export interface UserProfile {
   phone?: string;
   dateOfBirth?: string;
   bio?: string;
+  school?: string;
+  relationshipStatus?: string;
   role?: string;
   firebaseUid?: string;
   createdAt?: string;
@@ -45,6 +47,8 @@ export interface AuthState {
     avatar?: string;
     cover?: string;
     bio?: string;
+    school?: string;
+    relationshipStatus?: string;
   }) => Promise<UserProfile>;
   changePassword: (data: {
     currentPassword: string;

@@ -480,6 +480,8 @@ export class FriendsService {
         avatar: target.avatar ?? undefined,
         cover: target.cover ?? undefined,
         bio: target.bio ?? undefined,
+        school: target.school ?? undefined,
+        relationshipStatus: target.relationshipStatus ?? undefined,
         createdAt: target.createdAt,
       },
       relationStatus,

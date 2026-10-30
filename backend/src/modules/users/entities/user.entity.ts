@@ -49,6 +49,12 @@ export class User {
   @Prop({ required: false })
   bio?: string; // Giới thiệu bản thân
 
+  @Prop({ required: false })
+  school?: string; // Trường học / Nơi từng theo học
+
+  @Prop({ required: false, type: String })
+  relationshipStatus?: string; // Tình trạng mối quan hệ: single, dating, engaged, married, complicated, separated, divorced, widowed
+
   @Prop({ required: false, type: Date })
   dateOfBirth?: Date; // Ngày sinh người dùng
 

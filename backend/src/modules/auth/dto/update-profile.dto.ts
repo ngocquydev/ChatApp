@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateProfileDto {
@@ -28,6 +28,24 @@ export class UpdateProfileDto {
   @IsString({ message: 'Tiểu sử phải là chuỗi ký tự' })
   @MaxLength(300, { message: 'Tiểu sử không được vượt quá 300 ký tự' })
   bio?: string;
+
+  @ApiPropertyOptional({ example: 'Đại học Bách Khoa Hà Nội', description: 'Trường học / Học vấn' })
+  @IsOptional()
+  @IsString({ message: 'Trường học phải là chuỗi ký tự' })
+  @MaxLength(150, { message: 'Trường học không được vượt quá 150 ký tự' })
+  school?: string;
+
+  @ApiPropertyOptional({
+    example: 'dating',
+    description: 'Tình trạng mối quan hệ (single, dating, engaged, married, complicated, separated, divorced, widowed)',
+  })
+  @IsOptional()
+  @IsString({ message: 'Tình trạng mối quan hệ phải là chuỗi ký tự' })
+  @IsIn(
+    ['single', 'dating', 'engaged', 'married', 'complicated', 'separated', 'divorced', 'widowed', ''],
+    { message: 'Tình trạng mối quan hệ không hợp lệ' },
+  )
+  relationshipStatus?: string;
 
   @ApiPropertyOptional({ example: '2000-01-01', description: 'Ngày sinh (định dạng YYYY-MM-DD hoặc ISO)' })
   @IsOptional()

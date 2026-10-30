@@ -11,6 +11,7 @@
 4. [Cơ Chế Phân Quyền Riêng Tư (Privacy Levels)](#4-cơ-chế-phân-quyền-riêng-tư-privacy-levels)
 5. [Hồ Sơ Cá Nhân & Quản Lý Dòng Thời Gian (Profile Timeline)](#5-hồ-sơ-cá-nhân--quản-lý-dòng-thời-gian-profile-timeline)
 6. [Công Cụ Cắt Ảnh Đại Diện Công Thái Học (Avatar Crop)](#6-công-cụ-cắt-ảnh-đại-diện-công-thái-học-avatar-crop)
+7. [Thông Tin Học Vấn & Tình Trạng Mối Quan Hệ (Education & Relationship Status)](#7-thông-tin-học-vấn--tình-trạng-mối-quan-hệ-education--relationship-status)
 
 ---
 
@@ -84,4 +85,33 @@ Trang cá nhân được tổ chức theo cấu trúc chuẩn:
 - Tích hợp hộp thoại cắt ảnh `AvatarCropDialog` trực tiếp khi người dùng tải ảnh đại diện mới.
 - Hỗ trợ thao tác kéo, phóng to/thu nhỏ (Zoom), xoay góc ảnh và xem trước khung tròn chuẩn xác.
 - Xuất dữ liệu ảnh đã cắt với kích thước chuẩn, tối ưu hóa tốc độ tải và đảm bảo avatar luôn cân đối trên mọi thành phần giao diện.
+
+---
+
+## 7. THÔNG TIN HỌC VẤN & TÌNH TRẠNG MỐI QUAN HỆ (EDUCATION & RELATIONSHIP STATUS)
+
+Hệ thống cho phép người dùng cá nhân hóa thông tin chi tiết trên hồ sơ cá nhân và đồng bộ hai chiều giữa trang cá nhân của mình (`/profile`) và trang xem người khác (`/profile/[id]`):
+
+### 7.1. Cập nhật Trường học / Học vấn (`school`)
+- Người dùng có thể cập nhật trường học, cơ sở đào tạo hoặc trường đại học từng/đang theo học (tối đa 150 ký tự).
+- **Hiển thị trực quan:** Đi kèm biểu tượng mũ tốt nghiệp (`GraduationCap` phong cách Facebook) trên dòng thông tin tóm tắt Header, Thẻ Giới thiệu (About tab) và Cột Sidebar Dòng thời gian.
+
+### 7.2. Thiết lập Tình trạng mối quan hệ (`relationshipStatus`)
+Hỗ trợ đầy đủ các trạng thái mối quan hệ thực tế trong xã hội kèm biểu tượng trái tim (`Heart`), hỗ trợ song ngữ tự động:
+
+| Trạng thái (Code) | Tiếng Việt (VI) | Tiếng Anh (EN) | Biểu tượng |
+|:---|:---|:---|:---:|
+| `single` | Độc thân | Single | 💖 |
+| `dating` | Đang hẹn hò | In a relationship / Dating | ❤️ |
+| `engaged` | Đã đính hôn | Engaged | 💍 |
+| `married` | Đã kết hôn | Married | 💒 |
+| `complicated` | Có mối quan hệ phức tạp | It's complicated | 💔 |
+| `separated` | Đã ly thân | Separated | 🥀 |
+| `divorced` | Đã ly hôn | Divorced | 🕊️ |
+| `widowed` | Góa | Widowed | 🖤 |
+
+### 7.3. Luồng chỉnh sửa & Đồng bộ dữ liệu
+- **Tab "Chỉnh sửa thông tin":** Cung cấp trường nhập văn bản trường học và menu thả xuống (Dropdown Select) lựa chọn tình trạng mối quan hệ, lưu trữ tức thời qua API `PATCH /auth/profile`.
+- **Tab "Giới thiệu":** Hiển thị thẻ thông tin với nhãn rõ ràng và nút "Thêm trường học" / "Thiết lập" / "Chỉnh sửa" liên kết nhanh đến form cập nhật.
+- **Hồ sơ công khai (`/friends/profile/:userId`):** Người dùng khác ghé thăm trang cá nhân cũng sẽ nhìn thấy trường học và tình trạng quan hệ được chia sẻ trên Cột Sidebar Giới thiệu.
 

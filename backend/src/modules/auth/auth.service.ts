@@ -233,6 +233,8 @@ export class AuthService {
       avatar?: string;
       cover?: string;
       bio?: string;
+      school?: string;
+      relationshipStatus?: string;
       dateOfBirth?: string;
     },
   ): Promise<UpdateProfileResponse> {
@@ -246,6 +248,8 @@ export class AuthService {
 
     if (typeof data.name === 'string') updatePayload.name = data.name.trim();
     if (typeof data.phone === 'string') updatePayload.phone = data.phone.trim();
+    if (typeof data.school === 'string') updatePayload.school = data.school.trim();
+    if (typeof data.relationshipStatus === 'string') updatePayload.relationshipStatus = data.relationshipStatus.trim();
 
     if (typeof data.avatar === 'string') {
       const trimmedAvatar = data.avatar.trim();

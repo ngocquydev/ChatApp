@@ -3,10 +3,11 @@
 import { useState } from "react";
 import NextLink from "next/link";
 import { Box, ButtonBase, Link, Paper, Skeleton, Typography } from "@mui/material";
-import { CalendarDays, Info, Users } from "lucide-react";
+import { CalendarDays, GraduationCap, Heart, Info, Users } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import { useTranslation } from "@/i18n/useTranslation";
 import { mediaUrl, type PhotoItem, type PublicProfile } from "@/services/postsApi";
+import { getRelationshipLabel } from "@/utils/relationshipStatus";
 import ImageLightbox from "./ImageLightbox";
 import { profileHref } from "./PostAuthorHeader";
 import ProfileRecommendationsCard from "./ProfileRecommendationsCard";
@@ -67,6 +68,29 @@ export default function ProfileSidebar({ profile, photos, currentUserId, isOwner
                     : tr("Người này chưa có tiểu sử.", "This user hasn't added a bio yet."))}
               </Typography>
             </Box>
+            {profile.user.school && (
+              <Box sx={{ display: "flex", gap: 1.25, alignItems: "center", color: "text.secondary" }}>
+                <Box aria-hidden sx={{ display: "flex", color: "var(--mui-palette-brand-500)" }}>
+                  <GraduationCap size={18} />
+                </Box>
+                <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
+                  {tr("Học tại", "Studies at")}{" "}
+                  <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>
+                    {profile.user.school}
+                  </Box>
+                </Typography>
+              </Box>
+            )}
+            {profile.user.relationshipStatus && (
+              <Box sx={{ display: "flex", gap: 1.25, alignItems: "center", color: "text.secondary" }}>
+                <Box aria-hidden sx={{ display: "flex", color: "var(--mui-palette-error-main)" }}>
+                  <Heart size={18} fill="currentColor" />
+                </Box>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "text.primary" }}>
+                  {getRelationshipLabel(profile.user.relationshipStatus, language === "en" ? "en" : "vi")}
+                </Typography>
+              </Box>
+            )}
             {joined && (
               <Box sx={{ display: "flex", gap: 1.25, alignItems: "center", color: "text.secondary" }}>
                 <Box aria-hidden sx={{ display: "flex" }}>

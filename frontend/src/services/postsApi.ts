@@ -50,7 +50,16 @@ export interface CursorPage<T> {
 }
 
 export interface PublicProfile {
-  user: { _id: string; name: string; avatar?: string; cover?: string; bio?: string; createdAt?: string };
+  user: {
+    _id: string;
+    name: string;
+    avatar?: string;
+    cover?: string;
+    bio?: string;
+    school?: string;
+    relationshipStatus?: string;
+    createdAt?: string;
+  };
   relationStatus: "self" | "none" | "pending_sent" | "pending_received" | "friends";
   requestId?: string;
   friendCount: number;

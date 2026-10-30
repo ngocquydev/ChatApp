@@ -22,7 +22,7 @@
   - Khung đăng bài "Bạn đang nghĩ gì?", đính kèm 4 ảnh chất lượng cao kèm kiểm tra chữ ký Magic-byte.
   - Cơ chế phân quyền riêng tư 3 cấp độ (*Công khai / Bạn bè / Chỉ mình tôi*).
   - Tương tác thích lạc quan (Optimistic like), bình luận, chia sẻ.
-  - Trang cá nhân chuẩn Facebook Timeline và công cụ cắt avatar công thái học (`AvatarCropDialog`).
+  - Trang cá nhân chuẩn Facebook Timeline, công cụ cắt avatar công thái học (`AvatarCropDialog`), cập nhật học vấn (trường học) và tình trạng mối quan hệ (hẹn hò, độc thân, góa...).
 - 🛡️ **[Hệ Thống Kiểm Duyệt Nội Dung & Phòng Chống Bot AI (docs/features/moderation-trust.md)](features/moderation-trust.md)**:
   - Phân loại văn bản độc hại, ngôn từ thù ghét, thư rác bằng NLP Transformer song ngữ VI/EN.
   - Quét nhận diện hình ảnh/video nhạy cảm bằng Vision Models.
