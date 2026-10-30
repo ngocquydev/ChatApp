@@ -12,9 +12,11 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Image as ImageIcon, Paperclip, Send, Smile, ThumbsUp } from "lucide-react";
+import { Image as ImageIcon, MapPin, Paperclip, Send, Smile, ThumbsUp } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { uploadMedia } from "@/services/postsApi";
+import { LocationData } from "@/store/useChatStore";
+import LocationPickerModal from "../LocationPickerModal";
 
 const TYPING_THROTTLE_MS = 2500;
 const TYPING_IDLE_MS = 5000;
@@ -26,7 +28,13 @@ const POPULAR_EMOJIS = [
 ];
 
 interface MessageComposerProps {
-  onSend: (text: string) => Promise<void> | void;
+  onSend: (
+    text: string,
+    options?: {
+      type?: "text" | "location";
+      location?: LocationData;
+    },
+  ) => Promise<void> | void;
   onTyping: (isTyping: boolean) => void;
   isBlocked?: boolean;
   isBlockedByMe?: boolean;
@@ -56,6 +64,7 @@ export default function MessageComposer({
   const { tr } = useTranslation();
   const [text, setText] = useState("");
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [openLocationPicker, setOpenLocationPicker] = useState(false);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -200,6 +209,16 @@ export default function MessageComposer({
               </IconButton>
             </span>
           </Tooltip>
+          <Tooltip title={tr("Chia sẻ vị trí", "Share location")}>
+            <IconButton
+              size="small"
+              aria-label={tr("Chia sẻ vị trí", "Share location")}
+              onClick={() => setOpenLocationPicker(true)}
+              sx={{ color: "primary.main" }}
+            >
+              <MapPin size={20} />
+            </IconButton>
+          </Tooltip>
           <Box sx={{ display: { xs: "none", sm: "inline-flex" } }}>
             <ComingSoonButton label={tr("Đính kèm tệp khác", "Attach other files")}>
               <Paperclip size={19} />
@@ -338,6 +357,17 @@ export default function MessageComposer({
       >
         {tr("Enter để gửi · Shift + Enter để xuống dòng", "Enter to send · Shift + Enter for new line")}
       </Typography>
+
+      <LocationPickerModal
+        open={openLocationPicker}
+        onClose={() => setOpenLocationPicker(false)}
+        onSelectLocation={(loc) => {
+          void onSend(loc.name || loc.address || "📍 Vị trí đã ghim", {
+            type: "location",
+            location: loc,
+          });
+        }}
+      />
     </Box>
   );
 }

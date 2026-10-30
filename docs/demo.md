@@ -46,6 +46,9 @@ Hỗ trợ đổi 5 chủ đề phong phú (*Mặc định, Hẹn hò lãng mạ
 ### 2.3. Menu thả xuống Danh sách đoạn chat (Messenger Dropdown Popover)
 ![Menu tin nhắn nhanh trên thanh Header](assets/screenshots/messenger-popover-dropdown.png)
 
+### 2.4. Chia sẻ Vị trí & Bản đồ tương tác (Leaflet & OpenStreetMap)
+Hỗ trợ gửi vị trí GPS hiện tại hoặc chọn ghim trên bản đồ tương tác với Reverse Geocoding tự động xác định tên đường phố, quận huyện. Tin nhắn gửi đi hiển thị thẻ bản đồ thu nhỏ, tọa độ chính xác, nút phóng to bản đồ toàn màn hình và nút dẫn đường Google Maps 1 chạm.
+
 ---
 
 ## 3. Trang Khám Phá (Explore) & Radar Gợi Ý Bạn Bè Thông Minh

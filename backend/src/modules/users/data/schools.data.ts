@@ -92,3 +92,4 @@ export const POPULAR_SCHOOLS: readonly SchoolData[] = [
   { name: 'Tsinghua University', category: 'international' },
   { name: 'Peking University', category: 'international' },
 ] as const;
+

@@ -22,6 +22,13 @@ export interface CallLogData {
   duration: number; // in seconds
 }
 
+export interface LocationData {
+  latitude: number;
+  longitude: number;
+  address?: string;
+  name?: string;
+}
+
 export interface ChatMessage {
   _id: string;
   id?: string;
@@ -29,7 +36,8 @@ export interface ChatMessage {
   senderId: string | ChatUser;
   receiverId: string | ChatUser;
   text: string;
-  type?: "text" | "call";
+  type?: "text" | "call" | "location";
+  location?: LocationData | null;
   callLog?: CallLogData | null;
   readAt?: string | null;
   isDeleted?: boolean;
@@ -72,7 +80,13 @@ interface ChatState {
   selectConversation: (conversation: ConversationItem) => Promise<void>;
   clearActiveConversation: () => void;
   startConversationWithUser: (user: ChatUser) => Promise<ConversationItem>;
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (
+    text: string,
+    options?: {
+      type?: "text" | "location";
+      location?: LocationData;
+    },
+  ) => Promise<void>;
   sendTyping: (isTyping: boolean) => void;
   deleteChatMessage: (messageId: string) => Promise<{ success: boolean; message?: string }>;
   updateActiveConversationTheme: (theme: string) => Promise<{ success: boolean; message?: string }>;
@@ -659,7 +673,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     throw new Error("Không thể khởi tạo cuộc hội thoại");
   },
 
-  sendMessage: async (text: string) => {
+  sendMessage: async (
+    text: string,
+    options?: {
+      type?: "text" | "location";
+      location?: LocationData;
+    },
+  ) => {
     const active = get().activeConversation;
     if (!active || !text.trim()) return;
 
@@ -674,18 +694,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     if (!otherParticipant?._id) return;
 
-    // 1. ƯU TIÊN GỬI QUA MQTT PROTOCOL BUFFERS NHỊ PHÂN (CHUẨN FACEBOOK MESSENGER)
-    const sentViaMqtt = mqttChatClient.sendMessage(
-      active._id,
-      otherParticipant._id,
-      text.trim()
-    );
+    const isLocationMsg = options?.type === "location" && options.location;
+
+    // 1. Nếu là tin nhắn text thông thường, ưu tiên gửi qua MQTT Protobuf
+    let sentViaMqtt = false;
+    if (!isLocationMsg) {
+      sentViaMqtt = mqttChatClient.sendMessage(
+        active._id,
+        otherParticipant._id,
+        text.trim()
+      );
+    }
 
     if (!sentViaMqtt) {
-      const payload = {
+      const payload: {
+        conversationId: string;
+        receiverId: string;
+        text: string;
+        type?: "text" | "location";
+        location?: LocationData;
+      } = {
         conversationId: active._id,
         receiverId: otherParticipant._id,
         text: text.trim(),
+        type: options?.type,
+        location: options?.location,
       };
 
       if (socket && socket.connected) {

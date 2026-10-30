@@ -16,6 +16,7 @@ import {
   CallLogData,
   CallStatus,
   CallType,
+  LocationData,
 } from './schemas/message.schema.js';
 import { UsersService } from '../users/users.service.js';
 
@@ -91,8 +92,9 @@ export class ChatService {
     text: string,
     conversationId?: string,
     options?: {
-      type?: 'text' | 'call';
+      type?: 'text' | 'call' | 'location';
       callLog?: CallLogData | null;
+      location?: LocationData | null;
     },
   ): Promise<MessageDocument> {
     const receiver = await this.usersService.findById(receiverId);
@@ -123,6 +125,7 @@ export class ChatService {
       text: text.trim(),
       type: options?.type || 'text',
       callLog: options?.callLog || null,
+      location: options?.location || null,
       readAt: null,
       isDeleted: false,
       deletedAt: null,
@@ -130,8 +133,13 @@ export class ChatService {
     });
 
     // Cập nhật tin nhắn cuối cùng và số tin chưa đọc cho người nhận
+    const lastText =
+      options?.type === 'location'
+        ? `📍 ${options.location?.address || options.location?.name || 'Vị trí đã ghim'}`
+        : text.trim();
+
     conversation.lastMessage = {
-      text: text.trim(),
+      text: lastText,
       senderId: new Types.ObjectId(senderId),
       createdAt: message.createdAt || new Date(),
       type: options?.type || 'text',

@@ -148,6 +148,62 @@ describe('ChatService', () => {
       expect(mockConv.lastMessage?.text).toBe('Xin chào!');
     });
 
+    it('should save location message with coordinates and address', async () => {
+      mockUsersService.findById.mockResolvedValue({ _id: userBId, name: 'User B' });
+      const mockConv = {
+        _id: conversationId,
+        participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+        unreadCounts: new Map<string, number>([[userBId, 0]]),
+        lastMessage: null as unknown as { text?: string; type?: string },
+        save: vi.fn().mockResolvedValue(true),
+      };
+      vi.spyOn(service, 'getOrCreateConversation').mockResolvedValue(mockConv as unknown as never);
+
+      const locationData = {
+        latitude: 21.0285,
+        longitude: 105.8542,
+        address: 'Hà Nội, Việt Nam',
+        name: 'Hồ Hoàn Kiếm',
+      };
+
+      const createdLocationMsg = {
+        _id: new Types.ObjectId(),
+        conversationId: new Types.ObjectId(conversationId),
+        senderId: new Types.ObjectId(userAId),
+        receiverId: new Types.ObjectId(userBId),
+        text: '📍 Hồ Hoàn Kiếm',
+        type: 'location',
+        location: locationData,
+      };
+      mockMessageModel.create.mockResolvedValue(createdLocationMsg);
+
+      const result = await service.saveMessage(
+        userAId,
+        userBId,
+        '📍 Hồ Hoàn Kiếm',
+        conversationId,
+        {
+          type: 'location',
+          location: locationData,
+        },
+      );
+
+      expect(result.type).toBe('location');
+      expect(result.location?.latitude).toBe(21.0285);
+      expect(mockMessageModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'location',
+          location: locationData,
+        }),
+      );
+      expect(mockConv.lastMessage).toEqual(
+        expect.objectContaining({
+          type: 'location',
+          text: '📍 Hà Nội, Việt Nam',
+        }),
+      );
+    });
+
     it('should save call message with callLog metadata and formatted text', async () => {
       mockUsersService.findById.mockResolvedValue({ _id: userBId, name: 'User B' });
       const mockConv = {

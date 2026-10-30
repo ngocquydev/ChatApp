@@ -52,6 +52,11 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 ### 1. Nhắn tin Thời Gian Thực & Hộp Chat Nổi Facebook Messenger
 - **Dual-Engine Realtime:** Kết hợp linh hoạt Socket.IO (WebSockets) cho các tác vụ quản trị và Binary MQTT/Protobuf cho luồng tin nhắn siêu nhẹ (tiết kiệm 80% payload, độ trễ < 5ms).
 - **Cửa sổ chat nổi đa nhiệm (Floating Chat Dock):** Trò chuyện đa nhiệm nhiều người cùng lúc ở góc màn hình mà không gián đoạn việc lướt bảng tin.
+- **Chia sẻ vị trí & Bản đồ tương tác (Location Sharing):**
+  - Gửi vị trí GPS hiện tại hoặc chọn ghim địa điểm linh hoạt trên bản đồ thông qua **Leaflet & OpenStreetMap** (100% mã nguồn mở, không phụ thuộc API key giới hạn).
+  - Tích hợp công cụ tìm kiếm địa danh và giải mã địa chỉ ngược (**Reverse Geocoding** qua OpenStreetMap Nominatim).
+  - Bong bóng tin nhắn vị trí hiển thị bản đồ thu nhỏ, tọa độ chuẩn xác, nút mở xem bản đồ chi tiết và nút dẫn đường trực tiếp sang Google Maps.
+  - Hỗ trợ đầy đủ, đồng bộ thời gian thực trên cả trang chat chính (`/chat`) và Cửa sổ chat nổi (`FloatingChatBox`).
 - **Tính năng bảo mật & riêng tư:**
   - **Thu hồi tin nhắn (Unsend):** Xóa mềm tin nhắn của bản thân, đồng bộ tức thời trạng thái *"Tin nhắn đã bị thu hồi"*.
   - **Chế độ Hạn chế (Restrict):** Người bị hạn chế hoàn toàn không hay biết; ẩn trạng thái "Đã xem", ẩn trạng thái online và chuyển hội thoại sang mục riêng.

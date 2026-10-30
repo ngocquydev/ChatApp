@@ -10,6 +10,13 @@ export interface CallLogData {
   duration: number; // Thời lượng tính bằng giây
 }
 
+export interface LocationData {
+  latitude: number;
+  longitude: number;
+  address?: string;
+  name?: string;
+}
+
 export type MessageDocument = Message & Document;
 
 @Schema({ timestamps: true })
@@ -47,10 +54,21 @@ export class Message {
 
   @Prop({
     type: String,
-    enum: ['text', 'call'],
+    enum: ['text', 'call', 'location'],
     default: 'text',
   })
-  type?: 'text' | 'call';
+  type?: 'text' | 'call' | 'location';
+
+  @Prop({
+    type: {
+      latitude: { type: Number, required: true },
+      longitude: { type: Number, required: true },
+      address: { type: String, default: '' },
+      name: { type: String, default: '' },
+    },
+    default: null,
+  })
+  location?: LocationData | null;
 
   @Prop({
     type: {

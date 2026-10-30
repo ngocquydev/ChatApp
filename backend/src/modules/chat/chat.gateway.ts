@@ -245,6 +245,10 @@ export class ChatGateway
         dto.receiverId,
         dto.text,
         dto.conversationId,
+        {
+          type: dto.type,
+          location: dto.location,
+        },
       );
 
       // Bắn event message:new tới cả sender và receiver (qua cả MQTT và Socket.IO)

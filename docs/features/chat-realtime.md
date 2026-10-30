@@ -11,6 +11,7 @@
 4. [Giao Thức Nhị Phân Binary MQTT & Protobuf](#4-giao-thức-nhị-phân-binary-mqtt--protobuf)
 5. [Các Tính Năng Bảo Mật & Quyền Riêng Tư](#5-các-tính-năng-bảo-mật--quyền-riêng-tư)
 6. [Cơ Chế Chỉ Báo Đang Soạn Tin (Typing Indicator)](#6-cơ-chế-chỉ-báo-đang-soạn-tin-typing-indicator)
+7. [Chia Sẻ Vị Trí & Bản Đồ Tương Tác (Location Sharing)](#7-chia-sẻ-vị-trí--bản-đồ-tương-tác-location-sharing)
 
 ---
 
@@ -142,4 +143,31 @@ Hỗ trợ 5 bảng màu chủ đề sống động:
 1. **Heartbeat định kỳ 2.5s:** Trong lúc người dùng liên tục gõ phím, client gửi nhịp tim `isTyping = true` mỗi 2.5 giây một lần.
 2. **Cửa sổ ngừng gõ 5.0s:** Khi người dùng dừng gõ đủ 5 giây, client mới gửi tín hiệu `isTyping = false`.
 3. **Bộ đếm tự hủy an toàn 6.5s:** Nếu đối phương bị mất mạng đột ngột giữa chừng, bộ đếm tại client người nhận sẽ tự động tắt chỉ báo sau 6.5 giây mà không bị treo vĩnh viễn.
+
+---
+
+## 7. CHIA SẺ VỊ TRÍ & BẢN ĐỒ TƯƠNG TÁC (LOCATION SHARING)
+
+Nhằm hỗ trợ nhu cầu hẹn gặp gỡ, giao nhận và chia sẻ địa điểm thực tế giữa người dùng, hệ thống tích hợp giải pháp **Chia sẻ Vị trí tĩnh qua Bản đồ tương tác (Static Location Sharing)**:
+
+### 7.1. Công nghệ & Lựa chọn Kiến trúc
+- **Leaflet & OpenStreetMap:** Sử dụng 100% giải pháp mã nguồn mở không mất phí bản quyền, không yêu cầu thẻ tín dụng hoặc token API bị giới hạn hạn mức (khắc phục điểm nghẽn chi phí lớn của Google Maps Platform).
+- **Reverse Geocoding (OpenStreetMap Nominatim):** Tự động chuyển đổi tọa độ địa lý `[latitude, longitude]` thành tên đường, quận/huyện, tỉnh/thành phố chi tiết và trực quan theo thời gian thực.
+- **Tương thích toàn diện:** Hoạt động liền mạch trên cả giao diện chat chính (`/chat`) và Cửa sổ chat nổi đa nhiệm (`FloatingChatBox`).
+
+### 7.2. Quy trình Trải nghiệm Người dùng
+1. **Khởi tạo Chia sẻ Vị trí:** Bấm vào biểu tượng ghim vị trí (`MapPin`) trên thanh công cụ soạn tin nhắn.
+2. **Modal Chọn Vị trí (`LocationPickerModal`):**
+   - Tự động kích hoạt HTML5 Geolocation API để định vị vị trí thiết bị hiện tại của người dùng.
+   - Cho phép nhấp chuột hoặc kéo rê ghim đỏ trên bản đồ để chọn bất kỳ tọa độ mong muốn nào.
+   - Thanh tìm kiếm địa danh tức thì qua Nominatim API: gõ địa chỉ hoặc địa điểm nổi tiếng để bản đồ tự động bay tới vị trí đó.
+   - Hiển thị nhãn tọa độ (`lat, lng`) và thẻ địa chỉ xem trước.
+3. **Gửi & Lưu trữ Dữ liệu Tin nhắn:**
+   - Gói tin nhắn vị trí được lưu trữ với cấu trúc `LocationData`: `{ lat, lng, address, name? }` và kiểu tin nhắn `type: "location"`.
+   - Tin nhắn cuối cùng trong danh sách hội thoại hiển thị preview định dạng `📍 [Tên địa điểm / Địa chỉ]`.
+4. **Hiển thị Thẻ Tin nhắn Vị trí (`LocationMessageItem`):**
+   - Thẻ tin nhắn bo tròn công thái học với bản đồ vệ tinh/giao thông thu nhỏ.
+   - Nút **"Xem bản đồ"**: Mở modal tương tác toàn màn hình (`LocationViewModal`) cho phép phóng to, thu nhỏ, sao chép tọa độ.
+   - Nút **"Chỉ đường"**: Mở liên kết ngoài trực tiếp tới Google Maps Directions (`https://www.google.com/maps/dir/?api=1&destination=lat,lng`) giúp bạn bè di chuyển đến địa điểm nhanh chóng.
+
 

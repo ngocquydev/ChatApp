@@ -1,4 +1,29 @@
-import { IsMongoId, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsMongoId,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class LocationDto {
+  @IsNumber({}, { message: 'Vĩ độ (latitude) phải là số' })
+  latitude: number;
+
+  @IsNumber({}, { message: 'Kinh độ (longitude) phải là số' })
+  longitude: number;
+
+  @IsString({ message: 'Địa chỉ phải là chuỗi' })
+  @IsOptional()
+  address?: string;
+
+  @IsString({ message: 'Tên địa điểm phải là chuỗi' })
+  @IsOptional()
+  name?: string;
+}
 
 export class SendMessageDto {
   @IsMongoId({ message: 'ID người nhận không hợp lệ' })
@@ -13,4 +38,13 @@ export class SendMessageDto {
   @IsMongoId({ message: 'ID cuộc hội thoại không hợp lệ' })
   @IsOptional()
   conversationId?: string;
+
+  @IsString()
+  @IsOptional()
+  type?: 'text' | 'call' | 'location';
+
+  @ValidateNested()
+  @Type(() => LocationDto)
+  @IsOptional()
+  location?: LocationDto;
 }

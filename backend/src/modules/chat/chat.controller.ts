@@ -95,6 +95,10 @@ export class ChatController {
       dto.receiverId,
       dto.text,
       dto.conversationId,
+      {
+        type: dto.type,
+        location: dto.location,
+      },
     );
     return {
       success: true,

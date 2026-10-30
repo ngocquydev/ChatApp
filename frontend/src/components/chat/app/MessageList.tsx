@@ -12,6 +12,7 @@ import { isVideoUrl } from "@/services/postsApi";
 import ImageLightbox from "../../posts/ImageLightbox";
 import { getChatTheme } from "./chatThemes";
 import CallMessageItem from "../call/CallMessageItem";
+import LocationMessageItem from "../LocationMessageItem";
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
 
@@ -322,6 +323,12 @@ export default function MessageList({
                             conversationId={conversationId}
                           />
                         );
+                      }
+
+                      const isLocation = msg.type === "location" || Boolean(msg.location);
+
+                      if (isLocation) {
+                        return <LocationMessageItem message={msg} isMe={isMe} />;
                       }
 
                       const isMedia = /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);

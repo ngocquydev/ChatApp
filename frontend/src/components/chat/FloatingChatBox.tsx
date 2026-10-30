@@ -35,6 +35,7 @@ import {
   Palette,
   Trash2,
   Image as ImageIcon,
+  MapPin,
   Phone,
   Video,
 } from "lucide-react";
@@ -42,7 +43,7 @@ import api from "@/services/api";
 import { isVideoUrl, uploadMedia } from "@/services/postsApi";
 import { mqttChatClient } from "@/services/mqttClient";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useChatStore, ChatMessage, ChatUser } from "@/store/useChatStore";
+import { useChatStore, ChatMessage, ChatUser, LocationData } from "@/store/useChatStore";
 import { useChatBoxStore, ChatBoxSession } from "@/store/useChatBoxStore";
 import { useCallStore } from "@/store/useCallStore";
 import { useSoundStore } from "@/store/useSoundStore";
@@ -57,6 +58,8 @@ import { useTranslation } from "@/i18n/useTranslation";
 import FloatingChatHeaderMenu from "./FloatingChatHeaderMenu";
 import ReadReceiptsDialog from "./ReadReceiptsDialog";
 import CallMessageItem from "./call/CallMessageItem";
+import LocationMessageItem from "./LocationMessageItem";
+import LocationPickerModal from "./LocationPickerModal";
 
 const POPULAR_EMOJIS = [
   "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
@@ -122,6 +125,7 @@ export default function FloatingChatBox({
   const [deleteMsgId, setDeleteMsgId] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [openLocationPicker, setOpenLocationPicker] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -513,7 +517,10 @@ export default function FloatingChatBox({
   };
 
   // 4. Gửi tin nhắn (ưu tiên Protocol Buffers nhị phân qua MQTT)
-  const handleSendMessage = async (customText?: string) => {
+  const handleSendMessage = async (
+    customText?: string,
+    options?: { type?: "location"; location?: LocationData },
+  ) => {
     const textToSend = (customText ?? inputText).trim();
     if (isBlocked || !textToSend || !convId) return;
 
@@ -529,15 +536,28 @@ export default function FloatingChatBox({
       setInputText("");
     }
 
-    // 1. Gửi qua MQTT Protocol Buffers nhị phân
-    const sentViaMqtt = mqttChatClient.sendMessage(convId, targetUserId, textToSend);
+    const isLocationMsg = options?.type === "location" && options.location;
 
-    // 2. Fallback nếu MQTT chưa kết nối
+    // 1. Gửi qua MQTT Protocol Buffers nhị phân nếu là tin nhắn text thường
+    let sentViaMqtt = false;
+    if (!isLocationMsg) {
+      sentViaMqtt = mqttChatClient.sendMessage(convId, targetUserId, textToSend);
+    }
+
+    // 2. Gửi qua Socket.IO hoặc Fallback REST API
     if (!sentViaMqtt) {
-      const payload = {
+      const payload: {
+        conversationId: string;
+        receiverId: string;
+        text: string;
+        type?: "text" | "location";
+        location?: LocationData;
+      } = {
         conversationId: convId,
         receiverId: targetUserId,
         text: textToSend,
+        type: options?.type,
+        location: options?.location,
       };
 
       if (socket && socket.connected) {
@@ -1142,6 +1162,8 @@ export default function FloatingChatBox({
                               }}
                               conversationId={convId || undefined}
                             />
+                          ) : msg.type === "location" || Boolean(msg.location) ? (
+                            <LocationMessageItem message={msg} isMe={isMe} />
                           ) : isMedia ? (
                             <Box
                               sx={{
@@ -1354,6 +1376,17 @@ export default function FloatingChatBox({
                 </span>
               </Tooltip>
 
+              <Tooltip title={tr("Chia sẻ vị trí", "Share location")}>
+                <IconButton
+                  size="small"
+                  aria-label={tr("Chia sẻ vị trí", "Share location")}
+                  onClick={() => setOpenLocationPicker(true)}
+                  sx={{ color: "primary.main", p: 0.65 }}
+                >
+                  <MapPin size={18} />
+                </IconButton>
+              </Tooltip>
+
               <Tooltip title={tr("Đổi chủ đề cuộc trò chuyện", "Change chat theme")}>
                 <IconButton
                   size="small"
@@ -1504,6 +1537,18 @@ export default function FloatingChatBox({
         src={lightboxUrl}
         alt={tr("Ảnh trong tin nhắn", "Message image")}
         onClose={() => setLightboxUrl(null)}
+      />
+
+      {/* Dialog Chọn Vị Trí Bản Đồ */}
+      <LocationPickerModal
+        open={openLocationPicker}
+        onClose={() => setOpenLocationPicker(false)}
+        onSelectLocation={(loc) => {
+          void handleSendMessage(loc.name || loc.address || "📍 Vị trí đã ghim", {
+            type: "location",
+            location: loc,
+          });
+        }}
       />
 
       {/* Dialog Chọn Hình Nền / Chủ Đề */}
