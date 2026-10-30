@@ -6,15 +6,14 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-Realtime-010101?style=flat&logo=socketdotio)](https://socket.io/)
 [![MQTT](https://img.shields.io/badge/MQTT-Protobuf%20Binary-660066?style=flat&logo=mqtt)](https://mqtt.org/)
-[![Redis](https://img.shields.io/badge/Redis-7.0%20(GEO%20%2B%20ZSET)-DC382D?style=flat&logo=redis)](https://redis.io/)
+[![Redis](https://img.shields.io/badge/Redis-7.0%20(GEO%20%2B%20Cache)-DC382D?style=flat&logo=redis)](https://redis.io/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?style=flat&logo=mongodb)](https://www.mongodb.com/)
-[![Apache Spark](https://img.shields.io/badge/Apache%20Spark-3.5%20(Scala)-E25A1C?style=flat&logo=apachespark)](https://spark.apache.org/)
-[![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-Streaming-231F20?style=flat&logo=apachekafka)](https://kafka.apache.org/)
+[![Neo4j](https://img.shields.io/badge/Neo4j-5.x%20(Graph%20Database)-008CC1?style=flat&logo=neo4j)](https://neo4j.com/)
 [![CI Quality Gate](https://img.shields.io/badge/CI%20Quality%20Gate-141%2F141%20Passed-success?style=flat&logo=githubactions)](https://github.com/)
 
 Hệ thống ứng dụng trò chuyện và mạng xã hội thời gian thực hiện đại (**Modern Realtime Chat & Social Platform**), kết hợp kiến trúc Client - Server với **NestJS** ở phía Backend và **Next.js 16 (App Router + Turbopack + TypeScript)** ở phía Frontend. 
 
-Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Binary MQTT/Protobuf phong cách Facebook Messenger**), thuật toán gợi ý bạn bè thông minh áp dụng **Kiến trúc Lambda (Apache Spark + Apache Kafka + Redis GEO/Sets)**, cùng hệ thống kiểm duyệt nội dung độc hại & phòng chống bot tự động bằng **Trí tuệ Nhân tạo (NLP, Vision, Isolation Forest & Autoencoder)**.
+Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Binary MQTT/Protobuf phong cách Facebook Messenger**), thuật toán gợi ý bạn bè thông minh dựa trên **Cơ sở Dữ liệu Đồ thị Neo4j (Graph Database - Friends of Friends & Network Centrality)** kết hợp **Redis Geospatial & Caching**, cùng hệ thống kiểm duyệt nội dung độc hại & phòng chống bot tự động bằng **Trí tuệ Nhân tạo (NLP, Vision, Isolation Forest & Autoencoder)**.
 
 ---
 
@@ -61,10 +60,11 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
   - **Chỉ báo soạn thảo Typing Heartbeat:** Nhịp tim 2.5s và bộ đếm an toàn 6.5s triệt tiêu lỗi mất trạng thái gõ.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/chat-realtime.md](docs/features/chat-realtime.md)*
 
-### 2. Thuật Toán Gợi Ý Bạn Bè Thông Minh (Kiến Trúc Lambda)
-- **Batch Layer (Apache Spark / Scala):** Tính toán thuật toán đồ thị Adamic-Adar nâng cao, cắt tỉa tài khoản siêu kết nối ($2 \le \text{degree} \le 1000$) chống Data Skew, tối ưu 50% chi phí Shuffle với nửa chiều $(\text{user}_A < \text{user}_C)$, xuất Top 50 vào Redis Sorted Set `rec:user:{id}`.
-- **Speed Layer (Apache Kafka + Worker):** Lắng nghe sự kiện `FRIEND_ACCEPTED`, cập nhật tức thì điểm số bằng `ZINCRBY` và xóa ứng viên bằng `ZREM`.
-- **Serving Layer & Hybrid Cold-Start Fallback:** Phục vụ kết quả từ Redis ZSET (< 3ms). Nếu người dùng mới chưa có bạn bè, tự động chuyển sang truy vấn địa lý Redis Geospatial (`users:locations` bán kính 25km) kết hợp lọc tài khoản uy tín chống nick ảo.
+### 2. Thuật Toán Gợi Ý Bạn Bè Thông Minh (Neo4j Graph Database)
+- **Thuật toán Đồ thị Đa Tầng (Neo4j Cypher):**
+  - **Tầng 1 (Friends-of-Friends - 2-Hops):** Khai thác mạng lưới quan hệ bạn chung `(u)-[:FRIEND]-(mutual)-[:FRIEND]-(suggested)` với tốc độ duyệt đồ thị < 5ms (Index-free Adjacency), xếp hạng ưu tiên theo số lượng bạn chung thực tế.
+  - **Tầng 2 (Degree Centrality & Cold-Start):** Tự động giải quyết triệt để bài toán người dùng mới chưa có bạn bè bằng thuật toán Degree Centrality (xếp hạng gợi ý người dùng tích cực và có uy tín kết nối cao nhất trong toàn bộ mạng lưới đồ thị).
+- **Đồng bộ Tức Thời & Fallback Đa Lớp:** Tự động đồng bộ nút `User` và quan hệ hai chiều `[:FRIEND]` khi chấp nhận kết bạn; lưu cache tốc độ cao 60s trên Redis; tự động kích hoạt truy vấn MongoDB 2dsphere địa lý & active users nếu cơ sở dữ liệu đồ thị bảo trì.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/friend-recommendation.md](docs/features/friend-recommendation.md)*
 
 ### 3. Bảng Tin Mạng Xã Hội & Hồ Sơ Cá Nhân (Feed & Profile Timeline)
@@ -102,10 +102,10 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 | Tầng | Công nghệ / Thư viện chính |
 | :--- | :--- |
 | **Frontend** | **Next.js 16 (App Router + Turbopack)**, **React 19**, TypeScript, **Material UI (MUI v9)**, Emotion, Zustand, Socket.IO Client, MQTT.js, Protobuf.js, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase SDK, Lucide Icons, i18n Store |
-| **Backend** | **NestJS**, TypeScript, WebSockets (`@nestjs/websockets`, `@nestjs/platform-socket.io`), Aedes MQTT Broker, Passport JWT, Mongoose, Redis (IoRedis), Firebase Admin SDK, Cloudflare Turnstile, AI Moderation & Trust Engine |
-| **Phân Tán & Big Data** | **Apache Spark 3.5 (Scala)** cho Batch Layer, **Apache Kafka** cho Speed Layer, **Redis Sorted Sets (ZSET) & Geospatial (GEO)** cho Serving Layer |
+| **Backend** | **NestJS**, TypeScript, WebSockets (`@nestjs/websockets`, `@nestjs/platform-socket.io`), Aedes MQTT Broker, Passport JWT, Mongoose, Redis (IoRedis), Neo4j Driver, Firebase Admin SDK, Cloudflare Turnstile, AI Moderation & Trust Engine |
+| **Cơ sở dữ liệu Đồ thị** | **Neo4j 5.x** (Mô hình hóa thực thể User, quan hệ FRIEND, truy vấn Cypher Friends of Friends & Degree Centrality tối ưu cho mạng xã hội) |
 | **Cơ sở dữ liệu & Cache** | **MongoDB** (lưu trữ người dùng, bài viết, quan hệ bạn bè, tin nhắn), **Redis 7** (Blacklist, locations, friends sets, recommendations cache) |
-| **DevOps & Môi trường** | **Docker & Docker Compose**, GitHub Actions CI, Git Pre-Push Quality Gate |
+| **DevOps & Môi trường** | **Docker & Docker Compose** (Mongo, Redis, Neo4j), GitHub Actions CI, Git Pre-Push Quality Gate |
 
 ---
 
@@ -117,14 +117,14 @@ chat/
 │   ├── assets/screenshots/      # Ảnh chụp màn hình giao diện thực tế
 │   ├── features/                # Tài liệu chi tiết từng tính năng
 │   │   ├── chat-realtime.md     # Nhắn tin thời gian thực & Binary MQTT
-│   │   ├── friend-recommendation.md # Gợi ý bạn bè & Kiến trúc Lambda Spark
+│   │   ├── friend-recommendation.md # Gợi ý bạn bè & Thuật toán Đồ thị Neo4j
 │   │   ├── social-feed-profile.md   # Bảng tin & Hồ sơ cá nhân
 │   │   ├── moderation-trust.md  # Kiểm duyệt AI & Phát hiện Bot
 │   │   └── auth-security-cicd.md# Xác thực bảo mật & CI/CD
 │   ├── demo.md                  # Tổng hợp toàn bộ hình ảnh Demo & Trải nghiệm
 │   └── README.md                # Mục lục tài liệu kỹ thuật
 │
-├── docker-compose.yml           # Khởi chạy container MongoDB & Redis
+├── docker-compose.yml           # Khởi chạy container MongoDB, Redis & Neo4j
 ├── README.md                    # Giới thiệu tổng quan dự án
 ├── AGENTS.md                    # Quy chuẩn & quy trình bắt buộc cho AI Agents
 │
@@ -136,10 +136,11 @@ chat/
 │   │       ├── auth/            # Xác thực JWT HttpOnly, OTP, Firebase, Turnstile
 │   │       ├── chat/            # Socket.IO Gateway, MQTT Protocol, Tin nhắn
 │   │       ├── friends/         # Hệ thống bạn bè & Tìm kiếm
+│   │       ├── neo4j/           # Neo4j Service & Cypher Queries đồ thị kết bạn
 │   │       ├── moderation/      # AI Moderation, NLP, Isolation Forest, Autoencoder
 │   │       ├── posts/           # Bảng tin, Thích, Bình luận, Tải ảnh
 │   │       ├── users/           # Hồ sơ người dùng
-│   │       └── redis/           # Redis Service (Blacklist, GEO, Sets, ZSET)
+│   │       └── redis/           # Redis Service (Blacklist, GEO, Sets, Caching)
 │   └── test/                    # Bộ kiểm thử bảo mật OWASP, RAM, N+1, Unit Tests
 │
 └── frontend/                    # Mã nguồn Frontend (Next.js 16 + TypeScript)
@@ -214,7 +215,7 @@ Toàn bộ tài liệu chi tiết, sơ đồ thiết kế kiến trúc và hư�
 |---|---|:---:|
 | 📸 **Hình ảnh Demo** | Tổng hợp ảnh chụp màn hình thực tế mọi góc cạnh của ứng dụng | [Xem tài liệu](docs/demo.md) |
 | 💬 **Nhắn tin Realtime** | Giao thức nhị phân MQTT/Protobuf, Hộp chat nổi Messenger, 5 chủ đề, chế độ hạn chế | [Xem tài liệu](docs/features/chat-realtime.md) |
-| 🤝 **Gợi ý bạn bè** | Thuật toán Adamic-Adar Spark, Kafka Speed Layer, Redis GEO/Sets, Cold-Start | [Xem tài liệu](docs/features/friend-recommendation.md) |
+| 🤝 **Gợi ý bạn bè** | Thuật toán đồ thị Neo4j (2-Hops & Degree Centrality), đồng bộ realtime, Redis Cache | [Xem tài liệu](docs/features/friend-recommendation.md) |
 | 📰 **Bảng tin & Profile** | Đăng bài 4 ảnh magic-byte, phân quyền riêng tư, timeline cá nhân, cắt avatar | [Xem tài liệu](docs/features/social-feed-profile.md) |
 | 🛡️ **Kiểm duyệt AI** | NLP Classifier, Vision Scanner, Anomaly Detection (Isolation Forest, Autoencoder) | [Xem tài liệu](docs/features/moderation-trust.md) |
 | 🔒 **Bảo mật & CI/CD** | HttpOnly Cookies, Cloudflare Turnstile, OTP Mail, Cổng CI/CD 2 tầng tự động | [Xem tài liệu](docs/features/auth-security-cicd.md) |
@@ -264,7 +265,7 @@ git commit -m "<type>(<scope>): <short imperative description in English>"
 - Các loại type cho phép: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `chore`, `style`, `ci`.
 - *Ví dụ chuẩn:*
   - `feat(chat): add floating chat dock with multiple conversation tabs`
-  - `feat(recommendation): implement lambda architecture with spark batch and redis geo`
+  - `feat(recommendation): implement neo4j graph algorithm for friend recommendations`
   - `docs(readme): add demo showcase and comprehensive feature specifications`
 
 ### 2. Quy tắc Bắt buộc cho AI Agents (`AGENTS.md`)

@@ -145,7 +145,7 @@ const globalStructuredData = {
         "Real-time instant messaging via MQTT & Socket.IO",
         "HD Peer-to-Peer Voice & Video Calls via WebRTC",
         "AI-Powered Content Moderation and Bot Protection",
-        "Lambda Architecture Friend Recommendations (Adamic-Adar + Redis Geospatial)",
+        "Neo4j Graph Database Friend Recommendations (Friends-of-Friends & Network Centrality)",
         "Bilingual VI/EN Interface",
         "End-to-End Privacy Controls",
       ],

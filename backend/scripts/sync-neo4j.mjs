@@ -2,9 +2,11 @@
 // Đồng bộ toàn bộ dữ liệu User và Friendship từ MongoDB sang Neo4j Graph Database
 import neo4j from 'neo4j-driver';
 import { MongoClient, ObjectId } from 'mongodb';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/chatapp';
-const NEO4J_URI = process.env.NEO4J_URI || 'bolt://localhost:7687';
+const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/chatapp';
+const NEO4J_URI = process.env.NEO4J_URI || 'bolt://127.0.0.1:7687';
 const NEO4J_USER = process.env.NEO4J_USER || 'neo4j';
 const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD || 'password123';
 
@@ -123,3 +125,4 @@ main().catch((err) => {
   console.error('❌ Lỗi khi đồng bộ Neo4j:', err);
   process.exit(1);
 });
+

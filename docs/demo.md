@@ -24,7 +24,7 @@ Bảng tin trung tâm hiển thị các bài viết thời gian thực của ng�
 ### Điểm nổi bật:
 - **Khung tạo bài viết "Bạn đang nghĩ gì?":** Hỗ trợ đính kèm nhiều ảnh chất lượng cao, chọn quyền riêng tư linh hoạt (*Công khai / Bạn bè / Chỉ mình tôi*).
 - **Thanh cuộn vô hạn mượt mà:** Tự động nạp dữ liệu khi cuộn đến cuối trang, chống giật layout (Zero-Layout-Shift).
-- **Sidebar Gợi ý kết bạn:** Hiển thị danh sách ứng cử viên có điểm tương thích cao nhất được tính toán từ Apache Spark Lambda Architecture và vị trí địa lý Redis GEO.
+- **Sidebar Gợi ý kết bạn:** Hiển thị danh sách ứng cử viên có độ kết nối cao nhất được tính toán từ đồ thị Neo4j (Friends of Friends & Degree Centrality) kết hợp Redis Cache.
 
 ---
 
@@ -51,9 +51,9 @@ Hỗ trợ đổi 5 chủ đề phong phú (*Mặc định, Hẹn hò lãng mạ
 ## 3. Trang Khám Phá (Explore) & Radar Gợi Ý Bạn Bè Thông Minh
 
 Trang `/explore` và tab "Tìm bạn" trên thanh điều hướng bên cạnh giúp kết nối người dùng thông qua thuật toán đa chiều:
-- **Bạn chung (Redis Sets):** Phép giao `SINTER` tìm bạn chung tức thời với độ trễ < 2ms.
+- **Bạn chung & Đồ thị quan hệ (Neo4j Graph):** Duyệt quan hệ 2-hops `(u)-[:FRIEND]-(mutual)-[:FRIEND]-(suggested)` với độ trễ < 5ms và xếp hạng theo số bạn chung.
 - **Vị trí lân cận (Redis Geospatial):** Truy vấn khoảng cách địa lý km thực tế giữa hai người dùng (`users:locations`).
-- **Điểm tương thích đồ thị (Spark Lambda Engine):** Điểm số Adamic-Adar tính toán ngầm trên cụm máy chủ Spark, phục vụ qua Redis ZSET `rec:user:{id}`.
+- **Khắc phục Cold-Start (Degree Centrality):** Người dùng mới được gợi ý các tài khoản uy tín có mật độ kết nối cao nhất trên đồ thị Neo4j.
 
 ![Trang Khám phá & Gợi ý bạn bè thông minh](assets/screenshots/explore-friend-recommendations.png)
 
@@ -96,7 +96,7 @@ Hệ thống được trang bị bộ máy kiểm soát an toàn chủ động k
 
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
 > - [Nhắn tin thời gian thực & Giao thức nhị phân MQTT](features/chat-realtime.md)
-> - [Thuật toán Gợi ý bạn bè thông minh & Kiến trúc Lambda](features/friend-recommendation.md)
+> - [Thuật toán Gợi ý bạn bè thông minh bằng Đồ thị Neo4j](features/friend-recommendation.md)
 > - [Bảng tin Mạng xã hội & Hồ sơ cá nhân](features/social-feed-profile.md)
 > - [Hệ thống Kiểm duyệt AI & Phòng chống Bot](features/moderation-trust.md)
 > - [Xác thực Bảo mật & Cổng CI/CD](features/auth-security-cicd.md)

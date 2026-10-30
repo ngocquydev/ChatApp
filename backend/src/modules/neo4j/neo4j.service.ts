@@ -8,6 +8,7 @@ export interface Neo4jFriendSuggestion {
   avatar?: string;
   mutualFriendsCount: number;
   mutualFriendNames: string[];
+  friendsCount?: number;
   score: number;
   reason: string;
 }
@@ -170,14 +171,16 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Gợi ý kết bạn bằng đồ thị Neo4j (Friends of Friends - Bạn của bạn)
-   * Thuật toán: Tìm những người có bạn chung với $userId nhưng chưa kết bạn và không bị chặn.
+   * Gợi ý kết bạn bằng đồ thị Neo4j (Friends of Friends & Network Centrality)
+   * - Tier 1: Tìm người có bạn chung (Friends of Friends - 2 hops), sắp xếp theo số bạn chung giảm dần.
+   * - Tier 2: Nếu chưa đủ số lượng limit, mở rộng lấy người dùng có nhiều kết nối nhất trong mạng lưới.
    */
   async getFriendSuggestions(userId: string, limit = 10): Promise<Neo4jFriendSuggestion[]> {
     if (!this.isAvailable()) return [];
     const session = this.getSession();
     try {
-      const result = await session.run(
+      // 1. Tier 1: Bạn của bạn (Friends of Friends - 2 hops)
+      const fofResult = await session.run(
         `
         MATCH (u:User {id: $userId})-[:FRIEND]-(mutual:User)-[:FRIEND]-(suggested:User)
         WHERE NOT (u)-[:FRIEND]-(suggested)
@@ -195,26 +198,81 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
         { userId, limit: neo4j.int(limit) },
       );
 
-      return result.records.map((record) => {
-        const mutualCount = typeof record.get('mutualFriendsCount').toInt === 'function'
-          ? record.get('mutualFriendsCount').toInt()
-          : Number(record.get('mutualFriendsCount'));
+      const suggestions: Neo4jFriendSuggestion[] = fofResult.records.map((record) => {
+        const mutualCount =
+          typeof record.get('mutualFriendsCount').toInt === 'function'
+            ? record.get('mutualFriendsCount').toInt()
+            : Number(record.get('mutualFriendsCount'));
 
         const mutualNames: string[] = record.get('mutualFriendNames') || [];
-        const reason = mutualCount > 0
-          ? `Có ${mutualCount} bạn chung (${mutualNames.join(', ')})`
-          : 'Gợi ý từ mạng lưới kết nối';
+        const reason =
+          mutualCount > 0
+            ? `Có ${mutualCount} bạn chung (${mutualNames.join(', ')})`
+            : 'Gợi ý từ đồ thị bạn bè';
 
         return {
           id: record.get('id'),
-          name: record.get('name'),
+          name: record.get('name') || 'Người dùng',
           avatar: record.get('avatar') || undefined,
           mutualFriendsCount: mutualCount,
           mutualFriendNames: mutualNames,
-          score: mutualCount * 10,
+          score: Math.min(100, mutualCount * 25 + 50),
           reason,
         };
       });
+
+      // 2. Tier 2: Nếu chưa đủ số lượng limit, mở rộng lấy người dùng có nhiều kết nối nhất trong mạng lưới (Centrality)
+      if (suggestions.length < limit) {
+        const existingIds = [userId, ...suggestions.map((s) => s.id)];
+        const remaining = limit - suggestions.length;
+
+        const networkResult = await session.run(
+          `
+          MATCH (suggested:User)
+          WHERE NOT (suggested.id IN $existingIds)
+            AND NOT (suggested)-[:FRIEND]-(:User {id: $userId})
+            AND NOT (suggested)-[:BLOCK]-(:User {id: $userId})
+          OPTIONAL MATCH (suggested)-[:FRIEND]-(other:User)
+          WITH suggested, count(other) AS totalFriends
+          RETURN suggested.id AS id,
+                 suggested.name AS name,
+                 suggested.avatar AS avatar,
+                 totalFriends AS friendsCount
+          ORDER BY totalFriends DESC, suggested.name ASC
+          LIMIT $remaining
+          `,
+          {
+            userId,
+            existingIds,
+            remaining: neo4j.int(remaining),
+          },
+        );
+
+        for (const record of networkResult.records) {
+          const totalFriends =
+            typeof record.get('friendsCount').toInt === 'function'
+              ? record.get('friendsCount').toInt()
+              : Number(record.get('friendsCount'));
+
+          const reason =
+            totalFriends > 0
+              ? `Có ${totalFriends} kết nối trong cộng đồng`
+              : 'Gợi ý từ mạng lưới kết nối';
+
+          suggestions.push({
+            id: record.get('id'),
+            name: record.get('name') || 'Người dùng',
+            avatar: record.get('avatar') || undefined,
+            mutualFriendsCount: 0,
+            mutualFriendNames: [],
+            friendsCount: totalFriends,
+            score: Math.min(100, totalFriends * 10 + 20),
+            reason,
+          });
+        }
+      }
+
+      return suggestions;
     } catch (err) {
       this.logger.warn(`Lỗi getFriendSuggestions Neo4j: ${err instanceof Error ? err.message : String(err)}`);
       return [];

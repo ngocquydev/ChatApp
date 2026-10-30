@@ -224,12 +224,8 @@ export class FriendsService {
       // Đồng bộ bạn bè vào Redis Set cho cả 2 người
       this.syncFriendsSet(userId).catch(() => {});
       this.syncFriendsSet(request.requesterId.toString()).catch(() => {});
+      // Cập nhật đồ thị Neo4j khi kết bạn thành công
       this.neo4jService?.addFriendship(userId, request.requesterId.toString()).catch(() => {});
-
-      // Lambda Architecture Speed Layer: Xóa nhau khỏi Redis ZSET gợi ý bạn bè (ZREM)
-      const requesterIdStr = request.requesterId.toString();
-      this.redisService.client.zrem?.(`rec:user:${userId}`, requesterIdStr)?.catch?.(() => {});
-      this.redisService.client.zrem?.(`rec:user:${requesterIdStr}`, userId)?.catch?.(() => {});
 
       // Báo cho người đã gửi lời mời (kèm tên/avatar người chấp nhận)
       this.emitFriendEvent(
@@ -568,16 +564,16 @@ export class FriendsService {
   }
 
   /**
-   * LAMBDA ARCHITECTURE SERVING LAYER (< 5ms):
-   * 1. ƯU TIÊN 1 (Warm Users - Phục vụ từ Spark Batch / Kafka Speed Layer):
-   *    - Đọc thẳng từ Redis Sorted Set `rec:user:{userId}` lấy Top K candidate IDs.
+   * NEO4J GRAPH RECOMMENDATION ENGINE (< 5ms):
+   * 1. ƯU TIÊN 1 (Neo4j Graph Database Suggestions):
+   *    - Tier 1: Friends-of-friends (2-hops MATCH u-friend-mutual-friend-suggested) xếp theo số bạn chung.
+   *    - Tier 2: Degree Centrality (Mạng lưới kết nối mở rộng) cho người dùng mới (Cold-Start).
    *    - Lấy thông tin user (tên, avatar, bio) trong 1 batch query MongoDB.
-   *    - Trả về ngay lập tức với độ trễ cực thấp (< 5ms).
+   *    - Trả về ngay lập tức với độ trễ cực thấp (< 5ms), cache Redis 60s.
    *
-   * 2. ƯU TIÊN 2 (Cold-Start Fallback - Người dùng mới chưa có điểm từ Spark):
-   *    - Kích hoạt khi Redis rỗng (user mới tạo, Spark chưa quét tới).
+   * 2. ƯU TIÊN 2 (Offline Fallback - Khi Neo4j tạm thời không khả dụng):
    *    - Tìm người dùng gần bạn trong bán kính 10-25km (MongoDB 2dsphere index).
-   *    - Nếu chưa có GPS: Lấy danh sách người dùng tích cực.
+   *    - Nếu chưa có GPS: Lấy danh sách người dùng tích cực từ MongoDB.
    */
   async getFriendRecommendations(
     currentUserId: string,
@@ -627,86 +623,50 @@ export class FriendsService {
     }
 
     // =========================================================================
-    // ƯU TIÊN 1: PHỤC VỤ TỪ SPARK BATCH / KAFKA SPEED LAYER (REDIS ZSET) < 5ms
+    // ƯU TIÊN 1: THUẬT TOÁN GỢI Ý ĐỒ THỊ NEO4J (BẠN CỦA BẠN & CENTRALITY)
     // =========================================================================
-    try {
-      const lambdaResults = await this.redisService.client.zrevrangebyscore?.(
-        `rec:user:${currentUserId}`,
-        '+inf',
-        '-inf',
-        'WITHSCORES',
-        'LIMIT',
-        0,
-        limit * 2,
-      );
+    if (this.neo4jService?.isAvailable()) {
+      try {
+        const neo4jSuggestions = await this.neo4jService.getFriendSuggestions(currentUserId, limit);
+        if (neo4jSuggestions.length > 0) {
+          const validSuggestions = neo4jSuggestions.filter((s) => !excludedIds.has(s.id));
+          if (validSuggestions.length > 0) {
+            const candidateIds = validSuggestions.map((s) => s.id);
+            const candidateUsers = await this.usersService.findByIds(candidateIds);
+            const userMap = new Map(candidateUsers.map((u) => [u._id.toString(), u]));
 
-      if (Array.isArray(lambdaResults) && lambdaResults.length > 0) {
-        const candidateMap = new Map<string, number>();
-        for (let i = 0; i < lambdaResults.length; i += 2) {
-          const cId = lambdaResults[i];
-          const score = parseFloat(lambdaResults[i + 1]);
-          if (cId && !excludedIds.has(cId) && !candidateMap.has(cId)) {
-            candidateMap.set(cId, score);
-            if (candidateMap.size >= limit) break;
+            const results: FriendRecommendationResult[] = [];
+            for (const s of validSuggestions) {
+              const u = userMap.get(s.id);
+              results.push({
+                _id: s.id,
+                name: u?.name || s.name,
+                email: u?.email || '',
+                avatar: u?.avatar || s.avatar,
+                bio: u?.bio,
+                mutualFriendsCount: s.mutualFriendsCount,
+                friendsCount: s.friendsCount || 0,
+                score: s.score,
+                recommendationReason: s.reason,
+                relationStatus: 'none',
+              });
+            }
+
+            if (results.length > 0) {
+              void this.redisService.client
+                .set(cacheKey, JSON.stringify(results), 'EX', 60)
+                .catch(() => {});
+              return results;
+            }
           }
         }
-
-        if (candidateMap.size > 0) {
-          const candidateIds = Array.from(candidateMap.keys());
-          const candidateUsers = await this.usersService.findByIds(candidateIds);
-          const userMap = new Map(candidateUsers.map((u) => [u._id.toString(), u]));
-
-          // Lấy số bạn chung qua Redis pipeline SINTER
-          const clientAny = this.redisService.client as any;
-          const pipeline = typeof clientAny.pipeline === 'function' ? clientAny.pipeline() : null;
-          if (pipeline) {
-            candidateIds.forEach((cId) => {
-              pipeline.sinter(`user:${currentUserId}:friends`, `user:${cId}:friends`);
-            });
-          }
-          const mutualResults = pipeline ? await pipeline.exec() : [];
-
-          const results: FriendRecommendationResult[] = [];
-          candidateIds.forEach((cId, idx) => {
-            const user = userMap.get(cId);
-            if (!user) return;
-            const score = candidateMap.get(cId) || 0;
-            const mutualArr = Array.isArray(mutualResults?.[idx]?.[1]) ? mutualResults[idx][1] : [];
-            const mutualCount = mutualArr.length;
-
-            const reason =
-              mutualCount > 0
-                ? `${mutualCount} bạn chung`
-                : 'Đồ thị bạn bè (Adamic-Adar)';
-
-            results.push({
-              _id: cId,
-              name: user.name,
-              email: user.email,
-              avatar: user.avatar,
-              bio: user.bio,
-              mutualFriendsCount: mutualCount,
-              friendsCount: 0,
-              score: Math.round(score * 100) / 100,
-              recommendationReason: reason,
-              relationStatus: 'none',
-            });
-          });
-
-          if (results.length > 0) {
-            void this.redisService.client
-              .set(cacheKey, JSON.stringify(results), 'EX', 60)
-              .catch(() => {});
-            return results;
-          }
-        }
+      } catch {
+        // Neo4j gặp sự cố -> Fallback sang Cold-Start bên dưới
       }
-    } catch {
-      // Redis ZSET lỗi hoặc rỗng -> kích hoạt Cold-Start Fallback phía dưới
     }
 
     // =========================================================================
-    // ƯU TIÊN 2: COLD-START STRATEGY (KHI REDIS RỖNG - USER MỚI) < 10ms
+    // ƯU TIÊN 2: DỰ PHÒNG COLD-START (KHI NEO4J CHƯA ĐỦ DỮ LIỆU / NGOẠI TUYẾN)
     // =========================================================================
     // Thử lấy tọa độ đã lưu của user nếu chưa có từ request
     if (typeof currentLat !== 'number' || typeof currentLng !== 'number') {

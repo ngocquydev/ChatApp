@@ -14,10 +14,10 @@
   - Kiến trúc Dual-Engine (Socket.IO + Binary MQTT/Protobuf).
   - Cửa sổ chat nổi đa nhiệm phong cách Facebook Messenger.
   - Các tính năng nâng cao: Chủ đề đoạn chat (5 theme), Thu hồi tin nhắn (Unsend), Chế độ Hạn chế (Restrict), Chặn/Bỏ chặn (Block/Unblock), Chỉ báo soạn thảo Typing Heartbeat.
-- 🤝 **[Thuật Toán Gợi Ý Bạn Bè Thông Minh & Kiến Trúc Lambda (docs/features/friend-recommendation.md)](features/friend-recommendation.md)**:
-  - Kiến trúc Lambda: Apache Spark (Scala) Batch Layer với thuật toán Adamic-Adar nâng cao chống data skew cho super-nodes.
-  - Apache Kafka Speed Layer cập nhật điểm số tức thời khi có kết bạn mới.
-  - Serving Layer kết hợp Redis Geospatial (bán kính vị trí), Redis Sets (bạn chung) và Cold-start MongoDB.
+- 🤝 **[Thuật Toán Gợi Ý Bạn Bè Thông Minh Bằng Đồ Thị Neo4j (docs/features/friend-recommendation.md)](features/friend-recommendation.md)**:
+  - Đồ thị quan hệ bạn bè Neo4j: Thuật toán Friends-of-Friends (2 hops) với khả năng duyệt trực tiếp Index-free Adjacency (< 5ms).
+  - Thuật toán Degree Centrality giải quyết triệt để bài toán Cold-Start cho người dùng mới trực tiếp trên đồ thị.
+  - Tầng Caching Redis TTL 60s và cơ chế dự phòng an toàn (Fallback) với MongoDB 2dsphere Geospatial.
 - 📰 **[Bảng Tin Mạng Xã Hội & Hồ Sơ Cá Nhân (docs/features/social-feed-profile.md)](features/social-feed-profile.md)**:
   - Khung đăng bài "Bạn đang nghĩ gì?", đính kèm 4 ảnh chất lượng cao kèm kiểm tra chữ ký Magic-byte.
   - Cơ chế phân quyền riêng tư 3 cấp độ (*Công khai / Bạn bè / Chỉ mình tôi*).
