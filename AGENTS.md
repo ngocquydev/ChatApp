@@ -22,7 +22,8 @@ Trước khi push: `scripts/check.ps1`. Với frontend tối thiểu: `npm run t
 3. Sửa đúng phạm vi yêu cầu. Giữ nguyên comment/docstring không liên quan. Không tự ý đổi hành vi nghiệp vụ.
 4. **TỰ ĐỘNG LƯU ẢNH DEMO & CẬP NHẬT TÀI LIỆU KHI XONG TÍNH NĂNG (BẮT BUỘC 100%):**
    - Khi hoàn thành bất kỳ chức năng nào (tính năng mới, cập nhật UI/UX, hoặc module hệ thống):
-     - **Lưu/Upload ảnh demo:** AI bắt buộc tự động chụp màn hình giao diện hoặc lưu ảnh minh họa tính năng vào thư mục `docs/assets/screenshots/<ten-tinh-nang>.png`.
+     - **Tự động mở Docker kiểm tra:** Sử dụng MCP `docker` hoặc chạy `powershell -File .\scripts\ensure-docker.ps1` (tự động phát hiện và khởi động Docker Desktop nếu chưa chạy, chờ daemon sẵn sàng và kích hoạt `docker compose up -d` cho MongoDB & Redis).
+     - **Tự động mở app & chụp ảnh demo:** Sử dụng MCP `chrome-devtools` / `puppeteer` hoặc chạy `powershell -File .\scripts\capture-screenshot.ps1 -Url http://localhost:5173 -OutputFile docs/assets/screenshots/<ten-tinh-nang>.png` để tự động mở trình duyệt và lưu ảnh demo sắc nét.
      - **Tự động cập nhật `README.md`:** Bổ sung mục tính năng tương ứng, tóm tắt cách dùng và nhúng ảnh demo trực quan vào `README.md`.
      - **Tự động cập nhật thư mục `docs/`:** Tạo hoặc cập nhật file chi tiết trong `docs/features/<ten-tinh-nang>.md` và cập nhật file `docs/demo.md` kèm hình ảnh demo đầy đủ.
    - Tuyệt đối không để tính năng mới xong mà tài liệu và ảnh demo bị bỏ quên.
