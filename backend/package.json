@@ -27,6 +27,7 @@
     "seed:million": "node scripts/seed-million-users.mjs",
     "seed:million:clean": "node scripts/seed-million-users.mjs --clean",
     "seed:million:info": "node scripts/seed-million-users.mjs --info",
+    "neo4j:sync": "node scripts/sync-neo4j.mjs",
     "spark:export": "node ../recommendation-engine/scripts/export_mongo_edges.js",
     "spark:compute": "node ../recommendation-engine/scripts/run_adamic_adar_local.js"
   },

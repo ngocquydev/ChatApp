@@ -41,6 +41,12 @@ if (-not $isDockerRunning) {
         exit 1
     }
 
+    $backendExe = "C:\Program Files\Docker\Docker\resources\com.docker.backend.exe"
+    if (Test-Path $backendExe) {
+        Write-Host "🚀 Đang khởi động Docker Backend Engine từ: $backendExe" -ForegroundColor Green
+        Start-Process -FilePath $backendExe -WindowStyle Hidden
+    }
+
     Write-Host "🚀 Đang khởi động Docker Desktop từ: $dockerExe" -ForegroundColor Green
     Start-Process -FilePath $dockerExe -WindowStyle Minimized
 
@@ -79,3 +85,4 @@ if ($StartContainers) {
         exit $LASTEXITCODE
     }
 }
+

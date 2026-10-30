@@ -113,8 +113,8 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     try {
       await session.run(
         `
-        MATCH (u1:User {id: $u1})
-        MATCH (u2:User {id: $u2})
+        MERGE (u1:User {id: $u1})
+        MERGE (u2:User {id: $u2})
         MERGE (u1)-[:FRIEND]-(u2)
         `,
         { u1: userId1, u2: userId2 },
@@ -156,8 +156,8 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     try {
       await session.run(
         `
-        MATCH (u1:User {id: $u1})
-        MATCH (u2:User {id: $u2})
+        MERGE (u1:User {id: $u1})
+        MERGE (u2:User {id: $u2})
         MERGE (u1)-[:BLOCK]->(u2)
         `,
         { u1: userId, u2: targetId },
