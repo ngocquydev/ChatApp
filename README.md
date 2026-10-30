@@ -73,7 +73,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Phân quyền riêng tư 3 cấp độ:** *Công khai (`public`)*, *Bạn bè (`friends`)*, *Chỉ mình tôi (`only_me`)*.
 - **Tương tác thời gian thực:** Thả cảm xúc thích (Cập nhật lạc quan - Optimistic Update), bình luận và chia sẻ bài viết.
 - **Hồ sơ cá nhân chuẩn Timeline:** Ảnh bìa, ảnh đại diện, tab bài viết, bạn bè, ảnh và công cụ cắt avatar công thái học (`AvatarCropDialog`).
-- **Thông tin học vấn & Tình trạng mối quan hệ:** Cập nhật trường học (`school`) và thiết lập tình trạng hẹn hò / yêu đương (`relationshipStatus`: độc thân, đang hẹn hò, đính hôn, kết hôn, quan hệ phức tạp, ly hôn, góa...).
+- **Thông tin học vấn & Tình trạng mối quan hệ:** Cập nhật trường học (`school`) tích hợp gợi ý thông minh từ Public Universities API & CSDL chuẩn hóa bằng MUI Autocomplete (`freeSolo`), kèm thiết lập tình trạng mối quan hệ (`relationshipStatus`: độc thân, đang hẹn hò, đính hôn, kết hôn, quan hệ phức tạp, ly hôn, góa...).
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/social-feed-profile.md](docs/features/social-feed-profile.md)*
 
 ### 4. Hệ Thống Kiểm Duyệt Nội Dung & Phòng Chống Bot AI (Moderation & Trust)

@@ -92,8 +92,13 @@ Trang cá nhân được tổ chức theo cấu trúc chuẩn:
 
 Hệ thống cho phép người dùng cá nhân hóa thông tin chi tiết trên hồ sơ cá nhân và đồng bộ hai chiều giữa trang cá nhân của mình (`/profile`) và trang xem người khác (`/profile/[id]`):
 
-### 7.1. Cập nhật Trường học / Học vấn (`school`)
-- Người dùng có thể cập nhật trường học, cơ sở đào tạo hoặc trường đại học từng/đang theo học (tối đa 150 ký tự).
+### 7.1. Cập nhật Trường học / Học vấn (`school`) với Gợi ý từ Public API
+- **Tích hợp API Trường học có sẵn:** Hệ thống tích hợp trực tiếp Public Universities API (Hipolabs `universities.hipolabs.com/search?country=Vietnam`) kết hợp với cơ sở dữ liệu trường học chuẩn hóa tại Việt Nam (`POPULAR_SCHOOLS` bao gồm các trường ĐHQG, Bách Khoa, Kinh tế, Ngoại thương, Y Dược, các trường THPT Chuyên...).
+- **API Endpoint:** `GET /users/schools?q={từ_khóa}&limit=50` hỗ trợ tìm kiếm nhanh, không phân biệt chữ hoa/chữ thường và hỗ trợ tiếng Việt không dấu.
+- **Trải nghiệm chọn trường bằng MUI Autocomplete (`freeSolo`):**
+  - Tự động nạp danh sách các trường học phổ biến khi mở form chỉnh sửa.
+  - Hỗ trợ gõ để tìm kiếm trực tiếp qua API với chỉ báo nạp dữ liệu mượt mà (`CircularProgress`).
+  - Cho phép người dùng nhấp chọn nhanh trường học trong danh sách hoặc tự nhập tên trường tùy ý (`freeSolo`).
 - **Hiển thị trực quan:** Đi kèm biểu tượng mũ tốt nghiệp (`GraduationCap` phong cách Facebook) trên dòng thông tin tóm tắt Header, Thẻ Giới thiệu (About tab) và Cột Sidebar Dòng thời gian.
 
 ### 7.2. Thiết lập Tình trạng mối quan hệ (`relationshipStatus`)
@@ -111,7 +116,7 @@ Hỗ trợ đầy đủ các trạng thái mối quan hệ thực tế trong xã
 | `widowed` | Góa | Widowed | 🖤 |
 
 ### 7.3. Luồng chỉnh sửa & Đồng bộ dữ liệu
-- **Tab "Chỉnh sửa thông tin":** Cung cấp trường nhập văn bản trường học và menu thả xuống (Dropdown Select) lựa chọn tình trạng mối quan hệ, lưu trữ tức thời qua API `PATCH /auth/profile`.
+- **Tab "Chỉnh sửa thông tin":** Cung cấp trường chọn trường học thông minh (MUI Autocomplete gọi API `GET /users/schools`) và menu thả xuống (Dropdown Select) lựa chọn tình trạng mối quan hệ, lưu trữ tức thời qua API `PATCH /auth/profile`.
 - **Tab "Giới thiệu":** Hiển thị thẻ thông tin với nhãn rõ ràng và nút "Thêm trường học" / "Thiết lập" / "Chỉnh sửa" liên kết nhanh đến form cập nhật.
 - **Hồ sơ công khai (`/friends/profile/:userId`):** Người dùng khác ghé thăm trang cá nhân cũng sẽ nhìn thấy trường học và tình trạng quan hệ được chia sẻ trên Cột Sidebar Giới thiệu.
 

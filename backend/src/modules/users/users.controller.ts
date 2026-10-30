@@ -23,6 +23,11 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('schools')
+  getSchools(@Query('q') query?: string, @Query('limit') limit?: number) {
+    return this.usersService.getSchools(query, limit);
+  }
+
   @Get('search')
   search(@Query('q') query?: string) {
     return this.usersService.searchUsers(query);

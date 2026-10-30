@@ -35,6 +35,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Autocomplete,
 } from "@mui/material";
 import {
   User as UserIcon,
@@ -75,6 +76,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useAuthStore } from "../../store/useAuthStore";
+import api from "../../services/api";
 import { uploadAvatar, uploadCover } from "@/services/postsApi";
 import { RELATIONSHIP_STATUS_OPTIONS, getRelationshipLabel } from "@/utils/relationshipStatus";
 import AuthGuard from "../common/AuthGuard";
@@ -153,6 +155,8 @@ function ProfileContent() {
   const [bio, setBio] = useState("");
   const [school, setSchool] = useState("");
   const [relationshipStatus, setRelationshipStatus] = useState("");
+  const [schoolOptions, setSchoolOptions] = useState<string[]>([]);
+  const [isLoadingSchools, setIsLoadingSchools] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -230,6 +234,44 @@ function ProfileContent() {
       setSelectedAvatarPreview(user.avatar || "");
     }
   }, [user]);
+
+  // Nạp danh sách trường học từ API khi vào tab Chỉnh sửa
+  useEffect(() => {
+    let active = true;
+    const loadInitialSchools = async () => {
+      try {
+        setIsLoadingSchools(true);
+        const res = await api.get("/users/schools");
+        if (active && Array.isArray(res.data)) {
+          setSchoolOptions(res.data);
+        }
+      } catch {
+        // Fallback
+      } finally {
+        if (active) setIsLoadingSchools(false);
+      }
+    };
+    if (activeTab === TAB_EDIT) {
+      void loadInitialSchools();
+    }
+    return () => {
+      active = false;
+    };
+  }, [activeTab]);
+
+  const handleSearchSchools = async (query: string) => {
+    try {
+      setIsLoadingSchools(true);
+      const res = await api.get(`/users/schools?q=${encodeURIComponent(query)}`);
+      if (Array.isArray(res.data)) {
+        setSchoolOptions(res.data);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setIsLoadingSchools(false);
+    }
+  };
 
   // Load saved cover theme from localStorage
   useEffect(() => {
@@ -1820,26 +1862,57 @@ function ProfileContent() {
                         }}
                       />
 
-                      {/* School / Education input */}
-                      <TextField
-                        fullWidth
-                        label={tr("Trường học / Học vấn", "School / Education")}
+                      {/* School / Education input with API Autocomplete */}
+                      <Autocomplete
+                        freeSolo
+                        options={schoolOptions}
+                        loading={isLoadingSchools}
                         value={school}
-                        onChange={(e) => setSchool(e.target.value)}
-                        placeholder={tr("Ví dụ: Đại học Bách Khoa, THPT Chuyên...", "E.g., Harvard University, High School...")}
-                        slotProps={{
-                          input: {
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <GraduationCap size={18} color="var(--mui-palette-neutral-500)" />
-                              </InputAdornment>
-                            ),
-                          },
-                          htmlInput: {
-                            maxLength: 150,
-                          },
+                        onChange={(_e, newValue) => {
+                          setSchool(newValue || "");
                         }}
-                        helperText={tr("Chia sẻ trường học hoặc nơi đào tạo của bạn", "Share your school or alma mater")}
+                        onInputChange={(_e, newInputValue, reason) => {
+                          if (reason === "input") {
+                            setSchool(newInputValue);
+                            if (newInputValue.length >= 2) {
+                              void handleSearchSchools(newInputValue);
+                            } else if (newInputValue.length === 0) {
+                              void handleSearchSchools("");
+                            }
+                          }
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label={tr("Trường học / Học vấn", "School / Education")}
+                            placeholder={tr("Chọn hoặc tìm kiếm trường học...", "Select or search school...")}
+                            helperText={tr("Gợi ý tự động từ API trường học, bạn có thể chọn hoặc tự nhập", "Auto-suggested from universities API, you can select or type")}
+                            slotProps={{
+                              ...params.slotProps,
+                              input: {
+                                ...params.slotProps.input,
+                                startAdornment: (
+                                  <>
+                                    <InputAdornment position="start">
+                                      <GraduationCap size={18} color="var(--mui-palette-neutral-500)" />
+                                    </InputAdornment>
+                                    {params.slotProps.input.startAdornment}
+                                  </>
+                                ),
+                                endAdornment: (
+                                  <>
+                                    {isLoadingSchools ? <CircularProgress color="inherit" size={18} /> : null}
+                                    {params.slotProps.input.endAdornment}
+                                  </>
+                                ),
+                              },
+                              htmlInput: {
+                                ...params.slotProps.htmlInput,
+                                maxLength: 150,
+                              },
+                            }}
+                          />
+                        )}
                       />
 
                       {/* Relationship Status select */}

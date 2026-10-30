@@ -10,6 +10,7 @@ import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserRepository } from './entities/user.entity.js';
 import { CreateUserData } from './types/user.types.js';
+import { POPULAR_SCHOOLS } from './data/schools.data.js';
 
 
 export interface SearchUserItem {
@@ -368,5 +369,58 @@ export class UsersService {
       .limit(limit)
       .lean()
       .exec();
+  }
+
+  /**
+   * Lấy danh sách gợi ý trường học từ Public API và nguồn trường học chuẩn hóa
+   */
+  async getSchools(search?: string, limit = 50): Promise<string[]> {
+    const maxLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+    const cleanSearch = (search || '').trim();
+
+    // 1. Thử gọi Public API của Hipolabs nếu có tìm kiếm hoặc lấy danh sách VN
+    let publicApiSchools: string[] = [];
+    try {
+      const url = cleanSearch
+        ? `http://universities.hipolabs.com/search?name=${encodeURIComponent(cleanSearch)}&country=Vietnam`
+        : 'http://universities.hipolabs.com/search?country=Vietnam';
+      const res = await fetch(url, { signal: AbortSignal.timeout(2500) });
+      if (res.ok) {
+        const json = (await res.json()) as Array<{ name?: string }>;
+        if (Array.isArray(json)) {
+          publicApiSchools = json
+            .map((item) => item?.name)
+            .filter((n): n is string => typeof n === 'string' && n.trim().length > 0);
+        }
+      }
+    } catch {
+      // Fallback nếu API mạng ngoài timeout
+    }
+
+    // 2. Tìm kiếm trong danh mục POPULAR_SCHOOLS (hỗ trợ tìm tiếng Việt không dấu)
+    const normalize = (str: string) =>
+      str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    const normSearch = normalize(cleanSearch);
+
+    const popularMatches = POPULAR_SCHOOLS.filter((s) => {
+      if (!cleanSearch) return true;
+      const normName = normalize(s.name);
+      const normCode = s.code ? normalize(s.code) : '';
+      return normName.includes(normSearch) || normCode.includes(normSearch);
+    }).map((s) => s.name);
+
+    // 3. Kết hợp kết quả và loại bỏ trùng lặp
+    const resultSet = new Set<string>();
+    for (const name of [...popularMatches, ...publicApiSchools]) {
+      if (name && name.trim()) {
+        resultSet.add(name.trim());
+      }
+      if (resultSet.size >= maxLimit) break;
+    }
+
+    return Array.from(resultSet);
   }
 }
