@@ -3,12 +3,15 @@ import {
   NestMiddleware,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { RedisService } from '../../modules/redis/redis/redis.service.js';
 
 @Injectable()
 export class RateLimitMiddleware implements NestMiddleware {
+  private readonly logger = new Logger(RateLimitMiddleware.name);
+
   constructor(private readonly redisService: RedisService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
@@ -30,29 +33,43 @@ export class RateLimitMiddleware implements NestMiddleware {
     const MAX_REQUESTS = 10;
     const TTL_SECONDS = 60;
 
-    // 2. Thao tác nguyên tử (Atomic) với Redis INCR
-    const count = await this.redisService.client.incr(key);
+    try {
+      if (!this.redisService.isAvailable()) {
+        return next(); // Fail-safe: bỏ qua giới hạn tốc độ nếu Redis tạm thời mất kết nối
+      }
 
-    // Nếu là request đầu tiên, thiết lập thời gian hết hạn (TTL)
-    if (count === 1) {
-      await this.redisService.client.expire(key, TTL_SECONDS);
-    }
+      // 2. Thao tác nguyên tử (Atomic) với Redis INCR
+      const count = await this.redisService.client.incr(key);
 
-    if (count > MAX_REQUESTS) {
-      // Đảm bảo key luôn có TTL tránh rò rỉ key vĩnh viễn
-      const currentTtl = await this.redisService.client.ttl(key);
-      if (currentTtl === -1) {
+      // Nếu là request đầu tiên, thiết lập thời gian hết hạn (TTL)
+      if (count === 1) {
         await this.redisService.client.expire(key, TTL_SECONDS);
       }
 
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.TOO_MANY_REQUESTS,
-          message:
-            'Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút!',
-        },
-        HttpStatus.TOO_MANY_REQUESTS,
+      if (count > MAX_REQUESTS) {
+        // Đảm bảo key luôn có TTL tránh rò rỉ key vĩnh viễn
+        const currentTtl = await this.redisService.client.ttl(key);
+        if (currentTtl === -1) {
+          await this.redisService.client.expire(key, TTL_SECONDS);
+        }
+
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.TOO_MANY_REQUESTS,
+            message:
+              'Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút!',
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+    } catch (err) {
+      if (err instanceof HttpException) {
+        throw err;
+      }
+      this.logger.warn(
+        `Lỗi rate limit Redis (Fail-safe mở): ${err instanceof Error ? err.message : String(err)}`,
       );
+      return next();
     }
 
     next();

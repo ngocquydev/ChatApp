@@ -70,4 +70,13 @@ async function bootstrap() {
   console.log(`Application is running on: http://localhost:${port}`);
   console.log(`Swagger Docs available at: http://localhost:${port}/api-docs`);
 }
+
+process.on('unhandledRejection', (reason) => {
+  console.warn('[Process] Bắt lỗi Unhandled Promise Rejection an toàn:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Process] Bắt lỗi Uncaught Exception an toàn:', err);
+});
+
 void bootstrap();

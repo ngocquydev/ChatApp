@@ -330,11 +330,17 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
       this.userClientMap.get(userId)!.add(client.id);
 
       // Lưu Redis & thông báo online
-      await this.redisService.getClient().sadd('chat:online_users', userId);
-
-      const onlineList = await this.redisService
-        .getClient()
-        .smembers('chat:online_users');
+      let onlineList: string[] = [];
+      try {
+        if (this.redisService.isAvailable()) {
+          await this.redisService.getClient().sadd('chat:online_users', userId);
+          onlineList = await this.redisService
+            .getClient()
+            .smembers('chat:online_users');
+        }
+      } catch (err) {
+        this.logger.warn(`[MQTT Presence] Lỗi Redis online: ${err instanceof Error ? err.message : String(err)}`);
+      }
 
       // Gửi binary presence thông báo tới mọi client đang theo dõi
       const binaryPresence = Buffer.from(
@@ -360,7 +366,13 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
           set.delete(client.id);
           if (set.size === 0) {
             this.userClientMap.delete(userId);
-            await this.redisService.getClient().srem('chat:online_users', userId);
+            try {
+              if (this.redisService.isAvailable()) {
+                await this.redisService.getClient().srem('chat:online_users', userId);
+              }
+            } catch (err) {
+              this.logger.warn(`[MQTT Presence] Lỗi Redis offline: ${err instanceof Error ? err.message : String(err)}`);
+            }
 
             const binaryPresence = Buffer.from(
               PresenceEventProto.encode({

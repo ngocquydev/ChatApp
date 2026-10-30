@@ -26,9 +26,16 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       request.headers['authorization']?.split(' ')[1];
 
     if (token) {
-      const isBlacklisted = await this.redisService.isTokenBlacklisted(token);
-      if (isBlacklisted) {
-        throw new UnauthorizedException('Token đã bị vô hiệu hóa (Đăng xuất)');
+      try {
+        const isBlacklisted = await this.redisService.isTokenBlacklisted(token);
+        if (isBlacklisted) {
+          throw new UnauthorizedException('Token đã bị vô hiệu hóa (Đăng xuất)');
+        }
+      } catch (err) {
+        if (err instanceof UnauthorizedException) {
+          throw err;
+        }
+        // Fail-safe: Nếu Redis tạm thời gặp sự cố, cho phép request đi tiếp vì JWT signature đã hợp lệ
       }
     }
 

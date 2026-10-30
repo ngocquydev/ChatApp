@@ -96,15 +96,28 @@ export class ChatGateway
       this.userSocketMap.get(userId)!.add(client.id);
 
       // Lưu trạng thái online vào Redis
-      await this.redisService.getClient().sadd('chat:online_users', userId);
+      try {
+        if (this.redisService.isAvailable()) {
+          await this.redisService.getClient().sadd('chat:online_users', userId);
+        }
+      } catch (err) {
+        this.logger.warn(`Lỗi ghi Redis presence online: ${err instanceof Error ? err.message : String(err)}`);
+      }
 
       // Thông báo cho các client khác user này đã Online
       this.server.emit('user:online', { userId });
 
       // Gửi danh sách các user hiện đang online cho client mới kết nối
-      const onlineList = await this.redisService
-        .getClient()
-        .smembers('chat:online_users');
+      let onlineList: string[] = [];
+      try {
+        if (this.redisService.isAvailable()) {
+          onlineList = await this.redisService
+            .getClient()
+            .smembers('chat:online_users');
+        }
+      } catch (err) {
+        this.logger.warn(`Lỗi đọc Redis presence online: ${err instanceof Error ? err.message : String(err)}`);
+      }
       client.emit('presence:initial', { onlineUserIds: onlineList });
 
       this.logger.log(`User ${userId} (${payload.email}) kết nối Socket ${client.id}`);
@@ -129,7 +142,13 @@ export class ChatGateway
       if (userSockets.size === 0) {
         this.userSocketMap.delete(userId);
         // Xóa khỏi Redis và thông báo user offline
-        await this.redisService.getClient().srem('chat:online_users', userId);
+        try {
+          if (this.redisService.isAvailable()) {
+            await this.redisService.getClient().srem('chat:online_users', userId);
+          }
+        } catch (err) {
+          this.logger.warn(`Lỗi xóa Redis presence online: ${err instanceof Error ? err.message : String(err)}`);
+        }
         this.server.emit('user:offline', { userId });
       }
     }

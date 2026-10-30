@@ -16,9 +16,15 @@ export class BlacklistGuard implements CanActivate {
     const token = request.cookies?.['accessToken'];
 
     if (token) {
-      const isBlacklisted = await this.redisService.isTokenBlacklisted(token);
-      if (isBlacklisted) {
-        throw new UnauthorizedException('Token đã bị vô hiệu hóa (Đăng xuất)');
+      try {
+        const isBlacklisted = await this.redisService.isTokenBlacklisted(token);
+        if (isBlacklisted) {
+          throw new UnauthorizedException('Token đã bị vô hiệu hóa (Đăng xuất)');
+        }
+      } catch (err) {
+        if (err instanceof UnauthorizedException) {
+          throw err;
+        }
       }
     }
 

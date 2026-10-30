@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   Optional,
 } from '@nestjs/common';
@@ -59,6 +60,8 @@ interface RedisGeoClient {
 
 @Injectable()
 export class FriendsService {
+  private readonly logger = new Logger(FriendsService.name);
+
   constructor(
     @InjectModel(Friendship.name)
     private readonly friendshipModel: Model<FriendshipDocument>,
@@ -71,6 +74,14 @@ export class FriendsService {
     @Optional()
     private readonly neo4jService?: Neo4jService,
   ) {}
+
+  private isRedisReady(): boolean {
+    if (!this.redisService) return false;
+    if (typeof this.redisService.isAvailable === 'function') {
+      return this.redisService.isAvailable();
+    }
+    return !!this.redisService.client;
+  }
 
   /**
    * Gửi sự kiện realtime tới phòng cá nhân của một người dùng, kèm tên/avatar của người liên quan
@@ -508,20 +519,25 @@ export class FriendsService {
     }
 
     // 1. Lưu vào Redis GEO với key 'users:locations'
-    await (this.redisService.client as unknown as RedisGeoClient).geoadd(
-      'users:locations',
-      longitude,
-      latitude,
-      userId,
-    );
+    try {
+      if (this.isRedisReady()) {
+        await (this.redisService.client as unknown as RedisGeoClient).geoadd(
+          'users:locations',
+          longitude,
+          latitude,
+          userId,
+        );
 
-    // 2. Lưu timestamp cập nhật vị trí (TTL 7 ngày)
-    await this.redisService.client.set(
-      `user:${userId}:location_updated`,
-      Date.now().toString(),
-      'EX',
-      86400 * 7,
-    );
+        // 2. Lưu timestamp cập nhật vị trí (TTL 7 ngày)
+        await this.redisService.set(
+          `user:${userId}:location_updated`,
+          Date.now().toString(),
+          86400 * 7,
+        );
+      }
+    } catch (err) {
+      this.logger.warn(`Lỗi lưu Redis geo location: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     // 3. Đồng bộ vị trí vào MongoDB User Model hỗ trợ 2dsphere Geospatial Index bền vững
     try {
@@ -554,12 +570,18 @@ export class FriendsService {
       return reqId === userId ? f.recipientId.toString() : reqId;
     });
 
-    const redisKey = `user:${userId}:friends`;
-    await this.redisService.client.del(redisKey);
+    try {
+      if (this.isRedisReady()) {
+        const redisKey = `user:${userId}:friends`;
+        await this.redisService.client.del(redisKey);
 
-    if (friendIds.length > 0) {
-      await this.redisService.client.sadd(redisKey, ...friendIds);
-      await this.redisService.client.expire(redisKey, 86400); // Lưu cache 24h
+        if (friendIds.length > 0) {
+          await this.redisService.client.sadd(redisKey, ...friendIds);
+          await this.redisService.client.expire(redisKey, 86400); // Lưu cache 24h
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`Lỗi đồng bộ Redis friends set: ${err instanceof Error ? err.message : String(err)}`);
     }
 
     return friendIds;
@@ -589,7 +611,7 @@ export class FriendsService {
     let currentLng = options.lng;
     const cacheKey = `cache:rec:${currentUserId}:${limit}:${currentLat ?? 0}:${currentLng ?? 0}`;
     try {
-      const cached = await this.redisService.client.get(cacheKey);
+      const cached = await this.redisService.get(cacheKey);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -655,9 +677,7 @@ export class FriendsService {
             }
 
             if (results.length > 0) {
-              void this.redisService.client
-                .set(cacheKey, JSON.stringify(results), 'EX', 60)
-                .catch(() => {});
+              void this.redisService.set(cacheKey, JSON.stringify(results), 60);
               return results;
             }
           }
@@ -762,9 +782,7 @@ export class FriendsService {
     }));
 
     if (finalResults.length > 0) {
-      void this.redisService.client
-        .set(cacheKey, JSON.stringify(finalResults), 'EX', 60)
-        .catch(() => {});
+      void this.redisService.set(cacheKey, JSON.stringify(finalResults), 60);
     }
 
     return finalResults;

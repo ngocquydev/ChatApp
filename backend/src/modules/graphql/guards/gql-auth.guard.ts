@@ -24,9 +24,15 @@ export class GqlAuthGuard extends AuthGuard('jwt') {
       req.headers['authorization']?.split(' ')[1];
 
     if (token) {
-      const isBlacklisted = await this.redisService.isTokenBlacklisted(token);
-      if (isBlacklisted) {
-        throw new UnauthorizedException('Token đã bị vô hiệu hóa (Đăng xuất)');
+      try {
+        const isBlacklisted = await this.redisService.isTokenBlacklisted(token);
+        if (isBlacklisted) {
+          throw new UnauthorizedException('Token đã bị vô hiệu hóa (Đăng xuất)');
+        }
+      } catch (err) {
+        if (err instanceof UnauthorizedException) {
+          throw err;
+        }
       }
     }
 
