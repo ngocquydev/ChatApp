@@ -7,6 +7,7 @@ import {
   Container,
   Typography,
   Button,
+  ButtonBase,
   IconButton,
   Avatar,
   Chip,
@@ -62,20 +63,19 @@ import {
   Laptop,
   Globe,
   Sliders,
-  MessageSquare,
   Users,
   CheckCircle2,
   Palette,
   ExternalLink,
   ShieldCheck,
   Newspaper,
-  Zap,
   GraduationCap,
   Heart,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useFriendStore } from "@/store/useFriendStore";
 import api from "../../services/api";
 import { uploadAvatar, uploadCover } from "@/services/postsApi";
 import { RELATIONSHIP_STATUS_OPTIONS, getRelationshipLabel } from "@/utils/relationshipStatus";
@@ -144,6 +144,11 @@ function ProfileContent() {
   const { tr, language } = useTranslation();
   const avatarInputId = useId();
   const { user, updateProfile, changePassword, logout } = useAuthStore();
+  const { friends, fetchFriends } = useFriendStore();
+
+  useEffect(() => {
+    void fetchFriends();
+  }, [fetchFriends]);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState(TAB_POSTS);
@@ -993,6 +998,29 @@ function ProfileContent() {
                   </Box>
                 )}
 
+                <ButtonBase
+                  onClick={() => router.push("/chat")}
+                  aria-label={tr("Xem danh sách bạn bè", "View friends list")}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    borderRadius: "8px",
+                    px: 0.75,
+                    py: 0.25,
+                    color: "var(--mui-palette-neutral-700)",
+                    "&:hover": { color: "var(--mui-palette-brand-600)" },
+                  }}
+                >
+                  <Users size={15} color="var(--mui-palette-brand-500)" />
+                  <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.875rem", color: "inherit" }}>
+                    {friends.length}{" "}
+                    <Box component="span" sx={{ fontWeight: 500, color: "var(--mui-palette-neutral-500)" }}>
+                      {tr("bạn bè", "friends")}
+                    </Box>
+                  </Typography>
+                </ButtonBase>
+
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                   <Calendar size={15} />
                   <span>
@@ -1034,189 +1062,11 @@ function ProfileContent() {
           </Box>
         </Card>
 
-        {/* ================= 4 STATS METRICS ================= */}
-        <Grid container spacing={2.5} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                borderRadius: "18px",
-                border: "1px solid rgba(226, 232, 240, 0.9)",
-                bgcolor: "var(--mui-palette-background-paper)",
-                boxShadow: "0 8px 20px -8px rgba(0,0,0,0.04)",
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                "&:hover": {
-                  transform: "translateY(-3px)",
-                  boxShadow: "0 12px 25px -10px rgba(0,0,0,0.08)",
-                },
-              }}
-            >
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "linear-gradient(135deg, var(--mui-palette-brand-500) 0%, var(--mui-palette-brand-700) 100%)",
-                  color: "var(--mui-palette-common-white)",
-                }}
-              >
-                <MessageSquare size={24} />
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
-                  {tr("Tin nhắn realtime", "Realtime messages")}
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
-                  1,420+
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                borderRadius: "18px",
-                border: "1px solid rgba(226, 232, 240, 0.9)",
-                bgcolor: "var(--mui-palette-background-paper)",
-                boxShadow: "0 8px 20px -8px rgba(0,0,0,0.04)",
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                "&:hover": {
-                  transform: "translateY(-3px)",
-                  boxShadow: "0 12px 25px -10px rgba(0,0,0,0.08)",
-                },
-              }}
-            >
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "linear-gradient(135deg, var(--mui-palette-tone-10b981) 0%, var(--mui-palette-tone-fx-059669) 100%)",
-                  color: "var(--mui-palette-common-white)",
-                }}
-              >
-                <Users size={24} />
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
-                  {tr("Bạn bè kết nối", "Connected friends")}
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
-                  {tr("48 bạn bè", "48 friends")}
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                borderRadius: "18px",
-                border: "1px solid rgba(226, 232, 240, 0.9)",
-                bgcolor: "var(--mui-palette-background-paper)",
-                boxShadow: "0 8px 20px -8px rgba(0,0,0,0.04)",
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                "&:hover": {
-                  transform: "translateY(-3px)",
-                  boxShadow: "0 12px 25px -10px rgba(0,0,0,0.08)",
-                },
-              }}
-            >
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "linear-gradient(135deg, var(--mui-palette-tone-8b5cf6) 0%, var(--mui-palette-tone-fx-6d28d9) 100%)",
-                  color: "var(--mui-palette-common-white)",
-                }}
-              >
-                <ShieldCheck size={24} />
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
-                  {tr("Độ bảo mật", "Security score")}
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-neutral-900)" }}>
-                  {tr("98% Rất cao", "98% Very high")}
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                borderRadius: "18px",
-                border: "1px solid rgba(226, 232, 240, 0.9)",
-                bgcolor: "var(--mui-palette-background-paper)",
-                boxShadow: "0 8px 20px -8px rgba(0,0,0,0.04)",
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                "&:hover": {
-                  transform: "translateY(-3px)",
-                  boxShadow: "0 12px 25px -10px rgba(0,0,0,0.08)",
-                },
-              }}
-            >
-              <Box
-                sx={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "linear-gradient(135deg, var(--mui-palette-tone-f59e0b) 0%, var(--mui-palette-tone-fx-d97706) 100%)",
-                  color: "var(--mui-palette-common-white)",
-                }}
-              >
-                <Zap size={24} />
-              </Box>
-              <Box>
-                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-500)", fontWeight: 600 }}>
-                  {tr("Trạng thái", "Status")}
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--mui-palette-tone-10b981)" }}>
-                  {tr("Trực tuyến", "Online")}
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-        </Grid>
-
         {/* ================= MAIN TABS SECTION ================= */}
         <Paper
           elevation={0}
           sx={{
+            mt: 3,
             borderRadius: "24px",
             border: "1px solid rgba(226, 232, 240, 0.9)",
             bgcolor: "var(--mui-palette-background-paper)",
