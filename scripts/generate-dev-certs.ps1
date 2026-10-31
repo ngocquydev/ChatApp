@@ -37,3 +37,4 @@ if ($opensslCmd) {
 
 Write-Host "⚠️ [SSL/TLS] Không tìm thấy OpenSSL. Hãy cài đặt OpenSSL hoặc thêm chứng chỉ vào backend/certs/" -ForegroundColor Yellow
 exit 1
+

@@ -37,3 +37,4 @@ Trên máy chủ Production hoặc Docker container, bạn có thể:
    MQTT_TLS_KEY_PATH=/etc/letsencrypt/live/yourdomain.com/privkey.pem
    MQTT_TLS_CERT_PATH=/etc/letsencrypt/live/yourdomain.com/fullchain.pem
    ```
+

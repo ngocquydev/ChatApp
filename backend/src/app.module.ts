@@ -17,6 +17,7 @@ import { Neo4jModule } from './modules/neo4j/neo4j.module.js';
 import { AppGraphqlModule } from './modules/graphql/app-graphql.module.js';
 import { ModerationModule } from './modules/moderation/moderation.module.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
+import { CloudflareMiddleware } from './common/middlewares/cloudflare.middleware.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
 @Module({
@@ -73,10 +74,12 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    // 1. Áp dụng Cloudflare Origin Shield & Real IP extraction toàn cục cho mọi request
+    consumer.apply(CloudflareMiddleware).forRoutes('*');
+
+    // 2. Giới hạn tốc độ (Rate Limit) chống brute-force và DDoS cho các endpoint nhạy cảm
     consumer
       .apply(RateLimitMiddleware)
-      // Áp dụng riêng cho đường dẫn đăng nhập hoặc toàn bộ api
       .forRoutes('auth/login', 'auth/register');
-    // Hoặc dùng .forRoutes('*') nếu muốn áp dụng cho toàn bộ server
   }
 }

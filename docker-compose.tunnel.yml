@@ -1,0 +1,11 @@
+# Docker Compose cho dịch vụ Cloudflare Tunnel Daemon (Chống DDoS không cần mở Port)
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: chat_cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      # Lấy Token từ Cloudflare Zero Trust Dashboard: Networks -> Tunnels
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    network_mode: host

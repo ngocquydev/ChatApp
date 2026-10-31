@@ -107,9 +107,12 @@ Hệ thống được trang bị bộ máy kiểm soát an toàn chủ động k
 ---
 
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Phòng thủ & Chống tấn công DDoS bằng Cloudflare (Anycast, WAF & Tunnel)](features/cloudflare-ddos-protection.md)
 > - [Nhắn tin thời gian thực & Giao thức nhị phân MQTT](features/chat-realtime.md)
 > - [Thuật toán Gợi ý bạn bè thông minh bằng Đồ thị Neo4j](features/friend-recommendation.md)
 > - [Bảng tin Mạng xã hội & Hồ sơ cá nhân](features/social-feed-profile.md)
 > - [Hệ thống Kiểm duyệt AI & Phòng chống Bot](features/moderation-trust.md)
 > - [Xác thực Bảo mật & Cổng CI/CD](features/auth-security-cicd.md)
+> - [Chia sẻ vị trí thời gian thực (Live Location Sharing)](features/live-location-sharing.md)
+> - [Truyền tải tệp tin dung lượng lớn lên đến 100MB](features/file-transfer-100mb.md)
 

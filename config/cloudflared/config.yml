@@ -1,0 +1,28 @@
+# ==============================================================================
+# 🛡️ CẤU HÌNH CLOUDFLARE TUNNEL (CHỐNG DDOS & ẨN HOÀN TOÀN IP MÁY CHỦ GỐC)
+# ==============================================================================
+# Hướng dẫn:
+# 1. Tạo Tunnel trên Cloudflare Zero Trust Dashboard: Networks -> Tunnels
+# 2. Thay thế <YOUR_TUNNEL_UUID> và đường dẫn credentials bên dưới
+# 3. Chạy lệnh: cloudflared tunnel run <YOUR_TUNNEL_NAME>
+
+tunnel: <YOUR_TUNNEL_UUID>
+credentials-file: /etc/cloudflared/<YOUR_TUNNEL_UUID>.json
+
+ingress:
+  # 1. Định tuyến Giao diện Người dùng Frontend (Next.js 16)
+  - hostname: chat.yourdomain.com
+    service: http://localhost:5173
+
+  # 2. Định tuyến Backend API & Socket.IO (NestJS)
+  - hostname: api.yourdomain.com
+    service: http://localhost:3000
+
+  # 3. Định tuyến MQTT Realtime Broker (WSS / TLS)
+  - hostname: mqtt.yourdomain.com
+    service: https://localhost:8884
+    originRequest:
+      noTLSVerify: true
+
+  # 4. Quy tắc Fallback (Trả về 404 cho mọi subdomain không khai báo)
+  - service: http_status:404
