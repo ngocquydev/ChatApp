@@ -111,20 +111,27 @@ Nếu bạn dùng NAT / Port Forwarding (mở port 80, 443, 3000 trên modem/rou
 Với **Cloudflare Tunnel**, máy chủ của bạn không cần mở bất kỳ cổng nào từ ngoài vào. `cloudflared` sẽ chủ động mở một kết nối TLS ra ngoài (Outbound) tới cụm server gần nhất của Cloudflare:
 
 1. **Khởi chạy qua Docker Compose:**
-   Dự án đã tích hợp sẵn tệp cấu hình [`docker-compose.tunnel.yml`](file:///d:/Web/chat/docker-compose.tunnel.yml):
+   Dự án đã tích hợp sẵn tệp cấu hình [`docker-compose.tunnel.yml`](file:///d:/Web/chat/docker-compose.tunnel.yml).
+   Docker Compose đọc `CLOUDFLARE_TUNNEL_TOKEN` từ file **`.env` ở gốc repo** (đã gitignore), không phải `backend/.env`:
    ```bash
-   # Thiết lập Token nhận được từ Cloudflare Zero Trust Dashboard
-   export CLOUDFLARE_TUNNEL_TOKEN="eyJhIjoi..."
+   # .env (gốc repo) — token lấy tại Zero Trust: Networks -> Tunnels -> Create a tunnel -> Cloudflared -> Docker
+   CLOUDFLARE_TUNNEL_TOKEN=eyJhIjoi...
 
-   # Khởi chạy daemon bảo vệ
+   # Khởi chạy daemon bảo vệ, kiểm tra log có 4 dòng "Registered tunnel connection"
    docker compose -f docker-compose.tunnel.yml up -d
+   docker logs -f chat_cloudflared
    ```
 
-2. **Cấu hình Ingress Rules:**
-   Được định nghĩa tại [`config/cloudflared/config.yml`](file:///d:/Web/chat/config/cloudflared/config.yml) để định tuyến sạch:
-   - `chat.yourdomain.com` -> `http://localhost:5173` (Next.js)
-   - `api.yourdomain.com` -> `http://localhost:3000` (NestJS)
-   - `mqtt.yourdomain.com` -> `https://localhost:8884` (MQTT WSS)
+2. **Cấu hình Ingress Rules (Public Hostname):**
+   Với tunnel chạy bằng token, route được khai báo trên dashboard (tab **Public Hostname**). File [`config/cloudflared/config.yml`](file:///d:/Web/chat/config/cloudflared/config.yml) chỉ dùng cho tunnel chạy bằng file credentials.
+
+   | Hostname | Linux server (`network_mode: host`) | Docker Desktop (Windows/macOS) |
+   |---|---|---|
+   | `chat.yourdomain.com` | `http://localhost:5173` | `http://host.docker.internal:5173` |
+   | `api.yourdomain.com` | `http://localhost:3000` | `http://host.docker.internal:3000` |
+   | `mqtt.yourdomain.com` | `https://localhost:8884` (No TLS Verify) | `https://host.docker.internal:8884` (No TLS Verify) |
+
+   > Trên Docker Desktop, container chạy trong máy ảo (`192.168.65.x`) nên `localhost` **không** trỏ về máy Windows (đã kiểm chứng: `localhost:3000` → không kết nối, `host.docker.internal:3000` → 200). Kết nối qua `host.docker.internal` đến backend với IP peer `127.0.0.1`, nên giá trị mặc định của `TRUSTED_PROXY_CIDRS` vẫn đúng.
 
 ---
 
