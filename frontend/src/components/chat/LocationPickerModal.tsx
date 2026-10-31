@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -26,9 +26,75 @@ interface LocationPickerModalProps {
   onSelectLocation: (location: LocationData) => void;
 }
 
-// Tọa độ mặc định (Hà Nội, Việt Nam) nếu không lấy được GPS ngay
-const DEFAULT_LAT = 21.0285;
-const DEFAULT_LNG = 105.8542;
+
+// Tọa độ trung tâm Việt Nam dự phòng nếu hoàn toàn không có GPS lẫn IP
+const FALLBACK_LAT = 16.0544;
+const FALLBACK_LNG = 108.2022;
+
+
+async function fetchIpLocation(): Promise<{ lat: number; lng: number } | null> {
+  // 1. Thử freeipapi.com
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch("https://freeipapi.com/api/json", { signal: controller.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      const lat = parseFloat(data.latitude);
+      const lng = parseFloat(data.longitude);
+      if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
+        return { lat, lng };
+      }
+    }
+  } catch {
+    // Tiếp tục thử dịch vụ dự phòng
+  }
+
+  // 2. Dự phòng qua ipwho.is
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch("https://ipwho.is/", { signal: controller.signal });
+    clearTimeout(timer);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success !== false) {
+        const lat = parseFloat(data.latitude);
+        const lng = parseFloat(data.longitude);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          return { lat, lng };
+        }
+      }
+    }
+  } catch {
+    // Không lấy được qua IP
+  }
+
+  return null;
+}
+
+/**
+ * Thử lấy tọa độ người dùng nhanh nhất có thể: GPS trình duyệt -> Fallback IP
+ */
+async function detectQuickLocation(): Promise<{ lat: number; lng: number } | null> {
+  if (typeof window !== "undefined" && navigator.geolocation) {
+    try {
+      const gpsCoords = await new Promise<{ lat: number; lng: number }>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          (err) => reject(err),
+          { enableHighAccuracy: true, timeout: 3500, maximumAge: 60000 },
+        );
+      });
+      return gpsCoords;
+    } catch {
+      // Bị từ chối hoặc timeout trên máy tính -> chuyển sang IP
+    }
+  }
+
+  return await fetchIpLocation();
+}
 
 export default function LocationPickerModal({
   open,
@@ -41,8 +107,8 @@ export default function LocationPickerModal({
   const markerRef = useRef<L.Marker | null>(null);
 
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({
-    lat: DEFAULT_LAT,
-    lng: DEFAULT_LNG,
+    lat: FALLBACK_LAT,
+    lng: FALLBACK_LNG,
   });
   const [address, setAddress] = useState<string>("");
   const [placeName, setPlaceName] = useState<string>("");
@@ -53,7 +119,7 @@ export default function LocationPickerModal({
   const [geoError, setGeoError] = useState<string | null>(null);
 
   // Reverse geocode dùng OpenStreetMap Nominatim
-  const fetchAddress = async (lat: number, lng: number) => {
+  const fetchAddress = useCallback(async (lat: number, lng: number) => {
     try {
       setIsGeocoding(true);
       const res = await fetch(
@@ -76,9 +142,61 @@ export default function LocationPickerModal({
     } finally {
       setIsGeocoding(false);
     }
-  };
+  }, []);
 
-  // Khởi tạo bản đồ Leaflet
+  // Hàm định vị chi tiết (GPS độ chính xác cao -> IP Fallback)
+  const locateUser = useCallback(async (isManual = false) => {
+    setIsLocating(true);
+    setGeoError(null);
+
+    // 1. Thử lấy GPS độ chính xác cao qua Web Geolocation API
+    const tryGps = (): Promise<{ lat: number; lng: number } | null> => {
+      if (typeof window === "undefined" || !navigator.geolocation) {
+        return Promise.resolve(null);
+      }
+      return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            resolve({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+          },
+          () => {
+            resolve(null);
+          },
+          { enableHighAccuracy: true, timeout: isManual ? 8000 : 4000, maximumAge: 60000 },
+        );
+      });
+    };
+
+    let loc = await tryGps();
+
+    // 2. Nếu GPS không khả dụng hoặc bị từ chối / timeout trên trình duyệt, thử IP Geolocation
+    if (!loc) {
+      loc = await fetchIpLocation();
+    }
+
+    setIsLocating(false);
+
+    if (loc) {
+      setCoords(loc);
+      if (mapInstanceRef.current && markerRef.current) {
+        mapInstanceRef.current.flyTo([loc.lat, loc.lng], 16, { duration: 1.2 });
+        markerRef.current.setLatLng([loc.lat, loc.lng]);
+      }
+      void fetchAddress(loc.lat, loc.lng);
+    } else if (isManual) {
+      setGeoError(
+        tr(
+          "Không thể xác định vị trí tự động. Vui lòng cấp quyền vị trí trên trình duyệt hoặc kéo ghim thủ công trên bản đồ.",
+          "Could not determine location. Please allow location permissions or drag the pin on the map.",
+        ),
+      );
+    }
+  }, [fetchAddress, tr]);
+
+  // Khởi tạo bản đồ Leaflet & tự động định vị vị trí hiện tại
   useEffect(() => {
     if (!open) return;
 
@@ -112,12 +230,23 @@ export default function LocationPickerModal({
         iconAnchor: [0, 0],
       });
 
-      const initialLat = DEFAULT_LAT;
-      const initialLng = DEFAULT_LNG;
+      // Tự động nhận diện vị trí người dùng ngay lập tức
+      setIsLocating(true);
+      const userLoc = await detectQuickLocation();
+      if (!isMounted || !mapContainerRef.current) return;
+
+      const initialLat = userLoc ? userLoc.lat : FALLBACK_LAT;
+      const initialLng = userLoc ? userLoc.lng : FALLBACK_LNG;
+      const initialZoom = userLoc ? 16 : 6;
+
+      if (userLoc) {
+        setCoords(userLoc);
+      }
+      setIsLocating(false);
 
       const map = leaflet.map(mapContainerRef.current, {
         center: [initialLat, initialLng],
-        zoom: 15,
+        zoom: initialZoom,
         zoomControl: true,
       });
 
@@ -156,8 +285,10 @@ export default function LocationPickerModal({
         void fetchAddress(lat, lng);
       });
 
-      // Lấy địa chỉ ban đầu
-      void fetchAddress(initialLat, initialLng);
+      // Lấy địa chỉ ban đầu của tọa độ thực tế
+      if (userLoc) {
+        void fetchAddress(initialLat, initialLng);
+      }
 
       // Cập nhật kích thước render sau khi Dialog hoàn tất animation
       setTimeout(() => {
@@ -176,43 +307,11 @@ export default function LocationPickerModal({
         mapInstanceRef.current = null;
       }
     };
-  }, [open]);
+  }, [open, fetchAddress]);
 
-  // Lấy vị trí GPS hiện tại của người dùng
+  // Lấy vị trí GPS hiện tại của người dùng khi nhấn nút
   const handleGetCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setGeoError(tr("Trình duyệt không hỗ trợ định vị GPS", "Geolocation is not supported by your browser"));
-      return;
-    }
-
-    setIsLocating(true);
-    setGeoError(null);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setIsLocating(false);
-        const { latitude, longitude } = position.coords;
-        setCoords({ lat: latitude, lng: longitude });
-
-        if (mapInstanceRef.current && markerRef.current) {
-          mapInstanceRef.current.flyTo([latitude, longitude], 16, { duration: 1.2 });
-          markerRef.current.setLatLng([latitude, longitude]);
-        }
-
-        void fetchAddress(latitude, longitude);
-      },
-      (err) => {
-        setIsLocating(false);
-        console.warn("Lỗi GPS:", err);
-        setGeoError(
-          tr(
-            "Không thể lấy vị trí hiện tại. Vui lòng cấp quyền truy cập vị trí trên trình duyệt hoặc ghim vị trí thủ công trên bản đồ.",
-            "Could not access location. Please allow location permissions or drag the pin on the map.",
-          ),
-        );
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-    );
+    void locateUser(true);
   };
 
   // Tìm kiếm địa điểm qua Nominatim

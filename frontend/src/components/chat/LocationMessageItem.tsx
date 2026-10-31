@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, ButtonBase, Typography } from "@mui/material";
 import { ExternalLink, MapPin, Navigation } from "lucide-react";
 import type * as L from "leaflet";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -113,39 +113,34 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
     <>
       <Box
         sx={{
-          width: { xs: 240, sm: 280 },
+          width: { xs: 260, sm: 295 },
           maxWidth: "100%",
-          borderRadius: "16px",
+          borderRadius: "18px",
           overflow: "hidden",
-          bgcolor: isMe ? "primary.dark" : "background.paper",
+          bgcolor: isMe ? "primary.main" : "background.paper",
           color: isMe ? "common.white" : "text.primary",
           border: "1px solid",
-          borderColor: isMe ? "transparent" : "divider",
-          boxShadow: 1,
+          borderColor: isMe ? "rgba(255, 255, 255, 0.18)" : "divider",
+          boxShadow: 2,
           transition: "transform 150ms ease, box-shadow 150ms ease",
           "&:hover": {
-            boxShadow: 3,
+            boxShadow: 4,
           },
         }}
       >
         {/* Khung bản đồ thu nhỏ có thể nhấp vào */}
-        <Box
+        <ButtonBase
           onClick={() => setOpenModal(true)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              setOpenModal(true);
-            }
-          }}
           aria-label={tr("Mở xem vị trí trên bản đồ", "Open location on map")}
           sx={{
             position: "relative",
             width: "100%",
-            height: 140,
+            height: 145,
+            display: "block",
+            textAlign: "inherit",
             cursor: "pointer",
             bgcolor: "action.hover",
+            overflow: "hidden",
             "&:hover .map-overlay": {
               opacity: 1,
             },
@@ -159,18 +154,44 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
               pointerEvents: "none",
             }}
           />
+
+          {/* Huy hiệu Vị trí nổi ở góc trên */}
+          <Box
+            sx={{
+              position: "absolute",
+              top: 10,
+              left: 10,
+              zIndex: 400,
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              px: 1,
+              py: 0.35,
+              borderRadius: "10px",
+              bgcolor: "rgba(0, 0, 0, 0.65)",
+              color: "common.white",
+              fontSize: "0.7rem",
+              fontWeight: 600,
+              pointerEvents: "none",
+            }}
+          >
+            <MapPin size={12} color="var(--mui-palette-error-main)" />
+            <span>{tr("Vị trí", "Location")}</span>
+          </Box>
+
           {/* Lớp phủ hover mờ với icon phóng to */}
           <Box
             className="map-overlay"
             sx={{
               position: "absolute",
               inset: 0,
-              bgcolor: "rgba(0, 0, 0, 0.2)",
+              bgcolor: "rgba(0, 0, 0, 0.25)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               opacity: 0,
               transition: "opacity 150ms ease",
+              zIndex: 401,
             }}
           >
             <Box
@@ -192,10 +213,10 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
               {tr("Xem chi tiết", "View details")}
             </Box>
           </Box>
-        </Box>
+        </ButtonBase>
 
         {/* Thông tin địa điểm */}
-        <Box sx={{ p: 1.5 }}>
+        <Box sx={{ p: 1.75, pt: 1.5 }}>
           <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
             <MapPin
               size={18}
@@ -207,7 +228,7 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
                 variant="subtitle2"
                 sx={{
                   fontWeight: 700,
-                  fontSize: "0.9rem",
+                  fontSize: "0.92rem",
                   color: isMe ? "common.white" : "text.primary",
                   lineHeight: 1.3,
                 }}
@@ -218,13 +239,13 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
                 <Typography
                   variant="caption"
                   sx={{
-                    color: isMe ? "rgba(255, 255, 255, 0.82)" : "text.secondary",
-                    mt: 0.25,
+                    color: isMe ? "rgba(255, 255, 255, 0.85)" : "text.secondary",
+                    mt: 0.35,
                     display: "-webkit-box",
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: "vertical",
                     overflow: "hidden",
-                    lineHeight: 1.25,
+                    lineHeight: 1.35,
                   }}
                 >
                   {location.address}
@@ -234,23 +255,27 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
           </Box>
 
           {/* Các nút hành động */}
-          <Box sx={{ display: "flex", gap: 1, mt: 1.25 }}>
+          <Box sx={{ display: "flex", gap: 1, mt: 1.5 }}>
             <Button
               size="small"
-              variant={isMe ? "contained" : "outlined"}
               onClick={() => setOpenModal(true)}
+              startIcon={<ExternalLink size={13} />}
               sx={{
                 flex: 1,
                 fontSize: "0.75rem",
-                py: 0.4,
+                py: 0.6,
                 textTransform: "none",
                 fontWeight: 600,
-                borderRadius: "8px",
-                bgcolor: isMe ? "rgba(255, 255, 255, 0.2)" : undefined,
-                color: isMe ? "common.white" : "primary.main",
-                borderColor: isMe ? "rgba(255, 255, 255, 0.4)" : undefined,
+                borderRadius: "10px",
+                bgcolor: isMe ? "rgba(255, 255, 255, 0.16)" : "action.hover",
+                color: isMe ? "common.white" : "text.primary",
+                border: "1px solid",
+                borderColor: isMe ? "rgba(255, 255, 255, 0.3)" : "divider",
+                "& .MuiButton-startIcon": {
+                  color: isMe ? "common.white" : "text.secondary",
+                },
                 "&:hover": {
-                  bgcolor: isMe ? "rgba(255, 255, 255, 0.3)" : undefined,
+                  bgcolor: isMe ? "rgba(255, 255, 255, 0.25)" : "action.selected",
                 },
               }}
             >
@@ -258,23 +283,33 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
             </Button>
             <Button
               size="small"
-              variant={isMe ? "contained" : "contained"}
-              color="primary"
+              component="a"
               href={directionsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              startIcon={<Navigation size={12} />}
+              startIcon={<Navigation size={13} />}
               sx={{
                 flex: 1,
                 fontSize: "0.75rem",
-                py: 0.4,
+                py: 0.6,
                 textTransform: "none",
-                fontWeight: 600,
-                borderRadius: "8px",
-                bgcolor: isMe ? "common.white" : undefined,
-                color: isMe ? "primary.main" : undefined,
+                fontWeight: 700,
+                borderRadius: "10px",
+                bgcolor: isMe ? "common.white" : "primary.main",
+                color: isMe ? "primary.dark" : "primary.contrastText",
+                boxShadow: isMe ? "0 2px 6px rgba(0,0,0,0.15)" : 1,
+                "&, &:hover, &:focus, &:active": {
+                  color: isMe
+                    ? "var(--mui-palette-primary-dark) !important"
+                    : "var(--mui-palette-primary-contrastText) !important",
+                },
+                "& .MuiButton-startIcon": {
+                  color: isMe
+                    ? "var(--mui-palette-primary-dark) !important"
+                    : "var(--mui-palette-primary-contrastText) !important",
+                },
                 "&:hover": {
-                  bgcolor: isMe ? "rgba(255, 255, 255, 0.9)" : undefined,
+                  bgcolor: isMe ? "rgba(255, 255, 255, 0.92)" : "primary.dark",
                 },
               }}
             >
