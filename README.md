@@ -98,6 +98,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 ### 6. Xác Thực Bảo Mật, Chống DDoS & Bảo Vệ Phiên Làm Việc
 - Cặp token an toàn: `AccessToken` (1 giờ) và `RefreshToken` (7 ngày) lưu trong HttpOnly Cookie chống XSS/CSRF.
 - **Phòng thủ & Chống tấn công DDoS bằng Cloudflare:** Hấp thụ tấn công L3/L4 bằng mạng Anycast toàn cầu, bảo vệ tầng L7 bằng Cloudflare WAF & Rate Limiting, ẩn 100% IP máy chủ gốc bằng **Cloudflare Tunnel (`cloudflared`)** không cần mở cổng Inbound.
+- **Chống giả mạo IP / header Cloudflare:** backend chỉ tin `cf-connecting-ip`, `x-forwarded-for` khi kết nối TCP đến từ dải IP Cloudflare hoặc cloudflared tunnel (`TRUSTED_PROXY_CIDRS`), nên kẻ tấn công gọi thẳng IP máy chủ không né được Rate Limit hay `CLOUDFLARE_PROXY_ONLY`.
 - Tự động làm mới phiên ngầm (Silent Refresh) qua Axios Interceptors khi gặp lỗi 401.
 - Tích hợp Cloudflare Turnstile chống bot và brute-force; đăng nhập mạng xã hội một chạm với Firebase (Google & Facebook).
 - Khôi phục mật khẩu 4 bước qua Email OTP và đưa token đã đăng xuất vào Redis Blacklist (hỗ trợ chế độ Fail-safe).

@@ -133,15 +133,24 @@ Với **Cloudflare Tunnel**, máy chủ của bạn không cần mở bất kỳ
 ### 6.1. Trích xuất chính xác IP thật với `getClientIp()`
 Khi đứng sau Cloudflare Proxy, mọi kết nối TCP đến máy chủ đều mang địa chỉ IP của Cloudflare Edge. Nếu máy chủ dùng trực tiếp `req.ip`, hệ thống Rate Limit và AI Moderation sẽ nhìn thấy toàn bộ người dùng có cùng một IP và có thể chặn nhầm!
 
-Dự án sử dụng tiện ích [`client-ip.util.ts`](file:///d:/Web/chat/backend/src/common/utils/client-ip.util.ts):
-```typescript
-// Ưu tiên cao nhất cho header chuẩn của Cloudflare
-const cfIp = req.headers['cf-connecting-ip'];
-```
+Dự án sử dụng tiện ích [`client-ip.util.ts`](file:///d:/Web/chat/backend/src/common/utils/client-ip.util.ts). Header proxy **chỉ được tin khi địa chỉ TCP peer (`socket.remoteAddress`) là proxy tin cậy**:
+
+| TCP peer | Được tin? | IP client trả về |
+|---|---|---|
+| Thuộc dải IP Cloudflare ([`cloudflare-ip-ranges.ts`](file:///d:/Web/chat/backend/src/common/utils/cloudflare-ip-ranges.ts)) | ✅ | `cf-connecting-ip` → `true-client-ip` → `x-forwarded-for` (đọc từ phải sang trái) |
+| Nằm trong `TRUSTED_PROXY_CIDRS` (mặc định loopback, nơi `cloudflared` tunnel kết nối vào) | ✅ | như trên |
+| Bất kỳ IP nào khác (kết nối thẳng vào IP máy chủ) | ❌ | IP peer — mọi header `cf-*`, `x-forwarded-for` bị bỏ qua |
+
+- Giá trị header phải là IP hợp lệ (`net.isIP`), nên không chèn được chuỗi lạ vào khóa Redis rate limit.
+- `trust proxy` của Express ([`main.ts`](file:///d:/Web/chat/backend/src/main.ts)) dùng cùng hàm `isTrustedProxyIp`, nên `req.ip` / `req.protocol` cũng không bị giả mạo.
+- Nếu `cloudflared` chạy trong mạng Docker riêng (không dùng `network_mode: host`), thêm subnet của mạng đó vào `TRUSTED_PROXY_CIDRS` (vd. `172.18.0.0/16`). **Thiết lập biến này sẽ thay thế giá trị mặc định**, nên hãy giữ `127.0.0.1/32,::1/128` nếu vẫn cần loopback.
 
 ### 6.2. Chặn đứng kết nối trực tiếp vào máy chủ gốc với `CLOUDFLARE_PROXY_ONLY=true`
 Middleware [`CloudflareMiddleware`](file:///d:/Web/chat/backend/src/common/middlewares/cloudflare.middleware.ts) được kích hoạt toàn cục:
-- Khi bật cờ `CLOUDFLARE_PROXY_ONLY=true` trong `.env` trên môi trường Production, bất kỳ kết nối nào cố tình gửi thẳng vào máy chủ mà không có chữ ký xác thực `cf-ray` và `cf-connecting-ip` hợp lệ từ Cloudflare sẽ bị máy chủ trả mã **403 Forbidden** ngay lập tức.
+- Khi bật cờ `CLOUDFLARE_PROXY_ONLY=true` trong `.env` trên môi trường Production, request chỉ được chấp nhận khi **TCP peer là Cloudflare Edge hoặc cloudflared tunnel** **và** có đủ `cf-ray` + `cf-connecting-ip` hợp lệ. Kẻ tấn công tự gửi header `cf-ray` thẳng vào IP máy chủ vẫn nhận **403 Forbidden**.
+- `cfRay` / `cfCountry` gắn vào request chỉ có giá trị khi request thật sự đi qua Cloudflare.
+
+> **Giới hạn còn lại:** một kẻ tấn công gửi request từ chính hạ tầng Cloudflare (vd. Workers của tài khoản khác) vẫn có peer thuộc dải Cloudflare. Để chặn hoàn toàn, dùng Cloudflare Tunnel (không mở cổng inbound) hoặc bật **Authenticated Origin Pulls** (mTLS) trên Cloudflare.
 
 ---
 
@@ -170,3 +179,4 @@ Khi phát hiện lượng truy cập tăng đột biến bất thường, CPU m�
      - `If IP Country is NOT Vietnam (VN) -> Action: Managed Challenge`.
 3. **Theo dõi thời gian thực:**
    - Truy cập **Security -> Analytics & Logs** trên Cloudflare để xem biểu đồ lưu lượng đã chặn, địa chỉ IP nguồn và kiểu tấn công.
+

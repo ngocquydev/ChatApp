@@ -28,6 +28,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { FirebaseService } from './firebase.service.js';
 import { TurnstileService } from './turnstile.service.js';
+import { getClientIp } from '../../common/utils/client-ip.util.js';
 import type {
   AuthenticatedRequest,
   RequestWithCookies,
@@ -104,26 +105,15 @@ export class AuthController {
     @Req() req: ExpressRequest,
     @Res({ passthrough: true }) res: ExpressResponse,
   ) {
-    const rawForwarded = req.headers['x-forwarded-for'];
-    const forwardedIp =
-      typeof rawForwarded === 'string'
-        ? rawForwarded.split(',')[0].trim()
-        : Array.isArray(rawForwarded)
-          ? rawForwarded[0]
-          : undefined;
-
-    const clientIp =
-      (req.headers['cf-connecting-ip'] as string | undefined) ||
-      forwardedIp ||
-      req.ip ||
-      '';
+    // IP client chỉ lấy từ header proxy khi request thật sự đi qua Cloudflare / tunnel tin cậy
+    const clientIp = getClientIp(req);
 
     const turnstileToken =
       signInDto['cf-turnstile-response'] || signInDto.turnstileToken;
 
     await this.turnstileService.validateTurnstile(
       turnstileToken,
-      clientIp,
+      clientIp === 'unknown' ? undefined : clientIp,
       'login',
     );
 

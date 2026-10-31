@@ -3,6 +3,26 @@ import { CloudflareMiddleware } from './cloudflare.middleware.js';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import type { Request, Response, NextFunction } from 'express';
 
+type CfRequest = Request & {
+  realClientIp?: string;
+  isCloudflare?: boolean;
+  cfRay?: string | null;
+  cfCountry?: string | null;
+};
+
+function makeReq(
+  remoteAddress: string,
+  headers: Record<string, string> = {},
+): CfRequest {
+  return { headers, socket: { remoteAddress } } as unknown as CfRequest;
+}
+
+const CF_HEADERS = {
+  'cf-ray': '8dc89a2b1c4e7f8a-SIN',
+  'cf-connecting-ip': '113.161.72.10',
+  'cf-ipcountry': 'VN',
+};
+
 describe('CloudflareMiddleware', () => {
   let middleware: CloudflareMiddleware;
   let mockRes: { setHeader: ReturnType<typeof vi.fn> };
@@ -11,6 +31,7 @@ describe('CloudflareMiddleware', () => {
 
   beforeEach(() => {
     process.env = { ...oldEnv };
+    delete process.env.TRUSTED_PROXY_CIDRS;
     middleware = new CloudflareMiddleware();
     mockRes = { setHeader: vi.fn() };
     mockNext = vi.fn();
@@ -20,19 +41,20 @@ describe('CloudflareMiddleware', () => {
     process.env = oldEnv;
   });
 
-  it('gắn thông tin realClientIp, isCloudflare và cfRay vào request', () => {
-    const mockReq = {
-      headers: {
-        'cf-ray': '8dc89a2b1c4e7f8a-SIN',
-        'cf-connecting-ip': '113.161.72.10',
-        'cf-ipcountry': 'VN',
-      },
-    } as unknown as Request & {
-      realClientIp?: string;
-      isCloudflare?: boolean;
-      cfRay?: string;
-      cfCountry?: string;
-    };
+  function expectForbidden(req: Request) {
+    let caught: unknown;
+    try {
+      middleware.use(req, mockRes as unknown as Response, mockNext);
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeInstanceOf(HttpException);
+    expect((caught as HttpException).getStatus()).toBe(HttpStatus.FORBIDDEN);
+    expect(mockNext).not.toHaveBeenCalled();
+  }
+
+  it('gắn thông tin realClientIp, isCloudflare và cfRay vào request từ Cloudflare Edge', () => {
+    const mockReq = makeReq('172.64.10.20', CF_HEADERS);
 
     middleware.use(mockReq, mockRes as unknown as Response, mockNext);
 
@@ -47,10 +69,7 @@ describe('CloudflareMiddleware', () => {
   it('cho phép request không qua Cloudflare khi CLOUDFLARE_PROXY_ONLY không bật', () => {
     delete process.env.CLOUDFLARE_PROXY_ONLY;
 
-    const mockReq = {
-      headers: {},
-      ip: '127.0.0.1',
-    } as unknown as Request & { isCloudflare?: boolean };
+    const mockReq = makeReq('127.0.0.1');
 
     middleware.use(mockReq, mockRes as unknown as Response, mockNext);
 
@@ -58,23 +77,37 @@ describe('CloudflareMiddleware', () => {
     expect(mockNext).toHaveBeenCalled();
   });
 
+  it('[abuse] không tin cf-ray / cf-ipcountry giả mạo từ peer không phải Cloudflare', () => {
+    const mockReq = makeReq('198.51.100.23', CF_HEADERS);
+
+    middleware.use(mockReq, mockRes as unknown as Response, mockNext);
+
+    expect(mockReq.isCloudflare).toBe(false);
+    expect(mockReq.realClientIp).toBe('198.51.100.23');
+    expect(mockReq.cfRay).toBeNull();
+    expect(mockReq.cfCountry).toBeNull();
+    expect(mockRes.setHeader).not.toHaveBeenCalled();
+  });
+
   it('chặn request truy cập trực tiếp IP khi CLOUDFLARE_PROXY_ONLY=true', () => {
     process.env.CLOUDFLARE_PROXY_ONLY = 'true';
 
-    const directReq = {
-      headers: {},
-      ip: '198.51.100.23',
-    } as unknown as Request;
+    expectForbidden(makeReq('198.51.100.23'));
+  });
 
-    expect(() => {
-      middleware.use(directReq, mockRes as unknown as Response, mockNext);
-    }).toThrow(HttpException);
+  it('[abuse] chặn request giả header Cloudflare gửi thẳng vào IP máy chủ khi CLOUDFLARE_PROXY_ONLY=true', () => {
+    process.env.CLOUDFLARE_PROXY_ONLY = 'true';
 
-    try {
-      middleware.use(directReq, mockRes as unknown as Response, mockNext);
-    } catch (err) {
-      const httpErr = err as HttpException;
-      expect(httpErr.getStatus()).toBe(HttpStatus.FORBIDDEN);
-    }
+    expectForbidden(makeReq('198.51.100.23', CF_HEADERS));
+  });
+
+  it('cho phép request qua cloudflared tunnel khi CLOUDFLARE_PROXY_ONLY=true', () => {
+    process.env.CLOUDFLARE_PROXY_ONLY = 'true';
+
+    const mockReq = makeReq('::ffff:127.0.0.1', CF_HEADERS);
+    middleware.use(mockReq, mockRes as unknown as Response, mockNext);
+
+    expect(mockReq.isCloudflare).toBe(true);
+    expect(mockNext).toHaveBeenCalled();
   });
 });

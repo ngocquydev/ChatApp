@@ -1,58 +1,14 @@
+import { BlockList, isIP } from 'node:net';
 import type { IncomingMessage } from 'node:http';
 import type { Request } from 'express';
+import {
+  CLOUDFLARE_IPV4_RANGES,
+  CLOUDFLARE_IPV6_RANGES,
+  DEFAULT_TRUSTED_PROXY_CIDRS,
+} from './cloudflare-ip-ranges.js';
 
-/**
- * Trích xuất địa chỉ IP thực của client với độ ưu tiên cao nhất cho Cloudflare Proxy
- * Thứ tự ưu tiên:
- * 1. cf-connecting-ip: Header tiêu chuẩn được Cloudflare Edge chèn và xác thực
- * 2. true-client-ip: Header bổ sung cho Cloudflare Enterprise
- * 3. x-forwarded-for: Chuỗi proxy IP tiêu chuẩn (lấy IP đầu tiên)
- * 4. req.ip: IP do Express giải quyết (dựa trên cấu hình trust proxy)
- * 5. req.socket.remoteAddress: Địa chỉ IP socket mạng trực tiếp
- */
-export function getClientIp(req: Request | IncomingMessage): string {
-  const headers = req.headers;
-
-  // 1. Cloudflare Connecting IP
-  const cfIp = headers['cf-connecting-ip'];
-  if (typeof cfIp === 'string' && cfIp.trim().length > 0) {
-    return cleanIp(cfIp.trim());
-  }
-
-  // 2. True-Client-IP (Cloudflare Enterprise / CDN)
-  const trueClientIp = headers['true-client-ip'];
-  if (typeof trueClientIp === 'string' && trueClientIp.trim().length > 0) {
-    return cleanIp(trueClientIp.trim());
-  }
-
-  // 3. X-Forwarded-For
-  const xForwardedFor = headers['x-forwarded-for'];
-  if (xForwardedFor) {
-    const raw = typeof xForwardedFor === 'string'
-      ? xForwardedFor
-      : Array.isArray(xForwardedFor)
-        ? xForwardedFor[0]
-        : '';
-    const firstIp = raw.split(',')[0]?.trim();
-    if (firstIp) {
-      return cleanIp(firstIp);
-    }
-  }
-
-  // 4. Express req.ip
-  const expressReq = req as Request;
-  if (typeof expressReq.ip === 'string' && expressReq.ip.length > 0) {
-    return cleanIp(expressReq.ip);
-  }
-
-  // 5. Socket remote address
-  const socketIp = req.socket?.remoteAddress;
-  if (socketIp) {
-    return cleanIp(socketIp);
-  }
-
-  return '127.0.0.1';
-}
+type AnyRequest = Request | IncomingMessage;
+type IpFamily = 'ipv4' | 'ipv6';
 
 /**
  * Chuẩn hóa chuỗi IP (loại bỏ prefix IPv4-mapped IPv6 `::ffff:`)
@@ -64,12 +20,134 @@ export function cleanIp(ip: string): string {
   return ip;
 }
 
+/** Trả về IP đã chuẩn hóa kèm họ địa chỉ, hoặc null nếu chuỗi không phải IP hợp lệ */
+function normalizeIp(raw: string): { ip: string; family: IpFamily } | null {
+  const ip = cleanIp(raw.trim());
+  const version = isIP(ip);
+  if (version === 4) return { ip, family: 'ipv4' };
+  if (version === 6) return { ip, family: 'ipv6' };
+  return null;
+}
+
+/** Nạp danh sách CIDR vào BlockList; CIDR sai định dạng bị bỏ qua để không làm sập ứng dụng */
+function buildBlockList(cidrs: readonly string[]): BlockList {
+  const list = new BlockList();
+  for (const entry of cidrs) {
+    const [address = '', prefixRaw] = entry.trim().split('/');
+    const normalized = normalizeIp(address);
+    if (!normalized) continue;
+
+    const maxPrefix = normalized.family === 'ipv4' ? 32 : 128;
+    const prefix = prefixRaw === undefined ? maxPrefix : Number(prefixRaw);
+    if (!Number.isInteger(prefix) || prefix < 0 || prefix > maxPrefix) continue;
+
+    list.addSubnet(normalized.ip, prefix, normalized.family);
+  }
+  return list;
+}
+
+const cloudflareBlockList = buildBlockList([
+  ...CLOUDFLARE_IPV4_RANGES,
+  ...CLOUDFLARE_IPV6_RANGES,
+]);
+
+let cachedProxyCidrs: string | undefined;
+let cachedProxyBlockList = new BlockList();
+
+/** Danh sách proxy nội bộ từ TRUSTED_PROXY_CIDRS (mặc định loopback), cache theo giá trị env */
+function getTrustedProxyBlockList(): BlockList {
+  const raw = process.env.TRUSTED_PROXY_CIDRS ?? DEFAULT_TRUSTED_PROXY_CIDRS;
+  if (raw !== cachedProxyCidrs) {
+    cachedProxyCidrs = raw;
+    cachedProxyBlockList = buildBlockList(raw.split(',').filter((c) => c.trim()));
+  }
+  return cachedProxyBlockList;
+}
+
+/** IP có thuộc dải Cloudflare Edge chính thức hay không */
+export function isCloudflareIp(ip: string): boolean {
+  const normalized = normalizeIp(ip);
+  return normalized !== null && cloudflareBlockList.check(normalized.ip, normalized.family);
+}
+
 /**
- * Kiểm tra xem request có phải đến qua mạng Proxy của Cloudflare hay không
- * Cloudflare luôn đính kèm header `cf-ray` và `cf-connecting-ip` trên mọi yêu cầu hợp lệ
+ * IP có phải proxy được phép khai báo IP client hay không:
+ * Cloudflare Edge, hoặc proxy nội bộ trong TRUSTED_PROXY_CIDRS (mặc định loopback cho cloudflared tunnel).
+ * Dùng được làm hàm `trust proxy` của Express.
  */
-export function isCloudflareRequest(req: Request | IncomingMessage): boolean {
-  const hasCfRay = Boolean(req.headers['cf-ray']);
-  const hasCfIp = Boolean(req.headers['cf-connecting-ip']);
+export function isTrustedProxyIp(ip: string): boolean {
+  const normalized = normalizeIp(ip);
+  if (!normalized) return false;
+  return (
+    cloudflareBlockList.check(normalized.ip, normalized.family) ||
+    getTrustedProxyBlockList().check(normalized.ip, normalized.family)
+  );
+}
+
+/** Lấy giá trị header dạng chuỗi đơn (header lặp lại → lấy giá trị đầu) */
+function headerValue(req: AnyRequest, name: string): string | undefined {
+  const value = req.headers[name];
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/** IP hợp lệ trong header, hoặc null */
+function ipFromHeader(req: AnyRequest, name: string): string | null {
+  const value = headerValue(req, name);
+  return value ? (normalizeIp(value)?.ip ?? null) : null;
+}
+
+/**
+ * Địa chỉ TCP peer thật sự kết nối tới server — không thể giả mạo bằng header.
+ */
+export function getPeerIp(req: AnyRequest): string | null {
+  const remote = req.socket?.remoteAddress;
+  return remote ? (normalizeIp(remote)?.ip ?? null) : null;
+}
+
+/**
+ * Trích xuất địa chỉ IP thực của client.
+ * Header proxy (cf-connecting-ip, true-client-ip, x-forwarded-for) CHỈ được tin khi TCP peer là
+ * Cloudflare Edge hoặc proxy nội bộ tin cậy (cloudflared tunnel). Kết nối thẳng vào IP máy chủ
+ * luôn dùng IP peer, nên kẻ tấn công không thể giả IP để né rate limit.
+ * Thứ tự ưu tiên khi peer tin cậy:
+ * 1. cf-connecting-ip: Header tiêu chuẩn được Cloudflare Edge chèn và xác thực
+ * 2. true-client-ip: Header bổ sung cho Cloudflare Enterprise
+ * 3. x-forwarded-for: đọc từ phải sang trái, lấy IP đầu tiên không phải proxy tin cậy
+ * 4. IP peer
+ */
+export function getClientIp(req: AnyRequest): string {
+  const peer = getPeerIp(req);
+  if (!peer) return 'unknown';
+  if (!isTrustedProxyIp(peer)) return peer;
+
+  const cfIp = ipFromHeader(req, 'cf-connecting-ip') ?? ipFromHeader(req, 'true-client-ip');
+  if (cfIp) return cfIp;
+
+  const forwarded = headerValue(req, 'x-forwarded-for');
+  if (forwarded) {
+    const chain = forwarded
+      .split(',')
+      .map((part) => normalizeIp(part)?.ip)
+      .filter((ip): ip is string => Boolean(ip));
+    for (let i = chain.length - 1; i >= 0; i--) {
+      if (!isTrustedProxyIp(chain[i])) return chain[i];
+    }
+    if (chain.length > 0) return chain[0];
+  }
+
+  return peer;
+}
+
+/**
+ * Kiểm tra request có thật sự đến qua mạng Cloudflare hay không:
+ * TCP peer phải là Cloudflare Edge hoặc cloudflared tunnel, và có đủ header `cf-ray` cùng
+ * `cf-connecting-ip` hợp lệ. Header do client tự gửi thẳng vào IP máy chủ sẽ không được tính.
+ */
+export function isCloudflareRequest(req: AnyRequest): boolean {
+  const peer = getPeerIp(req);
+  if (!peer || !isTrustedProxyIp(peer)) return false;
+
+  const hasCfRay = Boolean(headerValue(req, 'cf-ray'));
+  const hasCfIp = ipFromHeader(req, 'cf-connecting-ip') !== null;
   return hasCfRay && hasCfIp;
 }

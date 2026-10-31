@@ -16,12 +16,13 @@ export class CloudflareMiddleware implements NestMiddleware {
     const isCf = isCloudflareRequest(req);
     const clientIp = getClientIp(req);
 
-    // Gắn real IP và CF flags vào request để các middleware/controller phía sau tái sử dụng
+    // Gắn real IP và CF flags vào request để các middleware/controller phía sau tái sử dụng.
+    // Header cf-* chỉ có giá trị khi request thật sự đi qua Cloudflare (tránh client tự giả mạo).
     Object.assign(req, {
       realClientIp: clientIp,
       isCloudflare: isCf,
-      cfRay: req.headers['cf-ray'] || null,
-      cfCountry: req.headers['cf-ipcountry'] || null,
+      cfRay: isCf ? req.headers['cf-ray'] || null : null,
+      cfCountry: isCf ? req.headers['cf-ipcountry'] || null : null,
     });
 
     // Thêm header bảo mật nhận diện đã qua bảo vệ
@@ -49,3 +50,4 @@ export class CloudflareMiddleware implements NestMiddleware {
     next();
   }
 }
+

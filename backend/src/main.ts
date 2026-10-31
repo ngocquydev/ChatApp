@@ -7,6 +7,7 @@ import { AppModule, ObserveInstrument } from './app.module.js';
 import { ErrorHandlerFilter } from './errorHandleer/index.js';
 import { UPLOAD_ROOT } from './modules/posts/post-image.util.js';
 import cookieParser from 'cookie-parser';
+import { isTrustedProxyIp } from './common/utils/client-ip.util.js';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -14,7 +15,9 @@ async function bootstrap() {
   });
 
   const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.set('trust proxy', 1);
+  // Chỉ tin X-Forwarded-* từ Cloudflare Edge hoặc proxy nội bộ (cloudflared tunnel / TRUSTED_PROXY_CIDRS),
+  // tránh client kết nối thẳng giả mạo req.ip / req.protocol
+  expressApp.set('trust proxy', (addr: string) => isTrustedProxyIp(addr));
 
   app.use(cookieParser());
 
