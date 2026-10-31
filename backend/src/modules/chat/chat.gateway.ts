@@ -322,15 +322,23 @@ export class ChatGateway
       const locationData = updated.location;
 
       // Broadcast tới cả receiver và sender
-      this.server
-        .to(`user:${payload.receiverId}`)
-        .to(`user:${senderId}`)
-        .emit('location:live_updated', {
-          messageId: payload.messageId,
-          conversationId: payload.conversationId,
-          senderId,
-          location: locationData,
-        });
+      const senderIdStr = senderId.toString();
+      const receiverIdStr = updated.receiverId ? updated.receiverId.toString() : (payload.receiverId || "");
+      const conversationIdStr = updated.conversationId ? updated.conversationId.toString() : (payload.conversationId || "");
+
+      let broadcaster = this.server.to(`user:${senderIdStr}`);
+      if (receiverIdStr) {
+        broadcaster = broadcaster.to(`user:${receiverIdStr}`);
+      }
+      if (conversationIdStr) {
+        broadcaster = broadcaster.to(`conversation:${conversationIdStr}`);
+      }
+      broadcaster.emit('location:live_updated', {
+        messageId: payload.messageId,
+        conversationId: conversationIdStr,
+        senderId: senderIdStr,
+        location: locationData,
+      });
 
       return { success: true, location: locationData };
     } catch (err) {

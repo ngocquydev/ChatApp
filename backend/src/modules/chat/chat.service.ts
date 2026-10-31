@@ -181,8 +181,6 @@ export class ChatService {
     if (message.type !== 'location' || !message.location) {
       return null;
     }
-
-    // Chỉ ghi đè tọa độ khi nhận đủ cặp số hợp lệ (vd. lệnh "Dừng chia sẻ" không gửi tọa độ)
     const { latitude, longitude } = update;
     if (
       typeof latitude === 'number' &&

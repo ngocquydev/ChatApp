@@ -54,10 +54,32 @@ export default function LocationViewModal({
   const [autoFollow, setAutoFollow] = useState(true);
   const [now, setNow] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+  // Cho phép cập nhật lạc quan tức thì ngay khi bấm Dừng chia sẻ (không chờ socket/parent re-render)
+  const [localActiveOverride, setLocalActiveOverride] = useState<boolean | null>(null);
 
   const stopLiveLocation = useChatStore((s) => s.stopLiveLocation);
 
   const isLive = Boolean(location?.isLive);
+
+  // Reset override khi mở modal hoặc khi prop location thay đổi
+  useEffect(() => {
+    setLocalActiveOverride(null);
+  }, [open, location?.isLiveActive]);
+
+  // Lắng nghe broadcast nội bộ nếu có nơi khác dừng chia sẻ
+  useEffect(() => {
+    const handleLocal = (e: Event) => {
+      const customEvent = e as CustomEvent<{ messageId: string; isLiveActive?: boolean }>;
+      if (
+        customEvent.detail?.messageId === messageId &&
+        typeof customEvent.detail.isLiveActive === "boolean"
+      ) {
+        setLocalActiveOverride(customEvent.detail.isLiveActive);
+      }
+    };
+    window.addEventListener("chatapp:location_updated", handleLocal);
+    return () => window.removeEventListener("chatapp:location_updated", handleLocal);
+  }, [messageId]);
 
   // Cập nhật timer đếm ngược nếu đang trực tiếp
   useEffect(() => {
@@ -75,7 +97,10 @@ export default function LocationViewModal({
   const isExpired = Boolean(
     location?.liveExpiresAt && now !== null && new Date(location.liveExpiresAt).getTime() <= now,
   );
-  const isLiveActive = isLive && location?.isLiveActive !== false && !isExpired;
+  const isLiveActive =
+    isLive &&
+    (localActiveOverride !== null ? localActiveOverride : location?.isLiveActive !== false) &&
+    !isExpired;
 
   // Khởi tạo bản đồ lớn.
   // Dùng callback ref (`mapContainer` state) thay vì đọc ref ngay trong effect: Dialog render
@@ -206,6 +231,7 @@ export default function LocationViewModal({
   };
 
   const handleStopSharing = () => {
+    setLocalActiveOverride(false);
     if (!messageId) return;
     liveLocationTracker.stop(messageId);
     stopLiveLocation(messageId);

@@ -1017,6 +1017,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
           : m
       ),
     }));
+
+    // Phát broadcast event nội bộ để các component khác (như FloatingChatBox, LocationViewModal) đồng bộ ngay lập tức
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("chatapp:location_updated", {
+          detail: { messageId, ...locUpdate },
+        })
+      );
+    }
   },
 
   stopLiveLocation: (messageId: string) => {

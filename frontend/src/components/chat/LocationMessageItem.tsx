@@ -30,6 +30,27 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
   const isLive = Boolean(location?.isLive);
   // Vị trí mới nhất cho lần khởi tạo bản đồ (không đưa vào deps để tránh tạo lại map mỗi lần cập nhật)
   const locationRef = useRef<LocationData | null>(location);
+  // Cho phép cập nhật lạc quan tức thì ngay khi bấm Dừng chia sẻ (không chờ socket/parent re-render)
+  const [localActiveOverride, setLocalActiveOverride] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setLocalActiveOverride(null);
+  }, [message.location?.isLiveActive]);
+
+  // Lắng nghe broadcast nội bộ nếu có nơi khác dừng chia sẻ (như từ trong modal toàn màn hình)
+  useEffect(() => {
+    const handleLocal = (e: Event) => {
+      const customEvent = e as CustomEvent<{ messageId: string; isLiveActive?: boolean }>;
+      if (
+        customEvent.detail?.messageId === message._id &&
+        typeof customEvent.detail.isLiveActive === "boolean"
+      ) {
+        setLocalActiveOverride(customEvent.detail.isLiveActive);
+      }
+    };
+    window.addEventListener("chatapp:location_updated", handleLocal);
+    return () => window.removeEventListener("chatapp:location_updated", handleLocal);
+  }, [message._id]);
 
   // Cập nhật đếm ngược mỗi giây nếu đang chia sẻ trực tiếp
   useEffect(() => {
@@ -47,7 +68,10 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
   const isExpired = Boolean(
     location?.liveExpiresAt && now !== null && new Date(location.liveExpiresAt).getTime() <= now,
   );
-  const isLiveActive = isLive && location?.isLiveActive !== false && !isExpired;
+  const isLiveActive =
+    isLive &&
+    (localActiveOverride !== null ? localActiveOverride : location?.isLiveActive !== false) &&
+    !isExpired;
 
   // Nếu là người gửi và đang chia sẻ trực tiếp: kích hoạt watcher định vị nền
   useEffect(() => {
@@ -190,6 +214,7 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
 
   const handleStopSharing = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setLocalActiveOverride(false);
     if (!message._id) return;
     liveLocationTracker.stop(message._id);
     stopLiveLocation(message._id);

@@ -449,6 +449,40 @@ export default function FloatingChatBox({
       }
     };
 
+    const handleLiveLocationUpdated = (data: {
+      messageId: string;
+      conversationId: string;
+      senderId: string;
+      location: LocationData;
+    }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          String(m._id || m.id) === String(data.messageId)
+            ? {
+                ...m,
+                location: m.location ? { ...m.location, ...data.location } : data.location,
+              }
+            : m
+        )
+      );
+    };
+
+    const handleLocalLocationUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ messageId: string } & Partial<LocationData>>;
+      const { messageId, ...locUpdate } = customEvent.detail || {};
+      if (!messageId) return;
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (String(m._id || m.id) !== String(messageId)) return m;
+          if (!m.location) return m;
+          return {
+            ...m,
+            location: { ...m.location, ...locUpdate },
+          };
+        })
+      );
+    };
+
     if (socket) {
       socket.on("message:new", handleNewMessage);
       socket.on("typing:start", handleTypingStart);
@@ -458,7 +492,9 @@ export default function FloatingChatBox({
       socket.on("conversation:blocked", handleBlocked);
       socket.on("conversation:unblocked", handleUnblocked);
       socket.on("message:deleted", handleMessageDeleted);
+      socket.on("location:live_updated", handleLiveLocationUpdated);
     }
+    window.addEventListener("chatapp:location_updated", handleLocalLocationUpdate);
 
     return () => {
       unbindMqttMsg();
@@ -467,6 +503,7 @@ export default function FloatingChatBox({
       if (partnerTypingTimeoutRef.current) {
         clearTimeout(partnerTypingTimeoutRef.current);
       }
+      window.removeEventListener("chatapp:location_updated", handleLocalLocationUpdate);
       if (socket) {
         socket.off("message:new", handleNewMessage);
         socket.off("typing:start", handleTypingStart);
@@ -476,6 +513,7 @@ export default function FloatingChatBox({
         socket.off("conversation:blocked", handleBlocked);
         socket.off("conversation:unblocked", handleUnblocked);
         socket.off("message:deleted", handleMessageDeleted);
+        socket.off("location:live_updated", handleLiveLocationUpdated);
       }
     };
   }, [socket, convId, targetUserId, currentUserId, targetUserName, session.isMinimized, clearUnread, incrementUnread]);
