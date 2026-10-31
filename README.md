@@ -59,6 +59,12 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
   - Tích hợp công cụ tìm kiếm địa danh và giải mã địa chỉ ngược (**Reverse Geocoding** qua OpenStreetMap Nominatim).
   - Hỗ trợ đầy đủ, đồng bộ thời gian thực trên cả trang chat chính (`/chat`) và Cửa sổ chat nổi (`FloatingChatBox`).
   - 📖 *Xem đặc tả chi tiết tại: [docs/features/live-location-sharing.md](docs/features/live-location-sharing.md) & [docs/features/chat-realtime.md](docs/features/chat-realtime.md)*
+- **Gửi tệp tin & tài liệu dung lượng lớn lên đến 100MB:**
+  - Hỗ trợ tải lên và gửi mọi loại tệp an toàn (PDF, DOCX, XLSX, PPTX, TXT, ZIP, RAR, 7Z, video MP4, âm thanh MP3...) với kích thước tối đa lên đến **100MB**.
+  - Tích hợp nút đính kèm kẹp giấy (*Paperclip*) tiện lợi ngay trên thanh công cụ soạn tin.
+  - Thẻ hiển thị tệp tin tương tác (`FileAttachmentItem`) tự động phân loại đuôi tệp với màu sắc, icon trực quan, hiển thị dung lượng chính xác và nút tải về 1-chạm.
+  - Tuân thủ tiêu chuẩn an toàn **OWASP A03**, tự động kiểm tra và ngăn chặn các tệp thực thi độc hại (.exe, .bat, .sh...).
+  - 📖 *Xem đặc tả chi tiết tại: [docs/features/file-transfer-100mb.md](docs/features/file-transfer-100mb.md)*
 
 ### 2. Thuật Toán Gợi Ý Bạn Bè Thông Minh (Neo4j Graph Database)
 - **Thuật toán Đồ thị Đa Tầng (Neo4j Cypher):**

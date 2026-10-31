@@ -8,7 +8,8 @@ import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { useTranslation } from "@/i18n/useTranslation";
 import { ChatMessage, ChatUser } from "@/store/useChatStore";
 import { dayKey, formatClockTime, formatDaySeparator } from "@/utils/formatTime";
-import { isVideoUrl } from "@/services/postsApi";
+import { isVideoUrl, isAudioUrl, isFileDocUrl } from "@/services/postsApi";
+import FileAttachmentItem from "../FileAttachmentItem";
 import ImageLightbox from "../../posts/ImageLightbox";
 import { getChatTheme } from "./chatThemes";
 import CallMessageItem from "../call/CallMessageItem";
@@ -333,8 +334,37 @@ export default function MessageList({
 
                       const isMedia = /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);
                       const isVideo = isMedia && isVideoUrl(trimmed);
+                      const isAudio = isMedia && isAudioUrl(trimmed);
+                      const isFileDoc = isMedia && isFileDocUrl(trimmed);
 
                       if (isMedia) {
+                        if (isFileDoc) {
+                          return <FileAttachmentItem url={trimmed} isMe={isMe} />;
+                        }
+
+                        if (isAudio) {
+                          return (
+                            <Box
+                              sx={{
+                                p: 1,
+                                borderRadius: bubbleRadius,
+                                bgcolor: isMe ? "rgba(255, 255, 255, 0.15)" : "var(--mui-palette-background-paper)",
+                                border: "1px solid",
+                                borderColor: isMe ? "rgba(255, 255, 255, 0.25)" : "var(--mui-palette-divider)",
+                                maxWidth: 290,
+                              }}
+                            >
+                              <Box
+                                component="audio"
+                                controls
+                                preload="metadata"
+                                src={trimmed}
+                                sx={{ width: "100%", height: 36, display: "block" }}
+                              />
+                            </Box>
+                          );
+                        }
+
                         return (
                           <Box
                             sx={{

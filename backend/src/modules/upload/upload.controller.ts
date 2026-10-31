@@ -11,20 +11,22 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagg
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CloudinaryService } from '../cloudinary/cloudinary.service.js';
 
-const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB (video/ảnh)
+export const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // 100MB (tệp đa phương tiện & tài liệu)
+
+// Danh sách các định dạng nguy hiểm bị cấm tuyệt đối để đảm bảo an toàn hệ thống (OWASP A03 / RCE Prevention)
+const BLOCKED_FILE_EXTENSIONS = new Set([
+  'exe', 'bat', 'cmd', 'sh', 'vbs', 'msi', 'dll', 'com', 'scr',
+  'ps1', 'php', 'phtml', 'jar', 'jsp', 'asp', 'aspx', 'cgi',
+]);
 
 function isAllowedMediaType(mimetype?: string, originalname?: string): boolean {
-  if (mimetype) {
-    if (mimetype.startsWith('image/')) return true;
-    if (mimetype.startsWith('video/')) return true;
-  }
   if (originalname) {
     const ext = originalname.split('.').pop()?.toLowerCase();
-    if (ext && ['jpg', 'jpeg', 'png', 'webp', 'gif', 'mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext)) {
-      return true;
+    if (ext && BLOCKED_FILE_EXTENSIONS.has(ext)) {
+      return false;
     }
   }
-  return false;
+  return true;
 }
 
 @ApiTags('Upload')
@@ -33,7 +35,7 @@ export class UploadController {
   constructor(private readonly cloudinaryService: CloudinaryService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Tải lên hình ảnh hoặc video lên Cloudinary' })
+  @ApiOperation({ summary: 'Tải lên hình ảnh, video, âm thanh hoặc tệp tài liệu lên đến 100MB' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -50,18 +52,39 @@ export class UploadController {
     },
   ) {
     if (!file?.buffer || file.buffer.length === 0) {
-      throw new BadRequestException('Vui lòng chọn tệp ảnh hoặc video để tải lên');
+      throw new BadRequestException('Vui lòng chọn tệp để tải lên (tối đa 100MB)');
     }
 
     if (!isAllowedMediaType(file.mimetype, file.originalname)) {
-      throw new BadRequestException('Chỉ hỗ trợ tệp hình ảnh (JPG, PNG, WEBP, GIF) hoặc video (MP4, WEBM, MOV)');
+      throw new BadRequestException('Định dạng tệp không được phép tải lên vì lý do an toàn');
     }
 
     const isVideo = file.mimetype?.startsWith('video/') || false;
+    const isAudio = file.mimetype?.startsWith('audio/') || false;
+    const isImage = file.mimetype?.startsWith('image/') || false;
+
+    let resourceType: 'image' | 'video' | 'raw' = 'raw';
+    if (isVideo || isAudio) {
+      resourceType = 'video';
+    } else if (isImage) {
+      resourceType = 'image';
+    } else if (file.originalname) {
+      const ext = file.originalname.split('.').pop()?.toLowerCase();
+      if (ext && ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'ico', 'heic', 'tiff'].includes(ext)) {
+        resourceType = 'image';
+      } else if (ext && ['mp4', 'webm', 'mov', 'avi', 'mkv', 'mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(ext)) {
+        resourceType = 'video';
+      } else {
+        resourceType = 'raw';
+      }
+    }
+
     const result = await this.cloudinaryService.uploadBuffer(file.buffer, {
       folder: 'chatapp/media',
-      resource_type: isVideo ? 'video' : 'auto',
+      resource_type: resourceType,
       filename: file.originalname,
+      use_filename: true,
+      unique_filename: true,
     });
 
     return {
@@ -71,6 +94,7 @@ export class UploadController {
       resource_type: result.resource_type,
       format: result.format,
       bytes: result.bytes,
+      original_filename: file.originalname,
     };
   }
 

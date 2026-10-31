@@ -32,7 +32,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > MAX_IMAGE_BYTES) {
-      onError(tr("Tệp quá lớn. Vui lòng chọn ảnh hoặc video dưới 50MB.", "File is too large. Please select an image or video under 50MB."));
+      onError(tr("Tệp quá lớn. Vui lòng chọn ảnh hoặc video dưới 100MB.", "File is too large. Please select an image or video under 100MB."));
       return;
     }
     if (previewUrl) URL.revokeObjectURL(previewUrl);

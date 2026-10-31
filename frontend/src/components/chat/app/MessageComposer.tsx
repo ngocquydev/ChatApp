@@ -11,10 +11,12 @@ import {
   TextField,
   Tooltip,
   Typography,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import { Image as ImageIcon, MapPin, Paperclip, Send, Smile, ThumbsUp } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
-import { uploadMedia } from "@/services/postsApi";
+import { uploadMedia, MAX_FILE_BYTES } from "@/services/postsApi";
 import { LocationData } from "@/store/useChatStore";
 import LocationPickerModal from "../LocationPickerModal";
 
@@ -67,6 +69,8 @@ export default function MessageComposer({
   const [openLocationPicker, setOpenLocationPicker] = useState(false);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const docInputRef = useRef<HTMLInputElement | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSentRef = useRef(0);
   const canSend = text.trim().length > 0;
@@ -75,6 +79,10 @@ export default function MessageComposer({
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
+    if (file.size > MAX_FILE_BYTES) {
+      setFileError(tr(`Tệp “${file.name}” vượt quá giới hạn tối đa 100MB.`, `File “${file.name}” exceeds 100MB limit.`));
+      return;
+    }
     setUploadingMedia(true);
     try {
       const res = await uploadMedia(file);
@@ -82,7 +90,28 @@ export default function MessageComposer({
         await onSend(res.url);
       }
     } catch {
-      // lỗi khi tải lên
+      setFileError(tr("Không thể tải tệp lên. Vui lòng thử lại sau.", "Could not upload file. Please try again later."));
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (file.size > MAX_FILE_BYTES) {
+      setFileError(tr(`Tệp “${file.name}” vượt quá giới hạn tối đa 100MB.`, `File “${file.name}” exceeds 100MB limit.`));
+      return;
+    }
+    setUploadingMedia(true);
+    try {
+      const res = await uploadMedia(file);
+      if (res?.url) {
+        await onSend(res.url);
+      }
+    } catch {
+      setFileError(tr("Không thể tải tệp lên. Vui lòng thử lại sau.", "Could not upload file. Please try again later."));
     } finally {
       setUploadingMedia(false);
     }
@@ -219,11 +248,26 @@ export default function MessageComposer({
               <MapPin size={20} />
             </IconButton>
           </Tooltip>
-          <Box sx={{ display: { xs: "none", sm: "inline-flex" } }}>
-            <ComingSoonButton label={tr("Đính kèm tệp khác", "Attach other files")}>
-              <Paperclip size={19} />
-            </ComingSoonButton>
-          </Box>
+          <input
+            ref={docInputRef}
+            type="file"
+            hidden
+            onChange={handleFileSelect}
+            aria-label={tr("Chọn tệp để gửi (tối đa 100MB)", "Choose file to send (max 100MB)")}
+          />
+          <Tooltip title={uploadingMedia ? tr("Đang tải tệp lên…", "Uploading file…") : tr("Đính kèm tệp (tối đa 100MB)", "Attach file (max 100MB)")}>
+            <span>
+              <IconButton
+                size="small"
+                disabled={uploadingMedia}
+                aria-label={tr("Đính kèm tệp (tối đa 100MB)", "Attach file (max 100MB)")}
+                onClick={() => docInputRef.current?.click()}
+                sx={{ color: "primary.main" }}
+              >
+                <Paperclip size={20} />
+              </IconButton>
+            </span>
+          </Tooltip>
         </Box>
 
         <Box

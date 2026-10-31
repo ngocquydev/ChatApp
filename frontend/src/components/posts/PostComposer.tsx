@@ -112,7 +112,7 @@ export default function PostComposer({
         continue;
       }
       if (file.size > MAX_IMAGE_BYTES) {
-        setError(`Tệp “${file.name}” vượt quá 50MB.`);
+        setError(`Tệp “${file.name}” vượt quá 100MB.`);
         continue;
       }
       const preview = URL.createObjectURL(file);

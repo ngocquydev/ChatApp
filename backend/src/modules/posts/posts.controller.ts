@@ -31,7 +31,7 @@ import {
 } from './dto/posts.dto.js';
 import { savePostImage } from './post-image.util.js';
 
-const POST_MEDIA_MAX_BYTES = 50 * 1024 * 1024; // 50MB (ảnh/video)
+const POST_MEDIA_MAX_BYTES = 100 * 1024 * 1024; // 100MB (ảnh/video)
 
 @ApiTags('Posts')
 @ApiBearerAuth()
@@ -55,7 +55,7 @@ export class PostsController {
   }
 
   @Post('images')
-  @ApiOperation({ summary: 'Tải một ảnh hoặc video lên cho bài viết (tối đa 50MB)' })
+  @ApiOperation({ summary: 'Tải một ảnh hoặc video lên cho bài viết (tối đa 100MB)' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {

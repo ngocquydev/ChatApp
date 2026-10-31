@@ -24,14 +24,31 @@ describe('UploadController', () => {
     await expect(controller.uploadMedia(undefined)).rejects.toThrow(BadRequestException);
   });
 
-  it('báo lỗi khi định dạng tệp không được hỗ trợ', async () => {
+  it('báo lỗi khi định dạng tệp nguy hiểm không được hỗ trợ (.exe)', async () => {
     await expect(
       controller.uploadMedia({
         buffer: Buffer.from('test'),
-        mimetype: 'application/pdf',
-        originalname: 'doc.pdf',
+        mimetype: 'application/x-msdownload',
+        originalname: 'malware.exe',
       }),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('tải lên tài liệu an toàn (PDF, DOCX) thành công lên đến 100MB', async () => {
+    const res = await controller.uploadMedia({
+      buffer: Buffer.from('fake-pdf-bytes'),
+      mimetype: 'application/pdf',
+      originalname: 'document.pdf',
+    });
+    expect(res.success).toBe(true);
+    expect(cloudinaryService.uploadBuffer).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      expect.objectContaining({
+        folder: 'chatapp/media',
+        resource_type: 'raw',
+        filename: 'document.pdf',
+      }),
+    );
   });
 
   it('tải lên ảnh thành công và trả về secure_url', async () => {

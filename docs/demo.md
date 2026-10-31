@@ -52,6 +52,12 @@ Hỗ trợ đổi 5 chủ đề phong phú (*Mặc định, Hẹn hò lãng mạ
 - **Trình xem toàn màn hình tương tác:** Hỗ trợ tính năng tự động bám theo (Auto-follow mode), sao chép tọa độ chuẩn xác và dẫn đường 1 chạm sang Google Maps.
 - *Xem chi tiết: [docs/features/live-location-sharing.md](features/live-location-sharing.md)*
 
+### 2.5. Gửi Tệp Tin & Tài Liệu Đa Phương Tiện Lên Đến 100MB
+- **Hạn mức truyền tải 100MB:** Hỗ trợ tải lên và gửi tệp tin dung lượng lớn (PDF, DOCX, XLSX, PPTX, ZIP, RAR, MP4, MP3...) trong cả khung chat chính và khung chat nổi.
+- **Thẻ hiển thị tệp tin tương tác (`FileAttachmentItem`):** Tự động nhận diện định dạng file, hiển thị icon màu sắc trực quan, tên tệp, dung lượng và nút tải xuống 1-chạm.
+- **Bảo mật OWASP A03:** Kiểm soát chặt chẽ danh mục mở rộng, chặn triệt để tệp thực thi nguy hiểm (.exe, .bat, .sh...).
+- *Xem chi tiết: [docs/features/file-transfer-100mb.md](features/file-transfer-100mb.md)*
+
 ---
 
 ## 3. Trang Khám Phá (Explore) & Radar Gợi Ý Bạn Bè Thông Minh

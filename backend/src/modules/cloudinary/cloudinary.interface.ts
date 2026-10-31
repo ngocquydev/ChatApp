@@ -14,4 +14,6 @@ export interface UploadOptions {
   folder?: string;
   resource_type?: 'auto' | 'image' | 'video' | 'raw';
   filename?: string;
+  use_filename?: boolean;
+  unique_filename?: boolean;
 }

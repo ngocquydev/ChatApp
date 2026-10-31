@@ -49,6 +49,8 @@ export class CloudinaryService {
           folder,
           resource_type: resourceType,
           filename_override: options.filename,
+          use_filename: options.use_filename,
+          unique_filename: options.unique_filename,
         },
         (error, result: UploadApiResponse | undefined) => {
           if (error || !result) {

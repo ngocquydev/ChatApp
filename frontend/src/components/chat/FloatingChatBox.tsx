@@ -38,9 +38,11 @@ import {
   MapPin,
   Phone,
   Video,
+  Paperclip,
 } from "lucide-react";
 import api from "@/services/api";
-import { isVideoUrl, uploadMedia } from "@/services/postsApi";
+import { isVideoUrl, isAudioUrl, isFileDocUrl, uploadMedia, MAX_FILE_BYTES } from "@/services/postsApi";
+import FileAttachmentItem from "./FileAttachmentItem";
 import { mqttChatClient } from "@/services/mqttClient";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore, ChatMessage, ChatUser, LocationData } from "@/store/useChatStore";
@@ -128,6 +130,7 @@ export default function FloatingChatBox({
   const [openLocationPicker, setOpenLocationPicker] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const docInputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingSentRef = useRef<number>(0);
@@ -732,6 +735,25 @@ export default function FloatingChatBox({
     const file = e.target.files?.[0];
     if (!file || !convId) return;
     e.target.value = "";
+    if (file.size > MAX_FILE_BYTES) return;
+    setUploadingMedia(true);
+    try {
+      const res = await uploadMedia(file);
+      if (res?.url) {
+        await handleSendMessage(res.url);
+      }
+    } catch {
+      // bỏ qua lỗi tải tệp
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !convId) return;
+    e.target.value = "";
+    if (file.size > MAX_FILE_BYTES) return;
     setUploadingMedia(true);
     try {
       const res = await uploadMedia(file);
@@ -1104,6 +1126,8 @@ export default function FloatingChatBox({
                 const trimmed = msg.text?.trim() || "";
                 const isMedia = !msg.isDeleted && /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);
                 const isVideo = isMedia && isVideoUrl(trimmed);
+                const isAudio = isMedia && isAudioUrl(trimmed);
+                const isFileDoc = isMedia && isFileDocUrl(trimmed);
                 const bubbleRadius = getBubbleRadius(isMe, isFirstInGroup, isLastInGroup);
 
                 return (
@@ -1203,6 +1227,28 @@ export default function FloatingChatBox({
                           ) : msg.type === "location" || Boolean(msg.location) ? (
                             <LocationMessageItem message={msg} isMe={isMe} />
                           ) : isMedia ? (
+                            isFileDoc ? (
+                              <FileAttachmentItem url={trimmed} isMe={isMe} />
+                            ) : isAudio ? (
+                              <Box
+                                sx={{
+                                  p: 0.8,
+                                  borderRadius: bubbleRadius,
+                                  bgcolor: isMe ? "rgba(255, 255, 255, 0.15)" : "var(--mui-palette-background-paper)",
+                                  border: "1px solid",
+                                  borderColor: isMe ? "rgba(255, 255, 255, 0.25)" : "var(--mui-palette-divider)",
+                                  maxWidth: 210,
+                                }}
+                              >
+                                <Box
+                                  component="audio"
+                                  controls
+                                  preload="metadata"
+                                  src={trimmed}
+                                  sx={{ width: "100%", height: 32, display: "block" }}
+                                />
+                              </Box>
+                            ) : (
                             <Box
                               sx={{
                                 overflow: "hidden",
@@ -1234,7 +1280,7 @@ export default function FloatingChatBox({
                                 </ButtonBase>
                               )}
                             </Box>
-                          ) : (
+                          )) : (
                             <Box
                               sx={{
                                 py: 0.85,
@@ -1410,6 +1456,27 @@ export default function FloatingChatBox({
                     sx={{ color: "primary.main", p: 0.65 }}
                   >
                     {uploadingMedia ? <CircularProgress size={16} /> : <ImageIcon size={19} />}
+                  </IconButton>
+                </span>
+              </Tooltip>
+
+              <input
+                ref={docInputRef}
+                type="file"
+                hidden
+                onChange={handleFileSelect}
+                aria-label={tr("Chọn tệp để gửi (tối đa 100MB)", "Choose file to send (max 100MB)")}
+              />
+              <Tooltip title={uploadingMedia ? tr("Đang tải tệp lên…", "Uploading file…") : tr("Đính kèm tệp (tối đa 100MB)", "Attach file (max 100MB)")}>
+                <span>
+                  <IconButton
+                    size="small"
+                    disabled={uploadingMedia}
+                    aria-label={tr("Đính kèm tệp (tối đa 100MB)", "Attach file (max 100MB)")}
+                    onClick={() => docInputRef.current?.click()}
+                    sx={{ color: "primary.main", p: 0.65 }}
+                  >
+                    <Paperclip size={18} />
                   </IconButton>
                 </span>
               </Tooltip>

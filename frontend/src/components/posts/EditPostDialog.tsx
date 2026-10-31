@@ -117,7 +117,7 @@ export default function EditPostDialog({
         continue;
       }
       if (file.size > MAX_IMAGE_BYTES) {
-        setError(tr(`Tệp “${file.name}” vượt quá 50MB.`, `File “${file.name}” exceeds 50MB.`));
+        setError(tr(`Tệp “${file.name}” vượt quá 100MB.`, `File “${file.name}” exceeds 100MB.`));
         continue;
       }
       const preview = URL.createObjectURL(file);

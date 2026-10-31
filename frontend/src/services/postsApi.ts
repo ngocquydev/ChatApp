@@ -72,7 +72,8 @@ export interface PhotoItem {
 }
 
 export const MAX_POST_IMAGES = 4;
-export const MAX_IMAGE_BYTES = 50 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 100 * 1024 * 1024;
+export const MAX_FILE_BYTES = 100 * 1024 * 1024; // 100MB
 export const POST_MAX_LENGTH = 5000;
 export const COMMENT_MAX_LENGTH = 1000;
 
@@ -80,6 +81,42 @@ export const COMMENT_MAX_LENGTH = 1000;
 export function isVideoUrl(url?: string | null): boolean {
   if (!url) return false;
   return /\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i.test(url) || url.includes("/video/upload/");
+}
+
+/** Kiểm tra xem URL tệp có phải là âm thanh hay không */
+export function isAudioUrl(url?: string | null): boolean {
+  if (!url) return false;
+  return /\.(mp3|wav|ogg|m4a|aac|flac|wma)(\?.*)?$/i.test(url);
+}
+
+/** Kiểm tra xem URL tệp có phải là tài liệu / tệp tin khác hay không */
+export function isFileDocUrl(url?: string | null): boolean {
+  if (!url) return false;
+  if (isVideoUrl(url) || isAudioUrl(url)) return false;
+  if (url.includes("/raw/upload/")) return true;
+  return /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|zip|rar|7z|tar|gz|json|xml)(\?.*)?$/i.test(url);
+}
+
+/** Lấy tên file gốc hoặc tên hiển thị từ URL */
+export function getFileNameFromUrl(url?: string | null): string {
+  if (!url) return "";
+  try {
+    const pathname = new URL(url).pathname;
+    const segments = pathname.split("/");
+    const last = segments[segments.length - 1];
+    return decodeURIComponent(last || "");
+  } catch {
+    const parts = url.split("/");
+    return parts[parts.length - 1] || "file";
+  }
+}
+
+/** Định dạng kích thước tệp (bytes -> KB / MB) */
+export function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 /** Đường dẫn ảnh server trả về là tương đối (/uploads/...) → ghép với địa chỉ backend. */
