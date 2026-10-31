@@ -28,6 +28,8 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
 
   const location: LocationData | null = message.location || null;
   const isLive = Boolean(location?.isLive);
+  // Vị trí mới nhất cho lần khởi tạo bản đồ (không đưa vào deps để tránh tạo lại map mỗi lần cập nhật)
+  const locationRef = useRef<LocationData | null>(location);
 
   // Cập nhật đếm ngược mỗi giây nếu đang chia sẻ trực tiếp
   useEffect(() => {
@@ -68,23 +70,17 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
     };
   }, [isMe, isLiveActive, message._id, updateLiveLocation]);
 
-  // Khởi tạo bản đồ mini hoặc cập nhật marker khi tọa độ thay đổi
+  // Khởi tạo bản đồ mini (chỉ khi mount hoặc đổi trạng thái live; cập nhật tọa độ ở effect bên dưới)
   useEffect(() => {
-    if (!location || !miniMapRef.current) return;
-
-    // Nếu map đã tồn tại thì chỉ cập nhật vị trí marker và pan bản đồ
-    if (mapInstanceRef.current && markerRef.current) {
-      markerRef.current.setLatLng([location.latitude, location.longitude]);
-      mapInstanceRef.current.panTo([location.latitude, location.longitude], { animate: true });
-      return;
-    }
+    if (!miniMapRef.current || !locationRef.current) return;
 
     let isMounted = true;
 
     const initMiniMap = async () => {
       const leaflet = await import("leaflet");
 
-      if (!miniMapRef.current || !isMounted) return;
+      const location = locationRef.current;
+      if (!miniMapRef.current || !isMounted || !location) return;
 
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
@@ -170,7 +166,15 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
         markerRef.current = null;
       }
     };
-  }, [location, isLive, isLiveActive]);
+  }, [isLive, isLiveActive]);
+
+  // Tọa độ thay đổi qua socket → chỉ dời marker & pan, không tạo lại bản đồ (tránh nháy/tải lại tile)
+  useEffect(() => {
+    locationRef.current = location;
+    if (!location || !mapInstanceRef.current || !markerRef.current) return;
+    markerRef.current.setLatLng([location.latitude, location.longitude]);
+    mapInstanceRef.current.panTo([location.latitude, location.longitude], { animate: true });
+  }, [location]);
 
   if (!location) {
     return (

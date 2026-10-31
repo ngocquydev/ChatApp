@@ -45,9 +45,11 @@ export default function LocationViewModal({
   isMe,
 }: LocationViewModalProps) {
   const { tr } = useTranslation();
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const [mapContainer, setMapContainer] = useState<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  // Vị trí mới nhất, đọc khi khởi tạo bản đồ mà không làm effect khởi tạo chạy lại mỗi lần cập nhật
+  const locationRef = useRef<LocationData | null>(location);
 
   const [autoFollow, setAutoFollow] = useState(true);
   const [now, setNow] = useState<number | null>(null);
@@ -75,31 +77,21 @@ export default function LocationViewModal({
   );
   const isLiveActive = isLive && location?.isLiveActive !== false && !isExpired;
 
-  // Khởi tạo bản đồ lớn hoặc cập nhật marker khi tọa độ thời gian thực thay đổi
+  // Khởi tạo bản đồ lớn.
+  // Dùng callback ref (`mapContainer` state) thay vì đọc ref ngay trong effect: Dialog render
+  // nội dung qua Portal nên ở lần commit đầu container chưa tồn tại → map không bao giờ được tạo
+  // (bản đồ trắng trơn). Khi container gắn vào DOM, state đổi và effect chạy lại.
   useEffect(() => {
-    if (!open || !location || !mapContainerRef.current) return;
-
-    // Nếu bản đồ đã khởi tạo thì cập nhật vị trí marker và pan
-    if (mapInstanceRef.current && markerRef.current) {
-      markerRef.current.setLatLng([location.latitude, location.longitude]);
-      if (autoFollow) {
-        mapInstanceRef.current.panTo([location.latitude, location.longitude], { animate: true });
-      }
-      return;
-    }
+    if (!open || !mapContainer || !locationRef.current) return;
 
     let isMounted = true;
 
     const initMap = async () => {
       const leaflet = await import("leaflet");
 
-      if (!mapContainerRef.current || !isMounted) return;
-
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-        markerRef.current = null;
-      }
+      // Đọc vị trí sau khi await để lấy tọa độ mới nhất
+      const initial = locationRef.current;
+      if (!isMounted || !initial) return;
 
       const markerHtml = isLive
         ? `
@@ -132,8 +124,8 @@ export default function LocationViewModal({
         iconAnchor: [0, 0],
       });
 
-      const map = leaflet.map(mapContainerRef.current, {
-        center: [location.latitude, location.longitude],
+      const map = leaflet.map(mapContainer, {
+        center: [initial.latitude, initial.longitude],
         zoom: 16,
         zoomControl: true,
         // Không zoom bằng con lăn cho tới khi người dùng nhấp vào bản đồ (tránh cuộn nhầm)
@@ -153,7 +145,7 @@ export default function LocationViewModal({
         .addTo(map);
 
       const marker = leaflet
-        .marker([location.latitude, location.longitude], {
+        .marker([initial.latitude, initial.longitude], {
           icon: customIcon,
         })
         .addTo(map);
@@ -182,7 +174,18 @@ export default function LocationViewModal({
         markerRef.current = null;
       }
     };
-  }, [open, location, isLive, isLiveActive, autoFollow]);
+  }, [open, mapContainer, isLive, isLiveActive]);
+
+  // Cập nhật marker mượt mà khi tọa độ thời gian thực thay đổi (không tạo lại bản đồ)
+  useEffect(() => {
+    locationRef.current = location;
+    if (!open || !location || !mapInstanceRef.current || !markerRef.current) return;
+
+    markerRef.current.setLatLng([location.latitude, location.longitude]);
+    if (autoFollow) {
+      mapInstanceRef.current.panTo([location.latitude, location.longitude], { animate: true });
+    }
+  }, [open, location, autoFollow]);
 
   if (!location) return null;
 
@@ -359,7 +362,7 @@ export default function LocationViewModal({
         {/* Bản đồ tương tác */}
         <Box sx={{ width: "100%", height: 420 }}>
           <Box
-            ref={mapContainerRef}
+            ref={setMapContainer}
             sx={{
               width: "100%",
               height: "100%",
