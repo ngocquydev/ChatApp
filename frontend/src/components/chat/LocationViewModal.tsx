@@ -136,7 +136,12 @@ export default function LocationViewModal({
         center: [location.latitude, location.longitude],
         zoom: 16,
         zoomControl: true,
+        // Không zoom bằng con lăn cho tới khi người dùng nhấp vào bản đồ (tránh cuộn nhầm)
+        scrollWheelZoom: false,
       });
+
+      map.on("click focus", () => map.scrollWheelZoom.enable());
+      map.on("mouseout blur", () => map.scrollWheelZoom.disable());
 
       mapInstanceRef.current = map;
 

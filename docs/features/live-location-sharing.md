@@ -21,6 +21,10 @@ Người dùng có thể chọn một trong các mốc thời gian:
 > [!NOTE]
 > Danh sách mốc và cách hiển thị nhãn / đếm ngược dùng chung trong `frontend/src/utils/liveLocation.ts` (`LIVE_DURATION_OPTIONS`, `formatLiveDuration`, `formatLiveRemaining`).
 
+### Bố cục hộp thoại chọn vị trí
+- Thanh chọn thời lượng (`LiveDurationSelector`) nằm **ngay dưới tab chế độ**, ngoài vùng cuộn — luôn nhìn thấy, không phải cuộn qua bản đồ.
+- Bản đồ trong hộp thoại **tắt zoom bằng con lăn** cho tới khi người dùng nhấp vào bản đồ (tắt lại khi rời chuột) → cuộn trang không vô tình phóng to/thu nhỏ map. Vẫn zoom được bằng nút `+ / −`.
+
 ---
 
 ## 2. Giao diện Thẻ Tin nhắn Vị trí Trực tiếp

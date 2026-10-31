@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -18,11 +17,12 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Crosshair, MapPin, Navigation, Radio, Search, Timer, X } from "lucide-react";
+import { Crosshair, MapPin, Navigation, Radio, Search, X } from "lucide-react";
 import type * as L from "leaflet";
 import { useTranslation } from "@/i18n/useTranslation";
 import { LocationData } from "@/store/useChatStore";
-import { LIVE_DURATION_OPTIONS, formatLiveDuration } from "@/utils/liveLocation";
+import LiveDurationSelector from "./LiveDurationSelector";
+import { formatLiveDuration } from "@/utils/liveLocation";
 
 interface LocationPickerModalProps {
   open: boolean;
@@ -254,7 +254,13 @@ export default function LocationPickerModal({
         center: [initialLat, initialLng],
         zoom: initialZoom,
         zoomControl: true,
+        // Tắt zoom bằng con lăn mặc định để cuộn hộp thoại không vô tình phóng to/thu nhỏ bản đồ.
+        // Chỉ bật khi người dùng chủ động nhấp vào bản đồ; tắt lại khi rời chuột khỏi bản đồ.
+        scrollWheelZoom: false,
       });
+
+      map.on("click focus", () => map.scrollWheelZoom.enable());
+      map.on("mouseout blur", () => map.scrollWheelZoom.disable());
 
       mapInstanceRef.current = map;
 
@@ -478,6 +484,11 @@ export default function LocationPickerModal({
         />
       </Tabs>
 
+      {/* Chọn thời lượng ngay dưới tab, nằm ngoài vùng cuộn → không phải cuộn qua bản đồ */}
+      {shareMode === "live" && (
+        <LiveDurationSelector value={liveDurationMinutes} onChange={setLiveDurationMinutes} />
+      )}
+
       <DialogContent sx={{ p: 0, position: "relative" }}>
         {/* Thanh tìm kiếm & Nút định vị GPS */}
         <Box
@@ -559,7 +570,7 @@ export default function LocationPickerModal({
         )}
 
         {/* Khung hiển thị Leaflet Map */}
-        <Box sx={{ position: "relative", width: "100%", height: 380 }}>
+        <Box sx={{ position: "relative", width: "100%", height: { xs: 260, sm: 320 } }}>
           <Box
             ref={mapContainerRef}
             sx={{
@@ -631,61 +642,6 @@ export default function LocationPickerModal({
             </Box>
           </Box>
         </Box>
-
-        {/* Cấu hình thời gian chia sẻ trực tiếp (Live Location kiểu Zalo) */}
-        {shareMode === "live" && (
-          <Box
-            sx={{
-              p: 2,
-              borderTop: "1px solid",
-              borderColor: "divider",
-              bgcolor: "var(--mui-palette-success-lighter, rgba(16, 185, 129, 0.08))",
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "flex-start", sm: "center" },
-              justifyContent: "space-between",
-              gap: 1.5,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Timer size={20} color="var(--mui-palette-tone-10b981)" />
-              <Box>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "text.primary" }}>
-                  {tr("Thời gian chia sẻ trực tiếp", "Live sharing duration")}
-                </Typography>
-                <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
-                  {tr(
-                    "Bạn bè sẽ nhìn thấy vị trí di chuyển trên bản đồ theo thời gian thực",
-                    "Participants will see your movement on the map in real time",
-                  )}
-                </Typography>
-              </Box>
-            </Box>
-
-            <Box
-              role="radiogroup"
-              aria-label={tr("Thời lượng chia sẻ", "Sharing duration")}
-              sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}
-            >
-              {LIVE_DURATION_OPTIONS.map((minutes) => {
-                const selected = liveDurationMinutes === minutes;
-                return (
-                  <Chip
-                    key={minutes}
-                    role="radio"
-                    aria-checked={selected}
-                    label={formatLiveDuration(minutes, tr)}
-                    clickable
-                    color={selected ? "success" : "default"}
-                    variant={selected ? "filled" : "outlined"}
-                    onClick={() => setLiveDurationMinutes(minutes)}
-                    sx={{ fontWeight: 700, fontSize: "0.85rem" }}
-                  />
-                );
-              })}
-            </Box>
-          </Box>
-        )}
       </DialogContent>
 
       <DialogActions sx={{ px: 2.5, py: 1.75, borderTop: "1px solid", borderColor: "divider" }}>
