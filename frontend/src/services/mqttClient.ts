@@ -80,12 +80,29 @@ class MqttChatClient {
     this.currentUserId = userId;
     this.isConnected = false;
 
-    const mqttUrl =
-      process.env.NEXT_PUBLIC_MQTT_URL || "ws://localhost:1884";
+    const isHttps =
+      typeof window !== "undefined" && window.location.protocol === "https:";
+    const host =
+      typeof window !== "undefined" && window.location.hostname
+        ? window.location.hostname
+        : "localhost";
 
+    // Xác định URL kết nối: Ưu tiên mã hóa TLS / WSS (WebSocket Secure) để chống bắt gói tin
+    let mqttUrl = process.env.NEXT_PUBLIC_MQTT_URL;
+    if (!mqttUrl) {
+      if (isHttps || process.env.NEXT_PUBLIC_MQTT_USE_SSL === "true") {
+        mqttUrl = `wss://${host}:8884`;
+      } else {
+        mqttUrl = `ws://${host}:1884`;
+      }
+    } else if (isHttps && mqttUrl.startsWith("ws://")) {
+      // Tự động nâng cấp sang wss:// trên môi trường HTTPS để tránh lỗi Mixed Content chặn kết nối
+      mqttUrl = mqttUrl.replace("ws://", "wss://");
+    }
+
+    const isSecure = mqttUrl.startsWith("wss://");
     const clientId = `web_${userId}_${Math.random().toString(16).slice(2, 8)}`;
 
-    
     this.client = mqtt.connect(mqttUrl, {
       clientId,
       username: userId,
@@ -94,10 +111,14 @@ class MqttChatClient {
       clean: true,
       reconnectPeriod: 3000,
       connectTimeout: 10000,
+      rejectUnauthorized: process.env.NODE_ENV === "production",
     });
 
     this.client.on("connect", () => {
       this.isConnected = true;
+      console.log(
+        `🔒 [MQTT ${isSecure ? "TLS/WSS MÃ HÓA" : "WS"}] Kết nối thành công tới MQTT Broker: ${mqttUrl}`
+      );
      
 
       // Subscribe topic tin nhắn cá nhân
@@ -214,6 +235,16 @@ class MqttChatClient {
 
     this.client.on("error", (err) => {
       console.warn("⚠️ [MQTT] Lỗi kết nối MQTT:", err.message);
+      if (
+        isSecure &&
+        (err.message.includes("CERT") ||
+          err.message.includes("self signed") ||
+          err.message.includes("DEPTH_ZERO_SELF_SIGNED_CERT"))
+      ) {
+        console.warn(
+          "⚠️ [MQTT TLS] Trình duyệt có thể đang chặn chứng chỉ tự ký (Self-signed certificate). Hãy truy cập https://localhost:8884 trên trình duyệt một lần để chấp nhận chứng chỉ trong môi trường phát triển."
+        );
+      }
     });
 
     this.client.on("offline", () => {

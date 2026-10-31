@@ -90,3 +90,4 @@ Tin nhắn âm thanh (MP3, WAV, M4A) được hiển thị kèm trình phát nh�
 - **Kiểm định mã nguồn (Static Analysis & Typecheck):**
   - Backend: Oxlint 0 lỗi, TypeScript 0 lỗi.
   - Frontend: ESLint 0 lỗi, TypeScript 0 lỗi.
+

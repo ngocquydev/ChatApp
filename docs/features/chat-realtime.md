@@ -49,21 +49,27 @@ graph TD
     Client["Client (Next.js 16)"]
     subgraph Gateway ["NestJS Realtime Gateway"]
         SIO["Socket.IO Gateway (Cổng 3000)"]
-        MQTT["Aedes MQTT Broker (Cổng 8883/1883)"]
+        MQTT_TLS["Aedes WSS TLS (Cổng 8884 - Mã hóa TLS 1.3)"]
+        MQTT_TCP["Aedes MQTTS Native (Cổng 8883)"]
+        MQTT_DEV["Aedes Plain WS (Cổng 1884)"]
     end
     DB[("MongoDB Messages Collection")]
     Cache[("Redis 7 Pub/Sub & Cache")]
 
     Client -- "WebSocket JSON Fallback" --> SIO
-    Client -- "Binary Protobuf Payload" --> MQTT
+    Client -- "WSS Encrypted Protobuf" --> MQTT_TLS
     SIO --> Cache
-    MQTT --> Cache
+    MQTT_TLS --> Cache
+    MQTT_TCP --> Cache
+    MQTT_DEV --> Cache
     SIO --> DB
-    MQTT --> DB
+    MQTT_TLS --> DB
+    MQTT_TCP --> DB
+    MQTT_DEV --> DB
 ```
 
 1. **Kênh Socket.IO (WebSockets chuẩn):** Đảm nhiệm các sự kiện quản lý kết nối, đồng bộ trạng thái đăng nhập, chuông thông báo và luồng REST API fallback.
-2. **Kênh Binary MQTT/Protobuf:** Đảm nhiệm các tác vụ có tần suất phát sóng cao (High-frequency events) như truyền tải nội dung tin nhắn tức thì, cập nhật tọa độ bạn bè và nhịp tim soạn thảo văn bản.
+2. **Kênh Binary MQTT/Protobuf mã hóa TLS/WSS:** Đảm nhiệm các tác vụ có tần suất phát sóng cao (High-frequency events) như truyền tải nội dung tin nhắn tức thì, cập nhật tọa độ bạn bè và nhịp tim soạn thảo văn bản, được bọc lớp mã hóa TLS 1.3 chống nghe lén tuyệt đối.
 
 ---
 
@@ -105,6 +111,24 @@ message TypingEventProto {
   string receiverId = 5;
 }
 ```
+
+### 4.3. Mã Hóa Đường Truyền SSL/TLS & Chống Bắt Gói Tin (Anti-Packet Sniffing)
+Để bảo vệ toàn vẹn thông tin và ngăn chặn kẻ tấn công trên cùng mạng Wi-Fi/LAN nghe lén gói tin (Packet Sniffing qua Wireshark hoặc Man-in-the-Middle):
+- **Mã hóa đường truyền TLS 1.3 / WSS (WebSocket Secure):**
+  - Chạy trên cổng `8884` (WSS) và cổng `8883` (MQTTS thuần qua TLS Socket).
+  - Thuật toán mật mã hiện đại: ECDHE trao đổi khóa phiên tạm thời (Forward Secrecy) kết hợp mã hóa khối AES-GCM hoặc ChaCha20-Poly1305.
+  - Khi bắt gói tin qua Wireshark, toàn bộ payload và header đều là ciphertext dạng `TLS Application Data`, không để lộ nội dung tin nhắn, tọa độ hay danh tính.
+- **Xác thực danh tính kép & Chống mạo danh (Anti-Spoofing):**
+  - Mọi kết nối MQTT bắt buộc phải mang Token JWT hợp lệ (qua handshake cookie `accessToken`, query param hoặc password).
+  - Backend đối chiếu trường `sub` trong JWT với `username` khai báo; nếu phát hiện lệch danh tính sẽ từ chối kết nối ngay lập tức (`returnCode: 4`).
+- **Cách sinh chứng chỉ tự ký môi trường phát triển (Dev Certificates):**
+  ```powershell
+  powershell -File .\scripts\generate-dev-certs.ps1
+  ```
+  Chứng chỉ sẽ được sinh tự động tại `backend/certs/mqtt-key.pem` và `backend/certs/mqtt-cert.pem`.
+- **Cấu hình trên Production:**
+  Mount chứng chỉ SSL CA thật từ Let's Encrypt / Cloudflare qua `MQTT_TLS_KEY_PATH` và `MQTT_TLS_CERT_PATH` hoặc truyền trực tiếp qua chuỗi biến môi trường `MQTT_TLS_KEY` và `MQTT_TLS_CERT`.
+
 
 ---
 

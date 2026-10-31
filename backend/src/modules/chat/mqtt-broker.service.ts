@@ -4,7 +4,11 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { createServer, Server as HttpServer, IncomingMessage } from 'node:http';
+import { createServer as createHttpServer, Server as HttpServer, IncomingMessage } from 'node:http';
+import { createServer as createHttpsServer, Server as HttpsServer } from 'node:https';
+import { createServer as createTlsServer, Server as TlsServer } from 'node:tls';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { WebSocketServer, createWebSocketStream, WebSocket } from 'ws';
 import { Aedes, Client } from 'aedes';
 import { JwtService } from '@nestjs/jwt';
@@ -28,7 +32,10 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MqttBrokerService.name);
   private aedes: Aedes | null = null;
   private httpServer: HttpServer | null = null;
+  private httpsServer: HttpsServer | null = null;
+  private tlsServer: TlsServer | null = null;
   private wss: WebSocketServer | null = null;
+  private wssSecure: WebSocketServer | null = null;
   private readonly userClientMap = new Map<string, Set<string>>();
 
   constructor(
@@ -43,6 +50,57 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     await this.shutdown();
+  }
+
+  /**
+   * Nạp khóa riêng và chứng chỉ SSL/TLS để mã hóa đường truyền MQTT (chống bắt gói tin)
+   */
+  public resolveTlsCredentials(): { key: Buffer | string; cert: Buffer | string } | null {
+    // 1. Kiểm tra trực tiếp từ Environment Variables dạng chuỗi PEM
+    const envKey = process.env.MQTT_TLS_KEY;
+    const envCert = process.env.MQTT_TLS_CERT;
+    if (envKey && envCert) {
+      this.logger.log('🔐 [MQTT TLS] Nạp chứng chỉ SSL/TLS từ biến môi trường (MQTT_TLS_KEY / MQTT_TLS_CERT)');
+      return {
+        key: envKey.replace(/\\n/g, '\n'),
+        cert: envCert.replace(/\\n/g, '\n'),
+      };
+    }
+
+    // 2. Kiểm tra đường dẫn file chứng chỉ tùy chỉnh hoặc mặc định trong certs/
+    const candidatePaths = [
+      {
+        key: process.env.MQTT_TLS_KEY_PATH,
+        cert: process.env.MQTT_TLS_CERT_PATH,
+      },
+      {
+        key: path.resolve(process.cwd(), 'certs/mqtt-key.pem'),
+        cert: path.resolve(process.cwd(), 'certs/mqtt-cert.pem'),
+      },
+      {
+        key: path.resolve(process.cwd(), 'backend/certs/mqtt-key.pem'),
+        cert: path.resolve(process.cwd(), 'backend/certs/mqtt-cert.pem'),
+      },
+      {
+        key: path.resolve(process.cwd(), '../backend/certs/mqtt-key.pem'),
+        cert: path.resolve(process.cwd(), '../backend/certs/mqtt-cert.pem'),
+      },
+    ];
+
+    for (const p of candidatePaths) {
+      if (p.key && p.cert && fs.existsSync(p.key) && fs.existsSync(p.cert)) {
+        try {
+          const key = fs.readFileSync(p.key);
+          const cert = fs.readFileSync(p.cert);
+          this.logger.log(`🔐 [MQTT TLS] Nạp chứng chỉ SSL/TLS thành công từ tệp: ${p.cert}`);
+          return { key, cert };
+        } catch (readErr) {
+          this.logger.warn(`[MQTT TLS] Lỗi đọc tệp chứng chỉ: ${readErr instanceof Error ? readErr.message : String(readErr)}`);
+        }
+      }
+    }
+
+    return null;
   }
 
   private async initAedesBroker() {
@@ -78,7 +136,7 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
             if (match) token = match[1];
           }
 
-          // Trích từ query param: ws://localhost:1884?token=...
+          // Trích từ query param: wss://localhost:8884?token=... hoặc ws://...
           if (!token && req.url) {
             const urlObj = new URL(req.url, 'http://localhost');
             token = urlObj.searchParams.get('token') || '';
@@ -86,9 +144,11 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
         }
 
         if (!token) {
-          if (username) {
+          const isDev = process.env.NODE_ENV !== 'production';
+          const allowDevFallback = isDev && process.env.MQTT_REQUIRE_AUTH !== 'true';
+          if (allowDevFallback && username) {
             client.userId = username;
-            this.logger.log(`[MQTT] Xác thực Client ${client.id} theo UserID: ${username}`);
+            this.logger.log(`[MQTT DEV] Xác thực Client ${client.id} theo UserID: ${username}`);
             return done(null, true);
           }
           const err = Object.assign(
@@ -101,7 +161,27 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
         const secret =
           process.env.JWT_SECRET || 'my_super_secret_key_chat_app';
         const payload = await this.jwtService.verifyAsync(token, { secret });
-        client.userId = payload.sub || payload._id || payload.id;
+        const tokenUserId = (payload.sub || payload._id || payload.id || '').toString();
+
+        if (!tokenUserId) {
+          const err = Object.assign(new Error('Token không chứa định danh người dùng'), {
+            returnCode: 4,
+          });
+          return done(err, false);
+        }
+
+        // Chống giả mạo danh tính: Nếu client gửi username thì phải trùng với tokenUserId
+        if (username && username !== tokenUserId) {
+          this.logger.warn(
+            `[MQTT SECURITY] Phát hiện giả mạo danh tính: Token user (${tokenUserId}) khác username (${username})`,
+          );
+          const err = Object.assign(new Error('Danh tính không khớp với Token xác thực'), {
+            returnCode: 4,
+          });
+          return done(err, false);
+        }
+
+        client.userId = tokenUserId;
         client.user = payload;
 
         this.logger.log(
@@ -112,7 +192,7 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
         this.logger.warn(
           `[MQTT] Xác thực thất bại cho Client ${client.id}: ${error instanceof Error ? error.message : String(error)}`,
         );
-        const err = Object.assign(new Error('Token không hợp lệ'), {
+        const err = Object.assign(new Error('Token không hợp lệ hoặc đã hết hạn'), {
           returnCode: 4,
         });
         return done(err, false);
@@ -389,9 +469,13 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
       },
     );
 
-    // 6. Khởi chạy HTTP Server cho WebSocket Stream MQTT (Port 1884)
+    // 6. Khởi chạy HTTP & HTTPS Server cho WebSocket Stream MQTT (ws:// và wss://)
     const mqttPort = Number(process.env.MQTT_PORT) || 1884;
-    this.httpServer = createServer();
+    const mqttWssPort = Number(process.env.MQTT_WSS_PORT) || 8884;
+    const mqttTlsPort = Number(process.env.MQTT_TLS_PORT) || 8883;
+
+    // A. Khởi chạy Plain WebSocket Server (ws:// - Tương thích môi trường Dev/Test)
+    this.httpServer = createHttpServer();
     this.wss = new WebSocketServer({ server: this.httpServer });
 
     this.wss.on('connection', (wsSocket: WebSocket, req: IncomingMessage) => {
@@ -404,9 +488,63 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
 
     this.httpServer.listen(mqttPort, () => {
       this.logger.log(
-        `🚀 [MQTT + Protobuf Broker] Facebook-style Binary Chat Server đang lắng nghe tại ws://localhost:${mqttPort}`,
+        `🚀 [MQTT + Protobuf Broker] Plain WebSocket đang lắng nghe tại ws://localhost:${mqttPort}`,
       );
     });
+
+    // B. Kiểm tra và kích hoạt mã hóa TLS / SSL (WSS & MQTTS) chống bắt gói tin (Packet Sniffing)
+    const tlsCredentials = this.resolveTlsCredentials();
+    if (tlsCredentials) {
+      try {
+        // Khởi chạy WSS (WebSocket Secure qua HTTPS Server - Cổng 8884)
+        this.httpsServer = createHttpsServer({
+          key: tlsCredentials.key,
+          cert: tlsCredentials.cert,
+        });
+        this.wssSecure = new WebSocketServer({ server: this.httpsServer });
+
+        this.wssSecure.on('connection', (wsSocket: WebSocket, req: IncomingMessage) => {
+          const stream = createWebSocketStream(wsSocket);
+          Object.assign(stream, { conn: req });
+          if (this.aedes) {
+            this.aedes.handle(stream as unknown as Parameters<typeof this.aedes.handle>[0], req);
+          }
+        });
+
+        this.httpsServer.listen(mqttWssPort, () => {
+          this.logger.log(
+            `🔒 [MQTT TLS/WSS Broker] WebSocket Secure (WSS) đang lắng nghe tại wss://localhost:${mqttWssPort} (Mã hóa TLS 1.3 chống bắt gói tin Wireshark/MITM)`,
+          );
+        });
+
+        // Khởi chạy Native MQTTS Server qua TLS Socket thuần (Cổng 8883)
+        this.tlsServer = createTlsServer(
+          {
+            key: tlsCredentials.key,
+            cert: tlsCredentials.cert,
+          },
+          (socket) => {
+            if (this.aedes) {
+              this.aedes.handle(socket as unknown as Parameters<typeof this.aedes.handle>[0]);
+            }
+          },
+        );
+
+        this.tlsServer.listen(mqttTlsPort, () => {
+          this.logger.log(
+            `🛡️ [MQTT Native TLS] MQTTS Server đang lắng nghe tại mqtts://localhost:${mqttTlsPort} (Port 8883 - Mã hóa bảo mật TLS)`,
+          );
+        });
+      } catch (tlsInitErr) {
+        this.logger.error(
+          `[MQTT TLS] Lỗi khởi tạo máy chủ TLS/WSS: ${tlsInitErr instanceof Error ? tlsInitErr.message : String(tlsInitErr)}`,
+        );
+      }
+    } else {
+      this.logger.warn(
+        '⚠️ [MQTT Security] Chưa kích hoạt chứng chỉ SSL/TLS. MQTT đang chạy chế độ Plaintext. Để bật mã hóa WSS/MQTTS tránh bị bắt gói tin, hãy tạo chứng chỉ tại backend/certs/ hoặc cấu hình MQTT_TLS_KEY / MQTT_TLS_CERT.',
+      );
+    }
   }
 
   /**
@@ -495,17 +633,32 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async shutdown() {
-    this.logger.log('[MQTT] Đang đóng MQTT Broker...');
+    this.logger.log('[MQTT] Đang đóng MQTT Broker và các máy chủ TLS/WSS...');
+    if (this.wssSecure) {
+      this.wssSecure.close();
+      this.wssSecure = null;
+    }
+    if (this.httpsServer) {
+      this.httpsServer.close();
+      this.httpsServer = null;
+    }
+    if (this.tlsServer) {
+      this.tlsServer.close();
+      this.tlsServer = null;
+    }
     if (this.wss) {
       this.wss.close();
+      this.wss = null;
     }
     if (this.httpServer) {
       this.httpServer.close();
+      this.httpServer = null;
     }
     if (this.aedes) {
       await new Promise<void>((resolve) => {
         this.aedes?.close(() => resolve());
       });
+      this.aedes = null;
     }
   }
 }
