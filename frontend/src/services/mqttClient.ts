@@ -62,16 +62,23 @@ class MqttChatClient {
    * Kết nối tới MQTT over WebSocket Broker sử dụng Protocol Buffers
    */
   public connect(token: string, userId: string) {
-    if (this.client && this.isConnected && this.currentUserId === userId) {
-      return;
+    if (this.client && this.currentUserId === userId) {
+      if (this.isConnected || !this.client.disconnected) {
+        return;
+      }
     }
 
     if (this.client) {
-      this.client.end(true);
+      try {
+        this.client.end(true);
+      } catch {
+        // ignore
+      }
       this.client = null;
     }
 
     this.currentUserId = userId;
+    this.isConnected = false;
 
     const mqttUrl =
       process.env.NEXT_PUBLIC_MQTT_URL || "ws://localhost:1884";

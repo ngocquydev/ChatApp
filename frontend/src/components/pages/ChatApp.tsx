@@ -24,18 +24,12 @@ interface ToastState {
   type: NotifyType;
 }
 
-/**
- * Trang chat chính.
- * - Desktop/tablet (≥ sm): sidebar + khung chat cạnh nhau.
- * - Mobile (< sm): dạng master–detail — danh sách HOẶC khung chat, có nút quay lại.
- */
 export default function ChatApp() {
   const { user } = useAuthStore();
   const { tr } = useTranslation();
   const { isMuted, toggleMute } = useSoundStore();
   const {
     connectSocket,
-    disconnectSocket,
     fetchConversations,
     conversations,
     activeConversation,
@@ -92,12 +86,7 @@ export default function ChatApp() {
     fetchConversations();
     fetchFriends();
     fetchRequests();
-
-    return () => {
-      disconnectSocket();
-    };
-  }, [connectSocket, disconnectSocket, fetchConversations, fetchFriends, fetchRequests]);
-
+  }, [connectSocket, fetchConversations, fetchFriends, fetchRequests]);
   const partner = useMemo<ChatUser | null>(() => {
     if (!activeConversation) return null;
     return (
@@ -125,7 +114,6 @@ export default function ChatApp() {
   };
 
   const hasActive = Boolean(activeConversation);
-
   return (
     <Box
       sx={{

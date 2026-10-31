@@ -175,7 +175,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const currentUserId = String(currentUser?._id || currentUser?.id || "");
     if (currentUserId) {
       mqttChatClient.connect("", currentUserId);
-      set({ isMqttConnected: mqttChatClient.getIsConnected() });
+      const isMqtt = mqttChatClient.getIsConnected();
+      if (get().isMqttConnected !== isMqtt) {
+        set({ isMqttConnected: isMqtt });
+      }
 
       // Hủy các listener cũ trước khi đăng ký mới để tránh trùng lặp
       mqttUnbinders.forEach((unsub) => unsub());
@@ -308,7 +311,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // 2. KẾT NỐI SOCKET.IO (DUAL HYBRID FALLBACK)
     const currentSocket = get().socket;
-    if (currentSocket && currentSocket.connected) return;
+    if (
+      currentSocket &&
+      (currentSocket.connected ||
+        (currentSocket as unknown as { active?: boolean }).active)
+    ) {
+      return;
+    }
 
     const socket = io(BACKEND_URL, {
       withCredentials: true,
