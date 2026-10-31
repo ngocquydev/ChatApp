@@ -16,6 +16,10 @@ Người dùng có thể chọn một trong các mốc thời gian:
 - **15 phút:** Thích hợp khi đang hẹn gặp, đón bạn bè ở cự ly gần.
 - **1 giờ:** Thích hợp khi di chuyển ngoài đường, đi lại trong thành phố.
 - **8 giờ:** Thích hợp cho chuyến đi xa, hành trình dài.
+- **1 ngày:** Thích hợp khi đi công tác, du lịch cả ngày.
+
+> [!NOTE]
+> Danh sách mốc và cách hiển thị nhãn / đếm ngược dùng chung trong `frontend/src/utils/liveLocation.ts` (`LIVE_DURATION_OPTIONS`, `formatLiveDuration`, `formatLiveRemaining`).
 
 ---
 
@@ -73,5 +77,6 @@ Mỗi thẻ tin nhắn vị trí trực tiếp trong khung chat được thiết
 ## 4. Bảo mật & Quyền Riêng tư (Security & Privacy)
 
 - **Quyền kiểm soát thuộc về người gửi:** Người gửi có thể bấm "Dừng chia sẻ" bất kỳ lúc nào để chấm dứt truyền tọa độ ngay lập tức.
-- **Tự động hết hạn (Auto-expire):** Khi hết thời gian đã chọn (15m, 1h, 8h), hệ thống tự động chuyển trạng thái sang `ĐÃ DỪNG CHIA SẺ`, ngừng theo dõi Geolocation và khóa luồng gửi tọa độ.
+- **Tự động hết hạn (Auto-expire):** Khi hết thời gian đã chọn (15m, 1h, 8h, 1 ngày), hệ thống tự động chuyển trạng thái sang `ĐÃ DỪNG CHIA SẺ`, ngừng theo dõi Geolocation và khóa luồng gửi tọa độ.
 - **Bảo mật dữ liệu:** Chỉ thành viên trong phòng chat / cuộc hội thoại mới được nhận bản tin vị trí thời gian thực.
+

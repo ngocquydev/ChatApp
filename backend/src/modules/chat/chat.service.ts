@@ -159,15 +159,13 @@ export class ChatService {
     return message;
   }
 
-  /**
-   * Cập nhật vị trí trực tiếp (Live Location) cho tin nhắn
-   */
+ 
   async updateLiveLocation(
     messageId: string,
     senderId: string,
     update: {
-      latitude: number;
-      longitude: number;
+      latitude?: number;
+      longitude?: number;
       address?: string;
       name?: string;
       isLiveActive?: boolean;
@@ -184,8 +182,17 @@ export class ChatService {
       return null;
     }
 
-    message.location.latitude = update.latitude;
-    message.location.longitude = update.longitude;
+    // Chỉ ghi đè tọa độ khi nhận đủ cặp số hợp lệ (vd. lệnh "Dừng chia sẻ" không gửi tọa độ)
+    const { latitude, longitude } = update;
+    if (
+      typeof latitude === 'number' &&
+      typeof longitude === 'number' &&
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude)
+    ) {
+      message.location.latitude = latitude;
+      message.location.longitude = longitude;
+    }
     if (update.address) message.location.address = update.address;
     if (update.name) message.location.name = update.name;
     if (typeof update.isLiveActive === 'boolean') {

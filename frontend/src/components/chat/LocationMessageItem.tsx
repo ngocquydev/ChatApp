@@ -7,6 +7,7 @@ import type * as L from "leaflet";
 import { useTranslation } from "@/i18n/useTranslation";
 import { ChatMessage, LocationData, useChatStore } from "@/store/useChatStore";
 import { liveLocationTracker } from "@/services/liveLocationTracker";
+import { formatLiveRemaining } from "@/utils/liveLocation";
 import LocationViewModal from "./LocationViewModal";
 
 interface LocationMessageItemProps {
@@ -181,22 +182,7 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
   }
 
   // Định dạng thời gian còn lại
-  const getRemainingTimeString = () => {
-    if (!location.liveExpiresAt || now === null) return "";
-    const diffMs = new Date(location.liveExpiresAt).getTime() - now;
-    if (diffMs <= 0) return tr("Đã hết hạn", "Expired");
-    const mins = Math.floor(diffMs / 60000);
-    const secs = Math.floor((diffMs % 60000) / 1000);
-    if (mins >= 60) {
-      const h = Math.floor(mins / 60);
-      const m = mins % 60;
-      return tr(`Còn ${h}h ${m}p`, `${h}h ${m}m left`);
-    }
-    if (mins > 0) {
-      return tr(`Còn ${mins} phút`, `${mins}m left`);
-    }
-    return tr(`Còn ${secs}s`, `${secs}s left`);
-  };
+  const getRemainingTimeString = () => formatLiveRemaining(location.liveExpiresAt, now, tr);
 
   const handleStopSharing = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -206,6 +192,12 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
   };
 
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}`;
+
+  // Mở Google Maps ở tab mới. Không render nút dưới dạng <a> vì rule `a { color: inherit }`
+  // (unlayered trong globals.css) luôn thắng style MUI (@layer) → chữ trắng trên nền trắng.
+  const handleOpenDirections = () => {
+    window.open(directionsUrl, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <>
@@ -421,7 +413,14 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
           </Box>
 
           {/* Các nút hành động */}
-          <Box sx={{ display: "flex", gap: 1, mt: 1.5 }}>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 1,
+              mt: 1.5,
+              "& .MuiButton-root": { whiteSpace: "nowrap", minWidth: 0 },
+            }}
+          >
             {isMe && isLiveActive ? (
               <>
                 <Button
@@ -495,10 +494,8 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
 
                 <Button
                   size="small"
-                  component="a"
-                  href={directionsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={handleOpenDirections}
+                  aria-label={tr("Chỉ đường tới vị trí này trên Google Maps", "Get directions on Google Maps")}
                   startIcon={<Navigation size={13} />}
                   sx={{
                     flex: 1,

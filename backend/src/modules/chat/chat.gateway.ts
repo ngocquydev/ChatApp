@@ -287,9 +287,6 @@ export class ChatGateway
     }
   }
 
-  /**
-   * Cập nhật tọa độ vị trí trực tiếp (Live Location)
-   */
   @SubscribeMessage('location:live_update')
   async handleLiveLocationUpdate(
     @ConnectedSocket() client: AuthenticatedSocket,
@@ -298,8 +295,8 @@ export class ChatGateway
       messageId: string;
       conversationId: string;
       receiverId: string;
-      latitude: number;
-      longitude: number;
+      latitude?: number;
+      longitude?: number;
       address?: string;
       name?: string;
       isLiveActive?: boolean;
@@ -321,14 +318,8 @@ export class ChatGateway
         },
       );
 
-      const locationData = updated?.location || {
-        latitude: payload.latitude,
-        longitude: payload.longitude,
-        address: payload.address || '',
-        name: payload.name || '',
-        isLive: true,
-        isLiveActive: payload.isLiveActive ?? true,
-      };
+      if (!updated?.location) return { success: false };
+      const locationData = updated.location;
 
       // Broadcast tới cả receiver và sender
       this.server

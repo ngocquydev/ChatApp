@@ -22,6 +22,7 @@ import { Crosshair, MapPin, Navigation, Radio, Search, Timer, X } from "lucide-r
 import type * as L from "leaflet";
 import { useTranslation } from "@/i18n/useTranslation";
 import { LocationData } from "@/store/useChatStore";
+import { LIVE_DURATION_OPTIONS, formatLiveDuration } from "@/utils/liveLocation";
 
 interface LocationPickerModalProps {
   open: boolean;
@@ -661,22 +662,27 @@ export default function LocationPickerModal({
               </Box>
             </Box>
 
-            <Box sx={{ display: "flex", gap: 1 }}>
-              {[
-                { val: 15, label: tr("15 phút", "15m") },
-                { val: 60, label: tr("1 giờ", "1h") },
-                { val: 480, label: tr("8 giờ", "8h") },
-              ].map((opt) => (
-                <Chip
-                  key={opt.val}
-                  label={opt.label}
-                  clickable
-                  color={liveDurationMinutes === opt.val ? "success" : "default"}
-                  variant={liveDurationMinutes === opt.val ? "filled" : "outlined"}
-                  onClick={() => setLiveDurationMinutes(opt.val)}
-                  sx={{ fontWeight: 700, fontSize: "0.85rem" }}
-                />
-              ))}
+            <Box
+              role="radiogroup"
+              aria-label={tr("Thời lượng chia sẻ", "Sharing duration")}
+              sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}
+            >
+              {LIVE_DURATION_OPTIONS.map((minutes) => {
+                const selected = liveDurationMinutes === minutes;
+                return (
+                  <Chip
+                    key={minutes}
+                    role="radio"
+                    aria-checked={selected}
+                    label={formatLiveDuration(minutes, tr)}
+                    clickable
+                    color={selected ? "success" : "default"}
+                    variant={selected ? "filled" : "outlined"}
+                    onClick={() => setLiveDurationMinutes(minutes)}
+                    sx={{ fontWeight: 700, fontSize: "0.85rem" }}
+                  />
+                );
+              })}
             </Box>
           </Box>
         )}
@@ -694,10 +700,7 @@ export default function LocationPickerModal({
           sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px", px: 2.5 }}
         >
           {shareMode === "live"
-            ? tr(
-                `Bắt đầu chia sẻ (${liveDurationMinutes >= 60 ? liveDurationMinutes / 60 + " giờ" : liveDurationMinutes + " phút"})`,
-                `Start sharing (${liveDurationMinutes >= 60 ? liveDurationMinutes / 60 + "h" : liveDurationMinutes + "m"})`,
-              )
+            ? `${tr("Bắt đầu chia sẻ", "Start sharing")} (${formatLiveDuration(liveDurationMinutes, tr)})`
             : tr("Gửi vị trí này", "Send this location")}
         </Button>
       </DialogActions>

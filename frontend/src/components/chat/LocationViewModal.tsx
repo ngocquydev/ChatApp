@@ -27,6 +27,7 @@ import type * as L from "leaflet";
 import { useTranslation } from "@/i18n/useTranslation";
 import { LocationData, useChatStore } from "@/store/useChatStore";
 import { liveLocationTracker } from "@/services/liveLocationTracker";
+import { formatLiveRemaining } from "@/utils/liveLocation";
 
 interface LocationViewModalProps {
   open: boolean;
@@ -203,21 +204,12 @@ export default function LocationViewModal({
   };
 
   // Định dạng thời gian còn lại
-  const getRemainingTimeString = () => {
-    if (!location.liveExpiresAt || now === null) return "";
-    const diffMs = new Date(location.liveExpiresAt).getTime() - now;
-    if (diffMs <= 0) return tr("Đã hết hạn", "Expired");
-    const mins = Math.floor(diffMs / 60000);
-    const secs = Math.floor((diffMs % 60000) / 1000);
-    if (mins >= 60) {
-      const h = Math.floor(mins / 60);
-      const m = mins % 60;
-      return tr(`Còn ${h}h ${m}p`, `${h}h ${m}m left`);
-    }
-    if (mins > 0) {
-      return tr(`Còn ${mins} phút`, `${mins}m left`);
-    }
-    return tr(`Còn ${secs}s`, `${secs}s left`);
+  const getRemainingTimeString = () => formatLiveRemaining(location.liveExpiresAt, now, tr);
+
+  // Mở link ngoài bằng window.open thay vì <a>: rule `a { color: inherit }` (unlayered)
+  // luôn thắng style MUI (@layer) nên nút dạng <a> bị mất màu chữ.
+  const openExternal = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -410,9 +402,7 @@ export default function LocationViewModal({
         <Button
           variant="outlined"
           color="inherit"
-          href={googleMapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+          onClick={() => openExternal(googleMapsUrl)}
           startIcon={<ExternalLink size={16} />}
           sx={{ textTransform: "none", fontWeight: 600, borderRadius: "10px" }}
         >
@@ -421,9 +411,7 @@ export default function LocationViewModal({
         <Button
           variant="contained"
           color="primary"
-          href={directionsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+          onClick={() => openExternal(directionsUrl)}
           startIcon={<Navigation size={16} />}
           sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px" }}
         >

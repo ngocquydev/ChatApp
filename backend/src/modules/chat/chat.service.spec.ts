@@ -235,6 +235,30 @@ describe('ChatService', () => {
       expect(mockLiveMsg.save).toHaveBeenCalled();
     });
 
+    it('should keep last coordinates when stopping live location without coordinates', async () => {
+      const msgId = new Types.ObjectId().toString();
+      const mockLiveMsg = {
+        _id: msgId,
+        senderId: new Types.ObjectId(userAId),
+        type: 'location',
+        location: {
+          latitude: 10.82,
+          longitude: 106.63,
+          isLive: true,
+          isLiveActive: true,
+        },
+        markModified: vi.fn(),
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockMessageModel.findById.mockResolvedValue(mockLiveMsg);
+
+      const res = await service.updateLiveLocation(msgId, userAId, { isLiveActive: false });
+
+      expect(res?.location?.latitude).toBe(10.82);
+      expect(res?.location?.longitude).toBe(106.63);
+      expect(res?.location?.isLiveActive).toBe(false);
+    });
+
     it('should save call message with callLog metadata and formatted text', async () => {
       mockUsersService.findById.mockResolvedValue({ _id: userBId, name: 'User B' });
       const mockConv = {
