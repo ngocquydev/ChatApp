@@ -200,6 +200,7 @@ export class ChatGateway
     text: string;
     type?: string;
     callLog?: unknown;
+    location?: unknown;
     createdAt?: Date | string;
     readAt?: Date | string | null;
     isDeleted?: boolean;
@@ -226,6 +227,7 @@ export class ChatGateway
       text: message.text,
       type: message.type || 'text',
       callLog: message.callLog || null,
+      location: message.location || null,
       createdAt:
         typeof message.createdAt === 'string'
           ? message.createdAt
@@ -282,6 +284,69 @@ export class ChatGateway
         success: false,
         message: error instanceof Error ? error.message : 'Gửi tin nhắn thất bại',
       };
+    }
+  }
+
+  /**
+   * Cập nhật tọa độ vị trí trực tiếp (Live Location)
+   */
+  @SubscribeMessage('location:live_update')
+  async handleLiveLocationUpdate(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody()
+    payload: {
+      messageId: string;
+      conversationId: string;
+      receiverId: string;
+      latitude: number;
+      longitude: number;
+      address?: string;
+      name?: string;
+      isLiveActive?: boolean;
+    },
+  ) {
+    const senderId = client.data?.user?.sub;
+    if (!senderId || !payload.messageId) return { success: false };
+
+    try {
+      const updated = await this.chatService.updateLiveLocation(
+        payload.messageId,
+        senderId,
+        {
+          latitude: payload.latitude,
+          longitude: payload.longitude,
+          address: payload.address,
+          name: payload.name,
+          isLiveActive: payload.isLiveActive,
+        },
+      );
+
+      const locationData = updated?.location || {
+        latitude: payload.latitude,
+        longitude: payload.longitude,
+        address: payload.address || '',
+        name: payload.name || '',
+        isLive: true,
+        isLiveActive: payload.isLiveActive ?? true,
+      };
+
+      // Broadcast tới cả receiver và sender
+      this.server
+        .to(`user:${payload.receiverId}`)
+        .to(`user:${senderId}`)
+        .emit('location:live_updated', {
+          messageId: payload.messageId,
+          conversationId: payload.conversationId,
+          senderId,
+          location: locationData,
+        });
+
+      return { success: true, location: locationData };
+    } catch (err) {
+      this.logger.error(
+        `Lỗi cập nhật live location: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return { success: false };
     }
   }
 

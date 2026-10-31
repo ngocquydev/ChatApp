@@ -135,7 +135,9 @@ export class ChatService {
     // Cập nhật tin nhắn cuối cùng và số tin chưa đọc cho người nhận
     const lastText =
       options?.type === 'location'
-        ? `📍 ${options.location?.address || options.location?.name || 'Vị trí đã ghim'}`
+        ? options.location?.isLive
+          ? '🛰️ Đang chia sẻ vị trí trực tiếp'
+          : `📍 ${options.location?.address || options.location?.name || 'Vị trí đã ghim'}`
         : text.trim();
 
     conversation.lastMessage = {
@@ -153,6 +155,45 @@ export class ChatService {
     conversation.unreadCounts.set(receiverId, currentUnread + 1);
 
     await conversation.save();
+
+    return message;
+  }
+
+  /**
+   * Cập nhật vị trí trực tiếp (Live Location) cho tin nhắn
+   */
+  async updateLiveLocation(
+    messageId: string,
+    senderId: string,
+    update: {
+      latitude: number;
+      longitude: number;
+      address?: string;
+      name?: string;
+      isLiveActive?: boolean;
+    },
+  ): Promise<MessageDocument | null> {
+    const message = await this.messageModel.findById(messageId);
+    if (!message) return null;
+
+    if (String(message.senderId) !== senderId) {
+      throw new BadRequestException('Chỉ người gửi mới có quyền cập nhật vị trí trực tiếp');
+    }
+
+    if (message.type !== 'location' || !message.location) {
+      return null;
+    }
+
+    message.location.latitude = update.latitude;
+    message.location.longitude = update.longitude;
+    if (update.address) message.location.address = update.address;
+    if (update.name) message.location.name = update.name;
+    if (typeof update.isLiveActive === 'boolean') {
+      message.location.isLiveActive = update.isLiveActive;
+    }
+
+    message.markModified('location');
+    await message.save();
 
     return message;
   }

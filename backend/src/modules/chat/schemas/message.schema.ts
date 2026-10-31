@@ -15,6 +15,9 @@ export interface LocationData {
   longitude: number;
   address?: string;
   name?: string;
+  isLive?: boolean;
+  liveExpiresAt?: Date | string | null;
+  isLiveActive?: boolean;
 }
 
 export type MessageDocument = Message & Document;
@@ -65,6 +68,9 @@ export class Message {
       longitude: { type: Number, required: true },
       address: { type: String, default: '' },
       name: { type: String, default: '' },
+      isLive: { type: Boolean, default: false },
+      liveExpiresAt: { type: Date, default: null },
+      isLiveActive: { type: Boolean, default: true },
     },
     default: null,
   })

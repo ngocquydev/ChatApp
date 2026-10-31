@@ -145,6 +145,28 @@ a {
   }
 }
 
+@keyframes liveRadarPulse {
+  0% {
+    transform: scale(0.65);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes miniRadarPulse {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
 /* Tôn trọng người dùng giảm chuyển động (WCAG 2.3.3) */
 @media (prefers-reduced-motion: reduce) {
   *,

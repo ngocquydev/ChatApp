@@ -1544,7 +1544,10 @@ export default function FloatingChatBox({
         open={openLocationPicker}
         onClose={() => setOpenLocationPicker(false)}
         onSelectLocation={(loc) => {
-          void handleSendMessage(loc.name || loc.address || "📍 Vị trí đã ghim", {
+          const defaultText = loc.isLive
+            ? tr("🛰️ Vị trí trực tiếp (Thời gian thực)", "🛰️ Live location (Real-time)")
+            : (loc.name || loc.address || tr("📍 Vị trí đã ghim", "📍 Pinned Location"));
+          void handleSendMessage(defaultText, {
             type: "location",
             location: loc,
           });

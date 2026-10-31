@@ -52,18 +52,13 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 ### 1. Nhắn tin Thời Gian Thực & Hộp Chat Nổi Facebook Messenger
 - **Dual-Engine Realtime:** Kết hợp linh hoạt Socket.IO (WebSockets) cho các tác vụ quản trị và Binary MQTT/Protobuf cho luồng tin nhắn siêu nhẹ (tiết kiệm 80% payload, độ trễ < 5ms).
 - **Cửa sổ chat nổi đa nhiệm (Floating Chat Dock):** Trò chuyện đa nhiệm nhiều người cùng lúc ở góc màn hình mà không gián đoạn việc lướt bảng tin.
-- **Chia sẻ vị trí & Bản đồ tương tác (Location Sharing):**
-  - Gửi vị trí GPS hiện tại hoặc chọn ghim địa điểm linh hoạt trên bản đồ thông qua **Leaflet & OpenStreetMap** (100% mã nguồn mở, không phụ thuộc API key giới hạn).
+- **Chia sẻ vị trí & Bản đồ tương tác (Location Sharing & Real-time Live Tracking):**
+  - **Chia sẻ vị trí thời gian thực (Live Location - Phong cách Zalo / Telegram):** Phát sóng tọa độ di chuyển theo thời gian thực với tùy chọn thời lượng linh hoạt (15 phút, 1 giờ, 8 giờ). Thẻ tin nhắn hiển thị huy hiệu radar xanh nhấp nháy, đồng hồ đếm ngược trực tiếp, marker phát sóng di chuyển mượt mà trên bản đồ và nút *"Dừng chia sẻ"* tức thì cho người gửi.
+  - **Trình xem toàn màn hình tương tác:** Chế độ tự động bám theo bước chân (Auto-follow mode), sao chép tọa độ chuẩn xác và dẫn đường 1 chạm sang Google Maps.
+  - **Gửi vị trí đã ghim (Static Pinned Location):** Gửi vị trí GPS hiện tại hoặc chọn ghim địa điểm linh hoạt trên bản đồ thông qua **Leaflet & OpenStreetMap** (100% mã nguồn mở, không phụ thuộc API key giới hạn).
   - Tích hợp công cụ tìm kiếm địa danh và giải mã địa chỉ ngược (**Reverse Geocoding** qua OpenStreetMap Nominatim).
-  - Bong bóng tin nhắn vị trí hiển thị bản đồ thu nhỏ, tọa độ chuẩn xác, nút mở xem bản đồ chi tiết và nút dẫn đường trực tiếp sang Google Maps.
   - Hỗ trợ đầy đủ, đồng bộ thời gian thực trên cả trang chat chính (`/chat`) và Cửa sổ chat nổi (`FloatingChatBox`).
-- **Tính năng bảo mật & riêng tư:**
-  - **Thu hồi tin nhắn (Unsend):** Xóa mềm tin nhắn của bản thân, đồng bộ tức thời trạng thái *"Tin nhắn đã bị thu hồi"*.
-  - **Chế độ Hạn chế (Restrict):** Người bị hạn chế hoàn toàn không hay biết; ẩn trạng thái "Đã xem", ẩn trạng thái online và chuyển hội thoại sang mục riêng.
-  - **Chặn & Bỏ chặn (Block / Unblock):** Chặn gửi tin nhắn hai chiều kèm thanh cảnh báo trực quan.
-  - **Bộ 5 Chủ đề sống động:** Tùy biến hình nền và màu bong bóng chat đồng bộ thời gian thực.
-  - **Chỉ báo soạn thảo Typing Heartbeat:** Nhịp tim 2.5s và bộ đếm an toàn 6.5s triệt tiêu lỗi mất trạng thái gõ.
-- 📖 *Xem đặc tả chi tiết tại: [docs/features/chat-realtime.md](docs/features/chat-realtime.md)*
+  - 📖 *Xem đặc tả chi tiết tại: [docs/features/live-location-sharing.md](docs/features/live-location-sharing.md) & [docs/features/chat-realtime.md](docs/features/chat-realtime.md)*
 
 ### 2. Thuật Toán Gợi Ý Bạn Bè Thông Minh (Neo4j Graph Database)
 - **Thuật toán Đồ thị Đa Tầng (Neo4j Cypher):**

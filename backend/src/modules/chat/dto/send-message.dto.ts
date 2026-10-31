@@ -1,4 +1,6 @@
 import {
+  IsBoolean,
+  IsDateString,
   IsMongoId,
   IsNotEmpty,
   IsNumber,
@@ -23,6 +25,18 @@ export class LocationDto {
   @IsString({ message: 'Tên địa điểm phải là chuỗi' })
   @IsOptional()
   name?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isLive?: boolean;
+
+  @IsDateString()
+  @IsOptional()
+  liveExpiresAt?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isLiveActive?: boolean;
 }
 
 export class SendMessageDto {

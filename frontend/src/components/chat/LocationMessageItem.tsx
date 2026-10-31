@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Box, Button, ButtonBase, Typography } from "@mui/material";
-import { ExternalLink, MapPin, Navigation } from "lucide-react";
+import { ExternalLink, MapPin, Navigation, Radio, Square } from "lucide-react";
 import type * as L from "leaflet";
 import { useTranslation } from "@/i18n/useTranslation";
-import { ChatMessage, LocationData } from "@/store/useChatStore";
+import { ChatMessage, LocationData, useChatStore } from "@/store/useChatStore";
+import { liveLocationTracker } from "@/services/liveLocationTracker";
 import LocationViewModal from "./LocationViewModal";
 
 interface LocationMessageItemProps {
@@ -17,13 +18,65 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
   const { tr } = useTranslation();
   const miniMapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
   const [openModal, setOpenModal] = useState(false);
+  const [now, setNow] = useState<number | null>(null);
 
-  // Lấy dữ liệu location từ message.location hoặc parse từ text nếu cần
+  const updateLiveLocation = useChatStore((s) => s.updateLiveLocation);
+  const stopLiveLocation = useChatStore((s) => s.stopLiveLocation);
+
   const location: LocationData | null = message.location || null;
+  const isLive = Boolean(location?.isLive);
 
+  // Cập nhật đếm ngược mỗi giây nếu đang chia sẻ trực tiếp
+  useEffect(() => {
+    setNow(Date.now());
+    if (!isLive || location?.isLiveActive === false) return;
+
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isLive, location?.isLiveActive]);
+
+  // Tính trạng thái hết hạn và trạng thái đang hoạt động của live location
+  const isExpired = Boolean(
+    location?.liveExpiresAt && now !== null && new Date(location.liveExpiresAt).getTime() <= now,
+  );
+  const isLiveActive = isLive && location?.isLiveActive !== false && !isExpired;
+
+  // Nếu là người gửi và đang chia sẻ trực tiếp: kích hoạt watcher định vị nền
+  useEffect(() => {
+    if (!isMe || !isLiveActive || !message._id) {
+      if (isMe && message._id) {
+        liveLocationTracker.stop(message._id);
+      }
+      return;
+    }
+
+    liveLocationTracker.start(message._id, (lat, lng) => {
+      updateLiveLocation(message._id, {
+        latitude: lat,
+        longitude: lng,
+      });
+    });
+
+    return () => {
+      liveLocationTracker.stop(message._id);
+    };
+  }, [isMe, isLiveActive, message._id, updateLiveLocation]);
+
+  // Khởi tạo bản đồ mini hoặc cập nhật marker khi tọa độ thay đổi
   useEffect(() => {
     if (!location || !miniMapRef.current) return;
+
+    // Nếu map đã tồn tại thì chỉ cập nhật vị trí marker và pan bản đồ
+    if (mapInstanceRef.current && markerRef.current) {
+      markerRef.current.setLatLng([location.latitude, location.longitude]);
+      mapInstanceRef.current.panTo([location.latitude, location.longitude], { animate: true });
+      return;
+    }
 
     let isMounted = true;
 
@@ -35,27 +88,44 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        markerRef.current = null;
       }
 
-      const customPinHtml = `
-        <div style="position: relative; width: 28px; height: 28px; transform: translate(-50%, -100%);">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="var(--mui-palette-error-main)" stroke="var(--mui-palette-common-white)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-            <circle cx="12" cy="10" r="3" fill="var(--mui-palette-common-white)" />
-          </svg>
-        </div>
-      `;
+      // Biểu tượng ghim động: Nếu là live location thì hiển thị radar phát sóng xanh nhấp nháy
+      const markerHtml = isLive
+        ? `
+          <div style="position: relative; width: 34px; height: 34px; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center;">
+            ${
+              isLiveActive
+                ? `<div style="position: absolute; inset: -8px; border-radius: 50%; background: rgba(16, 185, 129, 0.35); animation: miniRadarPulse 2s infinite ease-out;"></div>`
+                : ""
+            }
+            <div style="width: 20px; height: 20px; border-radius: 50%; background: ${
+              isLiveActive ? "var(--mui-palette-tone-10b981)" : "var(--mui-palette-neutral-500)"
+            }; border: 3px solid var(--mui-palette-common-white); box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
+              <div style="width: 6px; height: 6px; border-radius: 50%; background: var(--mui-palette-common-white);"></div>
+            </div>
+          </div>
+        `
+        : `
+          <div style="position: relative; width: 28px; height: 28px; transform: translate(-50%, -100%);">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="var(--mui-palette-error-main)" stroke="var(--mui-palette-common-white)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" fill="var(--mui-palette-common-white)" />
+            </svg>
+          </div>
+        `;
 
       const customIcon = leaflet.divIcon({
         className: "custom-leaflet-mini-pin",
-        html: customPinHtml,
+        html: markerHtml,
         iconSize: [0, 0],
         iconAnchor: [0, 0],
       });
 
       const map = leaflet.map(miniMapRef.current, {
         center: [location.latitude, location.longitude],
-        zoom: 15,
+        zoom: isLive ? 16 : 15,
         dragging: false,
         touchZoom: false,
         scrollWheelZoom: false,
@@ -74,11 +144,13 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
         })
         .addTo(map);
 
-      leaflet
+      const marker = leaflet
         .marker([location.latitude, location.longitude], {
           icon: customIcon,
         })
         .addTo(map);
+
+      markerRef.current = marker;
 
       setTimeout(() => {
         if (isMounted && mapInstanceRef.current) {
@@ -94,9 +166,10 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        markerRef.current = null;
       }
     };
-  }, [location]);
+  }, [location, isLive, isLiveActive]);
 
   if (!location) {
     return (
@@ -107,20 +180,45 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
     );
   }
 
+  // Định dạng thời gian còn lại
+  const getRemainingTimeString = () => {
+    if (!location.liveExpiresAt || now === null) return "";
+    const diffMs = new Date(location.liveExpiresAt).getTime() - now;
+    if (diffMs <= 0) return tr("Đã hết hạn", "Expired");
+    const mins = Math.floor(diffMs / 60000);
+    const secs = Math.floor((diffMs % 60000) / 1000);
+    if (mins >= 60) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return tr(`Còn ${h}h ${m}p`, `${h}h ${m}m left`);
+    }
+    if (mins > 0) {
+      return tr(`Còn ${mins} phút`, `${mins}m left`);
+    }
+    return tr(`Còn ${secs}s`, `${secs}s left`);
+  };
+
+  const handleStopSharing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!message._id) return;
+    liveLocationTracker.stop(message._id);
+    stopLiveLocation(message._id);
+  };
+
   const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}`;
 
   return (
     <>
       <Box
         sx={{
-          width: { xs: 260, sm: 295 },
+          width: { xs: 260, sm: 305 },
           maxWidth: "100%",
           borderRadius: "18px",
           overflow: "hidden",
-          bgcolor: isMe ? "primary.main" : "background.paper",
-          color: isMe ? "common.white" : "text.primary",
+          bgcolor: isMe ? "var(--mui-palette-brand-600)" : "var(--mui-palette-background-paper)",
+          color: isMe ? "var(--mui-palette-common-white)" : "var(--mui-palette-text-primary)",
           border: "1px solid",
-          borderColor: isMe ? "rgba(255, 255, 255, 0.18)" : "divider",
+          borderColor: isMe ? "rgba(255, 255, 255, 0.2)" : "var(--mui-palette-divider)",
           boxShadow: 2,
           transition: "transform 150ms ease, box-shadow 150ms ease",
           "&:hover": {
@@ -131,7 +229,11 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
         {/* Khung bản đồ thu nhỏ có thể nhấp vào */}
         <ButtonBase
           onClick={() => setOpenModal(true)}
-          aria-label={tr("Mở xem vị trí trên bản đồ", "Open location on map")}
+          aria-label={
+            isLive
+              ? tr("Mở theo dõi vị trí trực tiếp", "Open live location tracking")
+              : tr("Mở xem vị trí trên bản đồ", "Open location on map")
+          }
           sx={{
             position: "relative",
             width: "100%",
@@ -139,7 +241,7 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
             display: "block",
             textAlign: "inherit",
             cursor: "pointer",
-            bgcolor: "action.hover",
+            bgcolor: "var(--mui-palette-action-hover)",
             overflow: "hidden",
             "&:hover .map-overlay": {
               opacity: 1,
@@ -155,7 +257,7 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
             }}
           />
 
-          {/* Huy hiệu Vị trí nổi ở góc trên */}
+          {/* Huy hiệu trạng thái: Live hoặc Ghim */}
           <Box
             sx={{
               position: "absolute",
@@ -164,19 +266,63 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
               zIndex: 400,
               display: "flex",
               alignItems: "center",
-              gap: 0.5,
-              px: 1,
-              py: 0.35,
-              borderRadius: "10px",
-              bgcolor: "rgba(0, 0, 0, 0.65)",
-              color: "common.white",
-              fontSize: "0.7rem",
-              fontWeight: 600,
+              gap: 0.75,
+              px: 1.15,
+              py: 0.45,
+              borderRadius: "12px",
+              bgcolor: isLive
+                ? isLiveActive
+                  ? "rgba(16, 185, 129, 0.92)"
+                  : "rgba(55, 65, 81, 0.88)"
+                : "rgba(0, 0, 0, 0.65)",
+              color: "var(--mui-palette-common-white)",
+              fontSize: "0.72rem",
+              fontWeight: 700,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
               pointerEvents: "none",
+              backdropFilter: "blur(4px)",
             }}
           >
-            <MapPin size={12} color="var(--mui-palette-error-main)" />
-            <span>{tr("Vị trí", "Location")}</span>
+            {isLive ? (
+              isLiveActive ? (
+                <>
+                  <Box
+                    sx={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      bgcolor: "var(--mui-palette-common-white)",
+                      position: "relative",
+                      "&::after": {
+                        content: '""',
+                        position: "absolute",
+                        inset: -3,
+                        borderRadius: "50%",
+                        bgcolor: "rgba(255,255,255,0.6)",
+                        animation: "badgePulse 1.6s infinite ease-out",
+                      },
+                      "@keyframes badgePulse": {
+                        "0%": { transform: "scale(0.8)", opacity: 1 },
+                        "100%": { transform: "scale(2.2)", opacity: 0 },
+                      },
+                    }}
+                  />
+                  <span>
+                    {tr("TRỰC TIẾP", "LIVE")} • {getRemainingTimeString()}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Square size={11} fill="currentColor" />
+                  <span>{tr("ĐÃ DỪNG CHIA SẺ", "LIVE ENDED")}</span>
+                </>
+              )
+            ) : (
+              <>
+                <MapPin size={12} color="var(--mui-palette-error-main)" />
+                <span>{tr("VỊ TRÍ ĐÃ GHIM", "PINNED LOCATION")}</span>
+              </>
+            )}
           </Box>
 
           {/* Lớp phủ hover mờ với icon phóng to */}
@@ -185,7 +331,7 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
             sx={{
               position: "absolute",
               inset: 0,
-              bgcolor: "rgba(0, 0, 0, 0.25)",
+              bgcolor: "rgba(0, 0, 0, 0.3)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -197,49 +343,69 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
             <Box
               sx={{
                 px: 1.5,
-                py: 0.5,
+                py: 0.6,
                 borderRadius: "20px",
-                bgcolor: "background.paper",
-                color: "text.primary",
+                bgcolor: "var(--mui-palette-background-paper)",
+                color: "var(--mui-palette-text-primary)",
                 fontSize: "0.75rem",
-                fontWeight: 600,
+                fontWeight: 700,
                 display: "flex",
                 alignItems: "center",
-                gap: 0.5,
-                boxShadow: 2,
+                gap: 0.6,
+                boxShadow: 3,
               }}
             >
               <ExternalLink size={14} />
-              {tr("Xem chi tiết", "View details")}
+              {isLive ? tr("Mở bản đồ trực tiếp", "Open live map") : tr("Xem chi tiết", "View details")}
             </Box>
           </Box>
         </ButtonBase>
 
-        {/* Thông tin địa điểm */}
+        {/* Thông tin địa điểm & thời gian thực */}
         <Box sx={{ p: 1.75, pt: 1.5 }}>
           <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
-            <MapPin
-              size={18}
-              color={isMe ? "var(--mui-palette-common-white)" : "var(--mui-palette-error-main)"}
-              style={{ marginTop: 2, flexShrink: 0 }}
-            />
+            {isLive ? (
+              <Radio
+                size={18}
+                color={
+                  isLiveActive
+                    ? "var(--mui-palette-tone-10b981)"
+                    : isMe
+                      ? "var(--mui-palette-common-white)"
+                      : "var(--mui-palette-neutral-400)"
+                }
+                style={{ marginTop: 2, flexShrink: 0 }}
+              />
+            ) : (
+              <MapPin
+                size={18}
+                color={isMe ? "var(--mui-palette-common-white)" : "var(--mui-palette-error-main)"}
+                style={{ marginTop: 2, flexShrink: 0 }}
+              />
+            )}
+
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography
                 variant="subtitle2"
                 sx={{
                   fontWeight: 700,
                   fontSize: "0.92rem",
-                  color: isMe ? "common.white" : "text.primary",
+                  color: isMe ? "var(--mui-palette-common-white)" : "var(--mui-palette-text-primary)",
                   lineHeight: 1.3,
                 }}
               >
-                {location.name || tr("Vị trí đã ghim", "Pinned Location")}
+                {isLive
+                  ? isLiveActive
+                    ? tr("Chia sẻ vị trí trực tiếp", "Sharing live location")
+                    : tr("Vị trí trực tiếp đã kết thúc", "Live location ended")
+                  : location.name || tr("Vị trí đã ghim", "Pinned Location")}
               </Typography>
+
               {location.address && (
                 <Typography
                   variant="caption"
                   sx={{
-                    color: isMe ? "rgba(255, 255, 255, 0.85)" : "text.secondary",
+                    color: isMe ? "rgba(255, 255, 255, 0.85)" : "var(--mui-palette-text-secondary)",
                     mt: 0.35,
                     display: "-webkit-box",
                     WebkitLineClamp: 2,
@@ -256,65 +422,103 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
 
           {/* Các nút hành động */}
           <Box sx={{ display: "flex", gap: 1, mt: 1.5 }}>
-            <Button
-              size="small"
-              onClick={() => setOpenModal(true)}
-              startIcon={<ExternalLink size={13} />}
-              sx={{
-                flex: 1,
-                fontSize: "0.75rem",
-                py: 0.6,
-                textTransform: "none",
-                fontWeight: 600,
-                borderRadius: "10px",
-                bgcolor: isMe ? "rgba(255, 255, 255, 0.16)" : "action.hover",
-                color: isMe ? "common.white" : "text.primary",
-                border: "1px solid",
-                borderColor: isMe ? "rgba(255, 255, 255, 0.3)" : "divider",
-                "& .MuiButton-startIcon": {
-                  color: isMe ? "common.white" : "text.secondary",
-                },
-                "&:hover": {
-                  bgcolor: isMe ? "rgba(255, 255, 255, 0.25)" : "action.selected",
-                },
-              }}
-            >
-              {tr("Xem bản đồ", "View map")}
-            </Button>
-            <Button
-              size="small"
-              component="a"
-              href={directionsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              startIcon={<Navigation size={13} />}
-              sx={{
-                flex: 1,
-                fontSize: "0.75rem",
-                py: 0.6,
-                textTransform: "none",
-                fontWeight: 700,
-                borderRadius: "10px",
-                bgcolor: isMe ? "common.white" : "primary.main",
-                color: isMe ? "primary.dark" : "primary.contrastText",
-                boxShadow: isMe ? "0 2px 6px rgba(0,0,0,0.15)" : 1,
-                "&, &:hover, &:focus, &:active": {
-                  color: isMe
-                    ? "var(--mui-palette-primary-dark) !important"
-                    : "var(--mui-palette-primary-contrastText) !important",
-                },
-                "& .MuiButton-startIcon": {
-                  color: isMe
-                    ? "var(--mui-palette-primary-dark) !important"
-                    : "var(--mui-palette-primary-contrastText) !important",
-                },
-                "&:hover": {
-                  bgcolor: isMe ? "rgba(255, 255, 255, 0.92)" : "primary.dark",
-                },
-              }}
-            >
-              {tr("Chỉ đường", "Directions")}
-            </Button>
+            {isMe && isLiveActive ? (
+              <>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="error"
+                  onClick={handleStopSharing}
+                  startIcon={<Square size={13} fill="currentColor" />}
+                  sx={{
+                    flex: 1,
+                    fontSize: "0.75rem",
+                    py: 0.65,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    borderRadius: "10px",
+                    boxShadow: "0 2px 6px rgba(239, 68, 68, 0.35)",
+                  }}
+                >
+                  {tr("Dừng chia sẻ", "Stop sharing")}
+                </Button>
+
+                <Button
+                  size="small"
+                  onClick={() => setOpenModal(true)}
+                  startIcon={<ExternalLink size={13} />}
+                  sx={{
+                    flex: 1,
+                    fontSize: "0.75rem",
+                    py: 0.65,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderRadius: "10px",
+                    bgcolor: "rgba(255, 255, 255, 0.18)",
+                    color: "var(--mui-palette-common-white)",
+                    border: "1px solid rgba(255, 255, 255, 0.35)",
+                    "&:hover": {
+                      bgcolor: "rgba(255, 255, 255, 0.28)",
+                    },
+                  }}
+                >
+                  {tr("Xem trực tiếp", "View live")}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="small"
+                  onClick={() => setOpenModal(true)}
+                  startIcon={<ExternalLink size={13} />}
+                  sx={{
+                    flex: 1,
+                    fontSize: "0.75rem",
+                    py: 0.65,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    borderRadius: "10px",
+                    bgcolor: isMe ? "rgba(255, 255, 255, 0.18)" : "var(--mui-palette-action-hover)",
+                    color: isMe ? "var(--mui-palette-common-white)" : "var(--mui-palette-text-primary)",
+                    border: "1px solid",
+                    borderColor: isMe ? "rgba(255, 255, 255, 0.35)" : "var(--mui-palette-divider)",
+                    "& .MuiButton-startIcon": {
+                      color: isMe ? "var(--mui-palette-common-white)" : "var(--mui-palette-text-secondary)",
+                    },
+                    "&:hover": {
+                      bgcolor: isMe ? "rgba(255, 255, 255, 0.28)" : "var(--mui-palette-action-selected)",
+                    },
+                  }}
+                >
+                  {isLive ? tr("Xem trực tiếp", "View live") : tr("Xem bản đồ", "View map")}
+                </Button>
+
+                <Button
+                  size="small"
+                  component="a"
+                  href={directionsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  startIcon={<Navigation size={13} />}
+                  sx={{
+                    flex: 1,
+                    fontSize: "0.75rem",
+                    py: 0.65,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    borderRadius: "10px",
+                    bgcolor: isMe ? "var(--mui-palette-common-white)" : "var(--mui-palette-brand-600)",
+                    color: isMe ? "var(--mui-palette-brand-700)" : "var(--mui-palette-common-white)",
+                    boxShadow: isMe ? "0 2px 6px rgba(0,0,0,0.18)" : "0 2px 6px rgba(37, 99, 235, 0.25)",
+                    "&:hover": {
+                      bgcolor: isMe ? "rgba(255, 255, 255, 0.92)" : "var(--mui-palette-brand-700)",
+                    },
+                  }}
+                >
+                  {tr("Chỉ đường", "Directions")}
+                </Button>
+              </>
+            )}
           </Box>
         </Box>
       </Box>
@@ -324,6 +528,8 @@ export default function LocationMessageItem({ message, isMe }: LocationMessageIt
         open={openModal}
         onClose={() => setOpenModal(false)}
         location={location}
+        messageId={message._id}
+        isMe={isMe}
       />
     </>
   );

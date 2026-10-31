@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -12,28 +13,79 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Copy, ExternalLink, MapPin, Navigation, X } from "lucide-react";
+import {
+  Compass,
+  Copy,
+  ExternalLink,
+  MapPin,
+  Navigation,
+  Radio,
+  Square,
+  X,
+} from "lucide-react";
 import type * as L from "leaflet";
 import { useTranslation } from "@/i18n/useTranslation";
-import { LocationData } from "@/store/useChatStore";
+import { LocationData, useChatStore } from "@/store/useChatStore";
+import { liveLocationTracker } from "@/services/liveLocationTracker";
 
 interface LocationViewModalProps {
   open: boolean;
   onClose: () => void;
   location: LocationData | null;
+  messageId?: string;
+  isMe?: boolean;
 }
 
 export default function LocationViewModal({
   open,
   onClose,
   location,
+  messageId,
+  isMe,
 }: LocationViewModalProps) {
   const { tr } = useTranslation();
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
 
+  const [autoFollow, setAutoFollow] = useState(true);
+  const [now, setNow] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const stopLiveLocation = useChatStore((s) => s.stopLiveLocation);
+
+  const isLive = Boolean(location?.isLive);
+
+  // Cập nhật timer đếm ngược nếu đang trực tiếp
   useEffect(() => {
-    if (!open || !location) return;
+    if (!open) return;
+    setNow(Date.now());
+    if (!isLive || location?.isLiveActive === false) return;
+
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [open, isLive, location?.isLiveActive]);
+
+  const isExpired = Boolean(
+    location?.liveExpiresAt && now !== null && new Date(location.liveExpiresAt).getTime() <= now,
+  );
+  const isLiveActive = isLive && location?.isLiveActive !== false && !isExpired;
+
+  // Khởi tạo bản đồ lớn hoặc cập nhật marker khi tọa độ thời gian thực thay đổi
+  useEffect(() => {
+    if (!open || !location || !mapContainerRef.current) return;
+
+    // Nếu bản đồ đã khởi tạo thì cập nhật vị trí marker và pan
+    if (mapInstanceRef.current && markerRef.current) {
+      markerRef.current.setLatLng([location.latitude, location.longitude]);
+      if (autoFollow) {
+        mapInstanceRef.current.panTo([location.latitude, location.longitude], { animate: true });
+      }
+      return;
+    }
 
     let isMounted = true;
 
@@ -45,20 +97,36 @@ export default function LocationViewModal({
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        markerRef.current = null;
       }
 
-      const customPinHtml = `
-        <div style="position: relative; width: 36px; height: 36px; transform: translate(-50%, -100%);">
-          <svg viewBox="0 0 24 24" width="36" height="36" fill="var(--mui-palette-error-main)" stroke="var(--mui-palette-common-white)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));">
-            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-            <circle cx="12" cy="10" r="3" fill="var(--mui-palette-common-white)" />
-          </svg>
-        </div>
-      `;
+      const markerHtml = isLive
+        ? `
+          <div style="position: relative; width: 42px; height: 42px; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center;">
+            ${
+              isLiveActive
+                ? `<div style="position: absolute; inset: -12px; border-radius: 50%; background: rgba(16, 185, 129, 0.3); animation: liveRadarPulse 2s infinite ease-out;"></div>`
+                : ""
+            }
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: ${
+              isLiveActive ? "var(--mui-palette-tone-10b981)" : "var(--mui-palette-neutral-500)"
+            }; border: 3.5px solid var(--mui-palette-common-white); box-shadow: 0 4px 10px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
+              <div style="width: 7px; height: 7px; border-radius: 50%; background: var(--mui-palette-common-white);"></div>
+            </div>
+          </div>
+        `
+        : `
+          <div style="position: relative; width: 36px; height: 36px; transform: translate(-50%, -100%);">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="var(--mui-palette-error-main)" stroke="var(--mui-palette-common-white)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" fill="var(--mui-palette-common-white)" />
+            </svg>
+          </div>
+        `;
 
       const customIcon = leaflet.divIcon({
         className: "custom-leaflet-pin-view",
-        html: customPinHtml,
+        html: markerHtml,
         iconSize: [0, 0],
         iconAnchor: [0, 0],
       });
@@ -78,11 +146,18 @@ export default function LocationViewModal({
         })
         .addTo(map);
 
-      leaflet
+      const marker = leaflet
         .marker([location.latitude, location.longitude], {
           icon: customIcon,
         })
         .addTo(map);
+
+      markerRef.current = marker;
+
+      // Khi người dùng tự tay kéo di chuyển bản đồ thì tạm tắt tự động bám theo
+      map.on("dragstart", () => {
+        setAutoFollow(false);
+      });
 
       setTimeout(() => {
         if (isMounted && mapInstanceRef.current) {
@@ -98,9 +173,10 @@ export default function LocationViewModal({
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        markerRef.current = null;
       }
     };
-  }, [open, location]);
+  }, [open, location, isLive, isLiveActive, autoFollow]);
 
   if (!location) return null;
 
@@ -109,6 +185,39 @@ export default function LocationViewModal({
 
   const handleCopyCoords = () => {
     void navigator.clipboard.writeText(`${location.latitude}, ${location.longitude}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRecenter = () => {
+    setAutoFollow(true);
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setView([location.latitude, location.longitude], 16, { animate: true });
+    }
+  };
+
+  const handleStopSharing = () => {
+    if (!messageId) return;
+    liveLocationTracker.stop(messageId);
+    stopLiveLocation(messageId);
+  };
+
+  // Định dạng thời gian còn lại
+  const getRemainingTimeString = () => {
+    if (!location.liveExpiresAt || now === null) return "";
+    const diffMs = new Date(location.liveExpiresAt).getTime() - now;
+    if (diffMs <= 0) return tr("Đã hết hạn", "Expired");
+    const mins = Math.floor(diffMs / 60000);
+    const secs = Math.floor((diffMs % 60000) / 1000);
+    if (mins >= 60) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return tr(`Còn ${h}h ${m}p`, `${h}h ${m}m left`);
+    }
+    if (mins > 0) {
+      return tr(`Còn ${mins} phút`, `${mins}m left`);
+    }
+    return tr(`Còn ${secs}s`, `${secs}s left`);
   };
 
   return (
@@ -123,7 +232,7 @@ export default function LocationViewModal({
           sx: {
             borderRadius: "20px",
             overflow: "hidden",
-            bgcolor: "background.paper",
+            bgcolor: "var(--mui-palette-background-paper)",
             backgroundImage: "none",
           },
         },
@@ -137,39 +246,119 @@ export default function LocationViewModal({
           py: 1.75,
           px: 2.5,
           borderBottom: "1px solid",
-          borderColor: "divider",
+          borderColor: "var(--mui-palette-divider)",
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
           <Box
             sx={{
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               borderRadius: "50%",
-              bgcolor: "error.lighter",
-              color: "error.main",
+              bgcolor: isLive
+                ? isLiveActive
+                  ? "rgba(16, 185, 129, 0.12)"
+                  : "var(--mui-palette-action-hover)"
+                : "rgba(239, 68, 68, 0.1)",
+              color: isLive
+                ? isLiveActive
+                  ? "var(--mui-palette-tone-10b981)"
+                  : "var(--mui-palette-neutral-500)"
+                : "var(--mui-palette-error-main)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              flexShrink: 0,
             }}
           >
-            <MapPin size={20} />
+            {isLive ? <Radio size={20} /> : <MapPin size={20} />}
           </Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
-            {location.name || tr("Chi tiết vị trí", "Location Details")}
-          </Typography>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.25 }}>
+              {isLive
+                ? isLiveActive
+                  ? tr("Đang chia sẻ vị trí trực tiếp", "Sharing live location")
+                  : tr("Vị trí trực tiếp đã kết thúc", "Live location ended")
+                : location.name || tr("Chi tiết vị trí", "Location Details")}
+            </Typography>
+            {isLive && (
+              <Typography variant="caption" sx={{ color: "var(--mui-palette-text-secondary)" }}>
+                {isLiveActive
+                  ? `${tr("Cập nhật thời gian thực", "Real-time updates")} • ${getRemainingTimeString()}`
+                  : tr("Đã ngừng truyền tọa độ", "Coordinate streaming stopped")}
+              </Typography>
+            )}
+          </Box>
         </Box>
-        <IconButton
-          onClick={onClose}
-          size="small"
-          aria-label={tr("Đóng", "Close")}
-          sx={{ color: "text.secondary" }}
-        >
-          <X size={20} />
-        </IconButton>
+
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {isMe && isLiveActive && (
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={handleStopSharing}
+              startIcon={<Square size={13} fill="currentColor" />}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: "10px",
+                fontSize: "0.8rem",
+              }}
+            >
+              {tr("Dừng chia sẻ", "Stop sharing")}
+            </Button>
+          )}
+
+          <IconButton
+            onClick={onClose}
+            size="small"
+            aria-label={tr("Đóng", "Close")}
+            sx={{ color: "var(--mui-palette-text-secondary)" }}
+          >
+            <X size={20} />
+          </IconButton>
+        </Box>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0 }}>
+      <DialogContent sx={{ p: 0, position: "relative" }}>
+        {/* Nút điều khiển nhanh trên bản đồ (Tự động căn giữa) */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: 14,
+            right: 14,
+            zIndex: 400,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+          }}
+        >
+          <Tooltip
+            title={
+              autoFollow
+                ? tr("Đang tự động bám theo vị trí", "Auto-following location")
+                : tr("Nhấn để căn giữa và bám theo vị trí", "Click to center and follow location")
+            }
+          >
+            <Chip
+              onClick={handleRecenter}
+              icon={<Compass size={15} />}
+              label={autoFollow ? tr("Đang bám theo", "Following") : tr("Căn giữa", "Center")}
+              color={autoFollow ? "success" : "default"}
+              variant={autoFollow ? "filled" : "outlined"}
+              clickable
+              sx={{
+                bgcolor: autoFollow ? "rgba(16, 185, 129, 0.9)" : "var(--mui-palette-background-paper)",
+                color: autoFollow ? "var(--mui-palette-common-white)" : "var(--mui-palette-text-primary)",
+                fontWeight: 600,
+                boxShadow: 2,
+                backdropFilter: "blur(6px)",
+              }}
+            />
+          </Tooltip>
+        </Box>
+
         {/* Bản đồ tương tác */}
         <Box sx={{ width: "100%", height: 420 }}>
           <Box
@@ -182,21 +371,26 @@ export default function LocationViewModal({
         </Box>
 
         {/* Thông tin địa chỉ & Tọa độ */}
-        <Box sx={{ p: 2.5, bgcolor: "action.hover" }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "text.primary" }}>
+        <Box sx={{ p: 2.5, bgcolor: "var(--mui-palette-action-hover)" }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--mui-palette-text-primary)" }}>
             {location.name || tr("Vị trí đã ghim", "Pinned Location")}
           </Typography>
           {location.address && (
-            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+            <Typography variant="body2" sx={{ color: "var(--mui-palette-text-secondary)", mt: 0.5 }}>
               {location.address}
             </Typography>
           )}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
-            <Typography variant="caption" sx={{ color: "text.secondary", fontFamily: "monospace" }}>
+            <Typography variant="caption" sx={{ color: "var(--mui-palette-text-secondary)", fontFamily: "monospace" }}>
               {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
             </Typography>
-            <Tooltip title={tr("Sao chép tọa độ", "Copy coordinates")}>
-              <IconButton size="small" onClick={handleCopyCoords} aria-label={tr("Sao chép tọa độ", "Copy coordinates")}>
+            <Tooltip title={copied ? tr("Đã sao chép!", "Copied!") : tr("Sao chép tọa độ", "Copy coordinates")}>
+              <IconButton
+                size="small"
+                onClick={handleCopyCoords}
+                aria-label={tr("Sao chép tọa độ", "Copy coordinates")}
+                color={copied ? "success" : "default"}
+              >
                 <Copy size={14} />
               </IconButton>
             </Tooltip>
@@ -204,7 +398,15 @@ export default function LocationViewModal({
         </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 2.5, py: 1.75, borderTop: "1px solid", borderColor: "divider", gap: 1 }}>
+      <DialogActions
+        sx={{
+          px: 2.5,
+          py: 1.75,
+          borderTop: "1px solid",
+          borderColor: "var(--mui-palette-divider)",
+          gap: 1,
+        }}
+      >
         <Button
           variant="outlined"
           color="inherit"

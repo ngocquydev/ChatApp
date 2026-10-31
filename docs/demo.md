@@ -46,8 +46,11 @@ Hỗ trợ đổi 5 chủ đề phong phú (*Mặc định, Hẹn hò lãng mạ
 ### 2.3. Menu thả xuống Danh sách đoạn chat (Messenger Dropdown Popover)
 ![Menu tin nhắn nhanh trên thanh Header](assets/screenshots/messenger-popover-dropdown.png)
 
-### 2.4. Chia sẻ Vị trí & Bản đồ tương tác (Leaflet & OpenStreetMap)
-Hỗ trợ gửi vị trí GPS hiện tại hoặc chọn ghim trên bản đồ tương tác với Reverse Geocoding tự động xác định tên đường phố, quận huyện. Tin nhắn gửi đi hiển thị thẻ bản đồ thu nhỏ, tọa độ chính xác, nút phóng to bản đồ toàn màn hình và nút dẫn đường Google Maps 1 chạm.
+### 2.4. Chia sẻ Vị trí & Bản đồ thời gian thực (Leaflet & OpenStreetMap Live Tracking)
+- **Chia sẻ vị trí trực tiếp (Live Location kiểu Zalo / Telegram):** Phát sóng di chuyển liên tục theo thời gian thực (15 phút, 1 giờ, 8 giờ), thẻ tin nhắn nhấp nháy radar xanh sinh động, đếm ngược tự động và nút "Dừng chia sẻ" tức thì.
+- **Gửi vị trí ghim (Static Location):** Chọn vị trí GPS hiện tại hoặc chọn ghim trên bản đồ tương tác với Reverse Geocoding tự động xác định tên đường phố, quận huyện.
+- **Trình xem toàn màn hình tương tác:** Hỗ trợ tính năng tự động bám theo (Auto-follow mode), sao chép tọa độ chuẩn xác và dẫn đường 1 chạm sang Google Maps.
+- *Xem chi tiết: [docs/features/live-location-sharing.md](features/live-location-sharing.md)*
 
 ---
 

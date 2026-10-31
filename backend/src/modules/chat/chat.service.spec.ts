@@ -204,6 +204,37 @@ describe('ChatService', () => {
       );
     });
 
+    it('should update live location coordinates and active state', async () => {
+      const msgId = new Types.ObjectId().toString();
+      const mockLiveMsg = {
+        _id: msgId,
+        senderId: new Types.ObjectId(userAId),
+        type: 'location',
+        location: {
+          latitude: 10.82,
+          longitude: 106.63,
+          address: 'Gò Vấp, TP.HCM',
+          isLive: true,
+          isLiveActive: true,
+        },
+        markModified: vi.fn(),
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockMessageModel.findById.mockResolvedValue(mockLiveMsg);
+
+      const res = await service.updateLiveLocation(msgId, userAId, {
+        latitude: 10.825,
+        longitude: 106.635,
+        address: 'Bình Thạnh, TP.HCM',
+        isLiveActive: true,
+      });
+
+      expect(res?.location?.latitude).toBe(10.825);
+      expect(res?.location?.longitude).toBe(106.635);
+      expect(mockLiveMsg.markModified).toHaveBeenCalledWith('location');
+      expect(mockLiveMsg.save).toHaveBeenCalled();
+    });
+
     it('should save call message with callLog metadata and formatted text', async () => {
       mockUsersService.findById.mockResolvedValue({ _id: userBId, name: 'User B' });
       const mockConv = {

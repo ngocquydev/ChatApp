@@ -27,6 +27,9 @@ export interface LocationData {
   longitude: number;
   address?: string;
   name?: string;
+  isLive?: boolean;
+  liveExpiresAt?: string | null;
+  isLiveActive?: boolean;
 }
 
 export interface ChatMessage {
@@ -93,6 +96,8 @@ interface ChatState {
   blockActiveConversation: () => Promise<{ success: boolean; message?: string }>;
   unblockActiveConversation: () => Promise<{ success: boolean; message?: string }>;
   restrictActiveConversation: (restrict: boolean) => Promise<{ success: boolean; message?: string }>;
+  updateLiveLocation: (messageId: string, location: Partial<LocationData>) => void;
+  stopLiveLocation: (messageId: string) => void;
 }
 
 const BACKEND_URL =
@@ -475,6 +480,30 @@ export const useChatStore = create<ChatState>((set, get) => ({
             })),
           }));
         }
+      }
+    );
+
+    // Lắng nghe cập nhật tọa độ vị trí trực tiếp (Live Location)
+    socket.on(
+      "location:live_updated",
+      (data: {
+        messageId: string;
+        conversationId: string;
+        senderId: string;
+        location: LocationData;
+      }) => {
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m._id === data.messageId || m.id === data.messageId
+              ? {
+                  ...m,
+                  location: m.location
+                    ? { ...m.location, ...data.location }
+                    : data.location,
+                }
+              : m
+          ),
+        }));
       }
     );
 
@@ -956,5 +985,41 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ?.message || "Cập nhật hạn chế thất bại";
       return { success: false, message: msg };
     }
+  },
+
+  updateLiveLocation: (messageId: string, locUpdate: Partial<LocationData>) => {
+    const socket = get().socket;
+    const active = get().activeConversation;
+    const currentUserId = String(
+      useAuthStore.getState().user?._id || useAuthStore.getState().user?.id || ""
+    );
+    const partner = active?.participants.find((p) => String(p._id) !== currentUserId);
+    const receiverId = partner?._id ? String(partner._id) : "";
+
+    if (socket && socket.connected) {
+      socket.emit("location:live_update", {
+        messageId,
+        conversationId: active?._id || "",
+        receiverId,
+        ...locUpdate,
+      });
+    }
+
+    set((state) => ({
+      messages: state.messages.map((m) =>
+        m._id === messageId || m.id === messageId
+          ? {
+              ...m,
+              location: m.location
+                ? { ...m.location, ...locUpdate }
+                : (locUpdate as LocationData),
+            }
+          : m
+      ),
+    }));
+  },
+
+  stopLiveLocation: (messageId: string) => {
+    get().updateLiveLocation(messageId, { isLiveActive: false });
   },
 }));

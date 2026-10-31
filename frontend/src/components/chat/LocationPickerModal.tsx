@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -11,11 +12,13 @@ import {
   DialogTitle,
   IconButton,
   InputAdornment,
+  Tab,
+  Tabs,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Crosshair, MapPin, Navigation, Search, X } from "lucide-react";
+import { Crosshair, MapPin, Navigation, Radio, Search, Timer, X } from "lucide-react";
 import type * as L from "leaflet";
 import { useTranslation } from "@/i18n/useTranslation";
 import { LocationData } from "@/store/useChatStore";
@@ -110,6 +113,8 @@ export default function LocationPickerModal({
     lat: FALLBACK_LAT,
     lng: FALLBACK_LNG,
   });
+  const [shareMode, setShareMode] = useState<"static" | "live">("static");
+  const [liveDurationMinutes, setLiveDurationMinutes] = useState<number>(15);
   const [address, setAddress] = useState<string>("");
   const [placeName, setPlaceName] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -357,12 +362,27 @@ export default function LocationPickerModal({
   };
 
   const handleConfirm = () => {
-    onSelectLocation({
-      latitude: coords.lat,
-      longitude: coords.lng,
-      address: address || `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`,
-      name: placeName || tr("Vị trí đã ghim", "Pinned Location"),
-    });
+    if (shareMode === "live") {
+      const expiresAt = new Date(Date.now() + liveDurationMinutes * 60 * 1000).toISOString();
+      onSelectLocation({
+        latitude: coords.lat,
+        longitude: coords.lng,
+        address: address || `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`,
+        name: placeName || tr("Vị trí trực tiếp", "Live Location"),
+        isLive: true,
+        liveExpiresAt: expiresAt,
+        isLiveActive: true,
+      });
+    } else {
+      onSelectLocation({
+        latitude: coords.lat,
+        longitude: coords.lng,
+        address: address || `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`,
+        name: placeName || tr("Vị trí đã ghim", "Pinned Location"),
+        isLive: false,
+        isLiveActive: false,
+      });
+    }
     onClose();
   };
 
@@ -423,6 +443,39 @@ export default function LocationPickerModal({
           <X size={20} />
         </IconButton>
       </DialogTitle>
+
+      {/* Tabs chọn chế độ: Ghim vị trí tĩnh hoặc Chia sẻ trực tiếp kiểu Zalo */}
+      <Tabs
+        value={shareMode}
+        onChange={(_, val) => setShareMode(val)}
+        sx={{
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          bgcolor: "background.paper",
+          minHeight: 46,
+          px: 2,
+          "& .MuiTab-root": {
+            textTransform: "none",
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            minHeight: 46,
+            gap: 0.75,
+          },
+        }}
+      >
+        <Tab
+          value="static"
+          icon={<MapPin size={17} />}
+          iconPosition="start"
+          label={tr("Gửi vị trí đã ghim", "Pinned Location")}
+        />
+        <Tab
+          value="live"
+          icon={<Radio size={17} />}
+          iconPosition="start"
+          label={tr("Chia sẻ trực tiếp (Thời gian thực)", "Live Location (Realtime)")}
+        />
+      </Tabs>
 
       <DialogContent sx={{ p: 0, position: "relative" }}>
         {/* Thanh tìm kiếm & Nút định vị GPS */}
@@ -577,6 +630,56 @@ export default function LocationPickerModal({
             </Box>
           </Box>
         </Box>
+
+        {/* Cấu hình thời gian chia sẻ trực tiếp (Live Location kiểu Zalo) */}
+        {shareMode === "live" && (
+          <Box
+            sx={{
+              p: 2,
+              borderTop: "1px solid",
+              borderColor: "divider",
+              bgcolor: "var(--mui-palette-success-lighter, rgba(16, 185, 129, 0.08))",
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "flex-start", sm: "center" },
+              justifyContent: "space-between",
+              gap: 1.5,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Timer size={20} color="var(--mui-palette-tone-10b981)" />
+              <Box>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "text.primary" }}>
+                  {tr("Thời gian chia sẻ trực tiếp", "Live sharing duration")}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
+                  {tr(
+                    "Bạn bè sẽ nhìn thấy vị trí di chuyển trên bản đồ theo thời gian thực",
+                    "Participants will see your movement on the map in real time",
+                  )}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {[
+                { val: 15, label: tr("15 phút", "15m") },
+                { val: 60, label: tr("1 giờ", "1h") },
+                { val: 480, label: tr("8 giờ", "8h") },
+              ].map((opt) => (
+                <Chip
+                  key={opt.val}
+                  label={opt.label}
+                  clickable
+                  color={liveDurationMinutes === opt.val ? "success" : "default"}
+                  variant={liveDurationMinutes === opt.val ? "filled" : "outlined"}
+                  onClick={() => setLiveDurationMinutes(opt.val)}
+                  sx={{ fontWeight: 700, fontSize: "0.85rem" }}
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
       </DialogContent>
 
       <DialogActions sx={{ px: 2.5, py: 1.75, borderTop: "1px solid", borderColor: "divider" }}>
@@ -585,12 +688,17 @@ export default function LocationPickerModal({
         </Button>
         <Button
           variant="contained"
-          color="primary"
+          color={shareMode === "live" ? "success" : "primary"}
           onClick={handleConfirm}
-          startIcon={<Navigation size={18} />}
+          startIcon={shareMode === "live" ? <Radio size={18} /> : <Navigation size={18} />}
           sx={{ textTransform: "none", fontWeight: 700, borderRadius: "10px", px: 2.5 }}
         >
-          {tr("Gửi vị trí này", "Send this location")}
+          {shareMode === "live"
+            ? tr(
+                `Bắt đầu chia sẻ (${liveDurationMinutes >= 60 ? liveDurationMinutes / 60 + " giờ" : liveDurationMinutes + " phút"})`,
+                `Start sharing (${liveDurationMinutes >= 60 ? liveDurationMinutes / 60 + "h" : liveDurationMinutes + "m"})`,
+              )
+            : tr("Gửi vị trí này", "Send this location")}
         </Button>
       </DialogActions>
     </Dialog>
