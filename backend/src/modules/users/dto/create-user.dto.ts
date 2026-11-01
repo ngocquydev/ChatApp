@@ -5,7 +5,6 @@ import {
   MinLength,
   Matches,
   IsOptional,
-  IsIn,
   IsPhoneNumber,
   ValidateIf,
   IsDateString,
@@ -60,13 +59,4 @@ export class CreateUserDto {
   @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
   password: string;
-
-  @ApiPropertyOptional({
-    example: 'user',
-    description: 'Vai trò người dùng (user hoặc admin)',
-  })
-  @IsOptional()
-  @IsString({ message: 'Role phải là chuỗi ký tự' })
-  @IsIn(['user', 'admin'], { message: 'Role chỉ có thể là user hoặc admin' })
-  role?: string;
 }

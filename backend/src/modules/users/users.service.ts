@@ -35,7 +35,7 @@ export class UsersService {
   ) {}
 
   async create(createUserDto: CreateUserData) {
-    const { name, phone, email, password, role, firebaseUid, avatar, dateOfBirth } =
+    const { name, phone, email, password, firebaseUid, avatar, dateOfBirth } =
       createUserDto;
 
     const cleanEmail = email.trim().toLowerCase();
@@ -74,7 +74,8 @@ export class UsersService {
       firebaseUid: firebaseUid || null,
       avatar: avatar || null,
       dateOfBirth: parsedDob,
-      role: role || 'user',
+      // Role luôn do server gán; quyền admin cấp qua ADMIN_EMAILS (xem common/auth/admin.util.ts)
+      role: 'user',
       isDeleted: false,
       isBan: false,
     });
@@ -105,7 +106,7 @@ export class UsersService {
   }
 
   findAll() {
-    return this.userModel.find({ isDeleted: false, isBan: false }).select('-password').exec();
+    return this.userModel.find({ isDeleted: false, isBan: false }).select('-password -refreshToken').exec();
   }
 
   /**

@@ -5,6 +5,7 @@ import { Strategy } from 'passport-jwt';
 import type { Request } from 'express';
 import { Types } from 'mongoose';
 import { UsersService } from '../../users/users.service.js';
+import { resolveEffectiveRole } from '../../../common/auth/admin.util.js';
 
 type Payload = {
   sub: string;
@@ -65,6 +66,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       ...result,
       _id: result._id.toString(),
+      // Role hiệu lực đọc từ DB + ADMIN_EMAILS ở mỗi request (không tin role trong JWT)
+      role: resolveEffectiveRole(result),
     } as SafeUserResponse;
   }
 }
