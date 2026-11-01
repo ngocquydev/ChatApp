@@ -43,6 +43,10 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 |:---:|:---:|
 | ![Hệ thống Cảm xúc Facebook](docs/assets/screenshots/facebook-reactions.png) | ![Trợ Lý AI Llama 3.3 (Groq)](docs/assets/screenshots/groq-ai-summary-mentions.png) |
 
+| Trợ Lý Ảo Aura AI Phong Cách Meta AI (Direct Chat & Reactions) | Trung Tâm Bảo Mật & Hệ Thống WAF Chống DDoS |
+|:---:|:---:|
+| ![Aura AI Phong Cách Meta AI](docs/assets/screenshots/meta-ai-aura-bot.png) | ![Trung tâm Bảo mật](docs/assets/screenshots/waf-security-center.png) |
+
 > 🌟 **Xem chi tiết toàn bộ các màn hình, quy trình thao tác và phân tích trải nghiệm người dùng tại:**
 > 👉 **[Tài liệu Tổng hợp Hình ảnh Demo & Trải nghiệm thực tế (docs/demo.md)](docs/demo.md)**
 
@@ -157,6 +161,13 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Trợ lý ảo Aura Bot (`@aura`) & Trò chuyện Vui với RAG:** Tích hợp bot thông minh trong tin nhắn 1-1 và nhóm chat; ứng dụng kỹ thuật **RAG** trích xuất ngữ cảnh hội thoại, cạ cứng và kho tri thức ChatApp; persona Gen-Z dí dỏm "nhắn vui vui" (chấm điểm cạ cứng, bóc phốt nhẹ nhàng, chọn kèo ăn uống, làm thơ con cóc 4 câu, mẹo xịn ChatApp); thanh chip gợi ý 1-chạm (`AuraPromptSuggestions`) cùng huy hiệu `Aura AI • RAG ⚡`.
 - **Hệ thống gắn thẻ bạn bè thông minh (`@mentions`):** Tự động mở menu gợi ý người dùng (Autocomplete) với phím mũi tên & Enter; hiển thị huy hiệu thẻ nhắc nổi bật phong cách mạng xã hội (`@aura` chip gradient, `@Name` pill tương tác dẫn đến trang cá nhân) và gửi thông báo thời gian thực.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/groq-ai-summary-aura-mentions.md](docs/features/groq-ai-summary-aura-mentions.md)*
+
+### 11. Trợ Lý Ảo Aura AI Phong Cách Meta AI: Trò Chuyện Trực Tiếp, Tích Xanh & Đánh Giá 👍/👎
+- **Trò chuyện 1-1 trực tiếp như Meta AI:** Nhắn tin riêng với Aura AI mà không cần gõ `@aura`, tự động nhận câu trả lời thông minh từ mô hình Llama 3.3 70B (Groq) kết hợp RAG.
+- **Huy hiệu tích xanh chính thức (Verified Badge):** Nhận diện thương hiệu chuẩn xác ngay cạnh tên Aura AI trên thanh tiêu đề, danh bạ liên hệ và danh sách đoạn chat.
+- **Nút đánh giá phản hồi 👍/👎 trực quan:** Đặt ngay cạnh bong bóng tin nhắn của bot, cho phép người dùng đánh giá mức độ hữu ích của câu trả lời với 1-chạm.
+- **Thẻ chào mừng sinh động & Gợi ý mở đầu (`AuraWelcomeCard`):** Giúp người dùng bắt đầu câu chuyện một cách hào hứng với các chip câu hỏi gợi ý nhanh.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/meta-ai-aura-bot.md](docs/features/meta-ai-aura-bot.md)*
 
 ---
 

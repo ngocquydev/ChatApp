@@ -3,6 +3,9 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
+  Optional,
+  forwardRef,
   Param,
   Patch,
   Post,
@@ -14,6 +17,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { ChatService } from './chat.service.js';
+import { ChatGateway } from './chat.gateway.js';
 import { SendMessageDto } from './dto/send-message.dto.js';
 import type { AuthenticatedRequest } from '../auth/types/auth.types.js';
 
@@ -22,7 +26,12 @@ import type { AuthenticatedRequest } from '../auth/types/auth.types.js';
 @UseGuards(JwtAuthGuard)
 @Controller('chat')
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    @Optional()
+    @Inject(forwardRef(() => ChatGateway))
+    private readonly chatGateway?: ChatGateway,
+  ) {}
 
   private extractUserId(req: AuthenticatedRequest): string {
     const userId =
@@ -100,6 +109,16 @@ export class ChatController {
         location: dto.location,
       },
     );
+
+    if (this.chatGateway) {
+      void this.chatGateway.triggerAuraReply({
+        senderId: userId,
+        receiverId: dto.receiverId,
+        text: dto.text,
+        conversationId: message.conversationId.toString(),
+      });
+    }
+
     return {
       success: true,
       message,

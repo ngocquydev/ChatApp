@@ -17,7 +17,8 @@ import {
 import { Image as ImageIcon, MapPin, Paperclip, Send, Smile, Sparkles, ThumbsUp } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { uploadMedia, MAX_FILE_BYTES } from "@/services/postsApi";
-import { LocationData } from "@/store/useChatStore";
+import { LocationData, useChatStore } from "@/store/useChatStore";
+import { isAuraBot } from "@/constants/auraBot";
 import LocationPickerModal from "../LocationPickerModal";
 import AppEmojiPicker from "@/components/common/AppEmojiPicker";
 import AppGiphyPicker from "@/components/common/AppGiphyPicker";
@@ -70,6 +71,10 @@ export default function MessageComposer({
   onUnblock,
 }: MessageComposerProps) {
   const { tr } = useTranslation();
+  const activeConversation = useChatStore((s) => s.activeConversation);
+  const isAura = Boolean(
+    activeConversation?.participants.some((p) => isAuraBot(p._id || p.id))
+  );
   const [text, setText] = useState("");
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [showAuraSuggestions, setShowAuraSuggestions] = useState(false);
@@ -330,7 +335,11 @@ export default function MessageComposer({
             inputRef={inputRef}
             maxRows={5}
             variant="standard"
-            placeholder="Aa (@ để tag bạn bè hoặc @aura)"
+            placeholder={
+              isAura
+                ? tr("Nhắn cho Aura AI…", "Message Aura AI…")
+                : tr("Aa (@ để tag bạn bè hoặc @aura)", "Aa (@ to tag friends or @aura)")
+            }
             value={text}
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKeyDown}

@@ -19,6 +19,9 @@ import InChatSafetyBanner from "../InChatSafetyBanner";
 import InlineReactionButton from "@/components/reactions/InlineReactionButton";
 import type { ReactionType } from "@/components/reactions/reactionConstants";
 import MessageReactionsDisplay from "../MessageReactionsDisplay";
+import AuraFeedbackButtons from "../AuraFeedbackButtons";
+import AuraWelcomeCard from "../AuraWelcomeCard";
+import { AURA_BOT_ID, isAuraBot } from "@/constants/auraBot";
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
 
@@ -32,6 +35,7 @@ interface MessageListProps {
   theme?: string;
   onDeleteMessage?: (messageId: string) => Promise<void> | void;
   onReactMessage?: (messageId: string, type: ReactionType) => void;
+  onSendPrompt?: (text: string) => void;
 }
 
 type Row =
@@ -148,6 +152,7 @@ export default function MessageList({
   theme = "default",
   onDeleteMessage,
   onReactMessage,
+  onSendPrompt,
 }: MessageListProps) {
   const { tr, language } = useTranslation();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -204,16 +209,20 @@ export default function MessageList({
       {isLoading && messages.length === 0 ? (
         <MessagesSkeleton />
       ) : messages.length === 0 ? (
-        <Box sx={{ my: "auto" }}>
-          <EmptyState
-            icon={<span style={{ fontSize: 28 }}>👋</span>}
-            title={tr("Chưa có tin nhắn nào", "No messages yet")}
-            description={tr(
-              `Hãy gửi lời chào đầu tiên tới ${partner?.name || "bạn bè"}!`,
-              `Send the first greeting to ${partner?.name || "your friend"}!`
-            )}
-          />
-        </Box>
+        isAuraBot(partner?._id || partner?.id) ? (
+          <AuraWelcomeCard onSelectPrompt={(p) => onSendPrompt?.(p)} />
+        ) : (
+          <Box sx={{ my: "auto" }}>
+            <EmptyState
+              icon={<span style={{ fontSize: 28 }}>👋</span>}
+              title={tr("Chưa có tin nhắn nào", "No messages yet")}
+              description={tr(
+                `Hãy gửi lời chào đầu tiên tới ${partner?.name || "bạn bè"}!`,
+                `Send the first greeting to ${partner?.name || "your friend"}!`
+              )}
+            />
+          </Box>
+        )
       ) : (
         rows.map((row) => {
           if (row.type === "day") {
@@ -492,6 +501,10 @@ export default function MessageList({
                       );
                     })()}
                   </Tooltip>
+
+                  {!msg.isDeleted && senderOf(msg) === AURA_BOT_ID && (
+                    <AuraFeedbackButtons messageId={msg._id} />
+                  )}
 
                   {/* Nút thả cảm xúc (Reaction) */}
                   {!msg.isDeleted && Boolean(onReactMessage) && (

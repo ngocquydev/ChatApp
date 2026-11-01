@@ -18,6 +18,7 @@
 10. [Hệ Thống Thả Cảm Xúc Chuẩn Facebook & Bảng Chọn Emoji](#10-hệ-thống-thả-cảm-xúc-chuẩn-facebook--bảng-chọn-emoji)
 11. [Tích Hợp GIPHY GIF Động & Bố Cục Thác Nước Masonry](#11-tích-hợp-giphy-gif-động--bố-cục-thác-nước-masonry)
 12. [Trợ Lý AI Llama 3.3 (Groq), Aura Bot (@aura) & Gắn Thẻ Bạn Bè (@mentions)](#12-trợ-lý-ai-llama-33-groq-aura-bot-aura--gắn-thẻ-bạn-bè-mentions)
+13. [Trợ Lý Ảo Aura AI Phong Cách Meta AI (Direct Bot Chat, Tích Xanh & Đánh Giá 👍/👎)](#13-trợ-lý-ảo-aura-ai-phong-cách-meta-ai-direct-bot-chat-tích-xanh--đánh-giá-)
 
 ---
 
@@ -214,7 +215,23 @@ Hệ thống tích hợp trực tiếp trí tuệ nhân tạo **Llama 3.3 70B (G
 
 ---
 
+## 13. Trợ Lý Ảo Aura AI Phong Cách Meta AI (Direct Bot Chat, Tích Xanh & Đánh Giá 👍/👎)
+
+Trải nghiệm trò chuyện 1-1 trực tiếp với **Aura AI** theo phong cách **Meta AI** trên Facebook Messenger:
+
+![Trợ lý ảo Aura AI phong cách Meta AI](assets/screenshots/meta-ai-aura-bot.png)
+
+### Điểm nổi bật:
+- **Trò chuyện trực tiếp 1-1 không cần gõ `@aura`:** Trong phòng chat riêng với Aura, mọi tin nhắn đều được Llama 3.3 (Groq) và RAG xử lý tức thì, tự động kích hoạt typing indicator.
+- **Huy hiệu tích xanh chính thức (Verified Badge):** Nhận diện thương hiệu chuẩn xác trên tiêu đề chat nổi, danh bạ bạn bè và danh sách đoạn chat.
+- **Đánh giá phản hồi 👍/👎 trực tiếp cạnh bong bóng tin nhắn:** Người dùng có thể đánh giá mức độ hài lòng về câu trả lời chỉ với 1 chạm.
+- **Thẻ chào mừng sinh động (`AuraWelcomeCard`):** Giới thiệu các gợi ý câu hỏi thông minh giúp mở đầu cuộc trò chuyện dễ dàng.
+- 📖 *Xem chi tiết: [docs/features/meta-ai-aura-bot.md](features/meta-ai-aura-bot.md)*
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Trợ lý ảo Aura AI phong cách Meta AI (Direct Bot Chat & Reactions)](features/meta-ai-aura-bot.md)
 > - [Trợ Lý AI Llama 3.3 (Groq), Aura Bot & Gắn Thẻ Bạn Bè](features/groq-ai-summary-aura-mentions.md)
 > - [Hệ Thống Thả Cảm Xúc Facebook & Bảng Chọn Emoji (Reactions)](features/facebook-reactions.md)
 > - [Tích Hợp GIPHY GIF & Bố Cục Masonry Trong Bình Luận & Tin Nhắn](features/giphy-gif-integration.md)

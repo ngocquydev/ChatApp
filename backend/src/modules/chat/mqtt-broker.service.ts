@@ -1,5 +1,8 @@
 import {
   Injectable,
+  Inject,
+  Optional,
+  forwardRef,
   Logger,
   OnModuleDestroy,
   OnModuleInit,
@@ -14,6 +17,7 @@ import { Aedes, Client } from 'aedes';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from '../redis/redis/redis.service.js';
 import { ChatService } from './chat.service.js';
+import { ChatGateway } from './chat.gateway.js';
 import {
   SendMessageProto,
   ChatMessageProto,
@@ -42,6 +46,9 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
     private readonly chatService: ChatService,
+    @Optional()
+    @Inject(forwardRef(() => ChatGateway))
+    private readonly chatGateway?: ChatGateway,
   ) {}
 
   async onModuleInit() {
@@ -306,6 +313,16 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
           // Phát binary packet tới topic của người nhận và người gửi
           this.publishBinary(`chat/user/${decoded.receiverId}`, binaryEncoded);
           this.publishBinary(`chat/user/${senderId}`, binaryEncoded);
+
+          // Kích hoạt Aura Bot nếu tin nhắn gửi tới Aura hoặc nhắc tới @aura
+          if (this.chatGateway) {
+            void this.chatGateway.triggerAuraReply({
+              senderId,
+              receiverId: decoded.receiverId,
+              text: decoded.text,
+              conversationId: message.conversationId.toString(),
+            });
+          }
         } catch (error) {
           this.logger.error(
             `[MQTT] Lỗi xử lý tin nhắn nhị phân chat/send: ${error instanceof Error ? error.message : String(error)}`,

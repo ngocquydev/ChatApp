@@ -13,6 +13,9 @@ import { v } from "@/theme/tokens";
 import RecentChatRow from "./RecentChatRow";
 import RecentChatRowMenu from "./RecentChatRowMenu";
 import RecentChatsHeaderMenu from "./RecentChatsHeaderMenu";
+import PresenceAvatar from "@/components/common/PresenceAvatar";
+import VerifiedBadge from "@/components/common/VerifiedBadge";
+import { AURA_BOT_USER } from "@/constants/auraBot";
 
 export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }: { anchorEl: HTMLElement | null; currentUserId: string; onClose: () => void }) {
   const router = useRouter();
@@ -157,6 +160,43 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
       </Box>
 
       <Box sx={{ flex: 1, overflowY: "auto", px: 1, pb: 1, maxHeight: 350 }}>
+        {filter === "all" && (!query.trim() || "aura ai".includes(query.trim().toLowerCase())) && (
+          <ButtonBase
+            onClick={() => {
+              onClose();
+              openChat(AURA_BOT_USER);
+            }}
+            sx={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              px: 1.5,
+              py: 1,
+              borderRadius: "12px",
+              mb: 0.5,
+              textAlign: "left",
+              bgcolor: "action.hover",
+              border: "1px solid",
+              borderColor: "divider",
+              "&:hover": { bgcolor: "action.selected" },
+            }}
+          >
+            <PresenceAvatar name="Aura AI" src="/assets/avatars/aura-bot.svg" online={true} size={40} />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Typography variant="subtitle2" noWrap sx={{ fontWeight: 700 }}>
+                  Aura AI
+                </Typography>
+                <VerifiedBadge size={14} />
+              </Box>
+              <Typography variant="caption" noWrap sx={{ color: "primary.main", fontWeight: 600, display: "block" }}>
+                {tr("Trợ lý ảo AI • Nhắn tin ngay", "Smart AI Assistant • Chat now")}
+              </Typography>
+            </Box>
+          </ButtonBase>
+        )}
+
         {visibleList.length === 0 ? (
           <Box sx={{ textAlign: "center", py: 5, px: 2 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>

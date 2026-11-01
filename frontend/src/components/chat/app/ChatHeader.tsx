@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import VerifiedBadge from "@/components/common/VerifiedBadge";
+import { isAuraBot } from "@/constants/auraBot";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useChatStore, ChatUser } from "@/store/useChatStore";
 import { useCallStore } from "@/store/useCallStore";
@@ -88,7 +90,15 @@ export default function ChatHeader({
     setMenuAnchor(null);
   };
 
-  const statusText = isTyping
+  const partnerName = partner?.name || tr("Người dùng", "User");
+  const partnerId = partner?._id || partner?.id;
+  const isAura = isAuraBot(partnerId);
+
+  const statusText = isAura
+    ? isTyping
+      ? tr("Aura đang suy nghĩ…", "Aura is thinking…")
+      : tr("Trợ lý ảo AI • Trực tuyến", "AI Assistant • Online")
+    : isTyping
     ? tr("Đang soạn tin nhắn…", "Typing…")
     : isBlockedByMe
     ? tr("Bạn đã chặn người này", "You blocked this user")
@@ -100,7 +110,9 @@ export default function ChatHeader({
     ? tr("Đang hoạt động", "Online")
     : tr("Ngoại tuyến", "Offline");
 
-  const statusColor = isTyping
+  const statusColor = isAura
+    ? "primary.main"
+    : isTyping
     ? "primary.main"
     : isBlockedByMe || isBlockedByPartner
     ? "error.main"
@@ -109,9 +121,6 @@ export default function ChatHeader({
     : isOnline
     ? "success.main"
     : "text.secondary";
-
-  const partnerName = partner?.name || tr("Người dùng", "User");
-  const partnerId = partner?._id || partner?.id;
 
   return (
     <Box
@@ -163,9 +172,12 @@ export default function ChatHeader({
               size={42}
             />
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="subtitle1" component="h2" noWrap sx={{ fontWeight: 700, lineHeight: 1.25 }}>
-                {partnerName}
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Typography variant="subtitle1" component="h2" noWrap sx={{ fontWeight: 700, lineHeight: 1.25 }}>
+                  {partnerName}
+                </Typography>
+                {isAura && <VerifiedBadge size={16} />}
+              </Box>
               <Typography
                 variant="caption"
                 role="status"
@@ -185,9 +197,12 @@ export default function ChatHeader({
               size={42}
             />
             <Box sx={{ minWidth: 0 }}>
-              <Typography variant="subtitle1" component="h2" noWrap sx={{ fontWeight: 700, lineHeight: 1.25 }}>
-                {partnerName}
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Typography variant="subtitle1" component="h2" noWrap sx={{ fontWeight: 700, lineHeight: 1.25 }}>
+                  {partnerName}
+                </Typography>
+                {isAura && <VerifiedBadge size={16} />}
+              </Box>
               <Typography
                 variant="caption"
                 role="status"
@@ -226,53 +241,55 @@ export default function ChatHeader({
           </IconButton>
         </Tooltip>
 
-        <Box sx={{ display: { xs: "none", sm: "flex" }, gap: 0.25 }}>
-          <Tooltip title={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}>
-            <IconButton
-              aria-label={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}
-              disabled={!partner}
-              onClick={() => {
-                if (partner) {
-                  void startCall(
-                    {
-                      id: String(partner._id || partner.id || ""),
-                      name: partner.name,
-                      avatar: partner.avatar,
-                      conversationId: activeConversation?._id,
-                    },
-                    "audio"
-                  );
-                }
-              }}
-              sx={{ color: "primary.main" }}
-            >
-              <Phone size={20} />
-            </IconButton>
-          </Tooltip>
+        {!isAura && (
+          <Box sx={{ display: { xs: "none", sm: "flex" }, gap: 0.25 }}>
+            <Tooltip title={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}>
+              <IconButton
+                aria-label={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}
+                disabled={!partner}
+                onClick={() => {
+                  if (partner) {
+                    void startCall(
+                      {
+                        id: String(partner._id || partner.id || ""),
+                        name: partner.name,
+                        avatar: partner.avatar,
+                        conversationId: activeConversation?._id,
+                      },
+                      "audio"
+                    );
+                  }
+                }}
+                sx={{ color: "primary.main" }}
+              >
+                <Phone size={20} />
+              </IconButton>
+            </Tooltip>
 
-          <Tooltip title={tr("Bắt đầu cuộc gọi video", "Start video call")}>
-            <IconButton
-              aria-label={tr("Bắt đầu cuộc gọi video", "Start video call")}
-              disabled={!partner}
-              onClick={() => {
-                if (partner) {
-                  void startCall(
-                    {
-                      id: String(partner._id || partner.id || ""),
-                      name: partner.name,
-                      avatar: partner.avatar,
-                      conversationId: activeConversation?._id,
-                    },
-                    "video"
-                  );
-                }
-              }}
-              sx={{ color: "primary.main" }}
-            >
-              <Video size={20} />
-            </IconButton>
-          </Tooltip>
-        </Box>
+            <Tooltip title={tr("Bắt đầu cuộc gọi video", "Start video call")}>
+              <IconButton
+                aria-label={tr("Bắt đầu cuộc gọi video", "Start video call")}
+                disabled={!partner}
+                onClick={() => {
+                  if (partner) {
+                    void startCall(
+                      {
+                        id: String(partner._id || partner.id || ""),
+                        name: partner.name,
+                        avatar: partner.avatar,
+                        conversationId: activeConversation?._id,
+                      },
+                      "video"
+                    );
+                  }
+                }}
+                sx={{ color: "primary.main" }}
+              >
+                <Video size={20} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        )}
 
         <Tooltip title={tr("Tùy chọn cuộc trò chuyện", "Chat options")}>
           <IconButton

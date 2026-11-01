@@ -24,7 +24,6 @@ import { GroqModule } from '../groq/groq.module.js';
     UsersModule,
     RedisModule,
     GroqModule,
-    GroqModule,
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway, MqttBrokerService],

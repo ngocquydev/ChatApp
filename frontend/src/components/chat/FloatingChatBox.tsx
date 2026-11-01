@@ -75,6 +75,10 @@ import MentionAutocomplete, { MentionAutocompleteHandle } from "@/components/com
 import useMention from "@/hooks/useMention";
 import AiChatSummaryDialog from "./AiChatSummaryDialog";
 import AuraPromptSuggestions from "./AuraPromptSuggestions";
+import AuraFeedbackButtons from "./AuraFeedbackButtons";
+import AuraWelcomeCard from "./AuraWelcomeCard";
+import VerifiedBadge from "@/components/common/VerifiedBadge";
+import { AURA_BOT_ID, isAuraBot } from "@/constants/auraBot";
 
 const POPULAR_EMOJIS = [
   "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
@@ -160,10 +164,11 @@ export default function FloatingChatBox({
   const targetUserId = String(targetUser._id || targetUser.id);
   const currentUserId = String(currentUser?._id || currentUser?.id);
 
+  const isAuraChat = isAuraBot(targetUserId);
   const isBlocked = Boolean(blockedBy);
   const isBlockedByMe = Boolean(blockedBy && currentUserId && blockedBy === currentUserId);
   const isRestricted = Boolean(currentUserId && restrictedBy.includes(currentUserId));
-  const isOnline = !isRestricted && onlineUserIds.includes(targetUserId);
+  const isOnline = isAuraChat || (!isRestricted && onlineUserIds.includes(targetUserId));
 
   const chatTheme = getChatTheme(convTheme);
 
@@ -616,9 +621,9 @@ export default function FloatingChatBox({
 
     const isLocationMsg = options?.type === "location" && options.location;
 
-    // 1. Gửi qua MQTT Protocol Buffers nhị phân nếu là tin nhắn text thường
+    // 1. Gửi qua MQTT Protocol Buffers nhị phân nếu là tin nhắn text thường (trừ khi nhắn với Aura để ưu tiên Socket.IO)
     let sentViaMqtt = false;
-    if (!isLocationMsg) {
+    if (!isLocationMsg && !isAuraChat) {
       sentViaMqtt = mqttChatClient.sendMessage(convId, targetUserId, textToSend);
     }
 
@@ -943,6 +948,8 @@ export default function FloatingChatBox({
                 {targetUser.name}
               </Typography>
 
+              {isAuraChat && <VerifiedBadge size={15} />}
+
               {!session.isMinimized && (
                 <ChevronDown size={15} color="var(--mui-palette-primary-main)" style={{ flexShrink: 0 }} aria-hidden />
               )}
@@ -971,20 +978,24 @@ export default function FloatingChatBox({
                 sx={{
                   display: "block",
                   fontSize: "0.72rem",
-                  color: isOnline ? "success.main" : "text.secondary",
-                  fontWeight: isOnline ? 600 : 400,
+                  color: isAuraChat ? "primary.main" : isOnline ? "success.main" : "text.secondary",
+                  fontWeight: isAuraChat || isOnline ? 600 : 400,
                   lineHeight: 1.15,
                 }}
               >
-                {isOnline ? tr("Đang hoạt động", "Online") : tr("Ngoại tuyến", "Offline")}
+                {isAuraChat
+                  ? tr("Trợ lý ảo AI • Sẵn sàng", "AI Assistant • Ready")
+                  : isOnline
+                  ? tr("Đang hoạt động", "Online")
+                  : tr("Ngoại tuyến", "Offline")}
               </Typography>
             )}
           </Box>
         </ButtonBase>
 
-        {/* Nút Gọi thoại, Gọi video, Thu nhỏ (-) & Đóng (×) */}
+        {/* Nút Gọi thoại, Gọi video (ẩn với Aura AI), Thu nhỏ (-) & Đóng (×) */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
-          {!session.isMinimized && (
+          {!session.isMinimized && !isAuraChat && (
             <>
               <Tooltip title={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}>
                 <IconButton
@@ -1137,47 +1148,51 @@ export default function FloatingChatBox({
                 <Typography variant="caption">{tr("Đang tải tin nhắn…", "Loading messages…")}</Typography>
               </Box>
             ) : messages.length === 0 ? (
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: "100%",
-                  textAlign: "center",
-                  px: 2,
-                  py: 3,
-                }}
-              >
-                <PresenceAvatar name={targetUser.name} src={targetUser.avatar} online={isOnline} size={56} />
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 700, color: chatTheme.isDarkTheme ? "common.white" : "text.primary", mt: 1.25 }}
-                >
-                  {targetUser.name}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{ color: chatTheme.metaTextColor, mb: 2, display: "block", maxWidth: 200 }}
-                >
-                  {tr("Các bạn đã kết nối trên ChatApp. Hãy bắt đầu cuộc trò chuyện!", "You're connected on ChatApp. Start a conversation!")}
-                </Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => void handleSendMessage(tr("👋 Chào bạn!", "👋 Hello!"))}
+              isAuraChat ? (
+                <AuraWelcomeCard onSelectPrompt={(prompt) => void handleSendMessage(prompt)} />
+              ) : (
+                <Box
                   sx={{
-                    borderRadius: "20px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                    textAlign: "center",
                     px: 2,
-                    py: 0.6,
-                    fontSize: "0.82rem",
-                    fontWeight: 600,
-                    bgcolor: "background.paper",
+                    py: 3,
                   }}
                 >
-                  {tr("👋 Nói xin chào!", "👋 Say hello!")}
-                </Button>
-              </Box>
+                  <PresenceAvatar name={targetUser.name} src={targetUser.avatar} online={isOnline} size={56} />
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 700, color: chatTheme.isDarkTheme ? "common.white" : "text.primary", mt: 1.25 }}
+                  >
+                    {targetUser.name}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{ color: chatTheme.metaTextColor, mb: 2, display: "block", maxWidth: 200 }}
+                  >
+                    {tr("Các bạn đã kết nối trên ChatApp. Hãy bắt đầu cuộc trò chuyện!", "You're connected on ChatApp. Start a conversation!")}
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => void handleSendMessage(tr("👋 Chào bạn!", "👋 Hello!"))}
+                    sx={{
+                      borderRadius: "20px",
+                      px: 2,
+                      py: 0.6,
+                      fontSize: "0.82rem",
+                      fontWeight: 600,
+                      bgcolor: "background.paper",
+                    }}
+                  >
+                    {tr("👋 Nói xin chào!", "👋 Say hello!")}
+                  </Button>
+                </Box>
+              )
             ) : (
               messages.map((msg, index) => {
                 const isMe = isSenderMe(msg);
@@ -1432,6 +1447,10 @@ export default function FloatingChatBox({
                             </Box>
                           )}
                         </Tooltip>
+
+                        {!msg.isDeleted && String(msg.senderId) === AURA_BOT_ID && (
+                          <AuraFeedbackButtons messageId={String(msg._id || msg.id || "")} />
+                        )}
 
                         {!msg.isDeleted && (
                           <Box
@@ -1693,7 +1712,11 @@ export default function FloatingChatBox({
                 fullWidth
                 size="small"
                 inputRef={inputRef}
-                placeholder="Aa (@ để tag hoặc hỏi @aura)"
+                placeholder={
+                  isAuraChat
+                    ? tr("Nhắn cho Aura AI…", "Message Aura AI…")
+                    : "Aa (@ để tag hoặc hỏi @aura)"
+                }
                 value={inputText}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}

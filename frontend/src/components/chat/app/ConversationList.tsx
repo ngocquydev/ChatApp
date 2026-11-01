@@ -15,9 +15,11 @@ import {
 import { MessageSquare, Search, ShieldAlert } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import EmptyState from "@/components/common/EmptyState";
+import VerifiedBadge from "@/components/common/VerifiedBadge";
 import { useLanguageStore } from "@/i18n/useLanguageStore";
 import { useTranslation } from "@/i18n/useTranslation";
-import { ConversationItem } from "@/store/useChatStore";
+import { ConversationItem, useChatStore } from "@/store/useChatStore";
+import { AURA_BOT_USER, isAuraBot } from "@/constants/auraBot";
 import { isVideoUrl } from "@/services/postsApi";
 import { formatConversationTime } from "@/utils/formatTime";
 
@@ -79,6 +81,10 @@ export default function ConversationList({
     if (!currentUserId) return 0;
     return conversations.filter((c) => c.restrictedBy?.includes(currentUserId)).length;
   }, [conversations, currentUserId]);
+
+  const hasAuraInConversations = useMemo(() => {
+    return conversations.some((c) => c.participants?.some((p) => isAuraBot(p?._id || p?.id)));
+  }, [conversations]);
 
   const filtered = useMemo(() => {
     let list = conversations;
@@ -181,12 +187,69 @@ export default function ConversationList({
           )
         ) : (
           <List disablePadding aria-label={tr("Danh sách hội thoại", "Conversations list")}>
+            {/* Mục Aura AI ghim cố định nếu người dùng chưa bắt đầu hội thoại */}
+            {filter === "all" &&
+              !hasAuraInConversations &&
+              (!query.trim() || "aura ai".includes(query.trim().toLowerCase())) && (
+                <ListItemButton
+                  onClick={async () => {
+                    try {
+                      const conv = await useChatStore.getState().startConversationWithUser(AURA_BOT_USER);
+                      if (conv) onSelect(conv);
+                    } catch (e) {
+                      console.error("Lỗi mở chat Aura AI:", e);
+                    }
+                  }}
+                  sx={{
+                    gap: 1.5,
+                    px: 1.5,
+                    py: 1.25,
+                    mb: 0.75,
+                    alignItems: "center",
+                    borderRadius: "12px",
+                    bgcolor: "action.hover",
+                    border: "1px solid",
+                    borderColor: "divider",
+                    transition: "all 0.15s ease",
+                    "&:hover": { bgcolor: "action.selected" },
+                  }}
+                >
+                  <PresenceAvatar name="Aura AI" src="/assets/avatars/aura-bot.svg" online={true} size={48} />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 1 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <Typography variant="subtitle2" noWrap sx={{ fontWeight: 800 }}>
+                          Aura AI
+                        </Typography>
+                        <VerifiedBadge size={14} />
+                      </Box>
+                      <Chip
+                        label="AI"
+                        size="small"
+                        sx={{
+                          height: 18,
+                          fontSize: "0.65rem",
+                          fontWeight: 800,
+                          bgcolor: "primary.main",
+                          color: "primary.contrastText",
+                          borderRadius: "6px",
+                        }}
+                      />
+                    </Box>
+                    <Typography variant="body2" noWrap sx={{ color: "text.secondary", fontSize: "0.825rem", mt: 0.25 }}>
+                      {tr("Trợ lý AI thông minh (Llama 3.3) • Nhắn ngay", "Smart AI Assistant (Llama 3.3) • Chat now")}
+                    </Typography>
+                  </Box>
+                </ListItemButton>
+              )}
+
             {filtered.map((item) => {
               const other =
                 item.participants.find((p) => p._id !== currentUserId) || item.participants[0];
+              const isOtherAura = isAuraBot(other?._id || other?.id);
               const isActive = activeConversationId === item._id;
               const isRestricted = Boolean(currentUserId && item.restrictedBy?.includes(currentUserId));
-              const isOnline = !isRestricted && other?._id ? onlineUserIds.includes(other._id) : false;
+              const isOnline = isOtherAura || (!isRestricted && other?._id ? onlineUserIds.includes(other._id) : false);
               const unreadCount = item.unreadCounts?.[currentUserId || ""] || 0;
               const lastText = formatLastMessagePreview(
                 item.lastMessage?.text,
@@ -206,13 +269,16 @@ export default function ConversationList({
 
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 1 }}>
-                      <Typography
-                        variant="subtitle2"
-                        noWrap
-                        sx={{ fontWeight: unreadCount > 0 || isActive ? 700 : 600 }}
-                      >
-                        {other?.name || tr("Người dùng", "User")}
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
+                        <Typography
+                          variant="subtitle2"
+                          noWrap
+                          sx={{ fontWeight: unreadCount > 0 || isActive ? 700 : 600 }}
+                        >
+                          {other?.name || tr("Người dùng", "User")}
+                        </Typography>
+                        {isOtherAura && <VerifiedBadge size={14} />}
+                      </Box>
                       <Typography
                         variant="caption"
                         sx={{

@@ -278,57 +278,13 @@ export class ChatGateway
       // Bắn event message:new tới cả sender và receiver (qua cả MQTT và Socket.IO)
       this.broadcastNewMessage(message);
 
-      // Kiểm tra xem tin nhắn có nhắc tới @aura hoặc gửi tới Aura Bot không
-      const isMentionAura = /(^|\s)@aura\b/i.test(dto.text);
-      const isAuraDirect = dto.receiverId === AURA_BOT_ID;
-
-      if ((isMentionAura || isAuraDirect) && this.groqService) {
-        const convIdStr = message.conversationId.toString();
-        // Phát sự kiện Aura đang gõ
-        this.server.to(`user:${senderId}`).emit('typing:start', {
-          conversationId: convIdStr,
-          userId: AURA_BOT_ID,
-          userName: 'Aura AI',
-        });
-
-        // Xử lý phản hồi ngầm từ Llama 3.3 (Groq)
-        void (async () => {
-          try {
-            const recent = await this.chatService.getMessages(convIdStr, senderId, 8);
-            const history = recent.map((m) => ({
-              senderName: m.senderId.toString() === senderId ? 'Người dùng' : 'Aura AI',
-              text: m.text,
-            }));
-
-            const replyText = await this.groqService!.generateAuraChatReply(dto.text, history, {
-              conversationId: convIdStr,
-              senderId,
-              partnerId: isAuraDirect ? undefined : dto.receiverId,
-            });
-
-            // Lưu tin nhắn phản hồi của Aura Bot
-            const auraMsg = await this.chatService.saveMessage(
-              AURA_BOT_ID,
-              senderId,
-              replyText,
-              convIdStr,
-            );
-
-            this.server.to(`user:${senderId}`).emit('typing:stop', {
-              conversationId: convIdStr,
-              userId: AURA_BOT_ID,
-            });
-
-            this.broadcastNewMessage(auraMsg);
-          } catch (err: unknown) {
-            this.logger.error(`Lỗi Aura bot phản hồi: ${err instanceof Error ? err.message : String(err)}`);
-            this.server.to(`user:${senderId}`).emit('typing:stop', {
-              conversationId: convIdStr,
-              userId: AURA_BOT_ID,
-            });
-          }
-        })();
-      }
+      // Kích hoạt Aura Bot nếu tin nhắn gửi tới Aura hoặc nhắc tới @aura
+      void this.triggerAuraReply({
+        senderId,
+        receiverId: dto.receiverId,
+        text: dto.text,
+        conversationId: message.conversationId.toString(),
+      });
 
       return { success: true, message };
     } catch (error) {
@@ -339,6 +295,64 @@ export class ChatGateway
         success: false,
         message: error instanceof Error ? error.message : 'Gửi tin nhắn thất bại',
       };
+    }
+  }
+
+  /**
+   * Kích hoạt bot Aura AI trả lời nếu tin nhắn gửi trực tiếp tới Aura hoặc nhắc tới @aura
+   */
+  async triggerAuraReply(params: {
+    senderId: string;
+    receiverId: string;
+    text: string;
+    conversationId: string;
+  }): Promise<void> {
+    const { senderId, receiverId, text, conversationId } = params;
+    const isMentionAura = /(^|\s)@aura\b/i.test(text);
+    const isAuraDirect = receiverId === AURA_BOT_ID;
+
+    if (!this.groqService || (!isMentionAura && !isAuraDirect)) return;
+
+    // Phát sự kiện Aura đang gõ
+    this.server?.to(`user:${senderId}`).emit('typing:start', {
+      conversationId,
+      userId: AURA_BOT_ID,
+      userName: 'Aura AI',
+    });
+
+    try {
+      const recent = await this.chatService.getMessages(conversationId, senderId, 8);
+      const history = recent.map((m) => ({
+        senderName: m.senderId.toString() === senderId ? 'Người dùng' : 'Aura AI',
+        text: m.text,
+      }));
+
+      const replyText = await this.groqService.generateAuraChatReply(text, history, {
+        conversationId,
+        senderId,
+        partnerId: isAuraDirect ? undefined : receiverId,
+      });
+
+      // Lưu tin nhắn phản hồi của Aura Bot
+      const auraMsg = await this.chatService.saveMessage(
+        AURA_BOT_ID,
+        senderId,
+        replyText,
+        conversationId,
+      );
+
+      this.server?.to(`user:${senderId}`).emit('typing:stop', {
+        conversationId,
+        userId: AURA_BOT_ID,
+      });
+
+      this.broadcastNewMessage(auraMsg);
+    } catch (err: unknown) {
+      this.logger.error(`Lỗi Aura bot phản hồi: ${err instanceof Error ? err.message : String(err)}`);
+      this.server?.to(`user:${senderId}`).emit('typing:stop', {
+        conversationId,
+        userId: AURA_BOT_ID,
+      });
     }
   }
 

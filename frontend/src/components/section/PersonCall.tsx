@@ -34,6 +34,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
+import VerifiedBadge from "@/components/common/VerifiedBadge";
+import { AURA_BOT_USER } from "@/constants/auraBot";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   useFriendStore,
@@ -362,6 +364,58 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   {tr(`Không tìm thấy bạn bè khớp với "${searchFriend}"`, `No friends matching "${searchFriend}"`)}
                 </Typography>
               </Box>
+            )}
+
+            {!isLoadingFriends && (!searchFriend.trim() || "aura ai".includes(searchFriend.trim().toLowerCase())) && (
+              <ButtonBase
+                component="div"
+                aria-label={tr("Trò chuyện với Aura AI", "Chat with Aura AI")}
+                onClick={() => handleStartChat(AURA_BOT_USER)}
+                sx={{
+                  width: "100%",
+                  textAlign: "left",
+                  display: "flex",
+                  alignItems: "center",
+                  p: 1,
+                  borderRadius: "10px",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  mb: 0.75,
+                  bgcolor: "action.hover",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  "&:hover": {
+                    bgcolor: "action.selected",
+                  },
+                }}
+              >
+                <PresenceAvatar
+                  name="Aura AI"
+                  src="/assets/avatars/aura-bot.svg"
+                  online={true}
+                  size={38}
+                />
+
+                <Box sx={{ ml: 1.5, flex: 1, minWidth: 0 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Typography
+                      variant="subtitle2"
+                      noWrap
+                      sx={{ fontWeight: 700, color: "text.primary", fontSize: "0.85rem" }}
+                    >
+                      Aura AI
+                    </Typography>
+                    <VerifiedBadge size={14} />
+                  </Box>
+                  <Typography
+                    variant="caption"
+                    noWrap
+                    sx={{ color: "primary.main", fontWeight: 600, display: "block", fontSize: "0.72rem" }}
+                  >
+                    {tr("Trợ lý ảo AI • Sẵn sàng", "AI Assistant • Ready")}
+                  </Typography>
+                </Box>
+              </ButtonBase>
             )}
 
             {!isLoadingFriends &&

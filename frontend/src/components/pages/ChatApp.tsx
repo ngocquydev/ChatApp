@@ -309,6 +309,7 @@ export default function ChatApp() {
                 showToast(tr("Đã thu hồi tin nhắn", "Message unsent"), "info");
               }}
               onReactMessage={(msgId, type) => void reactToMessage(msgId, type)}
+              onSendPrompt={sendMessage}
             />
             <MessageComposer
               key={activeConversation._id}
