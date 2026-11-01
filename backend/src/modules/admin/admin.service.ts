@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   Optional,
@@ -15,6 +16,7 @@ import { RedisService } from '../redis/redis/redis.service.js';
 import { Neo4jService } from '../neo4j/neo4j.service.js';
 import { AdminUsersQueryDto } from './dto/admin-users.dto.js';
 import { AdminPostsQueryDto } from './dto/admin-posts.dto.js';
+import { AdminModerationQueueQueryDto, AdminResolveQueueDto } from './dto/admin-moderation.dto.js';
 import type { ModerationLanguage } from '../moderation/algorithms/transformer-text-moderator.js';
 import type { UserBehaviorSample } from '../moderation/moderation.dto.js';
 
@@ -277,6 +279,80 @@ export class AdminService {
       success: true,
       result,
     };
+  }
+
+  async getModerationQueue(query: AdminModerationQueueQueryDto) {
+    const page = Math.max(Number(query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(query.limit) || 20, 1), 50);
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, unknown> = { isDeleted: { $ne: true } };
+    if (query.status && query.status !== 'all') {
+      filter.moderationStatus = query.status;
+    } else {
+      filter.moderationStatus = { $in: ['flagged', 'pending'] };
+    }
+
+    const [total, items] = await Promise.all([
+      this.postModel.countDocuments(filter),
+      this.postModel
+        .find(filter)
+        .populate('authorId', 'name email avatar')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+    ]);
+
+    return {
+      success: true,
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
+  }
+
+  async resolveModerationQueue(id: string, dto: AdminResolveQueueDto) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('ID mục kiểm duyệt không hợp lệ');
+    }
+
+    const post = await this.postModel.findOne({ _id: id });
+    if (!post) {
+      throw new NotFoundException('Không tìm thấy bài viết cần kiểm duyệt');
+    }
+
+    if (dto.action === 'approve') {
+      post.moderationStatus = 'approved';
+      post.isSensitive = false;
+      await post.save();
+      return {
+        success: true,
+        message: 'Đã phê duyệt nội dung an toàn',
+      };
+    } else if (dto.action === 'hide') {
+      post.moderationStatus = 'rejected';
+      post.isDeleted = true;
+      await post.save();
+      return {
+        success: true,
+        message: 'Đã gỡ bỏ bài viết vi phạm',
+      };
+    } else if (dto.action === 'warn') {
+      post.moderationStatus = 'rejected';
+      post.isDeleted = true;
+      post.moderationReason = dto.reason || 'Vi phạm tiêu chuẩn cộng đồng';
+      await post.save();
+      return {
+        success: true,
+        message: 'Đã cảnh cáo người dùng và xử lý nội dung vi phạm',
+      };
+    }
+
+    throw new BadRequestException('Thao tác kiểm duyệt không hợp lệ');
   }
 
   async getSystemHealth() {

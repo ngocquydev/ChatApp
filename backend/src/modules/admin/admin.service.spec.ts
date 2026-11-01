@@ -208,6 +208,27 @@ describe('AdminService', () => {
       expect(behaviorRes.success).toBe(true);
     });
 
+    it('should get moderation queue and resolve items', async () => {
+      const queueRes = await service.getModerationQueue({ page: 1, limit: 10 });
+      expect(queueRes.success).toBe(true);
+      expect(queueRes.items.length).toBe(1);
+
+      const postId = new Types.ObjectId().toString();
+      const mockPost = {
+        _id: postId,
+        moderationStatus: 'flagged',
+        isSensitive: true,
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockPostModel.findOne.mockResolvedValue(mockPost);
+
+      const resolveRes = await service.resolveModerationQueue(postId, { action: 'approve' });
+      expect(resolveRes.success).toBe(true);
+      expect(mockPost.moderationStatus).toBe('approved');
+      expect(mockPost.isSensitive).toBe(false);
+      expect(mockPost.save).toHaveBeenCalled();
+    });
+
     it('should return system health', async () => {
       const res = await service.getSystemHealth();
       expect(res.success).toBe(true);

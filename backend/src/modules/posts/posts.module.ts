@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from '../users/users.module.js';
+import { ModerationModule } from '../moderation/moderation.module.js';
 import { Friendship, FriendshipSchema } from '../friends/schemas/friendship.schema.js';
 import { Post, PostSchema } from './schemas/post.schema.js';
 import { PostLike, PostLikeSchema } from './schemas/post-like.schema.js';
@@ -17,6 +18,7 @@ import { PostsService } from './posts.service.js';
       { name: Friendship.name, schema: FriendshipSchema },
     ]),
     UsersModule,
+    ModerationModule,
   ],
   controllers: [PostsController],
   providers: [PostsService],

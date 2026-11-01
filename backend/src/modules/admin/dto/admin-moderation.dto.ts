@@ -1,4 +1,5 @@
 import { IsIn, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import type { ModerationLanguage } from '../../moderation/algorithms/transformer-text-moderator.js';
 
 export class AdminTestTextDto {
@@ -37,5 +38,33 @@ export class AdminTestBehaviorDto {
   @Min(0)
   @Max(1)
   distinctTargetRatio: number;
+}
+
+export class AdminModerationQueueQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(50)
+  limit?: number = 20;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+}
+
+export class AdminResolveQueueDto {
+  @IsIn(['approve', 'hide', 'warn'])
+  action: 'approve' | 'hide' | 'warn';
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
 }
 

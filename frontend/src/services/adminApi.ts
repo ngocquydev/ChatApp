@@ -138,6 +138,33 @@ export interface ModerationBehaviorResult {
   assessment: string;
 }
 
+export interface ModerationQueueItem {
+  _id: string;
+  authorId?: {
+    _id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  content: string;
+  images: string[];
+  privacy: string;
+  isSensitive?: boolean;
+  moderationStatus: 'approved' | 'flagged' | 'rejected';
+  toxicityScore?: number;
+  moderationReason?: string;
+  createdAt: string;
+}
+
+export interface ModerationQueueResponse {
+  success: boolean;
+  items: ModerationQueueItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export const adminApi = {
   async getStats(): Promise<AdminStats> {
     const res = await api.get<{ success: boolean; stats: AdminStats }>('/admin/stats');
@@ -221,5 +248,26 @@ export const adminApi = {
   async getSystemHealth(): Promise<SystemHealthData> {
     const res = await api.get<{ success: boolean; system: SystemHealthData }>('/admin/system');
     return res.data.system;
+  },
+
+  async getModerationQueue(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }): Promise<ModerationQueueResponse> {
+    const res = await api.get<ModerationQueueResponse>('/admin/moderation/queue', { params });
+    return res.data;
+  },
+
+  async resolveModerationQueueItem(
+    id: string,
+    action: 'approve' | 'hide' | 'warn',
+    reason?: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const res = await api.patch<{ success: boolean; message: string }>(
+      `/admin/moderation/queue/${id}/resolve`,
+      { action, reason },
+    );
+    return res.data;
   },
 };

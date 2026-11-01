@@ -11,7 +11,7 @@
    - [3.1. Tổng Quan Hệ Thống (Dashboard & Analytics)](#31-tổng-quan-hệ-thống-dashboard--analytics)
    - [3.2. Quản Lý Người Dùng & Phân Quyền (Users Management)](#32-quản-lý-người-dùng--phân-quyền-users-management)
    - [3.3. Kiểm Duyệt Bài Viết & Bảng Tin (Posts Moderation)](#33-kiểm-duyệt-bài-viết--bảng-tin-posts-moderation)
-   - [3.4. Thử Nghiệm Kiểm Duyệt AI & Chống Bot (AI Trust Playground)](#34-thử-nghiệm-kiểm-duyệt-ai--chống-bot-ai-trust-playground)
+   - [3.4. Hệ Thống Kiểm Duyệt AI & Hàng Đợi An Toàn (AI Moderation Queue & Playground)](#34-hệ-thống-kiểm-duyệt-ai--hàng-đợi-an-toàn-ai-moderation-queue--playground)
    - [3.5. Trung Tâm Bảo Mật & Tường Lửa WAF (Security Center)](#35-trung-tâm-bảo-mật--tường-lửa-waf-security-center)
    - [3.6. Trạng Thái Hệ Thống & Hạ Tầng (System Health & V8 Metrics)](#36-trạng-thái-hệ-thống--hạ-tầng-system-health--v8-metrics)
 4. [Đặc Tả API Backend (`/api/admin/*`)](#4-đặc-tả-api-backend-apiadmin)
@@ -96,15 +96,14 @@ Quyền truy cập khu vực Quản trị viên được bảo vệ chặt chẽ
 - **Tìm Kiếm Nội Dung:** Tìm bài viết chứa từ khóa độc hại, khiêu dâm, lừa đảo hoặc vi phạm tiêu chuẩn cộng đồng.
 - **Gỡ Bỏ Nội Dung Vi Phạm:** Nút gỡ bài viết vi phạm một chạm kèm xác nhận Dialog an toàn; bài viết bị ẩn ngay lập tức khỏi bảng tin và trang cá nhân của tất cả người dùng.
 
-### 3.4. Thử Nghiệm Kiểm Duyệt AI & Chống Bot (AI Trust Playground)
-- **Mô Hình Phân Loại Văn Bản NLP (Transformer):**
-  - Hỗ trợ song ngữ Tiếng Việt & Tiếng Anh.
-  - Đánh giá chỉ số Toxicity Score (0 - 100%).
-  - Phân tích chi tiết 4 danh mục vi phạm: Hate Speech (Ngôn từ thù ghét), Harassment (Quấy rối), Spam (Thư rác), Profanity (Tục tĩu).
-- **Mô Hình Phát Hiện Bot & Tài Khoản Ảo (Isolation Forest & Autoencoder):**
-  - Thử nghiệm trực quan với các tham số hành vi: Tốc độ gửi lời mời kết bạn, Tỷ lệ chấp nhận, Phương sai chu kỳ thao tác, Tỷ lệ lặp lại hành vi, Tốc độ tương tác/phút, và Độ đa dạng đối tượng kết nối.
-  - Nút nạp nhanh mẫu sẵn (Presets): *Người dùng thông thường (Normal User)*, *Bot kết bạn dồn dập (Spam Bot)*, *Bot cày tương tác (Speed Clicker)*.
-  - Trả về điểm bất thường Anomaly Score và mức độ rủi ro (LOW, MEDIUM, HIGH, CRITICAL).
+### 3.4. Hệ Thống Kiểm Duyệt AI & Hàng Đợi An Toàn (AI Moderation Queue & Playground)
+- **Hàng Đợi Kiểm Duyệt Bài Viết (`ModerationQueueTab.tsx`):**
+  - Tự động gom các bài viết hoặc nội dung bị AI chấm điểm độc hại cao hoặc mang hình ảnh nhạy cảm.
+  - Phân loại vi phạm chi tiết: Toxicity %, Hate speech, Harassment, Spam, Profanity, Sensitive Media.
+  - Tác vụ 1-chạm: Duyệt an toàn (`approve`), Gỡ bỏ (`hide`), và Cảnh cáo người dùng (`warn`).
+- **Thử Nghiệm Mô Hình AI (`ModerationPlaygroundTab.tsx`):**
+  - Mô hình phân loại văn bản Transformer song ngữ VI/EN.
+  - Mô hình phát hiện Bot & Tài khoản ảo (Isolation Forest & Autoencoder).
 
 ### 3.5. Trung Tâm Bảo Mật & Tường Lửa WAF (Security Center)
 - **Tích Hợp Sâu Tường Lửa Đa Tầng:**
@@ -131,6 +130,8 @@ Quyền truy cập khu vực Quản trị viên được bảo vệ chặt chẽ
 | `PATCH` | `/api/admin/users/:id/role` | Admin | Thay đổi quyền hạn tài khoản (`admin` hoặc `user`) |
 | `GET` | `/api/admin/posts` | Admin | Tìm kiếm và duyệt bài viết toàn hệ thống |
 | `DELETE` | `/api/admin/posts/:id` | Admin | Xóa mềm/Gỡ bài viết vi phạm tiêu chuẩn |
+| `GET` | `/api/admin/moderation/queue` | Admin | Lấy hàng đợi bài viết / nội dung bị AI gắn cờ vi phạm |
+| `PATCH` | `/api/admin/moderation/queue/:id/resolve` | Admin | Xử lý nội dung hàng đợi (`approve`, `hide`, `warn`) |
 | `POST` | `/api/admin/moderation/test-text` | Admin | Thử nghiệm phân loại độc hại văn bản với Transformer |
 | `POST` | `/api/admin/moderation/test-behavior` | Admin | Thử nghiệm thuật toán phát hiện dị biệt Bot hành vi |
 | `GET` | `/api/admin/system` | Admin | Đo lường tài nguyên runtime, RAM V8 và độ trễ vi dịch vụ |
@@ -142,7 +143,7 @@ Quyền truy cập khu vực Quản trị viên được bảo vệ chặt chẽ
 Hệ thống quản trị đã vượt qua toàn diện 7 cổng chất lượng nghiêm ngặt của dự án (`scripts/check.ps1`):
 1. **Frontend Lint & Types:** 0 lỗi ESLint, 0 lỗi TypeScript (`tsc --noEmit`).
 2. **Backend Lint & Types:** 0 cảnh báo Oxlint, 0 lỗi TypeScript.
-3. **Backend Unit Tests:** Toàn bộ 38 test suites và unit tests đều PASSED (bao gồm `admin.service.spec.ts` và `admin.controller.spec.ts`).
+3. **Backend Unit Tests:** Toàn bộ 38 test suites và 326 unit tests đều PASSED (bao gồm `admin.service.spec.ts` và `admin.controller.spec.ts`).
 4. **Kiểm tra rò rỉ RAM & Buffer:** PASSED với GC profiling.
 5. **Kiểm tra N+1 Query & OWASP:** PASSED.
 6. **Production Build:** Cả backend NestJS và frontend Next.js 16 App Router biên dịch thành công 100%.

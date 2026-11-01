@@ -15,6 +15,8 @@ describe('AdminController', () => {
       deletePost: vi.fn().mockResolvedValue({ success: true }),
       testModerationText: vi.fn().mockReturnValue({ success: true, result: {} }),
       testModerationBehavior: vi.fn().mockReturnValue({ success: true, result: {} }),
+      getModerationQueue: vi.fn().mockResolvedValue({ success: true, items: [], total: 0 }),
+      resolveModerationQueue: vi.fn().mockResolvedValue({ success: true, message: 'Resolved' }),
       getSystemHealth: vi.fn().mockResolvedValue({ success: true, system: {} }),
     };
 
@@ -70,6 +72,16 @@ describe('AdminController', () => {
     });
     expect(resBehavior.success).toBe(true);
     expect(mockAdminService.testModerationBehavior).toHaveBeenCalled();
+  });
+
+  it('should call getModerationQueue and resolveModerationQueue', async () => {
+    const resQueue = await controller.getModerationQueue({ page: 1, limit: 10 });
+    expect(resQueue.success).toBe(true);
+    expect(mockAdminService.getModerationQueue).toHaveBeenCalledWith({ page: 1, limit: 10 });
+
+    const resResolve = await controller.resolveModerationQueue('q1', { action: 'approve' });
+    expect(resResolve.success).toBe(true);
+    expect(mockAdminService.resolveModerationQueue).toHaveBeenCalledWith('q1', { action: 'approve' });
   });
 
   it('should call getSystemHealth', async () => {

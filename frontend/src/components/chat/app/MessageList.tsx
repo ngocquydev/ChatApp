@@ -14,6 +14,7 @@ import ImageLightbox from "../../posts/ImageLightbox";
 import { getChatTheme } from "./chatThemes";
 import CallMessageItem from "../call/CallMessageItem";
 import LocationMessageItem from "../LocationMessageItem";
+import InChatSafetyBanner from "../InChatSafetyBanner";
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
 
@@ -193,6 +194,7 @@ export default function MessageList({
         overscrollBehavior: "contain",
       }}
     >
+      <InChatSafetyBanner messages={messages} currentUserId={currentUserId} conversationId={conversationId} />
       {isLoading && messages.length === 0 ? (
         <MessagesSkeleton />
       ) : messages.length === 0 ? (

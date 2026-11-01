@@ -37,6 +37,22 @@ export class Post {
   @Prop({ type: Boolean, default: false })
   isDeleted: boolean;
 
+  /** Cờ nội dung có thể nhạy cảm (bạo lực, NSFW hoặc độc hại) */
+  @Prop({ type: Boolean, default: false })
+  isSensitive: boolean;
+
+  /** Trạng thái kiểm duyệt: 'approved' | 'flagged' | 'rejected' */
+  @Prop({ type: String, enum: ['approved', 'flagged', 'rejected'], default: 'approved' })
+  moderationStatus: 'approved' | 'flagged' | 'rejected';
+
+  /** Điểm độc hại từ mô hình NLP (0.0 -> 1.0) */
+  @Prop({ type: Number, default: 0 })
+  toxicityScore: number;
+
+  /** Lý do vi phạm từ bộ máy AI hoặc kiểm duyệt viên */
+  @Prop({ type: String, default: '' })
+  moderationReason: string;
+
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -46,3 +62,5 @@ export const PostSchema = SchemaFactory.createForClass(Post);
 PostSchema.index({ authorId: 1, _id: -1 });
 // Ảnh của một người dùng (tab "Ảnh")
 PostSchema.index({ authorId: 1, isDeleted: 1, 'images.0': 1, _id: -1 });
+// Hàng đợi kiểm duyệt bài viết
+PostSchema.index({ moderationStatus: 1, createdAt: -1 });

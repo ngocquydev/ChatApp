@@ -31,6 +31,10 @@ export interface PostView {
   likedByMe: boolean;
   /** null = bài thường; { unavailable } = bài gốc đã xóa / không còn quyền xem */
   sharedPost: SharedPostView | { unavailable: true } | null;
+  isSensitive?: boolean;
+  moderationStatus?: "approved" | "flagged" | "rejected";
+  moderationReason?: string;
+  toxicityScore?: number;
 }
 
 export interface CommentView {

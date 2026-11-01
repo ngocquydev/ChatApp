@@ -3,10 +3,12 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { UsersService } from '../users/users.service.js';
+import { ModerationService } from '../moderation/moderation.service.js';
 import { Friendship, FriendshipDocument } from '../friends/schemas/friendship.schema.js';
 import { Post, PostDocument } from './schemas/post.schema.js';
 import type { PostPrivacy } from './schemas/post.schema.js';
@@ -44,6 +46,10 @@ export interface PostView {
   likedByMe: boolean;
   /** null = bài thường; { unavailable } = bài gốc đã xóa hoặc người xem không có quyền */
   sharedPost: SharedPostView | { unavailable: true } | null;
+  isSensitive?: boolean;
+  moderationStatus?: 'approved' | 'flagged' | 'rejected';
+  moderationReason?: string;
+  toxicityScore?: number;
 }
 
 export interface CommentView {
@@ -85,6 +91,7 @@ export class PostsService {
     @InjectModel(Friendship.name)
     private readonly friendshipModel: Model<FriendshipDocument>,
     private readonly usersService: UsersService,
+    @Optional() private readonly moderationService?: ModerationService,
   ) {}
 
   // ───────────────────────── Quan hệ & quyền xem ─────────────────────────
@@ -232,6 +239,10 @@ export class PostsService {
         commentCount: p.commentCount,
         shareCount: p.shareCount,
         likedByMe: likedSet.has(p._id.toString()),
+        isSensitive: p.isSensitive ?? false,
+        moderationStatus: p.moderationStatus ?? 'approved',
+        moderationReason: p.moderationReason,
+        toxicityScore: p.toxicityScore,
         sharedPost,
       };
     });
@@ -366,11 +377,28 @@ export class PostsService {
     if (!content && images.length === 0) {
       throw new BadRequestException('Bài viết cần có nội dung hoặc ít nhất một ảnh');
     }
+    let isSensitive = false;
+    let moderationStatus: 'approved' | 'flagged' | 'rejected' = 'approved';
+    let toxicityScore = 0;
+    let moderationReason = '';
+    if (this.moderationService && content) {
+      const modResult = this.moderationService.moderateText(content);
+      toxicityScore = modResult.toxicityScore;
+      if (modResult.action === 'BLOCK' || modResult.action === 'FLAG_REVIEW') {
+        isSensitive = true;
+        moderationStatus = 'flagged';
+        moderationReason = modResult.reason || modResult.flags.join(', ');
+      }
+    }
     const created = await this.postModel.create({
       authorId: new Types.ObjectId(authorId),
       content,
       images,
       privacy: dto.privacy ?? 'friends',
+      isSensitive,
+      moderationStatus,
+      toxicityScore,
+      moderationReason,
     });
     if (images.length > 0) {
       await this.usersService

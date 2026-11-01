@@ -43,6 +43,7 @@ import {
 import api from "@/services/api";
 import { isVideoUrl, isAudioUrl, isFileDocUrl, uploadMedia, MAX_FILE_BYTES } from "@/services/postsApi";
 import FileAttachmentItem from "./FileAttachmentItem";
+import InChatSafetyBanner from "./InChatSafetyBanner";
 import { mqttChatClient } from "@/services/mqttClient";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore, ChatMessage, ChatUser, LocationData } from "@/store/useChatStore";
@@ -1041,6 +1042,7 @@ export default function FloatingChatBox({
               scrollbarWidth: "thin",
             }}
           >
+            <InChatSafetyBanner messages={messages} currentUserId={currentUserId} conversationId={convId || undefined} />
             {isLoading ? (
               <Box
                 sx={{

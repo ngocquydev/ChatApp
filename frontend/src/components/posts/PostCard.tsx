@@ -137,7 +137,12 @@ export default function PostCard({
         <SharedPostEmbed shared={post.sharedPost} currentUserId={currentUserId} />
       </Box>
 
-      <PostImages images={post.images} altPrefix={post.author.name} priority={priority} />
+      <PostImages
+        images={post.images}
+        altPrefix={post.author.name}
+        priority={priority}
+        isSensitive={post.isSensitive}
+      />
 
       {(post.likeCount > 0 || post.commentCount > 0 || post.shareCount > 0) && (
         <Box

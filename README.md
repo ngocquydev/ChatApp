@@ -92,7 +92,9 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 
 ### 4. Hệ Thống Kiểm Duyệt Nội Dung & Phòng Chống Bot AI (Moderation & Trust)
 - **NLP Text Classifier:** Phân loại văn bản độc hại, ngôn từ thù ghét (Hate speech) và thư rác (Spam) hỗ trợ song ngữ Tiếng Việt & Tiếng Anh.
-- **Vision Content Scanner:** Quét nhận diện hình ảnh/video bạo lực, nhạy cảm trước khi cho phép lưu trữ.
+- **Vision Content Scanner & Safe Blur:** Quét nhận diện hình ảnh/video bạo lực, nhạy cảm trước khi cho phép lưu trữ. Tự động che mờ an toàn (`Safe Blur 24px`) với tùy chọn "Nhấn để xem" giúp bảo vệ trải nghiệm người dùng.
+- **Trợ lý Cảnh báo An toàn trong Chat (`InChatSafetyBanner`):** Nhận diện thời gian thực các dấu hiệu chuyển tiền, số tài khoản ngân hàng, mã OTP, mật khẩu hoặc lừa đảo qua tin nhắn, bảo vệ người dùng trên cả khung chat chính và hộp chat nổi.
+- **Hàng đợi Kiểm duyệt Dành cho Quản trị viên (`/admin/moderation`):** Tự động gom các nội dung bị gắn cờ vi phạm, hiển thị chỉ số rủi ro AI (`AI Risk %`) và hỗ trợ thao tác 1-chạm: Duyệt bài an toàn, Gỡ bỏ nội dung, hoặc Cảnh cáo người dùng.
 - **Phát hiện Bot & Tài khoản ảo bất thường (Anomaly Detection):**
   - **Isolation Forest:** Phân chia không gian đặc trưng hành vi để cô lập các điểm dị biệt (tần suất spam kết bạn, chu kỳ thích siêu tốc).
   - **Mạng nơ-ron Autoencoder:** Đo lường sai số tái tạo (Reconstruction Error) để phát hiện và cách ly tài khoản máy móc.
@@ -119,9 +121,9 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 ### 7. Trang Quản Trị Hệ Thống Toàn Diện & Bố Cục Sidebar 2 Cột (Admin Control Panel)
 - **Bố cục Chuẩn 2 Cột:** Thanh Sidebar bên trái (260px) cố định chứa Brand Logo, thông tin Admin, và 6 phân hệ quản lý trực quan; khu vực hiển thị nội dung bên phải cuộn độc lập với sub-header breadcrumb, theme toggle và language switch.
 - **Tổng quan Hệ thống (Dashboard Analytics):** Thống kê số lượng thành viên (tỷ lệ hoạt động / cấm), tổng bài viết & bình luận, trạng thái WAF, và bộ nhớ RAM V8 Heap.
-- **Quản lý Thành viên Đa năng:** Tìm kiếm theo tên/email/sđt, lọc quyền hạn/trạng thái, phân trang mượt mà; hỗ trợ Cấm/Mở cấm có kiểm toán lý do, Phân quyền Admin, và Xóa tài khoản vĩnh viễn.
+- **Quản lý Thành viên Đa năng:** Tìm kiếm theo tên/email/sđt, lọc quyền hạn/trạng thái, phân trang mượt mà; hỗ trợ Cấm/Mở cấm có kiểm toán lý do và Phân quyền Admin.
 - **Kiểm duyệt Bài viết & Bảng tin:** Duyệt toàn bộ nội dung bài viết và gallery ảnh; gỡ bài viết vi phạm tiêu chuẩn cộng đồng tức thì.
-- **Thử nghiệm AI & Chống Bot (AI Sandbox):** Thử nghiệm trực quan phân loại độ độc hại văn bản NLP song ngữ (VI/EN) và thuật toán Machine Learning phát hiện Bot bất thường (Isolation Forest & Autoencoder).
+- **Kiểm duyệt AI & Hàng đợi An toàn (`/admin/moderation`):** Hàng đợi kiểm duyệt nội dung tự động bằng AI, xử lý bài viết bị gắn cờ và công cụ AI Sandbox thử nghiệm mô hình NLP Transformer & Machine Learning (Isolation Forest & Autoencoder).
 - **Giám sát Sức khỏe Hạ tầng (System Health):** Theo dõi Uptime, phiên bản Node runtime, biểu đồ tiến trình RAM V8 Heap (Used/Total/RSS), trạng thái kết nối MongoDB, Redis Cache (độ trễ ms), Neo4j Graph DB và Cloudflare Zero Trust Tunnel.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/admin-panel.md](docs/features/admin-panel.md)*
 

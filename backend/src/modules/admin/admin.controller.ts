@@ -21,6 +21,8 @@ import {
 } from './dto/admin-users.dto.js';
 import { AdminPostsQueryDto } from './dto/admin-posts.dto.js';
 import {
+  AdminModerationQueueQueryDto,
+  AdminResolveQueueDto,
   AdminTestBehaviorDto,
   AdminTestTextDto,
 } from './dto/admin-moderation.dto.js';
@@ -79,6 +81,21 @@ export class AdminController {
   @ApiOperation({ summary: 'Thử nghiệm phát hiện bất thường bằng Isolation Forest & Autoencoder' })
   testModerationBehavior(@Body() dto: AdminTestBehaviorDto) {
     return this.adminService.testModerationBehavior(dto);
+  }
+
+  @Get('moderation/queue')
+  @ApiOperation({ summary: 'Lấy hàng đợi nội dung cần kiểm duyệt AI' })
+  getModerationQueue(@Query() query: AdminModerationQueueQueryDto) {
+    return this.adminService.getModerationQueue(query);
+  }
+
+  @Patch('moderation/queue/:id/resolve')
+  @ApiOperation({ summary: 'Xử lý mục trong hàng đợi kiểm duyệt (approve, hide, warn)' })
+  resolveModerationQueue(
+    @Param('id') id: string,
+    @Body() dto: AdminResolveQueueDto,
+  ) {
+    return this.adminService.resolveModerationQueue(id, dto);
   }
 
   @Get('system')
