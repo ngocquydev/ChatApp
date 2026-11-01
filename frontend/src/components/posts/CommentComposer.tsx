@@ -6,6 +6,7 @@ import { Image as ImageIcon, SendHorizontal, X } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { COMMENT_MAX_LENGTH, MAX_IMAGE_BYTES } from "@/services/postsApi";
 import AppGiphyPicker from "@/components/common/AppGiphyPicker";
+import { GifIcon } from "@/components/common/GifIcon";
 
 interface CommentComposerProps {
   sending: boolean;
@@ -197,19 +198,9 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
               aria-label={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}
               disabled={sending}
               onClick={(e: MouseEvent<HTMLButtonElement>) => setGifAnchorEl(e.currentTarget)}
-              sx={{
-                p: 0.5,
-                fontWeight: 900,
-                fontSize: "0.72rem",
-                borderRadius: "6px",
-                border: "1.5px solid",
-                borderColor: "primary.main",
-                width: 32,
-                height: 32,
-                lineHeight: 1,
-              }}
+              sx={{ p: 1 }}
             >
-              GIF
+              <GifIcon size={20} />
             </IconButton>
           </span>
         </Tooltip>

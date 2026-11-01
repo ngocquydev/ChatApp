@@ -68,6 +68,7 @@ import CallMessageItem from "./call/CallMessageItem";
 import LocationMessageItem from "./LocationMessageItem";
 import LocationPickerModal from "./LocationPickerModal";
 import AppGiphyPicker from "@/components/common/AppGiphyPicker";
+import { GifIcon } from "@/components/common/GifIcon";
 
 const POPULAR_EMOJIS = [
   "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
@@ -1648,21 +1649,9 @@ export default function FloatingChatBox({
                             size="small"
                             aria-label={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}
                             onClick={(e: MouseEvent<HTMLButtonElement>) => setGifAnchorEl(e.currentTarget)}
-                            sx={{
-                              color: "primary.main",
-                              p: 0.2,
-                              mr: 0.25,
-                              fontWeight: 900,
-                              fontSize: "0.62rem",
-                              lineHeight: 1,
-                              width: 22,
-                              height: 22,
-                              borderRadius: "4px",
-                              border: "1.5px solid",
-                              borderColor: "primary.main",
-                            }}
+                            sx={{ color: "primary.main", p: 0.4 }}
                           >
-                            GIF
+                            <GifIcon size={18} />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title={tr("Chọn biểu tượng cảm xúc", "Choose emoji")}>

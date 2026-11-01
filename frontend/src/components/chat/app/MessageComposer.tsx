@@ -21,6 +21,7 @@ import { LocationData } from "@/store/useChatStore";
 import LocationPickerModal from "../LocationPickerModal";
 import AppEmojiPicker from "@/components/common/AppEmojiPicker";
 import AppGiphyPicker from "@/components/common/AppGiphyPicker";
+import { GifIcon } from "@/components/common/GifIcon";
 
 const TYPING_THROTTLE_MS = 2500;
 const TYPING_IDLE_MS = 5000;
@@ -312,21 +313,9 @@ export default function MessageComposer({
               size="small"
               aria-label={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}
               onClick={(e: MouseEvent<HTMLButtonElement>) => setGifAnchorEl(e.currentTarget)}
-              sx={{
-                color: "primary.main",
-                mb: 0.25,
-                mr: 0.25,
-                fontWeight: 900,
-                fontSize: "0.68rem",
-                lineHeight: 1,
-                width: 26,
-                height: 26,
-                borderRadius: "6px",
-                border: "1.5px solid",
-                borderColor: "primary.main",
-              }}
+              sx={{ color: "primary.main", mb: 0.25 }}
             >
-              GIF
+              <GifIcon size={20} />
             </IconButton>
           </Tooltip>
 
