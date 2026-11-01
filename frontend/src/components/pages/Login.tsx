@@ -148,6 +148,7 @@ export default function Login() {
 
 
   const {
+    user,
     isAuthenticated,
     isCheckingAuth,
     isLoggingIn,
@@ -180,9 +181,13 @@ export default function Login() {
   // Tự động chuyển hướng nếu người dùng đã đăng nhập sẵn
   useEffect(() => {
     if (isAuthenticated && !isCheckingAuth) {
-      router.replace("/");
+      if (user?.role === "admin") {
+        router.replace("/admin");
+      } else {
+        router.replace("/");
+      }
     }
-  }, [isAuthenticated, isCheckingAuth, router]);
+  }, [isAuthenticated, isCheckingAuth, user, router]);
 
   // Khôi phục email nếu người dùng đã tích chọn "Ghi nhớ đăng nhập" trước đó
   useEffect(() => {

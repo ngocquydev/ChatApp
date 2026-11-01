@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Box,
   Chip,
@@ -20,7 +20,7 @@ import {
   Bot,
   ShieldAlert,
   Cpu,
-  ArrowLeft,
+  LogOut,
 } from "lucide-react";
 import BrandLogo from "@/components/common/BrandLogo";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
@@ -81,8 +81,15 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ onItemClick }: AdminSidebarProps) {
   const pathname = usePathname();
-  const { user } = useAuthStore();
+  const router = useRouter();
+  const { user, logout } = useAuthStore();
   const { isEnglish: isEn } = useTranslation();
+
+  const handleLogout = async () => {
+    if (onItemClick) onItemClick();
+    await logout();
+    router.push("/login");
+  };
 
   const isItemActive = (item: NavItem) => {
     if (item.exact) {
@@ -198,30 +205,27 @@ export default function AdminSidebar({ onItemClick }: AdminSidebarProps) {
 
       <Divider />
 
-      {/* Footer quản trị: Người dùng & Lối về ChatApp */}
+      {/* Footer quản trị: Thông tin Admin & Đăng xuất */}
       <Box sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1 }}>
         <ListItemButton
-          component={Link}
-          href="/"
-          onClick={onItemClick}
+          onClick={handleLogout}
           sx={{
             borderRadius: "8px",
             px: 1.5,
             py: 0.8,
-            color: "text.secondary",
+            color: "error.main",
             "&:hover": {
-              color: "text.primary",
               bgcolor: "action.hover",
             },
           }}
         >
-          <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
-            <ArrowLeft size={18} aria-hidden />
+          <ListItemIcon sx={{ minWidth: 32, color: "error.main" }}>
+            <LogOut size={18} aria-hidden />
           </ListItemIcon>
           <ListItemText
             primary={
-              <Typography sx={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                {isEn ? "Back to ChatApp" : "Về ứng dụng chính"}
+              <Typography sx={{ fontSize: "0.85rem", fontWeight: 600 }}>
+                {isEn ? "Sign out" : "Đăng xuất"}
               </Typography>
             }
           />

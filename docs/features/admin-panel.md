@@ -27,7 +27,7 @@ Giao diện quản trị viên được xây dựng hoàn toàn tuân thủ theo
 graph LR
     subgraph ClientShell ["Khung ứng dụng tổng thể (ClientShell)"]
         subgraph AdminLayout ["Bố cục Quản trị (/admin/*)"]
-            Sidebar["CỘT TRÁI: AdminSidebar (260px)<br/>- Brand Logo & Admin Badge<br/>- 6 Phân hệ quản trị<br/>- Thông tin Admin & Lối về ChatApp"]
+            Sidebar["CỘT TRÁI: AdminSidebar (260px)<br/>- Brand Logo & Admin Badge<br/>- 6 Phân hệ quản trị<br/>- Thông tin Admin & Nút Đăng xuất"]
             ContentArea["CỘT PHẢI: Scrollable Content Area<br/>- Sub-Header (Breadcrumb, Lang/Theme)<br/>- View chức năng được chọn (/admin/...)"]
         end
     end
@@ -43,10 +43,10 @@ graph LR
   4. 🤖 **Kiểm duyệt AI** (`/admin/moderation`)
   5. 🛡️ **Bảo mật & WAF** (`/admin/security`)
   6. ⚙️ **Hệ thống & Dịch vụ** (`/admin/system`)
-- **Tích hợp chân trang (Footer):** Hiển thị avatar người dùng trực quan với `PresenceAvatar`, email và nút "Về ứng dụng chính" giúp chuyển đổi nhanh về bảng tin người dùng.
+- **Tích hợp chân trang (Footer) & Nút Đăng Xuất:** Hiển thị avatar người dùng trực quan với `PresenceAvatar`, email quản trị và nút **Đăng xuất** nhanh chóng, tách biệt hoàn toàn khỏi không gian người dùng.
 
 ### 1.2. Cột Phải: Content Area (`AdminLayout.tsx`)
-- **Sub-Header:** Thanh điều khiển phụ chứa nút mở Drawer trên mobile, Breadcrumbs chỉ dẫn đường dẫn phân cấp, biểu tượng trạng thái bảo vệ đa tầng, cùng bộ chuyển đổi chế độ Sáng/Tối (`ColorModeToggle`) và Song ngữ VI/EN (`LanguageToggle`).
+- **Sub-Header:** Thanh điều khiển phụ chứa nút mở Drawer trên mobile, Breadcrumbs chỉ dẫn đường dẫn phân cấp, biểu tượng trạng thái bảo vệ đa tầng, bộ chuyển đổi chế độ Sáng/Tối (`ColorModeToggle`), Song ngữ VI/EN (`LanguageToggle`) và nút Đăng xuất an toàn.
 - **Nội dung độc lập:** Mỗi tính năng con nằm trong thư mục App Router riêng (`/admin/page.tsx`, `/admin/users/page.tsx`, `/admin/posts/page.tsx`, `/admin/moderation/page.tsx`, `/admin/security/page.tsx`, `/admin/system/page.tsx`).
 
 ---
@@ -57,12 +57,16 @@ Quyền truy cập khu vực Quản trị viên được bảo vệ chặt chẽ
 
 1. **Frontend Guard (`AdminGuard.tsx`):**
    - Kiểm tra `useAuthStore()`: Nếu chưa đăng nhập -> điều hướng về `/login?redirect=/admin`.
-   - Nếu đã đăng nhập nhưng `user.role !== 'admin'` -> điều hướng về trang chủ `/` kèm cảnh báo "Bạn không có quyền truy cập trang quản trị".
+   - Nếu đã đăng nhập nhưng `user.role !== 'admin'` -> điều hướng về trang chủ `/` kèm thông báo không có quyền truy cập.
 2. **Backend Guard (`RolesGuard` & `JwtAuthGuard`):**
    - Mọi endpoint trong `AdminController` đều được gắn decorator `@UseGuards(JwtAuthGuard, RolesGuard)` và `@Roles('admin')`.
    - Token JWT được giải mã từ HttpOnly Cookie; kiểm tra trường `role === 'admin'`. Người dùng thông thường gửi request đến `/admin/*` ngay lập tức nhận mã lỗi `403 Forbidden`.
 3. **Chống Tự Khóa Hoặc Xóa Tài Khoản Chính Mình:**
-   - Trong `AdminService`, nghiệp vụ cấm hoặc xóa tài khoản có kiểm tra kiểm tra logic nghiêm ngặt: Quản trị viên không thể tự cấm (`ban`) hoặc tự xóa chính tài khoản mình đang đăng nhập.
+   - Trong `AdminService`, nghiệp vụ cấm hoặc xóa tài khoản có kiểm tra logic nghiêm ngặt: Quản trị viên không thể tự cấm (`ban`) hoặc tự xóa chính tài khoản mình đang đăng nhập.
+4. **Cách Ly Tuyệt Đối Quản Trị Viên Khỏi Mạng Xã Hội (Admin Strict Route Isolation):**
+   - Tài khoản `role === 'admin'` khi đăng nhập hoặc nhập URL người dùng (`/`, `/profile`, `/explore`, `/chat`...) sẽ được `AuthGuard` tự động chặn render và chuyển hướng tức thì về `/admin`.
+   - `ClientShell` loại bỏ hoàn toàn thanh điều hướng `ResponsiveAppBar`, `FloatingChatDock`, `FriendNoticeToast`, và `CallModal` khi người dùng là admin hoặc đang ở đường dẫn `/admin/*`.
+   - Admin không kết nối vào socket chat mạng xã hội và không tự động nạp danh sách bạn bè, giúp tăng cường bảo mật và không làm rò rỉ dữ liệu hay sự hiện diện của admin.
 
 ---
 
@@ -139,7 +143,7 @@ Quyền truy cập khu vực Quản trị viên được bảo vệ chặt chẽ
 Hệ thống quản trị đã vượt qua toàn diện 7 cổng chất lượng nghiêm ngặt của dự án (`scripts/check.ps1`):
 1. **Frontend Lint & Types:** 0 lỗi ESLint, 0 lỗi TypeScript (`tsc --noEmit`).
 2. **Backend Lint & Types:** 0 cảnh báo Oxlint, 0 lỗi TypeScript.
-3. **Backend Unit Tests:** Toàn bộ 38 test suites và 323 unit tests đều PASSED (bao gồm `admin.service.spec.ts` và `admin.controller.spec.ts`).
+3. **Backend Unit Tests:** Toàn bộ 38 test suites và 326 unit tests đều PASSED (bao gồm `admin.service.spec.ts` và `admin.controller.spec.ts`).
 4. **Kiểm tra rò rỉ RAM & Buffer:** PASSED với GC profiling.
 5. **Kiểm tra N+1 Query & OWASP:** PASSED.
 6. **Production Build:** Cả backend NestJS và frontend Next.js 16 App Router biên dịch thành công 100%.

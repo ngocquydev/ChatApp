@@ -181,6 +181,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
+    user,
     isAuthenticated,
     isCheckingAuth,
     isLoggingIn,
@@ -236,9 +237,13 @@ export default function Register() {
   // Chuyển hướng nếu đã đăng nhập
   useEffect(() => {
     if (isAuthenticated && !isCheckingAuth) {
-      router.replace("/");
+      if (user?.role === "admin") {
+        router.replace("/admin");
+      } else {
+        router.replace("/");
+      }
     }
-  }, [isAuthenticated, isCheckingAuth, router]);
+  }, [isAuthenticated, isCheckingAuth, user, router]);
 
   const onSubmit = async (data: RegisterFormData) => {
     setAlertInfo({ open: false, type: "info", message: "" });

@@ -20,7 +20,7 @@ export default function AdminGuard({ children }: { children: ReactNode }) {
   const { user, isCheckingAuth } = useAuthStore();
 
   return (
-    <AuthGuard>
+    <AuthGuard allowAdmin>
       {isCheckingAuth || !user ? null : user.role === "admin" ? (
         children
       ) : (

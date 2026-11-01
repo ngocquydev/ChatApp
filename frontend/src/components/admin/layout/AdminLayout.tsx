@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Box,
   Drawer,
@@ -9,12 +9,14 @@ import {
   Typography,
   Breadcrumbs,
   Chip,
+  Button,
 } from "@mui/material";
-import { Menu, ShieldCheck, ChevronRight } from "lucide-react";
+import { Menu, ShieldCheck, ChevronRight, LogOut } from "lucide-react";
 import AdminGuard from "@/components/common/AdminGuard";
 import ColorModeToggle from "@/components/common/ColorModeToggle";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import AdminSidebar from "./AdminSidebar";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useTranslation } from "@/i18n/useTranslation";
 
 interface AdminLayoutProps {
@@ -26,7 +28,14 @@ const SIDEBAR_WIDTH = 260;
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuthStore();
   const { isEnglish: isEn } = useTranslation();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+  };
 
   const handleDrawerToggle = () => {
     setMobileOpen((prev) => !prev);
@@ -47,7 +56,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <Box
         sx={{
           display: "flex",
-          height: { xs: "calc(100dvh - 56px)", md: "calc(100dvh - 64px)" },
+          height: "100dvh",
           width: "100%",
           overflow: "hidden",
           bgcolor: "background.default",
@@ -166,6 +175,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               />
               <LanguageToggle />
               <ColorModeToggle />
+              <Button
+                size="small"
+                variant="outlined"
+                color="error"
+                onClick={handleLogout}
+                startIcon={<LogOut size={14} />}
+                sx={{
+                  textTransform: "none",
+                  height: 28,
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  borderRadius: "6px",
+                  ml: 0.5,
+                }}
+              >
+                {isEn ? "Sign out" : "Đăng xuất"}
+              </Button>
             </Box>
           </Box>
 
