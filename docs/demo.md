@@ -145,7 +145,7 @@ Tập hợp các chỉ số cốt lõi về người dùng, bài viết, an ninh
 ![Tổng quan Bảng điều khiển Quản trị](assets/screenshots/admin-dashboard.png)
 
 ### 8.2. Phân Hệ Quản Lý Người Dùng & Phân Quyền (Users Management)
-Hỗ trợ tìm kiếm theo họ tên, email, số điện thoại, lọc trạng thái và thực hiện các tác vụ: Cấm/Mở khóa tài khoản (có lý do kiểm duyệt), Phân quyền Admin, và Xóa tài khoản vĩnh viễn.
+Hỗ trợ tìm kiếm theo họ tên, email, số điện thoại, lọc trạng thái và thực hiện các tác vụ: Cấm/Mở khóa tài khoản (có lý do kiểm duyệt) và Phân quyền Admin.
 
 ![Quản lý Người dùng & Phân quyền](assets/screenshots/admin-users.png)
 

@@ -15,7 +15,7 @@ import {
 import { AdminUser } from "@/services/adminApi";
 import { useTranslation } from "@/i18n/useTranslation";
 
-export type UserActionType = "ban" | "unban" | "role" | "delete" | null;
+export type UserActionType = "ban" | "unban" | "role" | null;
 
 interface UserActionDialogProps {
   user: AdminUser | null;
@@ -56,7 +56,7 @@ export default function UserActionDialog({
       const nextRole = user.role === "admin" ? "user" : "admin";
       return isEn ? `Change role to ${nextRole}` : `Đổi vai trò thành ${nextRole}`;
     }
-    return isEn ? `Delete user: ${user.name}` : `Xóa tài khoản: ${user.name}`;
+    return "";
   };
 
   const getDescription = () => {
@@ -76,9 +76,7 @@ export default function UserActionDialog({
         ? `Are you sure you want to change this user's role from ${user.role} to ${nextRole}?`
         : `Bạn có chắc chắn muốn đổi vai trò của người dùng từ ${user.role} sang ${nextRole}?`;
     }
-    return isEn
-      ? "Soft deleting this user will hide their profile and disable login. This action can be audited."
-      : "Xóa tài khoản sẽ ẩn hồ sơ và ngăn người dùng đăng nhập. Thao tác này được lưu vết quản trị.";
+    return "";
   };
 
   return (
@@ -111,7 +109,7 @@ export default function UserActionDialog({
         </Button>
         <Button
           variant="contained"
-          color={action === "ban" || action === "delete" ? "error" : "primary"}
+          color={action === "ban" ? "error" : "primary"}
           onClick={handleConfirm}
           disabled={submitting}
           sx={{ borderRadius: "8px" }}

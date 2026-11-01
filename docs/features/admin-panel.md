@@ -62,7 +62,7 @@ Quyền truy cập khu vực Quản trị viên được bảo vệ chặt chẽ
    - Mọi endpoint trong `AdminController` đều được gắn decorator `@UseGuards(JwtAuthGuard, RolesGuard)` và `@Roles('admin')`.
    - Token JWT được giải mã từ HttpOnly Cookie; kiểm tra trường `role === 'admin'`. Người dùng thông thường gửi request đến `/admin/*` ngay lập tức nhận mã lỗi `403 Forbidden`.
 3. **Chống Tự Khóa Hoặc Xóa Tài Khoản Chính Mình:**
-   - Trong `AdminService`, nghiệp vụ cấm hoặc xóa tài khoản có kiểm tra logic nghiêm ngặt: Quản trị viên không thể tự cấm (`ban`) hoặc tự xóa chính tài khoản mình đang đăng nhập.
+   - Trong `AdminService`, nghiệp vụ cấm tài khoản có kiểm tra logic nghiêm ngặt: Quản trị viên không thể tự cấm (`ban`) chính tài khoản mình đang đăng nhập.
 4. **Cách Ly Tuyệt Đối Quản Trị Viên Khỏi Mạng Xã Hội (Admin Strict Route Isolation):**
    - Tài khoản `role === 'admin'` khi đăng nhập hoặc nhập URL người dùng (`/`, `/profile`, `/explore`, `/chat`...) sẽ được `AuthGuard` tự động chặn render và chuyển hướng tức thì về `/admin`.
    - `ClientShell` loại bỏ hoàn toàn thanh điều hướng `ResponsiveAppBar`, `FloatingChatDock`, `FriendNoticeToast`, và `CallModal` khi người dùng là admin hoặc đang ở đường dẫn `/admin/*`.
@@ -88,7 +88,7 @@ Quyền truy cập khu vực Quản trị viên được bảo vệ chặt chẽ
   - Lọc theo Trạng thái: Tất cả, Đang hoạt động (`active`), Bị khóa (`banned`).
 - **Bảng Dữ Liệu Phân Trang (`UsersManagementView.tsx`):**
   - Hiển thị danh sách người dùng kèm Avatar Presence, vai trò, ngày tham gia và trạng thái online/offline.
-  - Nút tác vụ trực quan: Khóa/Mở khóa tài khoản (có lý do kiểm duyệt), Nâng/Hạ quyền Admin, và Xóa tài khoản vĩnh viễn.
+  - Nút tác vụ trực quan: Khóa/Mở khóa tài khoản (có lý do kiểm duyệt) và Nâng/Hạ quyền Admin.
 - **Hộp Thoại Xác Nhận An Toàn (`UserActionDialog.tsx`):** Mọi thao tác thay đổi quyền hạn hoặc cấm tài khoản đều yêu cầu nhập lý do kiểm duyệt để lưu vết kiểm toán (Audit Trail).
 
 ### 3.3. Kiểm Duyệt Bài Viết & Bảng Tin (Posts Moderation)
@@ -129,7 +129,6 @@ Quyền truy cập khu vực Quản trị viên được bảo vệ chặt chẽ
 | `GET` | `/api/admin/users` | Admin | Lấy danh sách người dùng phân trang kèm bộ lọc tìm kiếm |
 | `PATCH` | `/api/admin/users/:id/ban` | Admin | Khóa hoặc mở khóa tài khoản người dùng kèm lý do kiểm toán |
 | `PATCH` | `/api/admin/users/:id/role` | Admin | Thay đổi quyền hạn tài khoản (`admin` hoặc `user`) |
-| `DELETE` | `/api/admin/users/:id` | Admin | Xóa tài khoản người dùng khỏi hệ thống |
 | `GET` | `/api/admin/posts` | Admin | Tìm kiếm và duyệt bài viết toàn hệ thống |
 | `DELETE` | `/api/admin/posts/:id` | Admin | Xóa mềm/Gỡ bài viết vi phạm tiêu chuẩn |
 | `POST` | `/api/admin/moderation/test-text` | Admin | Thử nghiệm phân loại độc hại văn bản với Transformer |
@@ -143,7 +142,7 @@ Quyền truy cập khu vực Quản trị viên được bảo vệ chặt chẽ
 Hệ thống quản trị đã vượt qua toàn diện 7 cổng chất lượng nghiêm ngặt của dự án (`scripts/check.ps1`):
 1. **Frontend Lint & Types:** 0 lỗi ESLint, 0 lỗi TypeScript (`tsc --noEmit`).
 2. **Backend Lint & Types:** 0 cảnh báo Oxlint, 0 lỗi TypeScript.
-3. **Backend Unit Tests:** Toàn bộ 38 test suites và 326 unit tests đều PASSED (bao gồm `admin.service.spec.ts` và `admin.controller.spec.ts`).
+3. **Backend Unit Tests:** Toàn bộ 38 test suites và unit tests đều PASSED (bao gồm `admin.service.spec.ts` và `admin.controller.spec.ts`).
 4. **Kiểm tra rò rỉ RAM & Buffer:** PASSED với GC profiling.
 5. **Kiểm tra N+1 Query & OWASP:** PASSED.
 6. **Production Build:** Cả backend NestJS và frontend Next.js 16 App Router biên dịch thành công 100%.

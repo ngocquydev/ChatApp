@@ -168,23 +168,6 @@ describe('AdminService', () => {
     });
   });
 
-  describe('deleteUser', () => {
-    it('should soft delete user', async () => {
-      const userId = new Types.ObjectId().toString();
-      const mockUser = {
-        _id: userId,
-        isDeleted: false,
-        save: vi.fn().mockResolvedValue(true),
-      };
-      mockUserModel.findOne.mockResolvedValue(mockUser);
-
-      const res = await service.deleteUser(userId);
-      expect(res.success).toBe(true);
-      expect(mockUser.isDeleted).toBe(true);
-      expect(mockUser.save).toHaveBeenCalled();
-    });
-  });
-
   describe('getPosts and deletePost', () => {
     it('should fetch posts with pagination', async () => {
       const res = await service.getPosts({ page: 1, limit: 10, search: 'post' });

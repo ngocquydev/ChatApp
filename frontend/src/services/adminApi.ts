@@ -178,11 +178,6 @@ export const adminApi = {
     return res.data;
   },
 
-  async deleteUser(userId: string): Promise<{ success: boolean; message: string }> {
-    const res = await api.delete<{ success: boolean; message: string }>(`/admin/users/${userId}`);
-    return res.data;
-  },
-
   async getPosts(params?: {
     search?: string;
     page?: number;

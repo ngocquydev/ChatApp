@@ -24,7 +24,6 @@ import {
   ShieldCheck,
   UserCheck,
   UserX,
-  Trash2,
   Users as UsersIcon,
 } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
@@ -95,9 +94,6 @@ export default function UsersManagementView() {
       const nextRole = targetUser.role === "admin" ? "user" : "admin";
       await adminApi.updateUserRole(targetUser._id, nextRole);
       setFeedback(isEn ? `Role updated to ${nextRole}` : `Đã chuyển vai trò sang ${nextRole}`);
-    } else if (action === "delete") {
-      await adminApi.deleteUser(targetUser._id);
-      setFeedback(isEn ? "User deleted" : "Đã xóa người dùng thành công");
     }
     fetchUsers();
   };
@@ -216,18 +212,6 @@ export default function UsersManagementView() {
                             aria-label="Đổi vai trò"
                           >
                             {u.role === "admin" ? <ShieldAlert size={18} /> : <ShieldCheck size={18} />}
-                          </IconButton>
-                        </Tooltip>
-
-                        {/* Nút Xóa */}
-                        <Tooltip title={isEn ? "Delete user" : "Xóa tài khoản"}>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleAction(u, "delete")}
-                            aria-label="Xóa tài khoản"
-                          >
-                            <Trash2 size={18} />
                           </IconButton>
                         </Tooltip>
                       </Box>

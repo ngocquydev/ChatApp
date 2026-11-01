@@ -57,12 +57,6 @@ export class AdminController {
     return this.adminService.updateUserRole(id, dto.role);
   }
 
-  @Delete('users/:id')
-  @ApiOperation({ summary: 'Xóa mềm người dùng' })
-  deleteUser(@Param('id') id: string) {
-    return this.adminService.deleteUser(id);
-  }
-
   @Get('posts')
   @ApiOperation({ summary: 'Danh sách bài viết toàn hệ thống để kiểm duyệt' })
   getPosts(@Query() query: AdminPostsQueryDto) {

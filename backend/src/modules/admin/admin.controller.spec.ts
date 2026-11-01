@@ -11,7 +11,6 @@ describe('AdminController', () => {
       getUsers: vi.fn().mockResolvedValue({ success: true, users: [], total: 0 }),
       toggleUserBan: vi.fn().mockResolvedValue({ success: true }),
       updateUserRole: vi.fn().mockResolvedValue({ success: true }),
-      deleteUser: vi.fn().mockResolvedValue({ success: true }),
       getPosts: vi.fn().mockResolvedValue({ success: true, posts: [], total: 0 }),
       deletePost: vi.fn().mockResolvedValue({ success: true }),
       testModerationText: vi.fn().mockReturnValue({ success: true, result: {} }),
@@ -44,12 +43,6 @@ describe('AdminController', () => {
     const res = await controller.updateUserRole('u1', { role: 'admin' });
     expect(res.success).toBe(true);
     expect(mockAdminService.updateUserRole).toHaveBeenCalledWith('u1', 'admin');
-  });
-
-  it('should call deleteUser', async () => {
-    const res = await controller.deleteUser('u1');
-    expect(res.success).toBe(true);
-    expect(mockAdminService.deleteUser).toHaveBeenCalledWith('u1');
   });
 
   it('should call getPosts and deletePost', async () => {

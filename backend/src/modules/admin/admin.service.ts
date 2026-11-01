@@ -210,26 +210,6 @@ export class AdminService {
     };
   }
 
-  async deleteUser(userId: string) {
-    if (!Types.ObjectId.isValid(userId)) {
-      throw new NotFoundException('ID người dùng không hợp lệ');
-    }
-
-    const user = await this.userModel.findOne({ _id: userId, isDeleted: { $ne: true } });
-    if (!user) {
-      throw new NotFoundException('Không tìm thấy người dùng');
-    }
-
-    user.isDeleted = true;
-    user.refreshToken = undefined;
-    await user.save();
-
-    return {
-      success: true,
-      message: 'Đã xóa người dùng thành công',
-    };
-  }
-
   async getPosts(query: AdminPostsQueryDto) {
     const page = Math.max(Number(query.page) || 1, 1);
     const limit = Math.min(Math.max(Number(query.limit) || 20, 1), 50);
