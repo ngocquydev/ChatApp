@@ -1,8 +1,5 @@
 import {
   Injectable,
-  Inject,
-  Optional,
-  forwardRef,
   Logger,
   OnModuleDestroy,
   OnModuleInit,
@@ -17,7 +14,6 @@ import { Aedes, Client } from 'aedes';
 import { JwtService } from '@nestjs/jwt';
 import { RedisService } from '../redis/redis/redis.service.js';
 import { ChatService } from './chat.service.js';
-import { ChatGateway } from './chat.gateway.js';
 import {
   SendMessageProto,
   ChatMessageProto,
@@ -42,13 +38,18 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
   private wssSecure: WebSocketServer | null = null;
   private readonly userClientMap = new Map<string, Set<string>>();
 
+  /** Callback lắng nghe tin nhắn mới nhận được từ MQTT để Gateway kích hoạt Aura AI */
+  public onChatMessageReceived?: (data: {
+    senderId: string;
+    receiverId: string;
+    text: string;
+    conversationId: string;
+  }) => void;
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
     private readonly chatService: ChatService,
-    @Optional()
-    @Inject(forwardRef(() => ChatGateway))
-    private readonly chatGateway?: ChatGateway,
   ) {}
 
   async onModuleInit() {
@@ -315,8 +316,8 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
           this.publishBinary(`chat/user/${senderId}`, binaryEncoded);
 
           // Kích hoạt Aura Bot nếu tin nhắn gửi tới Aura hoặc nhắc tới @aura
-          if (this.chatGateway) {
-            void this.chatGateway.triggerAuraReply({
+          if (this.onChatMessageReceived) {
+            this.onChatMessageReceived({
               senderId,
               receiverId: decoded.receiverId,
               text: decoded.text,

@@ -65,3 +65,4 @@ Hệ thống hỗ trợ cơ chế phản hồi song song trên mọi giao thức
 
 3. **REST API Fallback (`chat.controller.ts`)**:
    - Khi kết nối socket gián đoạn, API `POST /chat/messages` vẫn tự động kích hoạt Aura trả lời qua `ChatGateway.triggerAuraReply`.
+

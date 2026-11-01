@@ -16,3 +16,4 @@ export function isAuraBot(userId?: string | null): boolean {
   if (!userId) return false;
   return String(userId) === AURA_BOT_ID;
 }
+

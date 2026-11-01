@@ -36,3 +36,4 @@ export default function VerifiedBadge({ size = 16, title }: VerifiedBadgeProps) 
     </Tooltip>
   );
 }
+
