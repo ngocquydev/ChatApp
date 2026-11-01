@@ -14,7 +14,7 @@ import {
   Alert,
   Snackbar,
 } from "@mui/material";
-import { Image as ImageIcon, MapPin, Paperclip, Send, Smile, ThumbsUp } from "lucide-react";
+import { Image as ImageIcon, MapPin, Paperclip, Send, Smile, Sparkles, ThumbsUp } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { uploadMedia, MAX_FILE_BYTES } from "@/services/postsApi";
 import { LocationData } from "@/store/useChatStore";
@@ -24,6 +24,7 @@ import AppGiphyPicker from "@/components/common/AppGiphyPicker";
 import { GifIcon } from "@/components/common/GifIcon";
 import MentionAutocomplete, { MentionAutocompleteHandle } from "@/components/common/MentionAutocomplete";
 import useMention from "@/hooks/useMention";
+import AuraPromptSuggestions from "../AuraPromptSuggestions";
 
 const TYPING_THROTTLE_MS = 2500;
 const TYPING_IDLE_MS = 5000;
@@ -71,6 +72,7 @@ export default function MessageComposer({
   const { tr } = useTranslation();
   const [text, setText] = useState("");
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [showAuraSuggestions, setShowAuraSuggestions] = useState(false);
   const [openLocationPicker, setOpenLocationPicker] = useState(false);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [gifAnchorEl, setGifAnchorEl] = useState<HTMLButtonElement | null>(null);
@@ -164,6 +166,7 @@ export default function MessageComposer({
     if (!value) return;
     if (!customText) {
       setText("");
+      setShowAuraSuggestions(false);
     }
     stopTyping();
     await onSend(value);
@@ -220,6 +223,15 @@ export default function MessageComposer({
         pb: "calc(10px + env(safe-area-inset-bottom))",
       }}
     >
+      {(showAuraSuggestions || text.includes("@aura")) && (
+        <AuraPromptSuggestions
+          onSelectPrompt={(promptText) => {
+            setText(promptText);
+            checkMention(promptText, promptText.length);
+            inputRef.current?.focus();
+          }}
+        />
+      )}
       <Box
         sx={{
           display: "flex",
@@ -278,6 +290,18 @@ export default function MessageComposer({
                 <Paperclip size={20} />
               </IconButton>
             </span>
+          </Tooltip>
+          <Tooltip title={tr("Trò chuyện vui cùng Aura AI (RAG)", "Fun chat with Aura AI (RAG)")}>
+            <IconButton
+              size="small"
+              aria-label={tr("Gợi ý hỏi Aura AI", "Suggestions for Aura AI")}
+              onClick={() => setShowAuraSuggestions((prev) => !prev)}
+              sx={{
+                color: showAuraSuggestions || text.includes("@aura") ? "primary.main" : "text.secondary",
+              }}
+            >
+              <Sparkles size={20} />
+            </IconButton>
           </Tooltip>
         </Box>
 

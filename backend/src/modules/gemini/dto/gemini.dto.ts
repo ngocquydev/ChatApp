@@ -46,3 +46,4 @@ export class AskAuraDto {
   @IsString({ message: 'Mã cuộc trò chuyện phải là chuỗi ký tự' })
   conversationId?: string;
 }
+

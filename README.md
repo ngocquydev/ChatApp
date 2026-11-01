@@ -154,7 +154,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 ### 10. Trợ Lý AI Gemini 1.5 Flash: Tóm Tắt Thông Minh, Aura Bot & Gắn Thẻ Bạn Bè (@mentions)
 - **Tóm tắt bình luận bài viết (AI Comment Summary):** Phân tích luồng ý kiến, phân loại cảm xúc cộng đồng và tổng hợp các luận điểm chính chỉ với 1-chạm thông qua mô hình **Google Gemini 1.5 Flash**.
 - **Tóm tắt hội thoại tin nhắn (AI Chat Summary):** Tóm lược cuộc trò chuyện gần nhất trong cả trang chat chính và cửa sổ chat nổi, rút ra các quyết định quan trọng và danh sách việc cần làm (Action Items).
-- **Trợ lý ảo Aura Bot (`@aura`):** Tích hợp bot thông minh trong tin nhắn 1-1 và nhóm chat; tự động nhận diện câu hỏi khi gọi `@aura`, hiển thị trạng thái đang soạn tin (typing) và phản hồi súc tích bằng tiếng Việt hoặc tiếng Anh.
+- **Trợ lý ảo Aura Bot (`@aura`) & Trò chuyện Vui với RAG:** Tích hợp bot thông minh trong tin nhắn 1-1 và nhóm chat; ứng dụng kỹ thuật **RAG** trích xuất ngữ cảnh hội thoại, cạ cứng và kho tri thức ChatApp; persona Gen-Z dí dỏm "nhắn vui vui" (chấm điểm cạ cứng, bóc phốt nhẹ nhàng, chọn kèo ăn uống, làm thơ con cóc 4 câu, mẹo xịn ChatApp); thanh chip gợi ý 1-chạm (`AuraPromptSuggestions`) cùng huy hiệu `Aura AI • RAG ⚡`.
 - **Hệ thống gắn thẻ bạn bè thông minh (`@mentions`):** Tự động mở menu gợi ý người dùng (Autocomplete) với phím mũi tên & Enter; hiển thị huy hiệu thẻ nhắc nổi bật phong cách mạng xã hội (`@aura` chip gradient, `@Name` pill tương tác dẫn đến trang cá nhân) và gửi thông báo thời gian thực.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/gemini-ai-summary-aura-mentions.md](docs/features/gemini-ai-summary-aura-mentions.md)*
 

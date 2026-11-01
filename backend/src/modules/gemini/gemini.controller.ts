@@ -183,8 +183,17 @@ export class GeminiController {
     }
 
     let historyItems: Array<{ senderName: string; text: string }> = [];
+    let partnerId: string | undefined;
     if (dto.conversationId && Types.ObjectId.isValid(dto.conversationId)) {
       try {
+        const conv = await this.conversationModel
+          .findById(new Types.ObjectId(dto.conversationId))
+          .lean()
+          .exec();
+        if (conv) {
+          partnerId = conv.participants.find((p) => p.toString() !== viewerId)?.toString();
+        }
+
         const messages = await this.messageModel
           .find({ conversationId: new Types.ObjectId(dto.conversationId) })
           .sort({ createdAt: -1 })
@@ -201,7 +210,11 @@ export class GeminiController {
       }
     }
 
-    const reply = await this.geminiService.generateAuraChatReply(dto.prompt, historyItems);
+    const reply = await this.geminiService.generateAuraChatReply(dto.prompt, historyItems, {
+      conversationId: dto.conversationId,
+      senderId: viewerId,
+      partnerId,
+    });
 
     return {
       success: true,

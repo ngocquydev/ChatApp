@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AuraRagService, RetrievedRagContext } from './rag/aura-rag.service.js';
 
 export interface CommentSummaryItem {
   authorName: string;
@@ -12,6 +13,12 @@ export interface ChatMessageItem {
   time?: string;
 }
 
+export interface AuraChatContextOptions {
+  conversationId?: string;
+  senderId?: string;
+  partnerId?: string;
+}
+
 @Injectable()
 export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
@@ -19,7 +26,11 @@ export class GeminiService {
   private readonly modelName = 'gemini-1.5-flash';
   private readonly endpoint: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional()
+    private readonly auraRagService?: AuraRagService,
+  ) {
     this.apiKey =
       this.configService.get<string>('GEMINI_API_KEY') ||
       process.env.GEMINI_API_KEY ||
@@ -163,9 +174,13 @@ export class GeminiService {
   }
 
   /**
-   * Sinh câu trả lời khi người dùng chat trực tiếp với Aura (@aura)
+   * Sinh câu trả lời khi người dùng chat trực tiếp với Aura (@aura), ứng dụng kỹ thuật RAG
    */
-  async generateAuraChatReply(userPrompt: string, history: ChatMessageItem[] = []): Promise<string> {
+  async generateAuraChatReply(
+    userPrompt: string,
+    history: ChatMessageItem[] = [],
+    contextOptions?: AuraChatContextOptions,
+  ): Promise<string> {
     const isSummarizeRequest =
       /\b(tóm tắt|summarize|tổng kết|tổng hợp)\b/i.test(userPrompt);
 
@@ -173,20 +188,53 @@ export class GeminiService {
       return this.summarizeChat(history);
     }
 
-    const systemPrompt =
-      'Bạn là Aura AI (@aura) - trợ lý ảo thông minh, thân thiện và hữu ích của mạng xã hội ChatApp, được hỗ trợ bởi mô hình Google Gemini 1.5 Flash.\n' +
-      'Văn phong của bạn: Thân thiện, hiện đại, trả lời đúng trọng tâm bằng tiếng Việt, có sử dụng emoji phù hợp, hỗ trợ giải đáp thắc mắc, gợi ý ý tưởng, dịch thuật và tóm tắt thông tin nhanh gọn.';
+    // 1. Kỹ thuật RAG: Truy xuất thông tin người dùng, lịch sử chat ngữ nghĩa & thống kê tương tác
+    let ragContextString = '';
+    let ragContextData: RetrievedRagContext | null = null;
+    if (this.auraRagService && contextOptions?.senderId) {
+      try {
+        ragContextData = await this.auraRagService.retrieveContext({
+          conversationId: contextOptions.conversationId,
+          senderId: contextOptions.senderId,
+          partnerId: contextOptions.partnerId,
+          query: userPrompt,
+        });
+        ragContextString = this.auraRagService.buildRagPromptContext(ragContextData);
+      } catch (err: unknown) {
+        this.logger.warn(`Lỗi khi trích xuất dữ liệu RAG cho Aura: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
 
-    let historyContext = '';
-    if (history.length > 0) {
+    // 2. Persona của Aura AI: Hài hước, dí dỏm, năng lượng Gen Z, bóc phốt duyên dáng, thân thiện
+    const systemPrompt =
+      'Bạn là Aura AI (@aura) - trợ lý ảo vui vẻ, cực kỳ dí dỏm, thông minh và tràn đầy năng lượng của mạng xã hội ChatApp, được vận hành bởi mô hình Google Gemini 1.5 Flash kết hợp công nghệ RAG (Retrieval-Augmented Generation).\n\n' +
+      'VĂN PHONG VÀ TÍNH CÁCH:\n' +
+      '1. Nói chuyện vui vẻ, duyên dáng, lầy lội vừa đủ ("nhắn vui vui"), dùng ngôn ngữ tự nhiên, hiện đại của giới trẻ (kèo thơm, cạ cứng, dính chưởng, 10 điểm không có nhưng, đỉnh nóc kịch trần, flex, bóc phốt nhẹ nhàng...).\n' +
+      '2. Sử dụng thông tin từ [KHO DỮ LIỆU ĐƯỢC TRÍCH XUẤT TỪ CHATAPP - RAG CONTEXT] để trả lời chính xác, gọi tên người dùng thân mật, khéo léo trích dẫn chi tiết thật (số tin nhắn mỗi người đã gửi, kèo ăn uống đã bàn, trường học, sở thích...) một cách hài hước.\n' +
+      '3. Khi được nhờ bóc phốt "ai nhắn nhiều hơn", hãy dẫn số liệu thống kê thực tế được cung cấp và trao vương miện "quán quân nói nhiều" cho người gửi nhiều tin hơn một cách hóm hỉnh.\n' +
+      '4. Khi được nhờ "chấm điểm cạ cứng", "làm thơ", "chọn kèo ăn", hãy sáng tạo câu trả lời độc lạ, gieo vần hài hước kèm emoji sinh động.\n' +
+      '5. Luôn giữ thái độ thân thiện, ấm áp và tôn trọng người dùng.';
+
+    const promptParts: string[] = [];
+
+    if (ragContextString) {
+      promptParts.push(`[KHO DỮ LIỆU ĐƯỢC TRÍCH XUẤT TỪ CHATAPP - RAG CONTEXT]:\n${ragContextString}`);
+    } else if (history.length > 0) {
       const recent = history.slice(-6).map((m) => `${m.senderName}: ${m.text}`).join('\n');
-      historyContext = `Ngữ cảnh các tin nhắn trước:\n${recent}\n\n`;
+      promptParts.push(`Ngữ cảnh các tin nhắn trước:\n${recent}`);
     }
 
     const cleanPrompt = userPrompt.replace(/@aura\b/gi, '').trim();
-    const prompt = `${historyContext}Người dùng hỏi: "${cleanPrompt || 'Xin chào Aura!'}"`;
+    promptParts.push(`Người dùng yêu cầu: "${cleanPrompt || 'Chào Aura, hãy nói một câu vui vui đi!'}"`);
 
-    return this.generateText(prompt, systemPrompt);
+    const finalPrompt = promptParts.join('\n\n');
+
+    // Nếu không có API Key, sử dụng bộ sinh phản hồi dự phòng dựa trên dữ liệu RAG đã trích xuất
+    if (!this.apiKey && ragContextData && this.auraRagService) {
+      return this.auraRagService.generateFallbackRagReply(cleanPrompt, ragContextData);
+    }
+
+    return this.generateText(finalPrompt, systemPrompt);
   }
 
   /**

@@ -47,12 +47,20 @@ flowchart TD
   - Danh sách quyết định hoặc việc cần làm được rút ra từ hội thoại.
   - Nút sao chép tóm tắt 1-chạm (`Copy`) để lưu lại hoặc gửi tiếp.
 
-### 2.3. Trợ lý ảo Aura Bot (`@aura`)
-- **Danh tính cố định**: ID `666666666666666666666666`, tên "Aura AI Assistant", danh hiệu "Trợ lý ảo thông minh".
-- **Cách thức hoạt động**:
-  - Khi người dùng gửi tin nhắn có chứa `@aura <câu hỏi hoặc yêu cầu>`, máy chủ tự động phát tín hiệu đang soạn tin (`typing: true`) từ Aura Bot.
-  - Bot gọi Gemini 1.5 Flash xử lý ngữ cảnh và trả về câu trả lời súc tích, thân thiện bằng tiếng Việt (hoặc tiếng Anh theo ngôn ngữ câu hỏi).
-  - Cho phép trò chuyện trực tiếp 1-1 với Aura Bot như một người bạn thực thụ.
+### 2.3. Trợ lý ảo Aura Bot (`@aura`) & Trò chuyện Vui với Kỹ thuật RAG (Retrieval-Augmented Generation)
+- **Danh tính cố định**: ID `666666666666666666666666`, tên "Aura AI Assistant", danh hiệu "Trợ lý ảo thông minh tích hợp RAG".
+- **Cách thức hoạt động & Kiến trúc RAG**:
+  - Khi người dùng gửi tin nhắn có chứa `@aura <câu hỏi hoặc yêu cầu>`, hệ thống kích hoạt **AuraRagService** để trích xuất ngữ cảnh thực tế (Retrieval):
+    - **Lịch sử hội thoại & Thống kê**: Tần suất nhắn tin, ai nhắn nhiều hơn, ai bắt chuyện trước, loại media trao đổi (ảnh, video, file, call).
+    - **Hồ sơ đối tác**: Tên, tiểu sử (bio), quan hệ kết bạn, bài đăng gần nhất.
+    - **Tìm kiếm từ khóa**: Quét các tin nhắn thảo luận về đồ ăn ("ăn gì", "kèo", "hẹn", "lẩu"), trò đùa chung hoặc kỷ niệm.
+    - **Kho tri thức ứng dụng (ChatApp Knowledge Base)**: Tính năng chia sẻ vị trí realtime, gửi tệp 100MB, bộ sưu tập GIPHY GIF, 7 reaction Facebook, bảo mật WAF.
+  - **Persona dí dỏm, hài hước ("Nhắn vui vui")**: Tích hợp Prompt Engineering phong cách Gen-Z Việt Nam: bóc phốt nhẹ nhàng, chấm điểm cạ cứng (1-100%), phân giải kèo ăn uống, xuất khẩu thành thơ con cóc 4 câu cực duyên.
+  - **Thanh gợi ý câu hỏi 1-chạm (`AuraPromptSuggestions`)**:
+    - Tự động hiển thị khi người dùng gõ `@aura` hoặc bấm vào biểu tượng ngôi sao ✨ (`Sparkles`) trên thanh công cụ soạn thảo tin nhắn.
+    - Các chip gợi ý thông minh: *"Ai nhắn nhiều hơn?"*, *"Chấm điểm cạ cứng"*, *"Chọn kèo ăn uống"*, *"Làm thơ con cóc"*, *"Chủ đề chém gió"*, *"Mẹo xịn ChatApp"*.
+  - **Huy hiệu nhận diện**: Mọi tin nhắn phản hồi từ Aura Bot trong luồng chat đều có huy hiệu tinh tế `Aura AI • RAG ⚡`.
+  - Hỗ trợ cả Google Gemini 1.5 Flash thật và bộ sinh phản hồi RAG thông minh dự phòng khi offline.
 
 ### 2.4. Hệ thống Gắn thẻ Bạn bè (`@mentions`)
 - **Bộ nhận diện ký tự `@`**: Tự động kích hoạt khi người dùng gõ `@` trong ô soạn thảo (`CommentComposer`, `MessageComposer`, `FloatingChatBox`).

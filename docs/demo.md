@@ -208,7 +208,7 @@ Hệ thống tích hợp trực tiếp trí tuệ nhân tạo **Google Gemini 1.
 ### Điểm nổi bật:
 - **Tóm tắt bình luận bài viết (`AiCommentSummaryBox`):** Tự động đọc và tóm lược ý kiến của hàng chục bình luận dưới bài viết, phân loại tâm trạng và sắc thái thảo luận chỉ sau một nút bấm.
 - **Tóm tắt hội thoại tin nhắn (`AiChatSummaryDialog`):** Tổng hợp nhanh 50-100 tin nhắn gần nhất với các luận điểm chính và đầu việc cần làm (Action Items).
-- **Trợ lý ảo Aura Bot (`@aura`):** Tự động phản hồi mọi câu hỏi trong chat bằng mô hình Gemini 1.5 Flash siêu nhanh, hỗ trợ cả tiếng Việt và tiếng Anh.
+- **Trợ lý ảo Aura Bot (`@aura`) & Trò chuyện Vui với RAG:** Tự động phản hồi mọi câu hỏi trong chat bằng mô hình Gemini 1.5 Flash kết hợp kỹ thuật **RAG** trích xuất lịch sử tin nhắn thực tế, thống kê cạ cứng và kho tri thức ChatApp. Đi kèm thanh chip gợi ý 1-chạm (`AuraPromptSuggestions`), nút Sparkles ✨ và huy hiệu nhận diện `Aura AI • RAG ⚡`.
 - **Menu gợi ý thẻ nhắc (@mentions):** Gõ `@` để mở popup gợi ý bạn bè và Aura Bot, hỗ trợ duyệt bằng bàn phím (Mũi tên Lên / Xuống, Enter) và gửi thông báo nhắc tên tức thì.
 - 📖 *Xem chi tiết: [docs/features/gemini-ai-summary-aura-mentions.md](features/gemini-ai-summary-aura-mentions.md)*
 

@@ -300,7 +300,11 @@ export class ChatGateway
               text: m.text,
             }));
 
-            const replyText = await this.geminiService!.generateAuraChatReply(dto.text, history);
+            const replyText = await this.geminiService!.generateAuraChatReply(dto.text, history, {
+              conversationId: convIdStr,
+              senderId,
+              partnerId: isAuraDirect ? undefined : dto.receiverId,
+            });
 
             // Lưu tin nhắn phản hồi của Aura Bot
             const auraMsg = await this.chatService.saveMessage(

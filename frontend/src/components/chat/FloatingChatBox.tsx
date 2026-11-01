@@ -39,6 +39,7 @@ import {
   Phone,
   Video,
   Paperclip,
+  Sparkles,
 } from "lucide-react";
 import api from "@/services/api";
 import { isVideoUrl, isAudioUrl, isFileDocUrl, uploadMedia, MAX_FILE_BYTES } from "@/services/postsApi";
@@ -73,7 +74,7 @@ import MentionText from "@/components/common/MentionText";
 import MentionAutocomplete, { MentionAutocompleteHandle } from "@/components/common/MentionAutocomplete";
 import useMention from "@/hooks/useMention";
 import AiChatSummaryDialog from "./AiChatSummaryDialog";
-import { Sparkles } from "lucide-react";
+import AuraPromptSuggestions from "./AuraPromptSuggestions";
 
 const POPULAR_EMOJIS = [
   "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
@@ -144,6 +145,7 @@ export default function FloatingChatBox({
   const [deleteMsgId, setDeleteMsgId] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [showAuraSuggestions, setShowAuraSuggestions] = useState(false);
   const [openLocationPicker, setOpenLocationPicker] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -609,6 +611,7 @@ export default function FloatingChatBox({
 
     if (!customText) {
       setInputText("");
+      setShowAuraSuggestions(false);
     }
 
     const isLocationMsg = options?.type === "location" && options.location;
@@ -1403,6 +1406,28 @@ export default function FloatingChatBox({
                                 wordBreak: "break-word",
                               }}
                             >
+                              {msg.senderId === "666666666666666666666666" && (
+                                <Box
+                                  sx={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    mb: 0.5,
+                                    px: 0.7,
+                                    py: 0.15,
+                                    borderRadius: "999px",
+                                    bgcolor: "action.hover",
+                                    border: "1px solid",
+                                    borderColor: "divider",
+                                    color: "primary.main",
+                                  }}
+                                >
+                                  <Sparkles size={11} />
+                                  <Typography variant="caption" sx={{ fontWeight: 700, fontSize: "0.65rem", lineHeight: 1 }}>
+                                    Aura AI • RAG ⚡
+                                  </Typography>
+                                </Box>
+                              )}
                               <MentionText text={msg.text} />
                             </Box>
                           )}
@@ -1566,17 +1591,24 @@ export default function FloatingChatBox({
               )}
             </Box>
           ) : (
-            <Box
-              sx={{
-                py: 0.85,
-                px: 1,
-                borderTop: "1px solid var(--mui-palette-divider)",
-                bgcolor: "var(--mui-palette-background-paper)",
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-              }}
-            >
+            <Box sx={{ borderTop: "1px solid var(--mui-palette-divider)", bgcolor: "var(--mui-palette-background-paper)" }}>
+              {(showAuraSuggestions || inputText.includes("@aura")) && (
+                <AuraPromptSuggestions
+                  onSelectPrompt={(promptText) => {
+                    handleInputChange(promptText);
+                    inputRef.current?.focus();
+                  }}
+                />
+              )}
+              <Box
+                sx={{
+                  py: 0.85,
+                  px: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                }}
+              >
               <input
                 ref={fileInputRef}
                 type="file"
@@ -1639,6 +1671,20 @@ export default function FloatingChatBox({
                   sx={{ color: "primary.main", p: 0.65 }}
                 >
                   <Palette size={18} />
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title={tr("Trò chuyện vui cùng Aura AI (RAG)", "Fun chat with Aura AI (RAG)")}>
+                <IconButton
+                  size="small"
+                  aria-label={tr("Gợi ý hỏi Aura AI", "Suggestions for Aura AI")}
+                  onClick={() => setShowAuraSuggestions((prev) => !prev)}
+                  sx={{
+                    color: showAuraSuggestions || inputText.includes("@aura") ? "primary.main" : "text.secondary",
+                    p: 0.65,
+                  }}
+                >
+                  <Sparkles size={18} />
                 </IconButton>
               </Tooltip>
 
@@ -1733,7 +1779,8 @@ export default function FloatingChatBox({
                 </Tooltip>
               )}
             </Box>
-          )}
+          </Box>
+        )}
 
           {/* POPOVER EMOJI */}
           <Popover

@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar, Box, ButtonBase, IconButton, Skeleton, Tooltip, Typography } from "@mui/material";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Sparkles, Trash2 } from "lucide-react";
 import EmptyState from "@/components/common/EmptyState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import MentionText from "@/components/common/MentionText";
 import { useTranslation } from "@/i18n/useTranslation";
 import { ChatMessage, ChatUser } from "@/store/useChatStore";
 import { dayKey, formatClockTime, formatDaySeparator } from "@/utils/formatTime";
@@ -458,11 +459,34 @@ export default function MessageList({
                             borderRadius: bubbleRadius,
                           }}
                         >
+                          {senderOf(msg) === "666666666666666666666666" && (
+                            <Box
+                              sx={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                                mb: 0.5,
+                                px: 0.75,
+                                py: 0.2,
+                                borderRadius: "999px",
+                                bgcolor: "action.hover",
+                                border: "1px solid",
+                                borderColor: "divider",
+                                color: "primary.main",
+                              }}
+                            >
+                              <Sparkles size={11} />
+                              <Typography variant="caption" sx={{ fontWeight: 700, fontSize: "0.68rem", lineHeight: 1 }}>
+                                Aura AI • RAG ⚡
+                              </Typography>
+                            </Box>
+                          )}
                           <Typography
+                            component="div"
                             variant="body2"
                             sx={{ fontSize: "0.9375rem", lineHeight: 1.45, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
                           >
-                            {msg.text}
+                            <MentionText text={msg.text} />
                           </Typography>
                         </Box>
                       );
