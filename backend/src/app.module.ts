@@ -23,7 +23,18 @@ import { GroqModule } from './modules/groq/groq.module.js';
 import { WafMiddleware } from './modules/waf/waf.middleware.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 import { CloudflareMiddleware } from './common/middlewares/cloudflare.middleware.js';
-export const { ObserveModule, ObserveInstrument } = createObserveModule();
+export const { ObserveModule, ObserveInstrument } = createObserveModule({
+  skipInstrumentation: (instance: unknown) => {
+    if (!instance || typeof instance !== 'object') return false;
+    const name = instance.constructor?.name;
+    return (
+      name === 'ChatGateway' ||
+      name === 'GroqService' ||
+      name === 'AuraRagService' ||
+      name === 'MqttBrokerService'
+    );
+  },
+});
 
 @Module({
   imports: [

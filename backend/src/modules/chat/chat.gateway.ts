@@ -322,6 +322,13 @@ export class ChatGateway
       userId: AURA_BOT_ID,
       userName: 'Aura AI',
     });
+    if (!isAuraDirect) {
+      this.server?.to(`user:${receiverId}`).emit('typing:start', {
+        conversationId,
+        userId: AURA_BOT_ID,
+        userName: 'Aura AI',
+      });
+    }
 
     try {
       const recent = await this.chatService.getMessages(conversationId, senderId, 8);
@@ -348,14 +355,45 @@ export class ChatGateway
         conversationId,
         userId: AURA_BOT_ID,
       });
+      if (!isAuraDirect) {
+        this.server?.to(`user:${receiverId}`).emit('typing:stop', {
+          conversationId,
+          userId: AURA_BOT_ID,
+        });
+      }
 
       this.broadcastNewMessage(auraMsg);
+      if (!isAuraDirect) {
+        this.server?.to(`user:${receiverId}`).emit('message:new', {
+          _id: auraMsg._id.toString(),
+          id: auraMsg._id.toString(),
+          conversationId: auraMsg.conversationId.toString(),
+          senderId: AURA_BOT_ID,
+          receiverId: senderId,
+          text: auraMsg.text,
+          type: auraMsg.type || 'text',
+          createdAt:
+            typeof auraMsg.createdAt === 'string'
+              ? auraMsg.createdAt
+              : auraMsg.createdAt
+                ? auraMsg.createdAt.toISOString()
+                : new Date().toISOString(),
+          readAt: null,
+          isDeleted: false,
+        });
+      }
     } catch (err: unknown) {
       this.logger.error(`Lỗi Aura bot phản hồi: ${err instanceof Error ? err.message : String(err)}`);
       this.server?.to(`user:${senderId}`).emit('typing:stop', {
         conversationId,
         userId: AURA_BOT_ID,
       });
+      if (!isAuraDirect) {
+        this.server?.to(`user:${receiverId}`).emit('typing:stop', {
+          conversationId,
+          userId: AURA_BOT_ID,
+        });
+      }
     }
   }
 
