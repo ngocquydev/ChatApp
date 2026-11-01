@@ -10,6 +10,10 @@
 - 📸 **[Hình Ảnh Demo & Trải Nghiệm Thực Tế (docs/demo.md)](demo.md)**: Tổng hợp các ảnh chụp màn hình thực tế (Screenshots) của Bảng tin, Chat nổi Messenger, Khám phá bạn bè, Hồ sơ cá nhân và Báo cáo kiểm thử AI Moderation.
 
 ### 2. Tài Liệu Chi Tiết Từng Tính Năng (Feature Specifications)
+- 🎛️ **[Trang Quản Trị Hệ Thống Toàn Diện & Bố Cục Sidebar 2 Cột (docs/features/admin-panel.md)](features/admin-panel.md)**:
+  - Bố cục 2 cột chuyên nghiệp: Sidebar điều hướng cố định 260px bên trái và Content Area cuộn độc lập bên phải.
+  - 6 phân hệ quản trị cốt lõi: Tổng quan Dashboard, Quản lý Người dùng & Phân quyền, Kiểm duyệt Bài viết & Bảng tin, Thử nghiệm AI & Chống Bot, Trung tâm Bảo mật WAF, Giám sát Sức khỏe Hệ thống & V8 Memory.
+  - Phân quyền RBAC nghiêm ngặt (`AdminGuard`, `RolesGuard`, `@Roles('admin')`) và đặc tả toàn bộ REST API `/api/admin/*`.
 - 💬 **[Nhắn Tin Thời Gian Thực & Hộp Chat Nổi (docs/features/chat-realtime.md)](features/chat-realtime.md)**:
   - Kiến trúc Dual-Engine (Socket.IO + Binary MQTT/Protobuf).
   - Cửa sổ chat nổi đa nhiệm phong cách Facebook Messenger.

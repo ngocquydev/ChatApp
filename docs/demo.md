@@ -13,6 +13,7 @@
 5. [Hệ Thống Kiểm Duyệt Nội Dung & Phòng Chống Bot AI (Moderation & Trust)](#5-hệ-thống-kiểm-duyệt-nội-dung--phòng-chống-bot-ai-moderation--trust)
 6. [Thiết Kế Đa Chế Độ Sáng/Tối & Song Ngữ Toàn Diện (VI / EN)](#6-thiết-kế-đa-chế-độ-sángtối--song-ngữ-toàn-diện-vi--en)
 7. [Trung Tâm Bảo Mật & Hệ Thống WAF Chống DDoS Đa Tầng (Admin Security Center & Turnstile Challenge)](#7-trung-tâm-bảo-mật--hệ-thống-waf-chống-ddos-đa-tầng-admin-security-center--turnstile-challenge)
+8. [Trang Quản Trị Hệ Thống Toàn Diện & Bố Cục Sidebar 2 Cột (Admin Control Panel)](#8-trang-quản-trị-hệ-thống-toàn-diện--bố-cục-sidebar-2-cột-admin-control-panel)
 
 ---
 
@@ -134,7 +135,29 @@ Khi hệ thống kích hoạt chế độ Under Attack hoặc phát hiện dấu
 
 ---
 
+## 8. Trang Quản Trị Hệ Thống Toàn Diện & Bố Cục Sidebar 2 Cột (Admin Control Panel)
+
+Hệ thống quản trị trung tâm được tái thiết kế chuyên nghiệp theo bố cục 2 cột tiêu chuẩn: **Thanh Sidebar bên trái (260px)** hiển thị thương hiệu, avatar presence và danh sách 6 phân hệ quản lý, cùng **Khu vực nội dung bên phải** hiển thị các báo cáo và công cụ vận hành.
+
+### 8.1. Bảng Điều Khiển Tổng Quan (Admin Dashboard)
+Tập hợp các chỉ số cốt lõi về người dùng, bài viết, an ninh tường lửa WAF và tài nguyên máy chủ NestJS thời gian thực.
+
+![Tổng quan Bảng điều khiển Quản trị](assets/screenshots/admin-dashboard.png)
+
+### 8.2. Phân Hệ Quản Lý Người Dùng & Phân Quyền (Users Management)
+Hỗ trợ tìm kiếm theo họ tên, email, số điện thoại, lọc trạng thái và thực hiện các tác vụ: Cấm/Mở khóa tài khoản (có lý do kiểm duyệt), Phân quyền Admin, và Xóa tài khoản vĩnh viễn.
+
+![Quản lý Người dùng & Phân quyền](assets/screenshots/admin-users.png)
+
+### 8.3. Giám Sát Tài Nguyên & Sức Khỏe Dịch Vụ (System Health & V8 Memory)
+Đo lường bộ nhớ RAM (V8 Heap Used / Total, RSS), thời gian hoạt động liên tục (Uptime), phiên bản Node.js và tình trạng kết nối vi dịch vụ MongoDB, Redis và Neo4j.
+
+![Trạng thái Hệ thống & Hạ tầng](assets/screenshots/admin-system.png)
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Trang Quản trị Hệ thống Toàn diện (Admin Control Panel)](features/admin-panel.md)
 > - [Trung tâm Bảo mật WAF & Phòng chống DDoS Đa tầng](features/waf.md)
 > - [Phòng thủ & Chống tấn công DDoS bằng Cloudflare (Anycast, WAF & Tunnel)](features/cloudflare-ddos-protection.md)
 > - [Nhắn tin thời gian thực & Giao thức nhị phân MQTT](features/chat-realtime.md)

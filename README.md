@@ -35,6 +35,10 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 |:---:|:---:|
 | ![Trung tâm Bảo mật](docs/assets/screenshots/waf-security-center.png) | ![Hộp thoại Thử thách](docs/assets/screenshots/waf-under-attack.png) |
 
+| Bảng điều khiển Quản trị viên (/admin) | Quản lý Người dùng & Phân quyền (/admin/users) |
+|:---:|:---:|
+| ![Bảng điều khiển Quản trị](docs/assets/screenshots/admin-dashboard.png) | ![Quản lý Người dùng](docs/assets/screenshots/admin-users.png) |
+
 > 🌟 **Xem chi tiết toàn bộ các màn hình, quy trình thao tác và phân tích trải nghiệm người dùng tại:**
 > 👉 **[Tài liệu Tổng hợp Hình ảnh Demo & Trải nghiệm thực tế (docs/demo.md)](docs/demo.md)**
 
@@ -111,6 +115,15 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - Tích hợp Cloudflare Turnstile chống bot và brute-force; đăng nhập mạng xã hội một chạm với Firebase (Google & Facebook).
 - Khôi phục mật khẩu 4 bước qua Email OTP và đưa token đã đăng xuất vào Redis Blacklist (hỗ trợ chế độ Fail-safe).
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/waf.md](docs/features/waf.md), [docs/features/cloudflare-ddos-protection.md](docs/features/cloudflare-ddos-protection.md) & [docs/features/auth-security-cicd.md](docs/features/auth-security-cicd.md)*
+
+### 7. Trang Quản Trị Hệ Thống Toàn Diện & Bố Cục Sidebar 2 Cột (Admin Control Panel)
+- **Bố cục Chuẩn 2 Cột:** Thanh Sidebar bên trái (260px) cố định chứa Brand Logo, thông tin Admin, và 6 phân hệ quản lý trực quan; khu vực hiển thị nội dung bên phải cuộn độc lập với sub-header breadcrumb, theme toggle và language switch.
+- **Tổng quan Hệ thống (Dashboard Analytics):** Thống kê số lượng thành viên (tỷ lệ hoạt động / cấm), tổng bài viết & bình luận, trạng thái WAF, và bộ nhớ RAM V8 Heap.
+- **Quản lý Thành viên Đa năng:** Tìm kiếm theo tên/email/sđt, lọc quyền hạn/trạng thái, phân trang mượt mà; hỗ trợ Cấm/Mở cấm có kiểm toán lý do, Phân quyền Admin, và Xóa tài khoản vĩnh viễn.
+- **Kiểm duyệt Bài viết & Bảng tin:** Duyệt toàn bộ nội dung bài viết và gallery ảnh; gỡ bài viết vi phạm tiêu chuẩn cộng đồng tức thì.
+- **Thử nghiệm AI & Chống Bot (AI Sandbox):** Thử nghiệm trực quan phân loại độ độc hại văn bản NLP song ngữ (VI/EN) và thuật toán Machine Learning phát hiện Bot bất thường (Isolation Forest & Autoencoder).
+- **Giám sát Sức khỏe Hạ tầng (System Health):** Theo dõi Uptime, phiên bản Node runtime, biểu đồ tiến trình RAM V8 Heap (Used/Total/RSS), trạng thái kết nối MongoDB, Redis Cache (độ trễ ms), Neo4j Graph DB và Cloudflare Zero Trust Tunnel.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/admin-panel.md](docs/features/admin-panel.md)*
 
 ---
 

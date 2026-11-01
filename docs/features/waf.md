@@ -220,3 +220,4 @@ Hệ thống được kiểm thử tự động toàn diện qua các bộ test 
 - `waf.middleware.spec.ts`: Kiểm tra tích hợp middleware toàn cục, chuyển hướng thử thách 403.
 - `admin.util.spec.ts` & `roles.guard.spec.ts`: Kiểm tra phân quyền quản trị viên, chống leo thang quyền.
 - `cloudflare-waf.spec.ts`: Kiểm tra biên dịch bộ quy tắc WAF tương thích chuẩn Cloudflare Free plan.
+

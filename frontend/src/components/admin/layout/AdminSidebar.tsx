@@ -1,0 +1,260 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Box,
+  Chip,
+  Divider,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Typography,
+} from "@mui/material";
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  Bot,
+  ShieldAlert,
+  Cpu,
+  ArrowLeft,
+} from "lucide-react";
+import BrandLogo from "@/components/common/BrandLogo";
+import PresenceAvatar from "@/components/common/PresenceAvatar";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useTranslation } from "@/i18n/useTranslation";
+
+interface NavItem {
+  href: string;
+  labelVi: string;
+  labelEn: string;
+  icon: typeof LayoutDashboard;
+  exact?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    href: "/admin",
+    labelVi: "Tổng quan",
+    labelEn: "Overview",
+    icon: LayoutDashboard,
+    exact: true,
+  },
+  {
+    href: "/admin/users",
+    labelVi: "Người dùng",
+    labelEn: "Users",
+    icon: Users,
+  },
+  {
+    href: "/admin/posts",
+    labelVi: "Bài viết",
+    labelEn: "Posts",
+    icon: FileText,
+  },
+  {
+    href: "/admin/moderation",
+    labelVi: "Kiểm duyệt AI",
+    labelEn: "AI Moderation",
+    icon: Bot,
+  },
+  {
+    href: "/admin/security",
+    labelVi: "Bảo mật & WAF",
+    labelEn: "Security & WAF",
+    icon: ShieldAlert,
+  },
+  {
+    href: "/admin/system",
+    labelVi: "Hệ thống & Dịch vụ",
+    labelEn: "System Health",
+    icon: Cpu,
+  },
+];
+
+interface AdminSidebarProps {
+  onItemClick?: () => void;
+}
+
+export default function AdminSidebar({ onItemClick }: AdminSidebarProps) {
+  const pathname = usePathname();
+  const { user } = useAuthStore();
+  const { isEnglish: isEn } = useTranslation();
+
+  const isItemActive = (item: NavItem) => {
+    if (item.exact) {
+      return pathname === item.href;
+    }
+    return pathname.startsWith(item.href);
+  };
+
+  return (
+    <Box
+      component="aside"
+      aria-label={isEn ? "Admin navigation" : "Danh mục quản trị"}
+      sx={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "background.paper",
+      }}
+    >
+      {/* Header khu vực quản trị */}
+      <Box
+        sx={{
+          p: 2,
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <BrandLogo href="/admin" size={36} />
+        <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+          <Typography
+            variant="subtitle1"
+            noWrap
+            sx={{ fontWeight: 700, lineHeight: 1.2 }}
+          >
+            {isEn ? "Administration" : "Trang Quản trị"}
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.8, mt: 0.3 }}>
+            <Chip
+              label="Admin"
+              size="small"
+              color="primary"
+              sx={{ height: 18, fontSize: "0.68rem", fontWeight: 700 }}
+            />
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: "0.72rem" }}
+            >
+              Control Panel
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Danh sách mục điều hướng */}
+      <Box sx={{ flexGrow: 1, py: 1.5, px: 1, overflowY: "auto" }}>
+        <List component="nav" disablePadding sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+          {NAV_ITEMS.map((item) => {
+            const active = isItemActive(item);
+            const IconComponent = item.icon;
+            const label = isEn ? item.labelEn : item.labelVi;
+
+            return (
+              <ListItem key={item.href} disablePadding>
+                <ListItemButton
+                  component={Link}
+                  href={item.href}
+                  selected={active}
+                  onClick={onItemClick}
+                  sx={{
+                    borderRadius: "10px",
+                    px: 1.5,
+                    py: 1.1,
+                    transition: "all 0.15s ease",
+                    "&.Mui-selected": {
+                      bgcolor: "primary.main",
+                      color: "primary.contrastText",
+                      fontWeight: 600,
+                      "&:hover": {
+                        bgcolor: "primary.dark",
+                      },
+                      "& .MuiListItemIcon-root": {
+                        color: "inherit",
+                      },
+                    },
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 36,
+                      color: active ? "inherit" : "text.secondary",
+                    }}
+                  >
+                    <IconComponent size={20} aria-hidden />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Typography sx={{ fontSize: "0.9rem", fontWeight: active ? 700 : 500 }}>
+                        {label}
+                      </Typography>
+                    }
+                  />
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
+      </Box>
+
+      <Divider />
+
+      {/* Footer quản trị: Người dùng & Lối về ChatApp */}
+      <Box sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1 }}>
+        <ListItemButton
+          component={Link}
+          href="/"
+          onClick={onItemClick}
+          sx={{
+            borderRadius: "8px",
+            px: 1.5,
+            py: 0.8,
+            color: "text.secondary",
+            "&:hover": {
+              color: "text.primary",
+              bgcolor: "action.hover",
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: "inherit" }}>
+            <ArrowLeft size={18} aria-hidden />
+          </ListItemIcon>
+          <ListItemText
+            primary={
+              <Typography sx={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                {isEn ? "Back to ChatApp" : "Về ứng dụng chính"}
+              </Typography>
+            }
+          />
+        </ListItemButton>
+
+        {user && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.2,
+              p: 1,
+              borderRadius: "10px",
+              bgcolor: "action.hover",
+            }}
+          >
+            <PresenceAvatar
+              src={user.avatar}
+              name={user.name}
+              online
+              size={36}
+            />
+            <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+              <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
+                {user.name}
+              </Typography>
+              <Typography variant="caption" noWrap color="text.secondary" sx={{ display: "block" }}>
+                {user.email}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}

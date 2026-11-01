@@ -1,0 +1,95 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { RolesGuard } from '../../common/auth/roles.guard.js';
+import { Roles } from '../../common/auth/roles.decorator.js';
+import { AdminService } from './admin.service.js';
+import {
+  AdminToggleBanDto,
+  AdminUpdateRoleDto,
+  AdminUsersQueryDto,
+} from './dto/admin-users.dto.js';
+import { AdminPostsQueryDto } from './dto/admin-posts.dto.js';
+import {
+  AdminTestBehaviorDto,
+  AdminTestTextDto,
+} from './dto/admin-moderation.dto.js';
+
+@ApiTags('Admin')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
+@Controller('admin')
+export class AdminController {
+  constructor(private readonly adminService: AdminService) {}
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Lấy số liệu thống kê tổng thể hệ thống' })
+  getStats() {
+    return this.adminService.getStats();
+  }
+
+  @Get('users')
+  @ApiOperation({ summary: 'Danh sách người dùng (tìm kiếm, lọc theo vai trò & trạng thái)' })
+  getUsers(@Query() query: AdminUsersQueryDto) {
+    return this.adminService.getUsers(query);
+  }
+
+  @Patch('users/:id/ban')
+  @ApiOperation({ summary: 'Khóa / mở khóa tài khoản người dùng' })
+  toggleUserBan(@Param('id') id: string, @Body() dto: AdminToggleBanDto) {
+    return this.adminService.toggleUserBan(id, dto.isBan, dto.reason);
+  }
+
+  @Patch('users/:id/role')
+  @ApiOperation({ summary: 'Cập nhật vai trò người dùng (admin / user)' })
+  updateUserRole(@Param('id') id: string, @Body() dto: AdminUpdateRoleDto) {
+    return this.adminService.updateUserRole(id, dto.role);
+  }
+
+  @Delete('users/:id')
+  @ApiOperation({ summary: 'Xóa mềm người dùng' })
+  deleteUser(@Param('id') id: string) {
+    return this.adminService.deleteUser(id);
+  }
+
+  @Get('posts')
+  @ApiOperation({ summary: 'Danh sách bài viết toàn hệ thống để kiểm duyệt' })
+  getPosts(@Query() query: AdminPostsQueryDto) {
+    return this.adminService.getPosts(query);
+  }
+
+  @Delete('posts/:id')
+  @ApiOperation({ summary: 'Gỡ bỏ bài viết vi phạm chính sách' })
+  deletePost(@Param('id') id: string) {
+    return this.adminService.deletePost(id);
+  }
+
+  @Post('moderation/test-text')
+  @ApiOperation({ summary: 'Thử nghiệm phân loại văn bản độc hại bằng NLP Transformer' })
+  testModerationText(@Body() dto: AdminTestTextDto) {
+    return this.adminService.testModerationText(dto.text, dto.language);
+  }
+
+  @Post('moderation/test-behavior')
+  @ApiOperation({ summary: 'Thử nghiệm phát hiện bất thường bằng Isolation Forest & Autoencoder' })
+  testModerationBehavior(@Body() dto: AdminTestBehaviorDto) {
+    return this.adminService.testModerationBehavior(dto);
+  }
+
+  @Get('system')
+  @ApiOperation({ summary: 'Xem trạng thái sức khỏe chi tiết máy chủ và dịch vụ liên kết' })
+  getSystemHealth() {
+    return this.adminService.getSystemHealth();
+  }
+}

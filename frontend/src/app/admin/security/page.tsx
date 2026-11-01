@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import AdminGuard from "@/components/common/AdminGuard";
 import SecurityCenter from "@/components/admin/security/SecurityCenter";
 
 export const metadata: Metadata = {
@@ -9,10 +8,6 @@ export const metadata: Metadata = {
 };
 
 export default function AdminSecurityPage() {
-  return (
-    <AdminGuard>
-      <SecurityCenter />
-    </AdminGuard>
-  );
+  return <SecurityCenter />;
 }
 
