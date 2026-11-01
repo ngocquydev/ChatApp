@@ -1,5 +1,32 @@
 import api from './api';
 
+export interface SystemMemoryMetrics {
+  heapUsedBytes?: number;
+  heapTotalBytes?: number;
+  rssBytes?: number;
+  externalBytes?: number;
+  heapUsedMB: number;
+  heapTotalMB: number;
+  rssMB: number;
+  heapLimitMB?: number;
+  heapLimitPercent?: number;
+  systemTotalMB?: number;
+  systemUsedMB?: number;
+  systemFreeMB?: number;
+  systemUsagePercent?: number;
+  status?: 'healthy' | 'warning' | 'critical';
+  alertMessage?: string;
+  alertMessageEn?: string;
+  recommendation?: string;
+  recommendationEn?: string;
+  upgradePlan?: {
+    currentTotalRamGB: number;
+    recommendedAddRamGB: number;
+    targetTotalRamGB: number;
+    suggestedNodeFlag: string;
+  };
+}
+
 export interface AdminStats {
   users: {
     total: number;
@@ -25,11 +52,7 @@ export interface AdminStats {
     uptimeSeconds: number;
     nodeVersion: string;
     platform: string;
-    memory: {
-      heapUsedMB: number;
-      heapTotalMB: number;
-      rssMB: number;
-    };
+    memory: SystemMemoryMetrics;
     services: {
       mongo: string;
       redis: string;
@@ -99,15 +122,7 @@ export interface SystemHealthData {
   platform: string;
   architecture: string;
   pid: number;
-  memory: {
-    heapUsedBytes: number;
-    heapTotalBytes: number;
-    rssBytes: number;
-    externalBytes: number;
-    heapUsedMB: number;
-    heapTotalMB: number;
-    rssMB: number;
-  };
+  memory: SystemMemoryMetrics;
   services: {
     mongo: { status: string; readyState: number };
     redis: { status: string; latencyMs: number };

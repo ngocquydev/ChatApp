@@ -232,32 +232,50 @@ export default function DashboardView() {
         </Card>
 
         {/* Máy chủ & Tài nguyên */}
-        <Card sx={{ borderRadius: "16px", height: "100%", border: "1px solid", borderColor: "divider" }}>
+        <Card
+          sx={{
+            borderRadius: "16px",
+            height: "100%",
+            border: "1px solid",
+            borderColor: stats.system.memory.status === "critical" ? "error.main" : stats.system.memory.status === "warning" ? "warning.main" : "divider",
+          }}
+        >
           <CardContent sx={{ p: 2.5 }}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                {isEn ? "System & Memory" : "Tài nguyên máy chủ"}
+                {isEn ? "Server RAM & Resources" : "RAM Máy Chủ & Tài Nguyên"}
               </Typography>
-              <Box
-                sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: "10px",
-                  bgcolor: "warning.main",
-                  color: "warning.contrastText",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Cpu size={20} />
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {stats.system.memory.status === "critical" ? (
+                  <Chip size="small" color="error" label={isEn ? "Upgrade RAM" : "Cần nâng cấp"} sx={{ fontWeight: 800, height: 22 }} />
+                ) : stats.system.memory.status === "warning" ? (
+                  <Chip size="small" color="warning" label={isEn ? "High Load" : "Tải cao"} sx={{ fontWeight: 700, height: 22 }} />
+                ) : (
+                  <Chip size="small" color="success" label={isEn ? "Stable" : "Ổn định"} sx={{ fontWeight: 700, height: 22 }} />
+                )}
+                <Box
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "10px",
+                    bgcolor: stats.system.memory.status === "critical" ? "error.main" : "warning.main",
+                    color: "background.paper",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Cpu size={20} />
+                </Box>
               </Box>
             </Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-              {stats.system.memory.heapUsedMB} MB
+            <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
+              {stats.system.memory.systemUsagePercent !== undefined ? `${stats.system.memory.systemUsagePercent}% RAM` : `${stats.system.memory.heapUsedMB} MB`}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Uptime: {formatUptime(stats.system.uptimeSeconds)} • Node {stats.system.nodeVersion}
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+              {stats.system.memory.systemUsedMB && stats.system.memory.systemTotalMB
+                ? `${((stats.system.memory.systemUsedMB) / 1024).toFixed(1)} / ${((stats.system.memory.systemTotalMB) / 1024).toFixed(1)} GB • Heap: ${stats.system.memory.heapUsedMB} MB`
+                : `Heap: ${stats.system.memory.heapUsedMB} MB • Uptime: ${formatUptime(stats.system.uptimeSeconds)}`}
             </Typography>
           </CardContent>
         </Card>

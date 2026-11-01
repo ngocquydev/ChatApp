@@ -113,9 +113,18 @@ Quyền truy cập khu vực Quản trị viên được bảo vệ chặt chẽ
   - Thử thách Captcha đối với lượt đăng nhập từ quốc gia lạ (`challengeForeignAuth`).
   - Danh sách IP cho phép (Allowlist) và Danh sách IP bị cấm (Blocklist).
 
-### 3.6. Trạng Thái Hệ Thống & Hạ Tầng (System Health & V8 Metrics)
+### 3.6. Trạng Thái Hệ Thống, Giám Sát RAM & Cảnh Báo Nâng Cấp (System Health & RAM Upgrade Warning)
 - **Runtime Metrics:** Uptime của hệ thống (ngày, giờ, phút, giây), phiên bản Node.js runtime, OS Platform (win32, linux), Architecture (x64, arm64), Process PID.
-- **Phân Bổ Bộ Nhớ RAM & V8 Heap:** Thanh biểu đồ tiến trình trực quan phân tích Heap Used, Heap Total, Resident Set Size (RSS), và External Buffers.
+- **Giám Sát RAM Vật Lý Máy Chủ Toàn Diện:** Đo lường chính xác tổng RAM vật lý máy chủ (`systemTotalMB`), RAM đang dùng (`systemUsedMB`), RAM còn trống (`systemFreeMB`) và tỷ lệ phần trăm (`systemUsagePercent`).
+- **Giám Sát V8 Heap vs Giới Hạn Sập OOM:** Phân tích `heapUsedMB`, `heapTotalMB`, `rssMB` và trần tối đa `heapLimitMB` (`v8.getHeapStatistics().heap_size_limit`).
+- **3 Cấp Độ Cảnh Báo & Khuyến Nghị Nâng Cấp:**
+  - 🟢 **Healthy (< 70%):** Bộ nhớ hoạt động ổn định, tài nguyên dồi dào.
+  - 🟡 **Warning (70% - 84%):** Tải RAM tăng cao, khuyến nghị theo dõi lưu lượng và chuẩn bị phương án nâng cấp RAM.
+  - 🔴 **Critical (≥ 85%):** Cảnh báo nguy cấp RAM sắp cạn kiệt, yêu cầu nâng cấp RAM máy chủ ngay lập tức để tránh lỗi Out of Memory crash.
+- **Kế Hoạch Nâng Cấp Phần Cứng Tự Động (Hardware Upgrade Plan):**
+  - Tự động gợi ý mức RAM cần bổ sung (+4GB, +8GB, +16GB) và dung lượng đích sau khi nâng cấp.
+  - Đề xuất cờ tham số runtime Node.js tối ưu (`--max-old-space-size=...`).
+  - Gợi ý giải pháp Scale Out với PM2 Cluster hoặc Docker Swarm.
 - **Dịch Vụ Hạ Tầng Kết Nối:** Trạng thái kết nối MongoDB (ReadyState 1), Redis Cache & Blacklist (Độ trễ Latency ms), Neo4j Graph DB, và Cloudflare Zero Trust Tunnel.
 
 ---

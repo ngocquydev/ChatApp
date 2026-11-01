@@ -229,10 +229,20 @@ describe('AdminService', () => {
       expect(mockPost.save).toHaveBeenCalled();
     });
 
-    it('should return system health', async () => {
+    it('should return system health with comprehensive memory metrics and upgrade recommendations', async () => {
       const res = await service.getSystemHealth();
       expect(res.success).toBe(true);
       expect(res.system.services.mongo.status).toBe('connected');
+      expect(res.system.memory).toBeDefined();
+      expect(res.system.memory.heapUsedMB).toBeGreaterThan(0);
+      expect(res.system.memory.systemTotalMB).toBeGreaterThan(0);
+      expect(res.system.memory.systemUsagePercent).toBeGreaterThanOrEqual(0);
+      expect(res.system.memory.systemUsagePercent).toBeLessThanOrEqual(100);
+      expect(['healthy', 'warning', 'critical']).toContain(res.system.memory.status);
+      expect(res.system.memory.alertMessage).toBeTruthy();
+      expect(res.system.memory.recommendation).toBeTruthy();
+      expect(res.system.memory.upgradePlan).toBeDefined();
+      expect(res.system.memory.upgradePlan.recommendedAddRamGB).toBeGreaterThanOrEqual(4);
     });
   });
 });

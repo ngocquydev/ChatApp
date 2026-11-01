@@ -4,6 +4,8 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
+import * as os from 'node:os';
+import * as v8 from 'node:v8';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserRepository } from '../users/entities/user.entity.js';
@@ -54,7 +56,7 @@ export class AdminService {
       this.edgeBanService.listBans(),
     ]);
 
-    const mem = process.memoryUsage();
+    const memoryMetrics = this.getMemoryMetrics();
     let redisConnected = false;
     if (this.redisService?.client) {
       try {
@@ -92,11 +94,7 @@ export class AdminService {
           uptimeSeconds: Math.floor(process.uptime()),
           nodeVersion: process.version,
           platform: process.platform,
-          memory: {
-            heapUsedMB: Math.round(mem.heapUsed / 1024 / 1024),
-            heapTotalMB: Math.round(mem.heapTotal / 1024 / 1024),
-            rssMB: Math.round(mem.rss / 1024 / 1024),
-          },
+          memory: memoryMetrics,
           services: {
             mongo: this.userModel.db.readyState === 1 ? 'connected' : 'disconnected',
             redis: redisConnected ? 'connected' : 'disconnected',
@@ -355,8 +353,86 @@ export class AdminService {
     throw new BadRequestException('Thao tác kiểm duyệt không hợp lệ');
   }
 
-  async getSystemHealth() {
+  getMemoryMetrics() {
     const mem = process.memoryUsage();
+    const heapStats = v8.getHeapStatistics();
+    const totalMemBytes = os.totalmem();
+    const freeMemBytes = os.freemem();
+    const usedMemBytes = Math.max(0, totalMemBytes - freeMemBytes);
+
+    const systemTotalMB = Math.round(totalMemBytes / 1024 / 1024);
+    const systemUsedMB = Math.round(usedMemBytes / 1024 / 1024);
+    const systemFreeMB = Math.round(freeMemBytes / 1024 / 1024);
+    const systemUsagePercent = totalMemBytes > 0
+      ? Math.min(100, Math.round((usedMemBytes / totalMemBytes) * 100))
+      : 0;
+
+    const heapUsedMB = Math.round(mem.heapUsed / 1024 / 1024);
+    const heapTotalMB = Math.round(mem.heapTotal / 1024 / 1024);
+    const rssMB = Math.round(mem.rss / 1024 / 1024);
+    const heapLimitMB = Math.round(heapStats.heap_size_limit / 1024 / 1024);
+    const heapLimitPercent = heapStats.heap_size_limit > 0
+      ? Math.min(100, Math.round((mem.heapUsed / heapStats.heap_size_limit) * 100))
+      : 0;
+
+    // Warning >= 75%, Critical >= 85%
+    let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+    let alertMessage = 'Bộ nhớ RAM hoạt động ổn định.';
+    let alertMessageEn = 'System memory is operating normally.';
+    let recommendation = 'Dung lượng RAM hiện tại đáp ứng tốt lưu lượng hiện tại.';
+    let recommendationEn = 'Current RAM capacity is sufficient for current traffic.';
+
+    const systemTotalGB = Math.max(1, Math.round(systemTotalMB / 1024));
+    const recommendedAddRamGB = systemTotalGB <= 4 ? 4 : systemTotalGB <= 8 ? 8 : 16;
+    const targetTotalRamGB = systemTotalGB + recommendedAddRamGB;
+    const suggestedNodeFlag = `--max-old-space-size=${Math.min(targetTotalRamGB * 1024 * 0.75, 8192)}`;
+
+    const maxRatio = Math.max(systemUsagePercent, heapLimitPercent);
+
+    if (maxRatio >= 85) {
+      status = 'critical';
+      alertMessage = `CẢNH BÁO NGUY CẤP: Bộ nhớ RAM đã dùng ${maxRatio}%. Nguy cơ tràn RAM (Out of Memory)!`;
+      alertMessageEn = `CRITICAL ALERT: System memory usage reached ${maxRatio}%. High risk of Out of Memory crash!`;
+      recommendation = `Khuyến nghị nâng cấp khẩn cấp: Máy chủ hiện chỉ còn ${systemFreeMB} MB RAM trống. Cần nâng cấp thêm tối thiểu +${recommendedAddRamGB} GB RAM (đạt tổng ${targetTotalRamGB} GB) hoặc cấu hình cờ '${suggestedNodeFlag}' để tránh sập máy chủ.`;
+      recommendationEn = `Urgent upgrade recommended: Server only has ${systemFreeMB} MB free RAM. Upgrade by at least +${recommendedAddRamGB} GB RAM (reaching ${targetTotalRamGB} GB) or set '${suggestedNodeFlag}' flag.`;
+    } else if (maxRatio >= 75) {
+      status = 'warning';
+      alertMessage = `CẢNH BÁO: Tải bộ nhớ RAM đang ở mức cao (${maxRatio}%).`;
+      alertMessageEn = `WARNING: Memory utilization is high (${maxRatio}%).`;
+      recommendation = `Khuyến nghị theo dõi & chuẩn bị nâng cấp: Hệ thống đã dùng ${maxRatio}% tài nguyên bộ nhớ. Chuẩn bị phương án nâng cấp thêm +${recommendedAddRamGB} GB RAM khi lưu lượng người dùng và tin nhắn tăng.`;
+      recommendationEn = `Monitoring & upgrade preparation recommended: Memory is at ${maxRatio}%. Plan a +${recommendedAddRamGB} GB RAM expansion as active users and chat messages grow.`;
+    }
+
+    return {
+      heapUsedBytes: mem.heapUsed,
+      heapTotalBytes: mem.heapTotal,
+      rssBytes: mem.rss,
+      externalBytes: mem.external,
+      heapUsedMB,
+      heapTotalMB,
+      rssMB,
+      heapLimitMB,
+      heapLimitPercent,
+      systemTotalMB,
+      systemUsedMB,
+      systemFreeMB,
+      systemUsagePercent,
+      status,
+      alertMessage,
+      alertMessageEn,
+      recommendation,
+      recommendationEn,
+      upgradePlan: {
+        currentTotalRamGB: systemTotalGB,
+        recommendedAddRamGB,
+        targetTotalRamGB,
+        suggestedNodeFlag,
+      },
+    };
+  }
+
+  async getSystemHealth() {
+    const memoryMetrics = this.getMemoryMetrics();
     let redisConnected = false;
     let redisPingMs = 0;
     if (this.redisService?.client) {
@@ -379,15 +455,7 @@ export class AdminService {
         platform: process.platform,
         architecture: process.arch,
         pid: process.pid,
-        memory: {
-          heapUsedBytes: mem.heapUsed,
-          heapTotalBytes: mem.heapTotal,
-          rssBytes: mem.rss,
-          externalBytes: mem.external,
-          heapUsedMB: Math.round(mem.heapUsed / 1024 / 1024),
-          heapTotalMB: Math.round(mem.heapTotal / 1024 / 1024),
-          rssMB: Math.round(mem.rss / 1024 / 1024),
-        },
+        memory: memoryMetrics,
         services: {
           mongo: {
             status: this.userModel.db.readyState === 1 ? 'connected' : 'disconnected',
