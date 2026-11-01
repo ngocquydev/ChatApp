@@ -5,9 +5,9 @@ import {
   SummarizeCommentsDto,
   SummarizeChatDto,
   AskAuraDto,
-} from './gemini.dto.js';
+} from './groq.dto.js';
 
-describe('Gemini DTOs Validation', () => {
+describe('Groq DTOs Validation', () => {
   describe('SummarizeCommentsDto', () => {
     it('chấp nhận payload hợp lệ với postId chuẩn MongoId', async () => {
       const dto = plainToInstance(SummarizeCommentsDto, {

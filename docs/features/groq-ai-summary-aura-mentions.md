@@ -16,16 +16,16 @@ flowchart TD
     User -->|"Gửi bình luận / tin nhắn"| Gateway["NestJS Backend Gateway & Controller"]
     
     Gateway -->|"Phát hiện @aura"| AuraBot["Aura Bot Agent"]
-    AuraBot -->|"Llama 3.3 Prompt"| GeminiAPI["Groq Cloud API (llama-3.3-70b-versatile)"]
-    GeminiAPI -->|"Phản hồi thông minh"| AuraBot
+    AuraBot -->|"Llama 3.3 Prompt"| GroqAPI["Groq Cloud API (llama-3.3-70b-versatile)"]
+    GroqAPI -->|"Phản hồi thông minh"| AuraBot
     AuraBot -->|"Gửi tin nhắn phản hồi"| ChatWS["Socket.IO / MQTT Broadcast"]
     
     Gateway -->|"Phát hiện @[Tên](userId)"| NotifService["Notifications Service"]
     NotifService -->|"Tạo thông báo type: 'mention'"| NotifDB[("MongoDB Notifications")]
     
-    User -->|"Bấm 'Tóm tắt bằng AI'"| SummaryAPI["POST /gemini/summarize-*"]
-    SummaryAPI -->|"Trích xuất ngữ cảnh & gọi Gemini"| GeminiAPI
-    GeminiAPI -->|"Kết quả Markdown có cấu trúc"| SummaryBox["Hộp hiển thị tóm tắt UI"]
+    User -->|"Bấm 'Tóm tắt bằng AI'"| SummaryAPI["POST /groq/summarize-*"]
+    SummaryAPI -->|"Trích xuất ngữ cảnh & gọi Groq"| GroqAPI
+    GroqAPI -->|"Kết quả Markdown có cấu trúc"| SummaryBox["Hộp hiển thị tóm tắt UI"]
 ```
 
 ---
@@ -33,7 +33,7 @@ flowchart TD
 ## 2. Tính năng Chi tiết
 
 ### 2.1. Tóm tắt Bình luận Bài viết (`AiCommentSummaryBox`)
-- **Vị trí**: Nút bấm huy hiệu AI Gradient "Tóm tắt bình luận (Gemini)" nằm ngay đầu phần danh sách bình luận (`PostCommentSection`).
+- **Vị trí**: Nút bấm huy hiệu AI Gradient "Tóm tắt bình luận (Llama 3.3)" nằm ngay đầu phần danh sách bình luận (`PostCommentSection`).
 - **Nội dung tóm tắt**:
   - Tóm tắt ý kiến đa chiều của các người dùng tham gia thảo luận.
   - Phân loại sắc thái cảm xúc (Tích cực, trung lập, góp ý, phản đối).
@@ -41,7 +41,7 @@ flowchart TD
   - Hỗ trợ làm mới kết quả (Reload) và đóng hộp tóm tắt khi không cần xem.
 
 ### 2.2. Tóm tắt Cuộc trò chuyện (`AiChatSummaryDialog`)
-- **Vị trí**: Tùy chọn "Tóm tắt hội thoại (Gemini)" trong menu 3 chấm của thanh tiêu đề chat (`ChatHeader`) và hộp chat nổi (`FloatingChatHeaderMenu`).
+- **Vị trí**: Tùy chọn "Tóm tắt hội thoại (Llama 3.3)" trong menu 3 chấm của thanh tiêu đề chat (`ChatHeader`) và hộp chat nổi (`FloatingChatHeaderMenu`).
 - **Nội dung tóm tắt**:
   - Tổng quan nội dung thảo luận gần nhất giữa hai bên.
   - Danh sách quyết định hoặc việc cần làm được rút ra từ hội thoại.
@@ -85,6 +85,6 @@ GROQ_API_KEY=your_groq_api_key_here
 # Tên mô hình (mặc định llama-3.3-70b-versatile)
 GROQ_MODEL=llama-3.3-70b-versatile
 ```
-> **Lưu ý**: Tên module/route `gemini` được giữ nguyên để không phá vỡ hợp đồng API; mô hình thực tế được gọi qua Groq (API tương thích OpenAI).
+> **Lưu ý**: Module backend `groq` (`backend/src/modules/groq`) cung cấp các endpoint `POST /groq/summarize-comments`, `/groq/summarize-chat`, `/groq/ask-aura`; mô hình được gọi qua Groq (API tương thích OpenAI).
 > **Lưu ý**: Nếu chưa cấu hình `GROQ_API_KEY` hoặc Groq trả lỗi, hệ thống tự động dùng bộ phân tích thông minh dự phòng (Rule-based Intelligent Fallback) để tóm tắt và phản hồi mà không gây lỗi máy chủ.
 

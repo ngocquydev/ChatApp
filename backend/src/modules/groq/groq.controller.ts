@@ -14,7 +14,7 @@ import { Model, Types } from 'mongoose';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import type { AuthenticatedRequest } from '../auth/types/auth.types.js';
-import { GeminiService } from './gemini.service.js';
+import { GroqService } from './groq.service.js';
 import { UsersService } from '../users/users.service.js';
 import { Post as PostEntity, PostDocument } from '../posts/schemas/post.schema.js';
 import { PostComment, PostCommentDocument } from '../posts/schemas/post-comment.schema.js';
@@ -24,15 +24,15 @@ import {
   SummarizeCommentsDto,
   SummarizeChatDto,
   AskAuraDto,
-} from './dto/gemini.dto.js';
+} from './dto/groq.dto.js';
 
-@ApiTags('Gemini & Aura AI')
+@ApiTags('Groq & Aura AI')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('gemini')
-export class GeminiController {
+@Controller('groq')
+export class GroqController {
   constructor(
-    private readonly geminiService: GeminiService,
+    private readonly groqService: GroqService,
     private readonly usersService: UsersService,
     @InjectModel(PostEntity.name)
     private readonly postModel: Model<PostDocument>,
@@ -95,7 +95,7 @@ export class GeminiController {
       text: c.content || (c.mediaUrl ? '[Ảnh/Video đính kèm]' : ''),
     }));
 
-    const summary = await this.geminiService.summarizeComments(
+    const summary = await this.groqService.summarizeComments(
       post.content || '',
       commentItems,
     );
@@ -104,7 +104,7 @@ export class GeminiController {
       success: true,
       summary,
       commentCount: comments.length,
-      model: this.geminiService.model,
+      model: this.groqService.model,
     };
   }
 
@@ -161,13 +161,13 @@ export class GeminiController {
       time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString('vi-VN') : undefined,
     }));
 
-    const summary = await this.geminiService.summarizeChat(chatItems);
+    const summary = await this.groqService.summarizeChat(chatItems);
 
     return {
       success: true,
       summary,
       messageCount: sortedMessages.length,
-      model: this.geminiService.model,
+      model: this.groqService.model,
     };
   }
 
@@ -210,7 +210,7 @@ export class GeminiController {
       }
     }
 
-    const reply = await this.geminiService.generateAuraChatReply(dto.prompt, historyItems, {
+    const reply = await this.groqService.generateAuraChatReply(dto.prompt, historyItems, {
       conversationId: dto.conversationId,
       senderId: viewerId,
       partnerId,
@@ -219,7 +219,7 @@ export class GeminiController {
     return {
       success: true,
       reply,
-      model: this.geminiService.model,
+      model: this.groqService.model,
     };
   }
 }

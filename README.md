@@ -41,7 +41,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 
 | Cảm xúc Facebook Chuẩn & Bảng chọn Emoji | Trợ Lý AI Llama 3.3 (Groq), Aura Bot & Thẻ Nhắc (@) |
 |:---:|:---:|
-| ![Hệ thống Cảm xúc Facebook](docs/assets/screenshots/facebook-reactions.png) | ![Trợ Lý AI Llama 3.3 (Groq)](docs/assets/screenshots/gemini-ai-summary-mentions.png) |
+| ![Hệ thống Cảm xúc Facebook](docs/assets/screenshots/facebook-reactions.png) | ![Trợ Lý AI Llama 3.3 (Groq)](docs/assets/screenshots/groq-ai-summary-mentions.png) |
 
 > 🌟 **Xem chi tiết toàn bộ các màn hình, quy trình thao tác và phân tích trải nghiệm người dùng tại:**
 > 👉 **[Tài liệu Tổng hợp Hình ảnh Demo & Trải nghiệm thực tế (docs/demo.md)](docs/demo.md)**
@@ -156,7 +156,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Tóm tắt hội thoại tin nhắn (AI Chat Summary):** Tóm lược cuộc trò chuyện gần nhất trong cả trang chat chính và cửa sổ chat nổi, rút ra các quyết định quan trọng và danh sách việc cần làm (Action Items).
 - **Trợ lý ảo Aura Bot (`@aura`) & Trò chuyện Vui với RAG:** Tích hợp bot thông minh trong tin nhắn 1-1 và nhóm chat; ứng dụng kỹ thuật **RAG** trích xuất ngữ cảnh hội thoại, cạ cứng và kho tri thức ChatApp; persona Gen-Z dí dỏm "nhắn vui vui" (chấm điểm cạ cứng, bóc phốt nhẹ nhàng, chọn kèo ăn uống, làm thơ con cóc 4 câu, mẹo xịn ChatApp); thanh chip gợi ý 1-chạm (`AuraPromptSuggestions`) cùng huy hiệu `Aura AI • RAG ⚡`.
 - **Hệ thống gắn thẻ bạn bè thông minh (`@mentions`):** Tự động mở menu gợi ý người dùng (Autocomplete) với phím mũi tên & Enter; hiển thị huy hiệu thẻ nhắc nổi bật phong cách mạng xã hội (`@aura` chip gradient, `@Name` pill tương tác dẫn đến trang cá nhân) và gửi thông báo thời gian thực.
-- 📖 *Xem đặc tả chi tiết tại: [docs/features/gemini-ai-summary-aura-mentions.md](docs/features/gemini-ai-summary-aura-mentions.md)*
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/groq-ai-summary-aura-mentions.md](docs/features/groq-ai-summary-aura-mentions.md)*
 
 ---
 

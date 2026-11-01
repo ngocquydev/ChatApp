@@ -16,8 +16,8 @@ import { SendMessageDto } from './dto/send-message.dto.js';
 import { RedisService } from '../redis/redis/redis.service.js';
 import { CallStatus, CallType } from './schemas/message.schema.js';
 import { MqttBrokerService } from './mqtt-broker.service.js';
-import { AURA_BOT_ID } from '../gemini/aura-bot.constant.js';
-import { GeminiService } from '../gemini/gemini.service.js';
+import { AURA_BOT_ID } from '../groq/aura-bot.constant.js';
+import { GroqService } from '../groq/groq.service.js';
 
 interface AuthenticatedSocket extends Socket {
   data: {
@@ -64,7 +64,7 @@ export class ChatGateway
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
     private readonly mqttBrokerService: MqttBrokerService,
-    @Optional() private readonly geminiService?: GeminiService,
+    @Optional() private readonly groqService?: GroqService,
   ) {}
 
   afterInit() {
@@ -282,7 +282,7 @@ export class ChatGateway
       const isMentionAura = /(^|\s)@aura\b/i.test(dto.text);
       const isAuraDirect = dto.receiverId === AURA_BOT_ID;
 
-      if ((isMentionAura || isAuraDirect) && this.geminiService) {
+      if ((isMentionAura || isAuraDirect) && this.groqService) {
         const convIdStr = message.conversationId.toString();
         // Phát sự kiện Aura đang gõ
         this.server.to(`user:${senderId}`).emit('typing:start', {
@@ -300,7 +300,7 @@ export class ChatGateway
               text: m.text,
             }));
 
-            const replyText = await this.geminiService!.generateAuraChatReply(dto.text, history, {
+            const replyText = await this.groqService!.generateAuraChatReply(dto.text, history, {
               conversationId: convIdStr,
               senderId,
               partnerId: isAuraDirect ? undefined : dto.receiverId,

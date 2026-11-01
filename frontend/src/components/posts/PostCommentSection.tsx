@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Alert, Box, Button, Skeleton, Typography } from "@mui/material";
 import { Sparkles } from "lucide-react";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
-import { summarizeComments } from "@/services/geminiApi";
+import { summarizeComments } from "@/services/groqApi";
 import AiCommentSummaryBox from "./AiCommentSummaryBox";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -198,7 +198,7 @@ export default function PostCommentSection({
                   px: 1.2,
                 }}
               >
-                {tr("Tóm tắt bình luận (Gemini)", "Summarize comments (Gemini)")}
+                {tr("Tóm tắt bình luận (Llama 3.3)", "Summarize comments (Llama 3.3)")}
               </Button>
             </Box>
           )}

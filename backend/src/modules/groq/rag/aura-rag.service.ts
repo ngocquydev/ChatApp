@@ -224,7 +224,7 @@ export class AuraRagService {
   }
 
   /**
-   * Tạo văn bản ngữ cảnh có cấu trúc (RAG Prompt Augmentation) nạp cho Gemini
+   * Tạo văn bản ngữ cảnh có cấu trúc (RAG Prompt Augmentation) nạp cho LLM
    */
   buildRagPromptContext(rag: RetrievedRagContext): string {
     const sections: string[] = [];
@@ -289,7 +289,7 @@ export class AuraRagService {
   }
 
   /**
-   * Tạo câu trả lời thông minh dự phòng (Rule-based RAG Fallback) khi Gemini offline
+   * Tạo câu trả lời thông minh dự phòng (Rule-based RAG Fallback) khi LLM offline
    */
   generateFallbackRagReply(query: string, rag: RetrievedRagContext): string {
     const pName = rag.partner?.name || 'bạn của bạn';

@@ -24,7 +24,7 @@ export interface AskAuraResponse {
  * Tóm tắt bình luận bài viết bằng Llama 3.3 (Groq)
  */
 export async function summarizeComments(postId: string): Promise<CommentSummaryResponse> {
-  const res = await api.post<CommentSummaryResponse>("/gemini/summarize-comments", { postId });
+  const res = await api.post<CommentSummaryResponse>("/groq/summarize-comments", { postId });
   return res.data;
 }
 
@@ -32,7 +32,7 @@ export async function summarizeComments(postId: string): Promise<CommentSummaryR
  * Tóm tắt cuộc trò chuyện bằng Llama 3.3 (Groq)
  */
 export async function summarizeChat(conversationId: string, limit = 30): Promise<ChatSummaryResponse> {
-  const res = await api.post<ChatSummaryResponse>("/gemini/summarize-chat", {
+  const res = await api.post<ChatSummaryResponse>("/groq/summarize-chat", {
     conversationId,
     limit,
   });
@@ -43,7 +43,7 @@ export async function summarizeChat(conversationId: string, limit = 30): Promise
  * Hỏi đáp trực tiếp với trợ lý Aura AI
  */
 export async function askAura(prompt: string, conversationId?: string): Promise<AskAuraResponse> {
-  const res = await api.post<AskAuraResponse>("/gemini/ask-aura", {
+  const res = await api.post<AskAuraResponse>("/groq/ask-aura", {
     prompt,
     conversationId,
   });

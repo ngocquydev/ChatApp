@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ConfigService } from '@nestjs/config';
-import { GeminiService } from './gemini.service.js';
+import { GroqService } from './groq.service.js';
 
-describe('GeminiService', () => {
-  let service: GeminiService;
+describe('GroqService', () => {
+  let service: GroqService;
   let configService: ConfigService;
 
   beforeEach(() => {
     configService = new ConfigService();
-    service = new GeminiService(configService);
+    service = new GroqService(configService);
   });
 
   it('should be defined', () => {
@@ -72,7 +72,7 @@ describe('GeminiService', () => {
     });
 
     const makeService = () =>
-      new GeminiService(new ConfigService({ GROQ_API_KEY: 'gsk_test_key' }));
+      new GroqService(new ConfigService({ GROQ_API_KEY: 'gsk_test_key' }));
 
     it('uses llama-3.3-70b-versatile by default', () => {
       expect(makeService().model).toBe('llama-3.3-70b-versatile');

@@ -12,7 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { User, UserRepository } from './entities/user.entity.js';
 import { CreateUserData } from './types/user.types.js';
 import { POPULAR_SCHOOLS } from './data/schools.data.js';
-import { AURA_BOT_ID, AURA_BOT_USER } from '../gemini/aura-bot.constant.js';
+import { AURA_BOT_ID, AURA_BOT_USER } from '../groq/aura-bot.constant.js';
 
 
 export interface SearchUserItem {

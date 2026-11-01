@@ -353,7 +353,7 @@ export default function ChatHeader({
             </ListItemIcon>
             <ListItemText>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {tr("Tóm tắt hội thoại (Gemini)", "Summarize chat (Gemini)")}
+                {tr("Tóm tắt hội thoại (Llama 3.3)", "Summarize chat (Llama 3.3)")}
               </Typography>
             </ListItemText>
           </MenuItem>

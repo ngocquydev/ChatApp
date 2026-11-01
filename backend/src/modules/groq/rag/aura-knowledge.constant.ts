@@ -51,9 +51,9 @@ export const CHATAPP_KNOWLEDGE_BASE: AppFeatureDoc[] = [
     usageTips: 'Bấm menu ba chấm ở đầu thanh tiêu đề chat và chọn "Đổi chủ đề".',
   },
   {
-    id: 'gemini_summary',
+    id: 'groq_summary',
     title: 'Tóm tắt bài viết & Cuộc trò chuyện bằng Llama 3.3 (Groq)',
-    keywords: ['tóm tắt', 'summarize', 'gemini', 'ai', 'tổng hợp', 'ngắn gọn'],
+    keywords: ['tóm tắt', 'summarize', 'groq', 'llama', 'ai', 'tổng hợp', 'ngắn gọn'],
     description:
       'Mô hình Llama 3.3 (Groq) tự động tóm lược 50 bình luận bài viết hoặc 50 tin nhắn gần nhất thành danh sách ngắn gọn và các đầu việc cần làm.',
     usageTips: 'Nhấn nút "Tóm tắt bình luận" trên bài viết hoặc menu "Tóm tắt hội thoại" trong chat.',

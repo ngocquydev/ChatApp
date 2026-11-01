@@ -203,19 +203,19 @@ Mang lại trải nghiệm giao tiếp sinh động, hài hước và giàu cả
 
 Hệ thống tích hợp trực tiếp trí tuệ nhân tạo **Llama 3.3 70B (Groq Cloud)** cùng tính năng thẻ nhắc bạn bè thông minh, nâng cao tương tác và trải nghiệm người dùng trên toàn bộ ứng dụng:
 
-![Trợ lý AI Llama 3.3 (Groq) & Gắn thẻ bạn bè](assets/screenshots/gemini-ai-summary-mentions.png)
+![Trợ lý AI Llama 3.3 (Groq) & Gắn thẻ bạn bè](assets/screenshots/groq-ai-summary-mentions.png)
 
 ### Điểm nổi bật:
 - **Tóm tắt bình luận bài viết (`AiCommentSummaryBox`):** Tự động đọc và tóm lược ý kiến của hàng chục bình luận dưới bài viết, phân loại tâm trạng và sắc thái thảo luận chỉ sau một nút bấm.
 - **Tóm tắt hội thoại tin nhắn (`AiChatSummaryDialog`):** Tổng hợp nhanh 50-100 tin nhắn gần nhất với các luận điểm chính và đầu việc cần làm (Action Items).
 - **Trợ lý ảo Aura Bot (`@aura`) & Trò chuyện Vui với RAG:** Tự động phản hồi mọi câu hỏi trong chat bằng mô hình Llama 3.3 (Groq) kết hợp kỹ thuật **RAG** trích xuất lịch sử tin nhắn thực tế, thống kê cạ cứng và kho tri thức ChatApp. Đi kèm thanh chip gợi ý 1-chạm (`AuraPromptSuggestions`), nút Sparkles ✨ và huy hiệu nhận diện `Aura AI • RAG ⚡`.
 - **Menu gợi ý thẻ nhắc (@mentions):** Gõ `@` để mở popup gợi ý bạn bè và Aura Bot, hỗ trợ duyệt bằng bàn phím (Mũi tên Lên / Xuống, Enter) và gửi thông báo nhắc tên tức thì.
-- 📖 *Xem chi tiết: [docs/features/gemini-ai-summary-aura-mentions.md](features/gemini-ai-summary-aura-mentions.md)*
+- 📖 *Xem chi tiết: [docs/features/groq-ai-summary-aura-mentions.md](features/groq-ai-summary-aura-mentions.md)*
 
 ---
 
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
-> - [Trợ Lý AI Llama 3.3 (Groq), Aura Bot & Gắn Thẻ Bạn Bè](features/gemini-ai-summary-aura-mentions.md)
+> - [Trợ Lý AI Llama 3.3 (Groq), Aura Bot & Gắn Thẻ Bạn Bè](features/groq-ai-summary-aura-mentions.md)
 > - [Hệ Thống Thả Cảm Xúc Facebook & Bảng Chọn Emoji (Reactions)](features/facebook-reactions.md)
 > - [Tích Hợp GIPHY GIF & Bố Cục Masonry Trong Bình Luận & Tin Nhắn](features/giphy-gif-integration.md)
 > - [Sao Lưu & Phục Hồi Dữ Liệu Tự Động (Database Backup)](features/database-backup.md)

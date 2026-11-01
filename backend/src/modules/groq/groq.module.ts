@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { GeminiService } from './gemini.service.js';
-import { GeminiController } from './gemini.controller.js';
+import { GroqService } from './groq.service.js';
+import { GroqController } from './groq.controller.js';
 import { AuraRagService } from './rag/aura-rag.service.js';
 import { UsersModule } from '../users/users.module.js';
 import { Post, PostSchema } from '../posts/schemas/post.schema.js';
@@ -19,8 +19,8 @@ import { Message, MessageSchema } from '../chat/schemas/message.schema.js';
     ]),
     UsersModule,
   ],
-  controllers: [GeminiController],
-  providers: [GeminiService, AuraRagService],
-  exports: [GeminiService, AuraRagService],
+  controllers: [GroqController],
+  providers: [GroqService, AuraRagService],
+  exports: [GroqService, AuraRagService],
 })
-export class GeminiModule {}
+export class GroqModule {}

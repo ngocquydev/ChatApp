@@ -20,12 +20,12 @@ export interface AuraChatContextOptions {
 }
 
 /**
- * Dịch vụ AI của ChatApp (Aura). Tên lớp/route "gemini" được giữ lại để không vỡ hợp đồng API;
- * mô hình thực tế được gọi qua Groq Cloud (API tương thích OpenAI), mặc định llama-3.3-70b-versatile.
+ * Dịch vụ AI của ChatApp (Aura), gọi mô hình qua Groq Cloud (API tương thích OpenAI),
+ * mặc định llama-3.3-70b-versatile.
  */
 @Injectable()
-export class GeminiService {
-  private readonly logger = new Logger(GeminiService.name);
+export class GroqService {
+  private readonly logger = new Logger(GroqService.name);
   static readonly DEFAULT_MODEL = 'llama-3.3-70b-versatile';
   static readonly ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
   private readonly apiKey: string;
@@ -43,7 +43,7 @@ export class GeminiService {
     this.modelName =
       this.configService.get<string>('GROQ_MODEL') ||
       process.env.GROQ_MODEL ||
-      GeminiService.DEFAULT_MODEL;
+      GroqService.DEFAULT_MODEL;
     if (!this.apiKey) {
       this.logger.warn('GROQ_API_KEY chưa được cấu hình. Hệ thống sẽ sử dụng bộ xử lý tóm tắt & phản hồi thông minh dự phòng.');
     } else {
@@ -81,7 +81,7 @@ export class GeminiService {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     try {
-      const res = await fetch(GeminiService.ENDPOINT, {
+      const res = await fetch(GroqService.ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

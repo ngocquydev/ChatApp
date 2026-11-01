@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { Bot, Copy, Check, RefreshCw, Sparkles, X } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
-import { summarizeChat } from "@/services/geminiApi";
+import { summarizeChat } from "@/services/groqApi";
 
 interface AiChatSummaryDialogProps {
   open: boolean;
