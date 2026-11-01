@@ -51,6 +51,34 @@ const cloudflareBlockList = buildBlockList([
   ...CLOUDFLARE_IPV6_RANGES,
 ]);
 
+/**
+ * Tạo hàm kiểm tra IP có thuộc danh sách CIDR hay không (CIDR sai định dạng bị bỏ qua).
+ * Địa chỉ không kèm prefix được hiểu là một IP đơn (/32 hoặc /128).
+ */
+export function createIpMatcher(cidrs: readonly string[]): (ip: string) => boolean {
+  const list = buildBlockList(cidrs);
+  return (ip: string) => {
+    const normalized = normalizeIp(ip);
+    return normalized !== null && list.check(normalized.ip, normalized.family);
+  };
+}
+
+/** Chuỗi có phải địa chỉ IPv4/IPv6 hợp lệ (chấp nhận dạng IPv4-mapped) */
+export function isValidIp(ip: string): boolean {
+  return normalizeIp(ip) !== null;
+}
+
+/** Chuỗi có phải CIDR hoặc IP đơn hợp lệ */
+export function isValidCidr(cidr: string): boolean {
+  const [address = '', prefixRaw] = cidr.trim().split('/');
+  const normalized = normalizeIp(address);
+  if (!normalized) return false;
+  if (prefixRaw === undefined) return true;
+  const prefix = Number(prefixRaw);
+  const maxPrefix = normalized.family === 'ipv4' ? 32 : 128;
+  return /^\d+$/.test(prefixRaw) && prefix >= 0 && prefix <= maxPrefix;
+}
+
 let cachedProxyCidrs: string | undefined;
 let cachedProxyBlockList = new BlockList();
 

@@ -16,6 +16,8 @@ import { UploadModule } from './modules/upload/upload.module.js';
 import { Neo4jModule } from './modules/neo4j/neo4j.module.js';
 import { AppGraphqlModule } from './modules/graphql/app-graphql.module.js';
 import { ModerationModule } from './modules/moderation/moderation.module.js';
+import { WafModule } from './modules/waf/waf.module.js';
+import { WafMiddleware } from './modules/waf/waf.middleware.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 import { CloudflareMiddleware } from './common/middlewares/cloudflare.middleware.js';
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
@@ -68,6 +70,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AppGraphqlModule,
 
     ModerationModule,
+
+    WafModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -77,9 +81,12 @@ export class AppModule implements NestModule {
     // 1. Áp dụng Cloudflare Origin Shield & Real IP extraction toàn cục cho mọi request
     consumer.apply(CloudflareMiddleware).forRoutes('*');
 
-    // 2. Giới hạn tốc độ (Rate Limit) chống brute-force và DDoS cho các endpoint nhạy cảm
+    // 2. Tường lửa ứng dụng (WAF): chặn IP/dò lỗ hổng/UA xấu, Under Attack Mode bắt xác minh Turnstile
+    consumer.apply(WafMiddleware).forRoutes('*');
+
+    // 3. Giới hạn tốc độ (Rate Limit) chống brute-force và DDoS cho các endpoint nhạy cảm
     consumer
       .apply(RateLimitMiddleware)
-      .forRoutes('auth/login', 'auth/register');
+      .forRoutes('auth/login', 'auth/register', 'waf/clearance');
   }
 }
