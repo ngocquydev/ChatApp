@@ -8,7 +8,7 @@ export const AURA_BOT_USER = {
   email: 'aura.bot@chatapp.internal',
   role: 'bot',
   avatar: '/assets/avatars/aura-bot.png',
-  bio: 'Trợ lý AI thông minh tích hợp Google Gemini 1.5 Flash (@aura)',
+  bio: 'Trợ lý AI thông minh tích hợp Google Gemini Flash (@aura)',
   isDeleted: false,
   isBan: false,
 };

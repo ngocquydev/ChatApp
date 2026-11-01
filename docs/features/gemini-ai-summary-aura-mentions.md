@@ -1,6 +1,6 @@
-# Tích hợp AI Gemini 1.5 Flash: Tóm tắt Bình luận, Tóm tắt Chat, Trợ lý ảo Aura Bot (@aura) & Gắn thẻ bạn bè (@mentions)
+# Tích hợp AI Gemini Flash: Tóm tắt Bình luận, Tóm tắt Chat, Trợ lý ảo Aura Bot (@aura) & Gắn thẻ bạn bè (@mentions)
 
-Hệ thống tích hợp mô hình ngôn ngữ lớn thế hệ mới **Google Gemini 1.5 Flash (`gemini-1.5-flash`)** cùng bộ công cụ tương tác thông minh trực tiếp trong giao diện người dùng:
+Hệ thống tích hợp mô hình ngôn ngữ lớn thế hệ mới **Google Gemini Flash (`gemini-3.8-flash`)** cùng bộ công cụ tương tác thông minh trực tiếp trong giao diện người dùng:
 1. **Tóm tắt bình luận bài viết (Comment Summarization)**: Phân tích luồng ý kiến, quan điểm chính, tâm trạng cộng đồng và giải đáp thắc mắc.
 2. **Tóm tắt hội thoại tin nhắn (Chat Summarization)**: Tóm tắt 50-100 tin nhắn gần nhất với các gạch đầu dòng cô đọng, hành động tiếp theo (Action items) và các chủ đề thảo luận quan trọng.
 3. **Trợ lý ảo Aura Bot (`@aura`)**: Bot thông minh được nhúng sâu trong tin nhắn cá nhân và nhóm, tự động phản hồi khi được gọi tên `@aura <câu hỏi>`.
@@ -16,7 +16,7 @@ flowchart TD
     User -->|"Gửi bình luận / tin nhắn"| Gateway["NestJS Backend Gateway & Controller"]
     
     Gateway -->|"Phát hiện @aura"| AuraBot["Aura Bot Agent"]
-    AuraBot -->|"Gemini 1.5 Flash Prompt"| GeminiAPI["Google Gemini API (gemini-1.5-flash)"]
+    AuraBot -->|"Gemini Flash Prompt"| GeminiAPI["Google Gemini API (gemini-3.8-flash)"]
     GeminiAPI -->|"Phản hồi thông minh"| AuraBot
     AuraBot -->|"Gửi tin nhắn phản hồi"| ChatWS["Socket.IO / MQTT Broadcast"]
     
@@ -60,7 +60,7 @@ flowchart TD
     - Tự động hiển thị khi người dùng gõ `@aura` hoặc bấm vào biểu tượng ngôi sao ✨ (`Sparkles`) trên thanh công cụ soạn thảo tin nhắn.
     - Các chip gợi ý thông minh: *"Ai nhắn nhiều hơn?"*, *"Chấm điểm cạ cứng"*, *"Chọn kèo ăn uống"*, *"Làm thơ con cóc"*, *"Chủ đề chém gió"*, *"Mẹo xịn ChatApp"*.
   - **Huy hiệu nhận diện**: Mọi tin nhắn phản hồi từ Aura Bot trong luồng chat đều có huy hiệu tinh tế `Aura AI • RAG ⚡`.
-  - Hỗ trợ cả Google Gemini 1.5 Flash thật và bộ sinh phản hồi RAG thông minh dự phòng khi offline.
+  - Hỗ trợ cả Google Gemini Flash thật và bộ sinh phản hồi RAG thông minh dự phòng khi offline.
 
 ### 2.4. Hệ thống Gắn thẻ Bạn bè (`@mentions`)
 - **Bộ nhận diện ký tự `@`**: Tự động kích hoạt khi người dùng gõ `@` trong ô soạn thảo (`CommentComposer`, `MessageComposer`, `FloatingChatBox`).
@@ -82,6 +82,9 @@ Thêm biến môi trường vào `backend/.env`:
 ```env
 # Google Gemini API Key
 GEMINI_API_KEY=your_gemini_api_key_here
+# Tên mô hình (mặc định gemini-3.8-flash). gemini-1.5-flash đã ngừng (404), gemini-2.5-flash không còn cấp cho tài khoản mới.
+GEMINI_MODEL=gemini-3.8-flash
 ```
+> **Lưu ý**: Các model Gemini 3.x yêu cầu dự án Google AI Studio đã **bật thanh toán (billing)**; nếu không API trả `403`, hệ thống sẽ tự động dùng bộ phản hồi dự phòng.
 > **Lưu ý**: Nếu chưa cấu hình `GEMINI_API_KEY`, hệ thống đã được tích hợp bộ phân tích thông minh dự phòng (Rule-based Intelligent Fallback) tự động tóm tắt và phản hồi câu hỏi trực tiếp mà không gây lỗi máy chủ.
 

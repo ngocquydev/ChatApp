@@ -56,7 +56,7 @@ export class GeminiController {
   }
 
   @Post('summarize-comments')
-  @ApiOperation({ summary: 'Tóm tắt bình luận bài viết bằng Gemini 1.5 Flash' })
+  @ApiOperation({ summary: 'Tóm tắt bình luận bài viết bằng Gemini Flash' })
   async summarizeComments(
     @Req() req: AuthenticatedRequest,
     @Body() dto: SummarizeCommentsDto,
@@ -104,12 +104,12 @@ export class GeminiController {
       success: true,
       summary,
       commentCount: comments.length,
-      model: 'gemini-1.5-flash',
+      model: this.geminiService.model,
     };
   }
 
   @Post('summarize-chat')
-  @ApiOperation({ summary: 'Tóm tắt nội dung cuộc trò chuyện bằng Gemini 1.5 Flash' })
+  @ApiOperation({ summary: 'Tóm tắt nội dung cuộc trò chuyện bằng Gemini Flash' })
   async summarizeChat(
     @Req() req: AuthenticatedRequest,
     @Body() dto: SummarizeChatDto,
@@ -167,12 +167,12 @@ export class GeminiController {
       success: true,
       summary,
       messageCount: sortedMessages.length,
-      model: 'gemini-1.5-flash',
+      model: this.geminiService.model,
     };
   }
 
   @Post('ask-aura')
-  @ApiOperation({ summary: 'Hỏi đáp trực tiếp với trợ lý Aura AI (Gemini 1.5 Flash)' })
+  @ApiOperation({ summary: 'Hỏi đáp trực tiếp với trợ lý Aura AI (Gemini Flash)' })
   async askAura(
     @Req() req: AuthenticatedRequest,
     @Body() dto: AskAuraDto,
@@ -219,7 +219,7 @@ export class GeminiController {
     return {
       success: true,
       reply,
-      model: 'gemini-1.5-flash',
+      model: this.geminiService.model,
     };
   }
 }

@@ -136,14 +136,14 @@ export function AiChatSummaryDialog({
           }}
         >
           <Bot size={14} />
-          <span>Google Gemini 1.5 Flash ({messageCount} {tr("tin nhắn", "messages")})</span>
+          <span>Google Gemini Flash ({messageCount} {tr("tin nhắn", "messages")})</span>
         </Box>
 
         {loading ? (
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 4, gap: 2 }}>
             <CircularProgress size={32} />
             <Typography variant="body2" color="text.secondary" sx={{ fontStyle: "italic" }}>
-              {tr("Gemini 1.5 Flash đang phân tích cuộc hội thoại…", "Gemini 1.5 Flash is analyzing the conversation…")}
+              {tr("Gemini Flash đang phân tích cuộc hội thoại…", "Gemini Flash is analyzing the conversation…")}
             </Typography>
           </Box>
         ) : (

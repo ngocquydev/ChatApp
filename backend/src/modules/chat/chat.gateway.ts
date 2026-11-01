@@ -291,7 +291,7 @@ export class ChatGateway
           userName: 'Aura AI',
         });
 
-        // Xử lý phản hồi ngầm từ Gemini 1.5 Flash
+        // Xử lý phản hồi ngầm từ Gemini Flash
         void (async () => {
           try {
             const recent = await this.chatService.getMessages(convIdStr, senderId, 8);

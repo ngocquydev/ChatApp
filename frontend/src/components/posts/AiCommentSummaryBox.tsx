@@ -68,7 +68,7 @@ export function AiCommentSummaryBox({
                   borderRadius: "4px",
                 }}
               >
-                Gemini 1.5 Flash
+                Gemini Flash
               </Box>
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -102,7 +102,7 @@ export function AiCommentSummaryBox({
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.5 }}>
           <CircularProgress size={18} color="primary" />
           <Typography variant="body2" color="text.secondary" sx={{ fontStyle: "italic" }}>
-            {tr("Gemini 1.5 Flash đang đọc và tổng hợp các ý kiến…", "Gemini 1.5 Flash is reading and synthesizing comments…")}
+            {tr("Gemini Flash đang đọc và tổng hợp các ý kiến…", "Gemini Flash is reading and synthesizing comments…")}
           </Typography>
         </Box>
       ) : (

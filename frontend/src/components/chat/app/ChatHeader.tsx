@@ -443,7 +443,7 @@ export default function ChatHeader({
         }}
       />
 
-      {/* Dialog Tóm tắt hội thoại bằng Gemini 1.5 Flash */}
+      {/* Dialog Tóm tắt hội thoại bằng Gemini Flash */}
       <AiChatSummaryDialog
         open={openSummaryDialog}
         onClose={() => setOpenSummaryDialog(false)}

@@ -34,7 +34,7 @@ export function MentionText({ text, onMentionClick }: MentionTextProps) {
     // 1. Tag Aura Bot: @aura
     if (/^@aura$/i.test(fullMatch)) {
       elements.push(
-        <Tooltip key={`aura-${matchIndex}`} title="Trợ lý ảo Aura AI (Gemini 1.5 Flash)" arrow>
+        <Tooltip key={`aura-${matchIndex}`} title="Trợ lý ảo Aura AI (Gemini Flash)" arrow>
           <Box
             component="span"
             sx={{

@@ -23,7 +23,9 @@ export interface AuraChatContextOptions {
 export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
   private readonly apiKey: string;
-  private readonly modelName = 'gemini-1.5-flash';
+  /** Mô hình mặc định (gemini-1.5-flash đã ngừng hoạt động → 404). Có thể ghi đè bằng GEMINI_MODEL. */
+  static readonly DEFAULT_MODEL = 'gemini-3.8-flash';
+  private readonly modelName: string;
   private readonly endpoint: string;
 
   constructor(
@@ -35,7 +37,11 @@ export class GeminiService {
       this.configService.get<string>('GEMINI_API_KEY') ||
       process.env.GEMINI_API_KEY ||
       '';
-    this.endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`;
+    this.modelName =
+      this.configService.get<string>('GEMINI_MODEL') ||
+      process.env.GEMINI_MODEL ||
+      GeminiService.DEFAULT_MODEL;
+    this.endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.modelName)}:generateContent?key=${this.apiKey}`;
     if (!this.apiKey) {
       this.logger.warn('GEMINI_API_KEY chưa được cấu hình. Hệ thống sẽ sử dụng bộ xử lý tóm tắt & phản hồi thông minh dự phòng.');
     } else {
@@ -43,8 +49,13 @@ export class GeminiService {
     }
   }
 
+  /** Tên mô hình Gemini đang sử dụng (phản ánh vào response API). */
+  get model(): string {
+    return this.modelName;
+  }
+
   /**
-   * Gọi trực tiếp Google Gemini 1.5 Flash API bằng HTTP REST (Zero extra dependency)
+   * Gọi trực tiếp Google Gemini Flash API bằng HTTP REST (Zero extra dependency)
    */
   async generateText(prompt: string, systemInstruction?: string): Promise<string> {
     if (!this.apiKey) {
@@ -62,7 +73,7 @@ export class GeminiService {
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048,
       },
     };
 
@@ -106,7 +117,7 @@ export class GeminiService {
       return resultText;
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Lỗi khi gọi Gemini 1.5 Flash: ${errMsg}`);
+      this.logger.error(`Lỗi khi gọi Gemini Flash: ${errMsg}`);
       return this.fallbackTextGeneration(prompt, systemInstruction);
     }
   }
@@ -124,7 +135,7 @@ export class GeminiService {
     }
 
     const systemPrompt =
-      'Bạn là Aura AI, trợ lý tóm tắt thông minh của mạng xã hội ChatApp (sử dụng mô hình Google Gemini 1.5 Flash). Nhiệm vụ của bạn là đọc nội dung bài viết và các bình luận để cung cấp bản tóm tắt ngắn gọn, súc tích bằng tiếng Việt.\n' +
+      'Bạn là Aura AI, trợ lý tóm tắt thông minh của mạng xã hội ChatApp (sử dụng mô hình Google Gemini Flash). Nhiệm vụ của bạn là đọc nội dung bài viết và các bình luận để cung cấp bản tóm tắt ngắn gọn, súc tích bằng tiếng Việt.\n' +
       'Yêu cầu:\n' +
       '1. Trình bày bằng gạch đầu dòng rõ ràng kèm emoji phù hợp.\n' +
       '2. Nêu rõ: Ý kiến/chủ đề chính, các quan điểm đồng tình hoặc phản biện nổi bật, và cảm xúc chung của cộng đồng.\n' +
@@ -156,7 +167,7 @@ export class GeminiService {
     }
 
     const systemPrompt =
-      'Bạn là Aura AI (@aura) - trợ lý phân tích hội thoại thông minh của ChatApp (Gemini 1.5 Flash). Hãy tóm tắt cuộc trò chuyện bằng tiếng Việt một cách ngắn gọn, chuẩn xác.\n' +
+      'Bạn là Aura AI (@aura) - trợ lý phân tích hội thoại thông minh của ChatApp (Gemini Flash). Hãy tóm tắt cuộc trò chuyện bằng tiếng Việt một cách ngắn gọn, chuẩn xác.\n' +
       'Yêu cầu:\n' +
       '1. Nêu chủ đề thảo luận chính.\n' +
       '2. Các điểm thống nhất, quyết định hoặc thỏa thuận quan trọng (nếu có).\n' +
@@ -207,7 +218,7 @@ export class GeminiService {
 
     // 2. Persona của Aura AI: Hài hước, dí dỏm, năng lượng Gen Z, bóc phốt duyên dáng, thân thiện
     const systemPrompt =
-      'Bạn là Aura AI (@aura) - trợ lý ảo vui vẻ, cực kỳ dí dỏm, thông minh và tràn đầy năng lượng của mạng xã hội ChatApp, được vận hành bởi mô hình Google Gemini 1.5 Flash kết hợp công nghệ RAG (Retrieval-Augmented Generation).\n\n' +
+      'Bạn là Aura AI (@aura) - trợ lý ảo vui vẻ, cực kỳ dí dỏm, thông minh và tràn đầy năng lượng của mạng xã hội ChatApp, được vận hành bởi mô hình Google Gemini Flash kết hợp công nghệ RAG (Retrieval-Augmented Generation).\n\n' +
       'VĂN PHONG VÀ TÍNH CÁCH:\n' +
       '1. Nói chuyện vui vẻ, duyên dáng, lầy lội vừa đủ ("nhắn vui vui"), dùng ngôn ngữ tự nhiên, hiện đại của giới trẻ (kèo thơm, cạ cứng, dính chưởng, 10 điểm không có nhưng, đỉnh nóc kịch trần, flex, bóc phốt nhẹ nhàng...).\n' +
       '2. Sử dụng thông tin từ [KHO DỮ LIỆU ĐƯỢC TRÍCH XUẤT TỪ CHATAPP - RAG CONTEXT] để trả lời chính xác, gọi tên người dùng thân mật, khéo léo trích dẫn chi tiết thật (số tin nhắn mỗi người đã gửi, kèo ăn uống đã bàn, trường học, sở thích...) một cách hài hước.\n' +
@@ -265,7 +276,7 @@ export class GeminiService {
 
     // Fallback cho câu hỏi chat với Aura
     return (
-      '👋 Chào bạn! Tôi là **Aura AI** (@aura), trợ lý thông minh của ChatApp sử dụng mô hình **Google Gemini 1.5 Flash**.\n\n' +
+      '👋 Chào bạn! Tôi là **Aura AI** (@aura), trợ lý thông minh của ChatApp sử dụng mô hình **Google Gemini Flash**.\n\n' +
       'Tôi có thể giúp bạn:\n' +
       '• 📝 Tóm tắt nhanh bình luận bài viết hoặc cuộc hội thoại dài\n' +
       '• 💡 Giải đáp thắc mắc, gợi ý ý tưởng và soạn thảo nội dung\n' +
