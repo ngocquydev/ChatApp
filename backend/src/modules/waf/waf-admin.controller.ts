@@ -1,4 +1,5 @@
 import {
+  BadGatewayException,
   BadRequestException,
   Body,
   Controller,
@@ -24,6 +25,7 @@ import { WafConfigService } from './waf-config.service.js';
 import { WafEventsService } from './waf-events.service.js';
 import { EdgeBanService } from './edge-ban.service.js';
 import { CloudflareWafService } from './cloudflare/cloudflare-waf.service.js';
+import { CloudflareApiError } from './cloudflare/cloudflare-api.client.js';
 import { CreateBanDto, ToggleDto, UnderAttackDto, UpdateWafConfigDto } from './dto/waf-admin.dto.js';
 import type { WafConfig } from './waf.types.js';
 
@@ -101,7 +103,12 @@ export class WafAdminController {
       result.app = (await this.config.updateConfig({ underAttack: dto.enabled }, adminId(req))).underAttack;
     }
     if (dto.scope === 'cloudflare' || dto.scope === 'both') {
-      result.cloudflareSecurityLevel = await this.cloudflare.setUnderAttack(dto.enabled);
+      try {
+        result.cloudflareSecurityLevel = await this.cloudflare.setUnderAttack(dto.enabled);
+      } catch (err) {
+        if (err instanceof CloudflareApiError) throw new BadGatewayException(err.message);
+        throw err;
+      }
     }
     this.logger.warn(`[Audit] Admin ${adminId(req)} ${dto.enabled ? 'BẬT' : 'TẮT'} Under Attack (${dto.scope})`);
     return result;
@@ -111,18 +118,28 @@ export class WafAdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Bật/tắt Bot Fight Mode trên Cloudflare' })
   async setBotFight(@Body() dto: ToggleDto, @Req() req: AdminRequest) {
-    const botFightMode = await this.cloudflare.setBotFightMode(dto.enabled);
-    this.logger.log(`[Audit] Admin ${adminId(req)} đặt Bot Fight Mode = ${botFightMode}`);
-    return { botFightMode };
+    try {
+      const botFightMode = await this.cloudflare.setBotFightMode(dto.enabled);
+      this.logger.log(`[Audit] Admin ${adminId(req)} đặt Bot Fight Mode = ${botFightMode}`);
+      return { botFightMode };
+    } catch (err) {
+      if (err instanceof CloudflareApiError) throw new BadGatewayException(err.message);
+      throw err;
+    }
   }
 
   @Post('cloudflare/sync')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Đồng bộ custom rules + rate limiting rule lên Cloudflare' })
   async syncCloudflare(@Req() req: AdminRequest) {
-    const result = await this.cloudflare.syncRules();
-    this.logger.log(`[Audit] Admin ${adminId(req)} đồng bộ luật WAF lên Cloudflare`);
-    return result;
+    try {
+      const result = await this.cloudflare.syncRules();
+      this.logger.log(`[Audit] Admin ${adminId(req)} đồng bộ luật WAF lên Cloudflare`);
+      return result;
+    } catch (err) {
+      if (err instanceof CloudflareApiError) throw new BadGatewayException(err.message);
+      throw err;
+    }
   }
 
   @Get('bans')

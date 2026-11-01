@@ -73,6 +73,10 @@ export class ErrorHandlerFilter implements ExceptionFilter {
         statusCode = HttpStatus.UNAUTHORIZED;
         error = 'Unauthorized';
         message = 'Token xác thực đã hết hạn. Vui lòng đăng nhập lại!';
+      } else if (err.name === 'CloudflareApiError') {
+        statusCode = HttpStatus.BAD_GATEWAY;
+        error = 'Bad Gateway';
+        message = err.message;
       } else if (err.name === 'JsonWebTokenError') {
         statusCode = HttpStatus.UNAUTHORIZED;
         error = 'Unauthorized';
