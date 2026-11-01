@@ -19,14 +19,17 @@ export interface AuraChatContextOptions {
   partnerId?: string;
 }
 
+/**
+ * Dịch vụ AI của ChatApp (Aura). Tên lớp/route "gemini" được giữ lại để không vỡ hợp đồng API;
+ * mô hình thực tế được gọi qua Groq Cloud (API tương thích OpenAI), mặc định llama-3.3-70b-versatile.
+ */
 @Injectable()
 export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
+  static readonly DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+  static readonly ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
   private readonly apiKey: string;
-  /** Mô hình mặc định (gemini-1.5-flash đã ngừng hoạt động → 404). Có thể ghi đè bằng GEMINI_MODEL. */
-  static readonly DEFAULT_MODEL = 'gemini-3.8-flash';
   private readonly modelName: string;
-  private readonly endpoint: string;
 
   constructor(
     private readonly configService: ConfigService,
@@ -34,82 +37,71 @@ export class GeminiService {
     private readonly auraRagService?: AuraRagService,
   ) {
     this.apiKey =
-      this.configService.get<string>('GEMINI_API_KEY') ||
-      process.env.GEMINI_API_KEY ||
+      this.configService.get<string>('GROQ_API_KEY') ||
+      process.env.GROQ_API_KEY ||
       '';
     this.modelName =
-      this.configService.get<string>('GEMINI_MODEL') ||
-      process.env.GEMINI_MODEL ||
+      this.configService.get<string>('GROQ_MODEL') ||
+      process.env.GROQ_MODEL ||
       GeminiService.DEFAULT_MODEL;
-    this.endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.modelName)}:generateContent?key=${this.apiKey}`;
     if (!this.apiKey) {
-      this.logger.warn('GEMINI_API_KEY chưa được cấu hình. Hệ thống sẽ sử dụng bộ xử lý tóm tắt & phản hồi thông minh dự phòng.');
+      this.logger.warn('GROQ_API_KEY chưa được cấu hình. Hệ thống sẽ sử dụng bộ xử lý tóm tắt & phản hồi thông minh dự phòng.');
     } else {
-      this.logger.log(`GeminiService đã sẵn sàng với mô hình ${this.modelName}`);
+      this.logger.log(`Aura AI đã sẵn sàng với mô hình ${this.modelName} (Groq Cloud)`);
     }
   }
 
-  /** Tên mô hình Gemini đang sử dụng (phản ánh vào response API). */
+  /** Tên mô hình đang sử dụng (phản ánh vào response API). */
   get model(): string {
     return this.modelName;
   }
 
   /**
-   * Gọi trực tiếp Google Gemini Flash API bằng HTTP REST (Zero extra dependency)
+   * Gọi Groq Cloud Chat Completions bằng HTTP REST (Zero extra dependency)
    */
   async generateText(prompt: string, systemInstruction?: string): Promise<string> {
     if (!this.apiKey) {
       return this.fallbackTextGeneration(prompt, systemInstruction);
     }
 
-    const payload: Record<string, unknown> = {
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 2048,
-      },
+    const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
+    if (systemInstruction) {
+      messages.push({ role: 'system', content: systemInstruction });
+    }
+    messages.push({ role: 'user', content: prompt });
+
+    const payload = {
+      model: this.modelName,
+      messages,
+      temperature: 0.7,
+      top_p: 0.95,
+      max_tokens: 1024,
     };
 
-    if (systemInstruction) {
-      payload.systemInstruction = {
-        parts: [{ text: systemInstruction }],
-      };
-    }
-
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 12000);
-
-      const res = await fetch(this.endpoint, {
+      const res = await fetch(GeminiService.ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.apiKey}`,
+        },
         body: JSON.stringify(payload),
         signal: controller.signal,
       });
-      clearTimeout(timeout);
 
       if (!res.ok) {
         const errorText = await res.text();
-        this.logger.warn(`Gemini API trả về mã lỗi ${res.status}: ${errorText}`);
+        this.logger.warn(`Groq API trả về mã lỗi ${res.status}: ${errorText}`);
         return this.fallbackTextGeneration(prompt, systemInstruction);
       }
 
       const data = (await res.json()) as {
-        candidates?: Array<{
-          content?: {
-            parts?: Array<{ text?: string }>;
-          };
-        }>;
+        choices?: Array<{ message?: { content?: string | null } }>;
       };
 
-      const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      const resultText = data.choices?.[0]?.message?.content?.trim();
       if (!resultText) {
         return this.fallbackTextGeneration(prompt, systemInstruction);
       }
@@ -117,8 +109,10 @@ export class GeminiService {
       return resultText;
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Lỗi khi gọi Gemini Flash: ${errMsg}`);
+      this.logger.error(`Lỗi khi gọi Groq (${this.modelName}): ${errMsg}`);
       return this.fallbackTextGeneration(prompt, systemInstruction);
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -135,7 +129,7 @@ export class GeminiService {
     }
 
     const systemPrompt =
-      'Bạn là Aura AI, trợ lý tóm tắt thông minh của mạng xã hội ChatApp (sử dụng mô hình Google Gemini Flash). Nhiệm vụ của bạn là đọc nội dung bài viết và các bình luận để cung cấp bản tóm tắt ngắn gọn, súc tích bằng tiếng Việt.\n' +
+      'Bạn là Aura AI, trợ lý tóm tắt thông minh của mạng xã hội ChatApp (sử dụng mô hình Llama 3.3 70B (Groq)). Nhiệm vụ của bạn là đọc nội dung bài viết và các bình luận để cung cấp bản tóm tắt ngắn gọn, súc tích bằng tiếng Việt.\n' +
       'Yêu cầu:\n' +
       '1. Trình bày bằng gạch đầu dòng rõ ràng kèm emoji phù hợp.\n' +
       '2. Nêu rõ: Ý kiến/chủ đề chính, các quan điểm đồng tình hoặc phản biện nổi bật, và cảm xúc chung của cộng đồng.\n' +
@@ -167,7 +161,7 @@ export class GeminiService {
     }
 
     const systemPrompt =
-      'Bạn là Aura AI (@aura) - trợ lý phân tích hội thoại thông minh của ChatApp (Gemini Flash). Hãy tóm tắt cuộc trò chuyện bằng tiếng Việt một cách ngắn gọn, chuẩn xác.\n' +
+      'Bạn là Aura AI (@aura) - trợ lý phân tích hội thoại thông minh của ChatApp (Llama 3.3 (Groq)). Hãy tóm tắt cuộc trò chuyện bằng tiếng Việt một cách ngắn gọn, chuẩn xác.\n' +
       'Yêu cầu:\n' +
       '1. Nêu chủ đề thảo luận chính.\n' +
       '2. Các điểm thống nhất, quyết định hoặc thỏa thuận quan trọng (nếu có).\n' +
@@ -218,7 +212,7 @@ export class GeminiService {
 
     // 2. Persona của Aura AI: Hài hước, dí dỏm, năng lượng Gen Z, bóc phốt duyên dáng, thân thiện
     const systemPrompt =
-      'Bạn là Aura AI (@aura) - trợ lý ảo vui vẻ, cực kỳ dí dỏm, thông minh và tràn đầy năng lượng của mạng xã hội ChatApp, được vận hành bởi mô hình Google Gemini Flash kết hợp công nghệ RAG (Retrieval-Augmented Generation).\n\n' +
+      'Bạn là Aura AI (@aura) - trợ lý ảo vui vẻ, cực kỳ dí dỏm, thông minh và tràn đầy năng lượng của mạng xã hội ChatApp, được vận hành bởi mô hình Llama 3.3 70B (Groq) kết hợp công nghệ RAG (Retrieval-Augmented Generation).\n\n' +
       'VĂN PHONG VÀ TÍNH CÁCH:\n' +
       '1. Nói chuyện vui vẻ, duyên dáng, lầy lội vừa đủ ("nhắn vui vui"), dùng ngôn ngữ tự nhiên, hiện đại của giới trẻ (kèo thơm, cạ cứng, dính chưởng, 10 điểm không có nhưng, đỉnh nóc kịch trần, flex, bóc phốt nhẹ nhàng...).\n' +
       '2. Sử dụng thông tin từ [KHO DỮ LIỆU ĐƯỢC TRÍCH XUẤT TỪ CHATAPP - RAG CONTEXT] để trả lời chính xác, gọi tên người dùng thân mật, khéo léo trích dẫn chi tiết thật (số tin nhắn mỗi người đã gửi, kèo ăn uống đã bàn, trường học, sở thích...) một cách hài hước.\n' +
@@ -276,7 +270,7 @@ export class GeminiService {
 
     // Fallback cho câu hỏi chat với Aura
     return (
-      '👋 Chào bạn! Tôi là **Aura AI** (@aura), trợ lý thông minh của ChatApp sử dụng mô hình **Google Gemini Flash**.\n\n' +
+      '👋 Chào bạn! Tôi là **Aura AI** (@aura), trợ lý thông minh của ChatApp sử dụng mô hình **Llama 3.3 70B (Groq)**.\n\n' +
       'Tôi có thể giúp bạn:\n' +
       '• 📝 Tóm tắt nhanh bình luận bài viết hoặc cuộc hội thoại dài\n' +
       '• 💡 Giải đáp thắc mắc, gợi ý ý tưởng và soạn thảo nội dung\n' +

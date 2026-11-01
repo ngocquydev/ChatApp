@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { GeminiService } from './gemini.service.js';
 
@@ -63,6 +63,53 @@ describe('GeminiService', () => {
       ]);
       expect(result).toBeDefined();
       expect(result.length).toBeGreaterThan(20);
+    });
+  });
+
+  describe('Groq Cloud integration', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    const makeService = () =>
+      new GeminiService(new ConfigService({ GROQ_API_KEY: 'gsk_test_key' }));
+
+    it('uses llama-3.3-70b-versatile by default', () => {
+      expect(makeService().model).toBe('llama-3.3-70b-versatile');
+    });
+
+    it('calls Groq chat completions with bearer auth and returns the model text', async () => {
+      const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ choices: [{ message: { content: ' Xin chào từ Llama! ' } }] }), {
+          status: 200,
+        }),
+      );
+
+      const text = await makeService().generateText('Chào bạn', 'Bạn là Aura');
+
+      expect(text).toBe('Xin chào từ Llama!');
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('https://api.groq.com/openai/v1/chat/completions');
+      expect((init.headers as Record<string, string>).Authorization).toBe('Bearer gsk_test_key');
+      const body = JSON.parse(init.body as string) as {
+        model: string;
+        messages: Array<{ role: string; content: string }>;
+      };
+      expect(body.model).toBe('llama-3.3-70b-versatile');
+      expect(body.messages).toEqual([
+        { role: 'system', content: 'Bạn là Aura' },
+        { role: 'user', content: 'Chào bạn' },
+      ]);
+    });
+
+    it('falls back to the offline generator when Groq returns an error', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response('{"error":{"message":"invalid api key"}}', { status: 401 }),
+      );
+
+      const reply = await makeService().generateAuraChatReply('@aura Xin chào, bạn là ai?');
+
+      expect(reply).toContain('Aura');
     });
   });
 

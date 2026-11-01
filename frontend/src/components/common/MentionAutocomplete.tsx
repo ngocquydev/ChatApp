@@ -29,7 +29,7 @@ const AURA_BOT_CANDIDATE: MentionCandidate = {
   name: "Aura AI",
   tag: "aura",
   isBot: true,
-  subtitle: "Trợ lý ảo Gemini Flash (Hỏi đáp, tóm tắt)",
+  subtitle: "Trợ lý ảo Llama 3.3 (Groq) (Hỏi đáp, tóm tắt)",
 };
 
 export interface MentionAutocompleteHandle {

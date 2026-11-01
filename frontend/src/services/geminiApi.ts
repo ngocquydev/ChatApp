@@ -21,7 +21,7 @@ export interface AskAuraResponse {
 }
 
 /**
- * Tóm tắt bình luận bài viết bằng Gemini Flash
+ * Tóm tắt bình luận bài viết bằng Llama 3.3 (Groq)
  */
 export async function summarizeComments(postId: string): Promise<CommentSummaryResponse> {
   const res = await api.post<CommentSummaryResponse>("/gemini/summarize-comments", { postId });
@@ -29,7 +29,7 @@ export async function summarizeComments(postId: string): Promise<CommentSummaryR
 }
 
 /**
- * Tóm tắt cuộc trò chuyện bằng Gemini Flash
+ * Tóm tắt cuộc trò chuyện bằng Llama 3.3 (Groq)
  */
 export async function summarizeChat(conversationId: string, limit = 30): Promise<ChatSummaryResponse> {
   const res = await api.post<ChatSummaryResponse>("/gemini/summarize-chat", {

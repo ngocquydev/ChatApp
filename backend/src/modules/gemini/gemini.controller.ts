@@ -56,7 +56,7 @@ export class GeminiController {
   }
 
   @Post('summarize-comments')
-  @ApiOperation({ summary: 'Tóm tắt bình luận bài viết bằng Gemini Flash' })
+  @ApiOperation({ summary: 'Tóm tắt bình luận bài viết bằng Llama 3.3 (Groq)' })
   async summarizeComments(
     @Req() req: AuthenticatedRequest,
     @Body() dto: SummarizeCommentsDto,
@@ -109,7 +109,7 @@ export class GeminiController {
   }
 
   @Post('summarize-chat')
-  @ApiOperation({ summary: 'Tóm tắt nội dung cuộc trò chuyện bằng Gemini Flash' })
+  @ApiOperation({ summary: 'Tóm tắt nội dung cuộc trò chuyện bằng Llama 3.3 (Groq)' })
   async summarizeChat(
     @Req() req: AuthenticatedRequest,
     @Body() dto: SummarizeChatDto,
@@ -172,7 +172,7 @@ export class GeminiController {
   }
 
   @Post('ask-aura')
-  @ApiOperation({ summary: 'Hỏi đáp trực tiếp với trợ lý Aura AI (Gemini Flash)' })
+  @ApiOperation({ summary: 'Hỏi đáp trực tiếp với trợ lý Aura AI (Llama 3.3 (Groq))' })
   async askAura(
     @Req() req: AuthenticatedRequest,
     @Body() dto: AskAuraDto,

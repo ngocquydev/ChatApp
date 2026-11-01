@@ -52,10 +52,10 @@ export const CHATAPP_KNOWLEDGE_BASE: AppFeatureDoc[] = [
   },
   {
     id: 'gemini_summary',
-    title: 'Tóm tắt bài viết & Cuộc trò chuyện bằng Gemini Flash',
+    title: 'Tóm tắt bài viết & Cuộc trò chuyện bằng Llama 3.3 (Groq)',
     keywords: ['tóm tắt', 'summarize', 'gemini', 'ai', 'tổng hợp', 'ngắn gọn'],
     description:
-      'Mô hình Google Gemini Flash tự động tóm lược 50 bình luận bài viết hoặc 50 tin nhắn gần nhất thành danh sách ngắn gọn và các đầu việc cần làm.',
+      'Mô hình Llama 3.3 (Groq) tự động tóm lược 50 bình luận bài viết hoặc 50 tin nhắn gần nhất thành danh sách ngắn gọn và các đầu việc cần làm.',
     usageTips: 'Nhấn nút "Tóm tắt bình luận" trên bài viết hoặc menu "Tóm tắt hội thoại" trong chat.',
   },
   {
