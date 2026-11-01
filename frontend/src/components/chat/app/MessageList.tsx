@@ -286,7 +286,12 @@ export default function MessageList({
                     flexDirection: isMe ? "row-reverse" : "row",
                   }}
                 >
-                  <Tooltip title={formatClockTime(msg.createdAt)} placement={isMe ? "left" : "right"} enterDelay={400}>
+                  <Tooltip
+                    title={formatClockTime(msg.createdAt)}
+                    placement="top"
+                    disableInteractive
+                    enterDelay={500}
+                  >
                     {(() => {
                       if (msg.isDeleted) {
                         return (
@@ -339,10 +344,13 @@ export default function MessageList({
                         return <LocationMessageItem message={msg} isMe={isMe} />;
                       }
 
-                      const isMedia = /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);
-                      const isVideo = isMedia && isVideoUrl(trimmed);
-                      const isAudio = isMedia && isAudioUrl(trimmed);
-                      const isFileDoc = isMedia && isFileDocUrl(trimmed);
+                      const isGiphy =
+                        /^https?:\/\/(media\d*\.giphy\.com|i\.giphy\.com)\//i.test(trimmed) ||
+                        /\.gif(\?.*)?$/i.test(trimmed);
+                      const isMedia = /^https:\/\/res\.cloudinary\.com\//i.test(trimmed) || isGiphy;
+                      const isVideo = isMedia && !isGiphy && isVideoUrl(trimmed);
+                      const isAudio = isMedia && !isGiphy && isAudioUrl(trimmed);
+                      const isFileDoc = isMedia && !isGiphy && isFileDocUrl(trimmed);
 
                       if (isMedia) {
                         if (isFileDoc) {
@@ -397,7 +405,7 @@ export default function MessageList({
                               <ButtonBase
                                 onClick={() => setLightboxUrl(trimmed)}
                                 aria-label={tr("Phóng to ảnh trong tin nhắn", "Zoom message image")}
-                                sx={{ display: "block", width: "100%" }}
+                                sx={{ display: "block", width: "100%", position: "relative" }}
                               >
                                 <Box
                                   component="img"
@@ -412,6 +420,26 @@ export default function MessageList({
                                     "&:hover": { opacity: 0.9 },
                                   }}
                                 />
+                                {isGiphy && (
+                                  <Box
+                                    sx={{
+                                      position: "absolute",
+                                      bottom: 8,
+                                      left: 8,
+                                      bgcolor: "rgba(0, 0, 0, 0.65)",
+                                      color: "common.white",
+                                      px: 0.7,
+                                      py: 0.2,
+                                      borderRadius: "4px",
+                                      fontSize: "0.65rem",
+                                      fontWeight: 800,
+                                      letterSpacing: 0.5,
+                                      pointerEvents: "none",
+                                    }}
+                                  >
+                                    GIF
+                                  </Box>
+                                )}
                               </ButtonBase>
                             )}
                           </Box>
@@ -448,6 +476,7 @@ export default function MessageList({
                       sx={{
                         opacity: { xs: 0.7, sm: 0 },
                         transition: "opacity 0.15s ease",
+                        flexShrink: 0,
                       }}
                     >
                       <InlineReactionButton
@@ -461,7 +490,7 @@ export default function MessageList({
 
                   {/* Nút thu hồi tin nhắn cho tin nhắn của chính mình */}
                   {isMe && !msg.isDeleted && Boolean(onDeleteMessage) && (
-                    <Tooltip title={tr("Thu hồi tin nhắn", "Unsend message")}>
+                    <Tooltip title={tr("Thu hồi tin nhắn", "Unsend message")} disableInteractive>
                       <IconButton
                         size="small"
                         className="msg-action-btn"
@@ -470,6 +499,7 @@ export default function MessageList({
                         sx={{
                           opacity: { xs: 0.7, sm: 0 },
                           transition: "opacity 0.15s ease",
+                          flexShrink: 0,
                           color: themeConfig.metaTextColor,
                           p: 0.5,
                           "&:hover": { color: "error.main", bgcolor: "action.hover" },

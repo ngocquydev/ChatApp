@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Box, CircularProgress, IconButton, TextField, Tooltip } from "@mui/material";
+import { useEffect, useRef, useState, MouseEvent } from "react";
+import { Box, CircularProgress, IconButton, Popover, TextField, Tooltip } from "@mui/material";
 import { Image as ImageIcon, SendHorizontal, X } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { COMMENT_MAX_LENGTH, MAX_IMAGE_BYTES } from "@/services/postsApi";
+import AppGiphyPicker from "@/components/common/AppGiphyPicker";
 
 interface CommentComposerProps {
   sending: boolean;
-  onSubmit: (content: string, file: File | null, isVideo: boolean) => Promise<void>;
+  onSubmit: (content: string, file: File | null, isVideo: boolean, gifUrl?: string) => Promise<void>;
   onError: (msg: string) => void;
 }
 
@@ -17,8 +18,10 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
   const [text, setText] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [attachedGifUrl, setAttachedGifUrl] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAttachedVideo, setIsAttachedVideo] = useState(false);
+  const [gifAnchorEl, setGifAnchorEl] = useState<HTMLElement | null>(null);
 
   const trimmed = text.trim();
 
@@ -36,6 +39,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
       return;
     }
     if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setAttachedGifUrl(null);
     const isVideo = file.type.startsWith("video/");
     setIsAttachedVideo(isVideo);
     setAttachedFile(file);
@@ -47,28 +51,54 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setAttachedFile(null);
     setPreviewUrl(null);
+    setAttachedGifUrl(null);
     setIsAttachedVideo(false);
   };
 
   const handleSend = async () => {
-    if ((!trimmed && !attachedFile) || sending) return;
+    if ((!trimmed && !attachedFile && !attachedGifUrl) || sending) return;
     const fileToSend = attachedFile;
     const isVid = isAttachedVideo;
     const textToSend = trimmed;
+    const gifToSend = attachedGifUrl || undefined;
     setText("");
     handleRemoveAttachment();
-    await onSubmit(textToSend, fileToSend, isVid);
+    await onSubmit(textToSend, fileToSend, isVid, gifToSend);
+  };
+
+  const handlePickGif = (url: string) => {
+    setGifAnchorEl(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setAttachedFile(null);
+    setPreviewUrl(null);
+    setIsAttachedVideo(false);
+    setAttachedGifUrl(url);
   };
 
   return (
     <Box sx={{ mt: 1.5 }}>
-      {/* Xem trước ảnh / video đã đính kèm */}
-      {previewUrl && (
+      {/* Xem trước ảnh / video / GIF đã đính kèm */}
+      {(previewUrl || attachedGifUrl) && (
         <Box sx={{ mb: 1, position: "relative", display: "inline-block" }}>
-          {isAttachedVideo ? (
+          {attachedGifUrl ? (
+            <Box
+              component="img"
+              src={attachedGifUrl}
+              alt="GIF"
+              sx={{
+                width: 100,
+                height: 100,
+                borderRadius: "12px",
+                objectFit: "cover",
+                display: "block",
+                border: "1px solid",
+                borderColor: "divider",
+              }}
+            />
+          ) : isAttachedVideo ? (
             <Box
               component="video"
-              src={previewUrl}
+              src={previewUrl!}
               sx={{
                 width: 90,
                 height: 90,
@@ -83,7 +113,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
           ) : (
             <Box
               component="img"
-              src={previewUrl}
+              src={previewUrl!}
               alt={tr("Ảnh đính kèm bình luận", "Attached comment image")}
               sx={{
                 width: 90,
@@ -117,7 +147,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
         </Box>
       )}
 
-      {/* Hàng ô nhập kèm nút ảnh/video và gửi */}
+      {/* Hàng ô nhập kèm nút ảnh/video, nút GIF và gửi */}
       <Box sx={{ display: "flex", gap: 0.75, alignItems: "flex-end" }}>
         <input
           ref={fileInputRef}
@@ -144,6 +174,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
           slotProps={{ htmlInput: { maxLength: COMMENT_MAX_LENGTH, "aria-label": tr("Viết bình luận", "Write a comment") } }}
         />
 
+        {/* Nút đính kèm ảnh / video */}
         <Tooltip title={tr("Đính kèm ảnh hoặc video", "Attach photo or video")}>
           <span>
             <IconButton
@@ -158,12 +189,57 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
           </span>
         </Tooltip>
 
+        {/* Nút chọn ảnh GIF từ GIPHY */}
+        <Tooltip title={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}>
+          <span>
+            <IconButton
+              color="primary"
+              aria-label={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}
+              disabled={sending}
+              onClick={(e: MouseEvent<HTMLButtonElement>) => setGifAnchorEl(e.currentTarget)}
+              sx={{
+                p: 0.5,
+                fontWeight: 900,
+                fontSize: "0.72rem",
+                borderRadius: "6px",
+                border: "1.5px solid",
+                borderColor: "primary.main",
+                width: 32,
+                height: 32,
+                lineHeight: 1,
+              }}
+            >
+              GIF
+            </IconButton>
+          </span>
+        </Tooltip>
+
+        <Popover
+          open={Boolean(gifAnchorEl)}
+          anchorEl={gifAnchorEl}
+          onClose={() => setGifAnchorEl(null)}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+          transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+          slotProps={{
+            paper: {
+              sx: {
+                borderRadius: "16px",
+                boxShadow: "0 8px 30px rgba(0, 0, 0, 0.2)",
+                overflow: "hidden",
+              },
+            },
+          }}
+        >
+          <AppGiphyPicker onSelect={handlePickGif} onClose={() => setGifAnchorEl(null)} />
+        </Popover>
+
+        {/* Nút gửi */}
         <Tooltip title={tr("Gửi bình luận", "Send comment")}>
           <span>
             <IconButton
               color="primary"
               aria-label={tr("Gửi bình luận", "Send comment")}
-              disabled={(!trimmed && !attachedFile) || sending}
+              disabled={(!trimmed && !attachedFile && !attachedGifUrl) || sending}
               onClick={() => void handleSend()}
               sx={{ p: 1 }}
             >

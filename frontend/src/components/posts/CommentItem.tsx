@@ -31,6 +31,7 @@ export default function CommentItem({
   const hasMedia = Boolean(comment.mediaUrl);
   const isVideo = hasMedia && (comment.mediaType === "video" || isVideoUrl(comment.mediaUrl));
   const fullMediaUrl = comment.mediaUrl ? mediaUrl(comment.mediaUrl) : "";
+  const isGif = Boolean(fullMediaUrl) && (/\.gif(\?.*)?$/i.test(fullMediaUrl) || /giphy\.com/i.test(fullMediaUrl));
 
   return (
     <Box component="li" sx={{ display: "flex", gap: 1, alignItems: "flex-start", listStyle: "none" }}>
@@ -64,7 +65,7 @@ export default function CommentItem({
                 <ButtonBase
                   onClick={() => setLightbox(fullMediaUrl)}
                   aria-label={tr("Phóng to ảnh bình luận", "Zoom comment image")}
-                  sx={{ display: "block", borderRadius: "10px", overflow: "hidden" }}
+                  sx={{ display: "block", borderRadius: "10px", overflow: "hidden", position: "relative" }}
                 >
                   <Box
                     component="img"
@@ -80,6 +81,27 @@ export default function CommentItem({
                       "&:hover": { opacity: 0.92 },
                     }}
                   />
+                  {isGif && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        bottom: 6,
+                        left: 6,
+                        bgcolor: "rgba(0, 0, 0, 0.65)",
+                        color: "common.white",
+                        px: 0.6,
+                        py: 0.15,
+                        borderRadius: "4px",
+                        fontSize: "0.65rem",
+                        fontWeight: 800,
+                        letterSpacing: 0.5,
+                        pointerEvents: "none",
+                        zIndex: 2,
+                      }}
+                    >
+                      GIF
+                    </Box>
+                  )}
                 </ButtonBase>
               )}
             </Box>

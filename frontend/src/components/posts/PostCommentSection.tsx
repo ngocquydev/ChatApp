@@ -46,12 +46,19 @@ export default function PostCommentSection({
   const [toDelete, setToDelete] = useState<CommentView | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const handleSubmit = async (content: string, file: File | null, isVideo: boolean) => {
+  const handleSubmit = async (
+    content: string,
+    file: File | null,
+    isVideo: boolean,
+    gifUrl?: string,
+  ) => {
     setSending(true);
     setActionError(null);
     try {
       let media: { url: string; type?: "image" | "video" } | undefined;
-      if (file) {
+      if (gifUrl) {
+        media = { url: gifUrl, type: "image" };
+      } else if (file) {
         const uploaded = await uploadMedia(file);
         media = {
           url: uploaded.url,

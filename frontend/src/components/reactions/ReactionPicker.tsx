@@ -22,8 +22,8 @@ export default function ReactionPicker({
   const isEn = language === "en";
   const [hoveredType, setHoveredType] = useState<ReactionType | null>(null);
 
-  const btnSize = size === "small" ? 34 : 42;
-  const fontSize = size === "small" ? "1.3rem" : "1.65rem";
+  const btnSize = size === "small" ? 30 : 42;
+  const fontSize = size === "small" ? "1.25rem" : "1.65rem";
 
   const activeHoveredDef = hoveredType ? REACTION_MAP[hoveredType] : null;
 
@@ -36,9 +36,9 @@ export default function ReactionPicker({
         position: "relative",
         display: "inline-flex",
         alignItems: "center",
-        gap: { xs: 0.5, sm: 0.75 },
-        px: 1,
-        py: 0.5,
+        gap: size === "small" ? 0.35 : { xs: 0.5, sm: 0.75 },
+        px: size === "small" ? 0.6 : 1,
+        py: size === "small" ? 0.35 : 0.5,
         bgcolor: "background.paper",
         borderRadius: "999px",
         boxShadow: "0 3px 12px rgba(0, 0, 0, 0.14), 0 1px 3px rgba(0, 0, 0, 0.08)",

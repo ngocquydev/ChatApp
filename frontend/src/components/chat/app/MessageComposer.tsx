@@ -20,6 +20,7 @@ import { uploadMedia, MAX_FILE_BYTES } from "@/services/postsApi";
 import { LocationData } from "@/store/useChatStore";
 import LocationPickerModal from "../LocationPickerModal";
 import AppEmojiPicker from "@/components/common/AppEmojiPicker";
+import AppGiphyPicker from "@/components/common/AppGiphyPicker";
 
 const TYPING_THROTTLE_MS = 2500;
 const TYPING_IDLE_MS = 5000;
@@ -69,6 +70,7 @@ export default function MessageComposer({
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [openLocationPicker, setOpenLocationPicker] = useState(false);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [gifAnchorEl, setGifAnchorEl] = useState<HTMLButtonElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const docInputRef = useRef<HTMLInputElement | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -305,6 +307,29 @@ export default function MessageComposer({
             }}
           />
 
+          <Tooltip title={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}>
+            <IconButton
+              size="small"
+              aria-label={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}
+              onClick={(e: MouseEvent<HTMLButtonElement>) => setGifAnchorEl(e.currentTarget)}
+              sx={{
+                color: "primary.main",
+                mb: 0.25,
+                mr: 0.25,
+                fontWeight: 900,
+                fontSize: "0.68rem",
+                lineHeight: 1,
+                width: 26,
+                height: 26,
+                borderRadius: "6px",
+                border: "1.5px solid",
+                borderColor: "primary.main",
+              }}
+            >
+              GIF
+            </IconButton>
+          </Tooltip>
+
           <Tooltip title={tr("Chọn biểu tượng cảm xúc", "Choose emoji")}>
             <IconButton
               size="small"
@@ -376,6 +401,34 @@ export default function MessageComposer({
           }}
           width={320}
           height={380}
+        />
+      </Popover>
+
+      <Popover
+        open={Boolean(gifAnchorEl)}
+        anchorEl={gifAnchorEl}
+        onClose={() => setGifAnchorEl(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: "16px",
+              overflow: "hidden",
+              boxShadow: 4,
+              mb: 1,
+            },
+          },
+        }}
+      >
+        <AppGiphyPicker
+          onSelect={(gifUrl) => {
+            setGifAnchorEl(null);
+            void onSend(gifUrl);
+          }}
+          onClose={() => setGifAnchorEl(null)}
+          width={340}
+          height={400}
         />
       </Popover>
 

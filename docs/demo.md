@@ -16,6 +16,7 @@
 8. [Trang Quản Trị Hệ Thống Toàn Diện & Cổng React SPA Độc Lập](#8-trang-quản-trị-hệ-thống-toàn-diện--bố-cục-sidebar-2-cột-admin-control-panel)
 9. [Hệ Thống Sao Lưu & Phục Hồi Dữ Liệu Tự Động (Database Backup & Disaster Recovery)](#9-hệ-thống-sao-lưu--phục-hồi-dữ-liệu-tự-động-database-backup--disaster-recovery)
 10. [Hệ Thống Thả Cảm Xúc Chuẩn Facebook & Bảng Chọn Emoji](#10-hệ-thống-thả-cảm-xúc-chuẩn-facebook--bảng-chọn-emoji)
+11. [Tích Hợp GIPHY GIF Động & Bố Cục Thác Nước Masonry](#11-tích-hợp-giphy-gif-động--bố-cục-thác-nước-masonry)
 
 ---
 
@@ -184,8 +185,21 @@ Mang lại trải nghiệm biểu cảm phong phú, tương tác đa chiều chu
 
 ---
 
+## 11. Tích Hợp GIPHY GIF Động & Bố Cục Thác Nước Masonry
+
+Mang lại trải nghiệm giao tiếp sinh động, hài hước và giàu cảm xúc với kho ảnh động GIF khổng lồ từ GIPHY tích hợp trực tiếp vào **Bình luận bài viết (Comments)** và **Hộp chat trực tuyến (Chat Messages & Floating Chat)**:
+
+### Điểm nổi bật:
+- **Hộp chọn GIF thông minh (`AppGiphyPicker`):** Tìm kiếm tức thì với debounce 350ms, tự động nạp ảnh thịnh hành và hỗ trợ hàng loạt danh mục cảm xúc hot (Xu hướng, Haha, Yêu thích, Dễ thương, Biểu cảm, Nhảy múa, Mèo...).
+- **Bố cục thác nước đa cột (`react-masonry-css`):** Hiển thị danh sách ảnh GIF 2 cột mượt mà, tự động co giãn theo tỷ lệ khung hình thực tế và hỗ trợ cuộn tải vô hạn (Infinite Scroll).
+- **Bình luận bài viết sinh động:** Đính kèm ảnh GIF ngay trong khung soạn thảo (`CommentComposer`) với xem trước và hủy đính kèm trực quan. Hiển thị ảnh GIF động trong bình luận kèm huy hiệu `GIF` và hỗ trợ phóng to toàn màn hình.
+- **Gửi tin nhắn GIF 1 chạm:** Chọn ảnh GIF gửi tức thì trong cả trang chat chính và Floating Chat Box, tự động nhận diện URL GIPHY và kết hợp mượt mà cùng hệ thống 7 cảm xúc Facebook.
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
 > - [Hệ Thống Thả Cảm Xúc Facebook & Bảng Chọn Emoji (Reactions)](features/facebook-reactions.md)
+> - [Tích Hợp GIPHY GIF & Bố Cục Masonry Trong Bình Luận & Tin Nhắn](features/giphy-gif-integration.md)
 > - [Sao Lưu & Phục Hồi Dữ Liệu Tự Động (Database Backup)](features/database-backup.md)
 > - [Cổng Quản trị Độc lập React SPA (Admin Portal)](features/admin-portal.md)
 > - [Trang Quản trị Hệ thống Toàn diện (Admin Control Panel)](features/admin-panel.md)

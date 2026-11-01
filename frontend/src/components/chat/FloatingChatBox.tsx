@@ -67,6 +67,7 @@ import ReadReceiptsDialog from "./ReadReceiptsDialog";
 import CallMessageItem from "./call/CallMessageItem";
 import LocationMessageItem from "./LocationMessageItem";
 import LocationPickerModal from "./LocationPickerModal";
+import AppGiphyPicker from "@/components/common/AppGiphyPicker";
 
 const POPULAR_EMOJIS = [
   "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
@@ -112,8 +113,9 @@ export default function FloatingChatBox({
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const [partnerSeenAt, setPartnerSeenAt] = useState<string | null>(null);
 
-  // Emoji popover state
+  // Emoji & GIF popover state
   const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [gifAnchorEl, setGifAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   // Theme, Block, Restrict, Delete states
   const [convTheme, setConvTheme] = useState<string>("default");
@@ -1187,10 +1189,15 @@ export default function FloatingChatBox({
                 const isLastMsg = index === messages.length - 1;
                 const isSeen = Boolean(msg.readAt || partnerSeenAt);
                 const trimmed = msg.text?.trim() || "";
-                const isMedia = !msg.isDeleted && /^https:\/\/res\.cloudinary\.com\//i.test(trimmed);
-                const isVideo = isMedia && isVideoUrl(trimmed);
-                const isAudio = isMedia && isAudioUrl(trimmed);
-                const isFileDoc = isMedia && isFileDocUrl(trimmed);
+                const isGiphy =
+                  !msg.isDeleted &&
+                  (/^https?:\/\/(media\d*\.giphy\.com|i\.giphy\.com)\//i.test(trimmed) ||
+                    /\.gif(\?.*)?$/i.test(trimmed));
+                const isMedia =
+                  (!msg.isDeleted && /^https:\/\/res\.cloudinary\.com\//i.test(trimmed)) || isGiphy;
+                const isVideo = isMedia && !isGiphy && isVideoUrl(trimmed);
+                const isAudio = isMedia && !isGiphy && isAudioUrl(trimmed);
+                const isFileDoc = isMedia && !isGiphy && isFileDocUrl(trimmed);
                 const bubbleRadius = getBubbleRadius(isMe, isFirstInGroup, isLastInGroup);
 
                 return (
@@ -1259,7 +1266,12 @@ export default function FloatingChatBox({
                             <Box sx={{ width: 26, flexShrink: 0 }} />
                           ))}
 
-                        <Tooltip title={formatTime(msg.createdAt)} placement={isMe ? "left" : "right"} enterDelay={400}>
+                        <Tooltip
+                          title={formatTime(msg.createdAt)}
+                          placement="top"
+                          disableInteractive
+                          enterDelay={500}
+                        >
                           {msg.isDeleted ? (
                             <Box
                               sx={{
@@ -1332,7 +1344,7 @@ export default function FloatingChatBox({
                                 <ButtonBase
                                   onClick={() => setLightboxUrl(trimmed)}
                                   aria-label={tr("Phóng to ảnh trong tin nhắn", "Zoom message image")}
-                                  sx={{ display: "block", width: "100%" }}
+                                  sx={{ display: "block", width: "100%", position: "relative" }}
                                 >
                                   <Box
                                     component="img"
@@ -1341,6 +1353,26 @@ export default function FloatingChatBox({
                                     loading="lazy"
                                     sx={{ maxWidth: "100%", maxHeight: 200, display: "block" }}
                                   />
+                                  {isGiphy && (
+                                    <Box
+                                      sx={{
+                                        position: "absolute",
+                                        bottom: 6,
+                                        left: 6,
+                                        bgcolor: "rgba(0, 0, 0, 0.65)",
+                                        color: "common.white",
+                                        px: 0.6,
+                                        py: 0.15,
+                                        borderRadius: "4px",
+                                        fontSize: "0.62rem",
+                                        fontWeight: 800,
+                                        letterSpacing: 0.5,
+                                        pointerEvents: "none",
+                                      }}
+                                    >
+                                      GIF
+                                    </Box>
+                                  )}
                                 </ButtonBase>
                               )}
                             </Box>
@@ -1370,6 +1402,7 @@ export default function FloatingChatBox({
                             sx={{
                               opacity: { xs: 0.7, sm: 0 },
                               transition: "opacity 0.15s ease",
+                              flexShrink: 0,
                             }}
                           >
                             <InlineReactionButton
@@ -1384,7 +1417,7 @@ export default function FloatingChatBox({
                         )}
 
                         {isMe && !msg.isDeleted && (
-                          <Tooltip title={tr("Thu hồi tin nhắn", "Unsend message")}>
+                          <Tooltip title={tr("Thu hồi tin nhắn", "Unsend message")} disableInteractive>
                             <IconButton
                               className="msg-delete-btn"
                               size="small"
@@ -1393,6 +1426,7 @@ export default function FloatingChatBox({
                                 opacity: 0,
                                 transition: "opacity 0.15s ease",
                                 p: 0.4,
+                                flexShrink: 0,
                                 color: chatTheme.metaTextColor,
                                 "&:hover": {
                                   color: "error.main",
@@ -1609,6 +1643,28 @@ export default function FloatingChatBox({
                   input: {
                     endAdornment: (
                       <InputAdornment position="end">
+                        <Tooltip title={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}>
+                          <IconButton
+                            size="small"
+                            aria-label={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}
+                            onClick={(e: MouseEvent<HTMLButtonElement>) => setGifAnchorEl(e.currentTarget)}
+                            sx={{
+                              color: "primary.main",
+                              p: 0.2,
+                              mr: 0.25,
+                              fontWeight: 900,
+                              fontSize: "0.62rem",
+                              lineHeight: 1,
+                              width: 22,
+                              height: 22,
+                              borderRadius: "4px",
+                              border: "1.5px solid",
+                              borderColor: "primary.main",
+                            }}
+                          >
+                            GIF
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title={tr("Chọn biểu tượng cảm xúc", "Choose emoji")}>
                           <IconButton
                             size="small"
@@ -1700,6 +1756,36 @@ export default function FloatingChatBox({
               onEmojiSelect={handleSelectEmoji}
               width={300}
               height={360}
+            />
+          </Popover>
+
+          {/* POPOVER GIPHY */}
+          <Popover
+            open={Boolean(gifAnchorEl)}
+            anchorEl={gifAnchorEl}
+            onClose={() => setGifAnchorEl(null)}
+            disableScrollLock
+            anchorOrigin={{ vertical: "top", horizontal: "right" }}
+            transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+            slotProps={{
+              paper: {
+                sx: {
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  boxShadow: 4,
+                  mb: 1,
+                },
+              },
+            }}
+          >
+            <AppGiphyPicker
+              onSelect={(gifUrl) => {
+                setGifAnchorEl(null);
+                void handleSendMessage(gifUrl);
+              }}
+              onClose={() => setGifAnchorEl(null)}
+              width={310}
+              height={380}
             />
           </Popover>
         </>

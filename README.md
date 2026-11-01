@@ -148,7 +148,8 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
   - **Bình luận (Comments):** Nút cảm xúc inline cho từng bình luận, hỗ trợ chuyển đổi cảm xúc linh hoạt.
   - **Tin nhắn trò chuyện (Chat Messages & Floating Chat):** Thả cảm xúc trực tiếp vào tin nhắn với huy hiệu phong cách Messenger, đồng bộ tức thời qua Socket.IO mà không cần tải lại trang.
 - **Tích hợp bảng chọn biểu tượng cảm xúc (`emoji-picker-react`):** Bộ chọn emoji chuyên nghiệp với khả năng tìm kiếm từ khóa, phân nhóm danh mục và tự động chuyển đổi theme Sáng/Tối.
-- 📖 *Xem đặc tả chi tiết tại: [docs/features/facebook-reactions.md](docs/features/facebook-reactions.md)*
+- **Tích hợp kho ảnh động GIPHY & Bố cục Masonry (`@giphy/js-fetch-api` + `react-masonry-css`):** Tìm kiếm và gửi ảnh GIF động thịnh hành tức thì trên cả Bình luận bài viết và Hộp chat trò chuyện thời gian thực, giao diện thác nước 2 cột mượt mà, tự động cuộn vô hạn và tối ưu kích thước.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/facebook-reactions.md](docs/features/facebook-reactions.md) & [docs/features/giphy-gif-integration.md](docs/features/giphy-gif-integration.md)*
 
 ---
 
@@ -156,7 +157,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 
 | Tầng | Công nghệ / Thư viện chính |
 | :--- | :--- |
-| **Frontend** | **Next.js 16 (App Router + Turbopack)**, **React 19**, TypeScript, **Material UI (MUI v9)**, Emotion, Zustand, Socket.IO Client, MQTT.js, Protobuf.js, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase SDK, Lucide Icons, i18n Store (Cổng 5173 - Dành riêng cho người dùng) |
+| **Frontend** | **Next.js 16 (App Router + Turbopack)**, **React 19**, TypeScript, **Material UI (MUI v9)**, Emotion, Zustand, Socket.IO Client, MQTT.js, Protobuf.js, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase SDK, Lucide Icons, GIPHY Fetch API, React Masonry CSS, i18n Store (Cổng 5173 - Dành riêng cho người dùng) |
 | **Admin Portal** | **React 19**, **Vite 6**, React Router DOM v7, Material UI (MUI v9), Zustand, Lucide Icons, i18n Store (Cổng 5174 - Phân hệ bảo mật & quản trị độc lập) |
 | **Backend** | **NestJS**, TypeScript, WebSockets (`@nestjs/websockets`, `@nestjs/platform-socket.io`), Aedes MQTT Broker, Passport JWT, Mongoose, Redis (IoRedis), Neo4j Driver, Firebase Admin SDK, Cloudflare Turnstile, AI Moderation & Trust Engine |
 | **Cơ sở dữ liệu Đồ thị** | **Neo4j 5.x** (Mô hình hóa thực thể User, quan hệ FRIEND, truy vấn Cypher Friends of Friends & Degree Centrality tối ưu cho mạng xã hội) |
