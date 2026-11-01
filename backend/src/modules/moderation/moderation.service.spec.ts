@@ -104,6 +104,21 @@ describe("Moderation & Trust Module (Hỗ trợ song ngữ VI / EN)", () => {
       expect(res.reason).toContain("Nội dung");
     });
 
+    it("phải phát hiện và chặn đứng chửi thề trực tiếp 'địt mẹ mày' và không dấu 'dit me may'", () => {
+      const resAccented = nlp.moderate("địt mẹ mày", "vi");
+      expect(resAccented.flags).toContain("PROFANITY");
+      expect(resAccented.flags).toContain("TOXIC_LANGUAGE");
+      expect(resAccented.action).toBe("BLOCK");
+      expect(resAccented.toxicityScore).toBeGreaterThanOrEqual(0.8);
+      expect(resAccented.categories.profanity).toBeGreaterThanOrEqual(0.8);
+      expect(resAccented.flaggedKeywords.length).toBeGreaterThan(0);
+
+      const resUnaccented = nlp.moderate("dit me may", "vi");
+      expect(resUnaccented.flags).toContain("PROFANITY");
+      expect(resUnaccented.action).toBe("BLOCK");
+      expect(resUnaccented.toxicityScore).toBeGreaterThanOrEqual(0.8);
+    });
+
     it("phải chặn đứng phát ngôn thù ghét tiếng Việt (HATE_SPEECH - BLOCK)", () => {
       const text = "bọn mọi rợ tiêu diệt giống loài này đi";
       const res = nlp.moderate(text, "vi");

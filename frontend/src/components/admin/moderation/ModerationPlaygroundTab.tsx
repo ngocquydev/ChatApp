@@ -157,45 +157,89 @@ export default function ModerationPlaygroundTab() {
             {isEn ? "Analyze Text" : "Phân tích văn bản"}
           </Button>
 
-          {textResult && (
-            <Box sx={{ mt: 1, p: 2, borderRadius: "12px", bgcolor: "action.hover", display: "flex", flexDirection: "column", gap: 1.5 }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                  {isEn ? "Recommended Action" : "Hành động đề xuất"}:
-                </Typography>
-                <Chip
-                  label={textResult.action.toUpperCase()}
-                  size="small"
-                  color={textResult.action === "block" ? "error" : textResult.action === "flag" ? "warning" : "success"}
-                  sx={{ fontWeight: 700 }}
-                />
-              </Box>
+          {textResult && (() => {
+            const rawAction = (textResult.action || "").toUpperCase();
+            const actionColor: "error" | "warning" | "success" =
+              rawAction === "BLOCK"
+                ? "error"
+                : rawAction === "FLAG_REVIEW" || rawAction === "FLAG" || rawAction === "WARN"
+                ? "warning"
+                : "success";
 
-              <Box>
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {isEn ? "Toxicity Score" : "Độ độc hại"}:
+            const isHate =
+              typeof textResult.categories.hateSpeech === "boolean"
+                ? textResult.categories.hateSpeech
+                : (textResult.categories.hateSpeech || 0) >= 0.3;
+            const isHarassment =
+              typeof textResult.categories.harassment === "boolean"
+                ? textResult.categories.harassment
+                : (textResult.categories.harassment || 0) >= 0.3;
+            const isSpam =
+              typeof textResult.categories.spam === "boolean"
+                ? textResult.categories.spam
+                : (textResult.categories.spam || 0) >= 0.3;
+            const isProfanity =
+              typeof textResult.categories.profanity === "boolean"
+                ? textResult.categories.profanity
+                : (textResult.categories.profanity || 0) >= 0.3;
+
+            return (
+              <Box sx={{ mt: 1, p: 2, borderRadius: "12px", bgcolor: "action.hover", display: "flex", flexDirection: "column", gap: 1.5 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    {isEn ? "Recommended Action" : "Hành động đề xuất"}:
                   </Typography>
-                  <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                    {Math.round(textResult.toxicityScore * 100)}%
-                  </Typography>
+                  <Chip
+                    label={rawAction}
+                    size="small"
+                    color={actionColor}
+                    sx={{ fontWeight: 700 }}
+                  />
                 </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={Math.round(textResult.toxicityScore * 100)}
-                  color={textResult.toxicityScore > 0.6 ? "error" : textResult.toxicityScore > 0.3 ? "warning" : "success"}
-                  sx={{ height: 8, borderRadius: "4px" }}
-                />
-              </Box>
 
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8 }}>
-                <Chip label={`Hate speech: ${textResult.categories.hateSpeech ? "YES" : "NO"}`} size="small" color={textResult.categories.hateSpeech ? "error" : "default"} />
-                <Chip label={`Harassment: ${textResult.categories.harassment ? "YES" : "NO"}`} size="small" color={textResult.categories.harassment ? "error" : "default"} />
-                <Chip label={`Spam: ${textResult.categories.spam ? "YES" : "NO"}`} size="small" color={textResult.categories.spam ? "error" : "default"} />
-                <Chip label={`Profanity: ${textResult.categories.profanity ? "YES" : "NO"}`} size="small" color={textResult.categories.profanity ? "error" : "default"} />
+                <Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {isEn ? "Toxicity Score" : "Độ độc hại"}:
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                      {Math.round(textResult.toxicityScore * 100)}%
+                    </Typography>
+                  </Box>
+                  <LinearProgress
+                    variant="determinate"
+                    value={Math.round(textResult.toxicityScore * 100)}
+                    color={textResult.toxicityScore > 0.6 ? "error" : textResult.toxicityScore > 0.3 ? "warning" : "success"}
+                    sx={{ height: 8, borderRadius: "4px" }}
+                  />
+                </Box>
+
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.8 }}>
+                  <Chip label={`Hate speech: ${isHate ? "YES" : "NO"}`} size="small" color={isHate ? "error" : "default"} />
+                  <Chip label={`Harassment: ${isHarassment ? "YES" : "NO"}`} size="small" color={isHarassment ? "error" : "default"} />
+                  <Chip label={`Spam: ${isSpam ? "YES" : "NO"}`} size="small" color={isSpam ? "error" : "default"} />
+                  <Chip label={`Profanity: ${isProfanity ? "YES" : "NO"}`} size="small" color={isProfanity ? "error" : "default"} />
+                </Box>
+
+                {textResult.reason && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+                    <strong>{isEn ? "Reason" : "Lý do"}:</strong> {textResult.reason}
+                  </Typography>
+                )}
+
+                {textResult.flaggedKeywords && textResult.flaggedKeywords.length > 0 && (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap", mt: 0.5 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      {isEn ? "Flagged terms" : "Từ khóa vi phạm"}:
+                    </Typography>
+                    {textResult.flaggedKeywords.map((kw, idx) => (
+                      <Chip key={idx} label={kw} size="small" variant="outlined" color="error" sx={{ height: 22, fontSize: "0.75rem" }} />
+                    ))}
+                  </Box>
+                )}
               </Box>
-            </Box>
-          )}
+            );
+          })()}
         </CardContent>
       </Card>
 

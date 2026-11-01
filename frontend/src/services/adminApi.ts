@@ -116,17 +116,21 @@ export interface SystemHealthData {
 }
 
 export interface ModerationTextResult {
-  isClean: boolean;
-  action: 'pass' | 'flag' | 'block';
+  isClean?: boolean;
+  action: 'ALLOW' | 'WARN' | 'FLAG_REVIEW' | 'BLOCK' | 'pass' | 'flag' | 'block' | string;
   toxicityScore: number;
   categories: {
-    hateSpeech: boolean;
-    harassment: boolean;
-    spam: boolean;
-    profanity: boolean;
+    toxic?: number;
+    hateSpeech: number | boolean;
+    harassment: number | boolean;
+    spam: number | boolean;
+    profanity: number | boolean;
+    violence?: number;
   };
+  flags?: string[];
+  reason?: string;
   language: string;
-  flaggedKeywords: string[];
+  flaggedKeywords?: string[];
 }
 
 export interface ModerationBehaviorResult {
