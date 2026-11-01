@@ -215,7 +215,7 @@ export default function PostFeed({
             post={post}
             priority={index === 0}
             currentUserId={currentUserId}
-            onToggleLike={(p) => void handleToggleLike(p)}
+            onToggleLike={(p, type) => void handleToggleLike(p, type)}
             onRequestEdit={setToEdit}
             onRequestDelete={setToDelete}
             onRequestShare={setToShare}
