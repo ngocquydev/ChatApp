@@ -48,6 +48,8 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+backups/
+*.archive.gz
 
 # Runtime data
 pids

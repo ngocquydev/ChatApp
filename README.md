@@ -127,6 +127,15 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Giám sát Sức khỏe Hạ tầng (System Health):** Theo dõi Uptime, phiên bản Node runtime, biểu đồ tiến trình RAM V8 Heap (Used/Total/RSS), trạng thái kết nối MongoDB, Redis Cache (độ trễ ms), Neo4j Graph DB và Cloudflare Zero Trust Tunnel.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/admin-panel.md](docs/features/admin-panel.md)*
 
+### 8. Hệ Thống Sao Lưu & Phục Hồi Dữ Liệu Tự Động (Database Backup & Disaster Recovery)
+- **Tự động 17:00 chiều hàng ngày:** Hẹn giờ thông minh tính toán chính xác mốc 17:00:00 (giờ Việt Nam, UTC+7) mỗi ngày, tự động nén CSDL bằng gzip và lên lịch kế tiếp không làm nghẽn tiến trình runtime.
+- **Thao tác 1-chạm từ Admin Portal (`/system`):** Thẻ quản trị `DatabaseBackupCard` tích hợp trực quan cho phép Quản trị viên tạo bản sao lưu ngay lập tức, theo dõi trạng thái tiến trình và xem lịch sử chi tiết.
+- **Hiệu năng cao với Docker mongodump nhị phân:** Sao lưu toàn bộ dữ liệu CSDL MongoDB (> 1.000.000 bản ghi) chỉ mất ~5 giây, dung lượng nén giảm ~85% (32MB), có cơ chế Native Mongoose Fallback dự phòng khi không dùng Docker CLI.
+- **Tải file, Phục hồi & Xóa an toàn:** Tải trực tiếp bản sao lưu `.archive.gz`, khôi phục CSDL thông qua hộp thoại xác nhận `ConfirmDialog` chống ghi đè nhầm lẫn.
+- **Chính sách lưu trữ thông minh (Retention Policy):** Giữ tối đa 10 bản sao lưu gần nhất trong vòng 7 ngày, tự động loại bỏ các file cũ nhằm bảo vệ dung lượng đĩa cứng.
+- **Kịch bản dòng lệnh CLI độc lập:** Cung cấp sẵn `scripts/backup-database.ps1` (PowerShell) và `scripts/backup-database.sh` (Bash) cho sysadmin/cronjob.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/database-backup.md](docs/features/database-backup.md)*
+
 ---
 
 ## 🏗️ Kiến trúc hệ thống & Công nghệ
@@ -281,6 +290,7 @@ Toàn bộ tài liệu chi tiết, sơ đồ thiết kế kiến trúc và hư�
 | 🛡️ **Trung tâm Bảo mật WAF** | Bảng điều khiển `/admin/security`, WAF-as-Code CLI (`npm run cf:waf`), Turnstile Clearance, Auto-Ban tầng biên | [Xem tài liệu](docs/features/waf.md) |
 | 👑 **Cổng Quản Trị Độc Lập** | Kiến trúc tách biệt Admin React SPA (Cổng 5174), bảo mật phân quyền Role Admin, Dashboard & Giám sát hệ thống | [Xem tài liệu](docs/features/admin-portal.md) |
 | 🛡️ **Chống DDoS Cloudflare** | Anycast L3/L4 Mitigation, WAF Rules, Cloudflare Tunnel (ẩn 100% IP máy chủ), Rate Limiting | [Xem tài liệu](docs/features/cloudflare-ddos-protection.md) |
+| 💾 **Sao lưu & Phục hồi CSDL** | Tự động sao lưu 17h chiều hàng ngày (UTC+7), 1-chạm qua Admin Portal, nén Docker gzip, retention policy | [Xem tài liệu](docs/features/database-backup.md) |
 | 🔒 **Bảo mật & CI/CD** | HttpOnly Cookies, Cloudflare Turnstile, OTP Mail, Cổng CI/CD 2 tầng tự động | [Xem tài liệu](docs/features/auth-security-cicd.md) |
 
 ---

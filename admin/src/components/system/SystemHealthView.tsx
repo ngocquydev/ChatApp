@@ -14,6 +14,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { SystemMetricsGrid } from "./SystemMetricsGrid";
 import { ServiceStatusCards } from "./ServiceStatusCards";
 import { MemoryUsageCard } from "./MemoryUsageCard";
+import { DatabaseBackupCard } from "./DatabaseBackupCard";
 
 export default function SystemHealthView() {
   const [system, setSystem] = useState<SystemHealthData | null>(null);
@@ -101,6 +102,9 @@ export default function SystemHealthView() {
 
       {/* Connected microservices */}
       <ServiceStatusCards services={system.services} isEn={isEn} />
+
+      {/* Database Backup & Disaster Recovery */}
+      <DatabaseBackupCard isEn={isEn} />
 
       {/* Security & Deployment Notes */}
       <Card

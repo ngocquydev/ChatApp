@@ -14,6 +14,7 @@
 6. [Thiết Kế Đa Chế Độ Sáng/Tối & Song Ngữ Toàn Diện (VI / EN)](#6-thiết-kế-đa-chế-độ-sángtối--song-ngữ-toàn-diện-vi--en)
 7. [Trung Tâm Bảo Mật & Hệ Thống WAF Chống DDoS Đa Tầng (Admin Security Center & Turnstile Challenge)](#7-trung-tâm-bảo-mật--hệ-thống-waf-chống-ddos-đa-tầng-admin-security-center--turnstile-challenge)
 8. [Trang Quản Trị Hệ Thống Toàn Diện & Cổng React SPA Độc Lập](#8-trang-quản-trị-hệ-thống-toàn-diện--bố-cục-sidebar-2-cột-admin-control-panel)
+9. [Hệ Thống Sao Lưu & Phục Hồi Dữ Liệu Tự Động (Database Backup & Disaster Recovery)](#9-hệ-thống-sao-lưu--phục-hồi-dữ-liệu-tự-động-database-backup--disaster-recovery)
 
 ---
 
@@ -156,7 +157,19 @@ Hỗ trợ tìm kiếm theo họ tên, email, số điện thoại, lọc trạn
 
 ---
 
+## 9. Hệ Thống Sao Lưu & Phục Hồi Dữ Liệu Tự Động (Database Backup & Disaster Recovery)
+
+Hệ thống cung cấp giải pháp sao lưu và phục hồi cơ sở dữ liệu MongoDB toàn diện, bảo vệ dữ liệu trước mọi sự cố hoặc lỗi thao tác:
+- **Tự động 17:00 chiều hàng ngày:** Hẹn giờ chính xác theo múi giờ Việt Nam (`Asia/Ho_Chi_Minh` UTC+7), tự động nén `gzip` và lập lịch kế tiếp.
+- **Thao tác 1-chạm từ Admin Portal:** Thẻ quản trị `DatabaseBackupCard` tại tab `/system` cho phép kích hoạt sao lưu tức thời, theo dõi dung lượng và thời gian tạo.
+- **Tải file, Phục hồi & Xóa an toàn:** Tải trực tiếp bản nén nhị phân `.archive.gz`, khôi phục CSDL với hộp thoại xác nhận `ConfirmDialog` chống ghi đè nhầm lẫn.
+- **Chính sách Retention Policy:** Giữ tối đa 10 bản sao lưu mới nhất trong vòng 7 ngày, tự động dọn dẹp file cũ chống cạn kiệt tài nguyên ổ đĩa.
+- **Kịch bản dòng lệnh CLI độc lập:** Tích hợp `scripts/backup-database.ps1` và `scripts/backup-database.sh` cho các tác vụ Cronjob hoặc hạ tầng máy chủ.
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Sao Lưu & Phục Hồi Dữ Liệu Tự Động (Database Backup)](features/database-backup.md)
 > - [Cổng Quản trị Độc lập React SPA (Admin Portal)](features/admin-portal.md)
 > - [Trang Quản trị Hệ thống Toàn diện (Admin Control Panel)](features/admin-panel.md)
 > - [Trung tâm Bảo mật WAF & Phòng chống DDoS Đa tầng](features/waf.md)

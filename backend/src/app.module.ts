@@ -18,6 +18,7 @@ import { AppGraphqlModule } from './modules/graphql/app-graphql.module.js';
 import { ModerationModule } from './modules/moderation/moderation.module.js';
 import { WafModule } from './modules/waf/waf.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
+import { BackupModule } from './modules/backup/backup.module.js';
 import { WafMiddleware } from './modules/waf/waf.middleware.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 import { CloudflareMiddleware } from './common/middlewares/cloudflare.middleware.js';
@@ -75,6 +76,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     WafModule,
 
     AdminModule,
+
+    BackupModule,
   ],
   controllers: [AppController],
   providers: [AppService],
