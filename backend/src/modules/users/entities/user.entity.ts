@@ -9,15 +9,17 @@ export class User {
   @Prop({ required: true })
   name: string;
 
+  // Không đặt default cho location: chỉ lưu khi có đủ tọa độ, nếu không index 2dsphere sẽ từ chối
+  // cả document (lỗi 16755 "Can't extract geo keys") và người dùng mới không đăng ký được.
   @Prop({
     type: {
       type: String,
       enum: ['Point'],
-      default: 'Point',
     },
     coordinates: {
       type: [Number],
       required: false,
+      default: undefined,
     },
   })
   location?: {
