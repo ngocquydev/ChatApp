@@ -36,5 +36,25 @@ describe('readCloudflareEnv', () => {
       autoBanMode: 'managed_challenge',
     });
   });
+
+  it('bỏ qua frontendHost hoặc apiHost nếu cấu hình localhost hoặc IP cục bộ', () => {
+    const cfg = readCloudflareEnv({
+      CLOUDFLARE_API_TOKEN: 't',
+      CLOUDFLARE_ZONE_ID: 'z',
+      CLOUDFLARE_FRONTEND_HOST: 'localhost:5173',
+      CLOUDFLARE_API_HOST: 'http://127.0.0.1:3000',
+    });
+    expect(cfg?.frontendHost).toBeUndefined();
+    expect(cfg?.apiHost).toBeUndefined();
+  });
+
+  it('chuẩn hóa frontendHost loại bỏ giao thức và cổng đối với tên miền hợp lệ', () => {
+    const cfg = readCloudflareEnv({
+      CLOUDFLARE_API_TOKEN: 't',
+      CLOUDFLARE_ZONE_ID: 'z',
+      CLOUDFLARE_FRONTEND_HOST: 'https://chat.example.com:443',
+    });
+    expect(cfg?.frontendHost).toBe('chat.example.com');
+  });
 });
 
