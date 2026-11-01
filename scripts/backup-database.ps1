@@ -52,3 +52,4 @@ Get-ChildItem -Path $TargetDir -Filter "backup_chatapp_*.archive.gz" | Where-Obj
 }
 
 Write-Host "🎉 Hoàn tất quy trình sao lưu cơ sở dữ liệu!" -ForegroundColor Green
+

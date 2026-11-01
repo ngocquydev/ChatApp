@@ -15,3 +15,4 @@ export interface BackupListResponse {
   nextScheduledAt: string;
   retentionPolicyDays: number;
 }
+

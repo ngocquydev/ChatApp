@@ -397,3 +397,4 @@ export function DatabaseBackupCard({ isEn }: DatabaseBackupCardProps) {
     </Card>
   );
 }
+

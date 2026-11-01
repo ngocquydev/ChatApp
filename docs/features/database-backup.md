@@ -142,3 +142,4 @@ Mọi API quản lý backup đều nằm dưới tiền tố `/admin/backup` và
 - **`JwtAuthGuard`**: Yêu cầu AccessToken hợp lệ cấp qua HttpOnly cookie.
 - **`RolesGuard` + `@Roles('admin')`**: Chỉ tài khoản có `role: 'admin'` mới được cấp phép thực thi.
 - Bất kỳ tài khoản thường hoặc người dùng chưa đăng nhập nào cố truy cập sẽ bị chặn với mã lỗi **401 Unauthorized** hoặc **403 Forbidden**.
+

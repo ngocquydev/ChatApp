@@ -40,3 +40,4 @@ find "$TARGET_DIR" -type f -name "backup_chatapp_*.archive.gz" -mtime +$RETENTIO
 find "$TARGET_DIR" -type f -name "*.meta.json" -mtime +$RETENTION_DAYS -delete
 
 echo "🎉 Hoàn tất sao lưu cơ sở dữ liệu!"
+
