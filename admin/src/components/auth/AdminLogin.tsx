@@ -26,8 +26,8 @@ export default function AdminLogin() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isCheckingAuth, isLoggingIn, login } = useAdminAuthStore();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(() => import.meta.env.VITE_DEFAULT_ADMIN_EMAIL || "");
+  const [password, setPassword] = useState(() => import.meta.env.VITE_DEFAULT_ADMIN_PASSWORD || "");
   const [showPassword, setShowPassword] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
