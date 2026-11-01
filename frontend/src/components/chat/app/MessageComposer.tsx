@@ -22,6 +22,8 @@ import LocationPickerModal from "../LocationPickerModal";
 import AppEmojiPicker from "@/components/common/AppEmojiPicker";
 import AppGiphyPicker from "@/components/common/AppGiphyPicker";
 import { GifIcon } from "@/components/common/GifIcon";
+import MentionAutocomplete, { MentionAutocompleteHandle } from "@/components/common/MentionAutocomplete";
+import useMention from "@/hooks/useMention";
 
 const TYPING_THROTTLE_MS = 2500;
 const TYPING_IDLE_MS = 5000;
@@ -72,6 +74,9 @@ export default function MessageComposer({
   const [openLocationPicker, setOpenLocationPicker] = useState(false);
   const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(null);
   const [gifAnchorEl, setGifAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const mentionRef = useRef<MentionAutocompleteHandle | null>(null);
+  const { mentionOpen, mentionQuery, mentionAnchorEl, checkMention, insertMention, closeMention } = useMention(text, setText, inputRef);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const docInputRef = useRef<HTMLInputElement | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -138,6 +143,7 @@ export default function MessageComposer({
 
   const handleChange = (value: string) => {
     setText(value);
+    checkMention(value);
 
     if (!value.trim()) {
       stopTyping();
@@ -164,6 +170,7 @@ export default function MessageComposer({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (mentionRef.current?.handleKeyDown(e)) return;
     // Không gửi khi đang gõ dấu bằng bộ gõ tiếng Việt (Telex/VNI) hoặc IME khác
     if (e.nativeEvent.isComposing) return;
     if (e.key === "Enter" && !e.shiftKey) {
@@ -296,9 +303,10 @@ export default function MessageComposer({
           <TextField
             fullWidth
             multiline
+            inputRef={inputRef}
             maxRows={5}
             variant="standard"
-            placeholder="Aa"
+            placeholder="Aa (@ để tag bạn bè hoặc @aura)"
             value={text}
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKeyDown}

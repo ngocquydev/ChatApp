@@ -3,6 +3,7 @@
 import { Divider, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from "@mui/material";
 import {
   Archive,
+  Sparkles,
   Bell,
   BellOff,
   ChevronRight,
@@ -32,6 +33,7 @@ interface FloatingChatHeaderMenuProps {
   onOpenRestrict: () => void;
   onArchiveChat: () => void;
   onCloseChat: () => void;
+  onOpenSummary?: () => void;
 }
 
 export default function FloatingChatHeaderMenu({
@@ -50,6 +52,7 @@ export default function FloatingChatHeaderMenu({
   onOpenRestrict,
   onArchiveChat,
   onCloseChat,
+  onOpenSummary,
 }: FloatingChatHeaderMenuProps) {
   const { tr } = useTranslation();
   const itemSx = { py: 1, px: 1.5, borderRadius: "10px", gap: 0.5 };

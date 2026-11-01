@@ -8,7 +8,7 @@ import {
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { Logger, Optional } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service.js';
@@ -16,6 +16,8 @@ import { SendMessageDto } from './dto/send-message.dto.js';
 import { RedisService } from '../redis/redis/redis.service.js';
 import { CallStatus, CallType } from './schemas/message.schema.js';
 import { MqttBrokerService } from './mqtt-broker.service.js';
+import { AURA_BOT_ID } from '../gemini/aura-bot.constant.js';
+import { GeminiService } from '../gemini/gemini.service.js';
 
 interface AuthenticatedSocket extends Socket {
   data: {
@@ -62,6 +64,7 @@ export class ChatGateway
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
     private readonly mqttBrokerService: MqttBrokerService,
+    @Optional() private readonly geminiService?: GeminiService,
   ) {}
 
   afterInit() {
@@ -274,6 +277,54 @@ export class ChatGateway
 
       // Bắn event message:new tới cả sender và receiver (qua cả MQTT và Socket.IO)
       this.broadcastNewMessage(message);
+
+      // Kiểm tra xem tin nhắn có nhắc tới @aura hoặc gửi tới Aura Bot không
+      const isMentionAura = /(^|\s)@aura\b/i.test(dto.text);
+      const isAuraDirect = dto.receiverId === AURA_BOT_ID;
+
+      if ((isMentionAura || isAuraDirect) && this.geminiService) {
+        const convIdStr = message.conversationId.toString();
+        // Phát sự kiện Aura đang gõ
+        this.server.to(`user:${senderId}`).emit('typing:start', {
+          conversationId: convIdStr,
+          userId: AURA_BOT_ID,
+          userName: 'Aura AI',
+        });
+
+        // Xử lý phản hồi ngầm từ Gemini 1.5 Flash
+        void (async () => {
+          try {
+            const recent = await this.chatService.getMessages(convIdStr, senderId, 8);
+            const history = recent.map((m) => ({
+              senderName: m.senderId.toString() === senderId ? 'Người dùng' : 'Aura AI',
+              text: m.text,
+            }));
+
+            const replyText = await this.geminiService!.generateAuraChatReply(dto.text, history);
+
+            // Lưu tin nhắn phản hồi của Aura Bot
+            const auraMsg = await this.chatService.saveMessage(
+              AURA_BOT_ID,
+              senderId,
+              replyText,
+              convIdStr,
+            );
+
+            this.server.to(`user:${senderId}`).emit('typing:stop', {
+              conversationId: convIdStr,
+              userId: AURA_BOT_ID,
+            });
+
+            this.broadcastNewMessage(auraMsg);
+          } catch (err: unknown) {
+            this.logger.error(`Lỗi Aura bot phản hồi: ${err instanceof Error ? err.message : String(err)}`);
+            this.server.to(`user:${senderId}`).emit('typing:stop', {
+              conversationId: convIdStr,
+              userId: AURA_BOT_ID,
+            });
+          }
+        })();
+      }
 
       return { success: true, message };
     } catch (error) {

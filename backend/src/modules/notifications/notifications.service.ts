@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -21,6 +21,7 @@ export class NotificationsService {
     private readonly notificationModel: Model<NotificationDocument>,
     private readonly usersService: UsersService,
     @Optional()
+    @Inject(forwardRef(() => ChatGateway))
     private readonly chatGateway?: ChatGateway,
   ) {}
 

@@ -6,6 +6,7 @@ export type NotificationType =
   | 'friend_request'
   | 'post_like'
   | 'post_comment'
+  | 'mention'
   | 'system';
 
 export type NotificationDocument = Notification & Document;
@@ -20,7 +21,7 @@ export class Notification {
 
   @Prop({
     type: String,
-    enum: ['friend_accepted', 'friend_request', 'post_like', 'post_comment', 'system'],
+    enum: ['friend_accepted', 'friend_request', 'post_like', 'post_comment', 'mention', 'system'],
     required: true,
   })
   type: NotificationType;

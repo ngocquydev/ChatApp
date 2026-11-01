@@ -9,6 +9,7 @@ import { ChatGateway } from './chat.gateway.js';
 import { MqttBrokerService } from './mqtt-broker.service.js';
 import { UsersModule } from '../users/users.module.js';
 import { RedisModule } from '../redis/redis/redis.module.js';
+import { GeminiModule } from '../gemini/gemini.module.js';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { RedisModule } from '../redis/redis/redis.module.js';
     }),
     UsersModule,
     RedisModule,
+    GeminiModule,
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway, MqttBrokerService],

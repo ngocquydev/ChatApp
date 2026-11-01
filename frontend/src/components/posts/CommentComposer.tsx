@@ -7,6 +7,8 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { COMMENT_MAX_LENGTH, MAX_IMAGE_BYTES } from "@/services/postsApi";
 import AppGiphyPicker from "@/components/common/AppGiphyPicker";
 import { GifIcon } from "@/components/common/GifIcon";
+import MentionAutocomplete, { MentionAutocompleteHandle } from "@/components/common/MentionAutocomplete";
+import useMention from "@/hooks/useMention";
 
 interface CommentComposerProps {
   sending: boolean;
@@ -23,6 +25,9 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAttachedVideo, setIsAttachedVideo] = useState(false);
   const [gifAnchorEl, setGifAnchorEl] = useState<HTMLElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const mentionRef = useRef<MentionAutocompleteHandle | null>(null);
+  const { mentionOpen, mentionQuery, mentionAnchorEl, checkMention, insertMention, closeMention } = useMention(text, setText, inputRef);
 
   const trimmed = text.trim();
 
@@ -161,18 +166,32 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
         <TextField
           fullWidth
           multiline
+          inputRef={inputRef}
           maxRows={4}
           size="small"
-          placeholder={tr("Viết bình luận…", "Write a comment…")}
+          placeholder={tr("Viết bình luận… (Gõ @ để tag bạn bè hoặc @aura)", "Write a comment… (Type @ to mention friends or @aura)")}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            checkMention(e.target.value, e.target.selectionStart ?? undefined);
+          }}
           onKeyDown={(e) => {
+            if (mentionRef.current?.handleKeyDown(e)) return;
             if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               void handleSend();
             }
           }}
           slotProps={{ htmlInput: { maxLength: COMMENT_MAX_LENGTH, "aria-label": tr("Viết bình luận", "Write a comment") } }}
+        />
+
+        <MentionAutocomplete
+          ref={mentionRef}
+          open={mentionOpen}
+          anchorEl={mentionAnchorEl}
+          query={mentionQuery}
+          onSelect={insertMention}
+          onClose={closeMention}
         />
 
         {/* Nút đính kèm ảnh / video */}

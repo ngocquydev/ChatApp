@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import {
   ArrowLeft,
+  Sparkles,
   Ban,
   MoreVertical,
   Palette,
@@ -34,6 +35,7 @@ import { useCallStore } from "@/store/useCallStore";
 import { getChatTheme } from "./chatThemes";
 import ThemeSelectDialog from "./ThemeSelectDialog";
 import RestrictInfoDialog from "./RestrictInfoDialog";
+import AiChatSummaryDialog from "../AiChatSummaryDialog";
 
 interface ChatHeaderProps {
   partner: ChatUser | null;
@@ -73,6 +75,7 @@ export default function ChatHeader({
   const [openThemeDialog, setOpenThemeDialog] = useState(false);
   const [openRestrictDialog, setOpenRestrictDialog] = useState(false);
   const [openBlockConfirm, setOpenBlockConfirm] = useState(false);
+  const [openSummaryDialog, setOpenSummaryDialog] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
   const activeThemeConfig = getChatTheme(currentTheme);
@@ -338,6 +341,23 @@ export default function ChatHeader({
             </ListItemText>
           </MenuItem>
 
+          <MenuItem
+            onClick={() => {
+              handleCloseMenu();
+              setOpenSummaryDialog(true);
+            }}
+            sx={{ borderRadius: "8px", py: 1 }}
+          >
+            <ListItemIcon>
+              <Sparkles size={18} color="var(--mui-palette-primary-main)" />
+            </ListItemIcon>
+            <ListItemText>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {tr("Tóm tắt hội thoại (Gemini)", "Summarize chat (Gemini)")}
+              </Typography>
+            </ListItemText>
+          </MenuItem>
+
           <Divider sx={{ my: 0.5 }} />
 
           <MenuItem
@@ -421,6 +441,14 @@ export default function ChatHeader({
             setIsPending(false);
           }
         }}
+      />
+
+      {/* Dialog Tóm tắt hội thoại bằng Gemini 1.5 Flash */}
+      <AiChatSummaryDialog
+        open={openSummaryDialog}
+        onClose={() => setOpenSummaryDialog(false)}
+        conversationId={activeConversation?._id || ""}
+        partnerName={partner?.name}
       />
     </Box>
   );

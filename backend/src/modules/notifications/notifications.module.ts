@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Notification, NotificationSchema } from './schemas/notification.schema.js';
 import { NotificationsService } from './notifications.service.js';
@@ -12,7 +12,7 @@ import { ChatModule } from '../chat/chat.module.js';
       { name: Notification.name, schema: NotificationSchema },
     ]),
     UsersModule,
-    ChatModule,
+    forwardRef(() => ChatModule),
   ],
   controllers: [NotificationsController],
   providers: [NotificationsService],

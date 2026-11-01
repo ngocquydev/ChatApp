@@ -17,6 +17,7 @@
 9. [Hệ Thống Sao Lưu & Phục Hồi Dữ Liệu Tự Động (Database Backup & Disaster Recovery)](#9-hệ-thống-sao-lưu--phục-hồi-dữ-liệu-tự-động-database-backup--disaster-recovery)
 10. [Hệ Thống Thả Cảm Xúc Chuẩn Facebook & Bảng Chọn Emoji](#10-hệ-thống-thả-cảm-xúc-chuẩn-facebook--bảng-chọn-emoji)
 11. [Tích Hợp GIPHY GIF Động & Bố Cục Thác Nước Masonry](#11-tích-hợp-giphy-gif-động--bố-cục-thác-nước-masonry)
+12. [Trợ Lý AI Gemini 1.5 Flash, Aura Bot (@aura) & Gắn Thẻ Bạn Bè (@mentions)](#12-trợ-lý-ai-gemini-15-flash-aura-bot-aura--gắn-thẻ-bạn-bè-mentions)
 
 ---
 
@@ -197,7 +198,24 @@ Mang lại trải nghiệm giao tiếp sinh động, hài hước và giàu cả
 
 ---
 
+
+## 12. Trợ Lý AI Gemini 1.5 Flash, Aura Bot (@aura) & Gắn Thẻ Bạn Bè (@mentions)
+
+Hệ thống tích hợp trực tiếp trí tuệ nhân tạo **Google Gemini 1.5 Flash** cùng tính năng thẻ nhắc bạn bè thông minh, nâng cao tương tác và trải nghiệm người dùng trên toàn bộ ứng dụng:
+
+![Trợ lý AI Gemini 1.5 Flash & Gắn thẻ bạn bè](assets/screenshots/gemini-ai-summary-mentions.png)
+
+### Điểm nổi bật:
+- **Tóm tắt bình luận bài viết (`AiCommentSummaryBox`):** Tự động đọc và tóm lược ý kiến của hàng chục bình luận dưới bài viết, phân loại tâm trạng và sắc thái thảo luận chỉ sau một nút bấm.
+- **Tóm tắt hội thoại tin nhắn (`AiChatSummaryDialog`):** Tổng hợp nhanh 50-100 tin nhắn gần nhất với các luận điểm chính và đầu việc cần làm (Action Items).
+- **Trợ lý ảo Aura Bot (`@aura`):** Tự động phản hồi mọi câu hỏi trong chat bằng mô hình Gemini 1.5 Flash siêu nhanh, hỗ trợ cả tiếng Việt và tiếng Anh.
+- **Menu gợi ý thẻ nhắc (@mentions):** Gõ `@` để mở popup gợi ý bạn bè và Aura Bot, hỗ trợ duyệt bằng bàn phím (Mũi tên Lên / Xuống, Enter) và gửi thông báo nhắc tên tức thì.
+- 📖 *Xem chi tiết: [docs/features/gemini-ai-summary-aura-mentions.md](features/gemini-ai-summary-aura-mentions.md)*
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Trợ Lý AI Gemini 1.5 Flash, Aura Bot & Gắn Thẻ Bạn Bè](features/gemini-ai-summary-aura-mentions.md)
 > - [Hệ Thống Thả Cảm Xúc Facebook & Bảng Chọn Emoji (Reactions)](features/facebook-reactions.md)
 > - [Tích Hợp GIPHY GIF & Bố Cục Masonry Trong Bình Luận & Tin Nhắn](features/giphy-gif-integration.md)
 > - [Sao Lưu & Phục Hồi Dữ Liệu Tự Động (Database Backup)](features/database-backup.md)

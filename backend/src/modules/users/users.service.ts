@@ -4,6 +4,7 @@ import {
   BadRequestException,
   RequestTimeoutException,
   Optional,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -11,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { User, UserRepository } from './entities/user.entity.js';
 import { CreateUserData } from './types/user.types.js';
 import { POPULAR_SCHOOLS } from './data/schools.data.js';
+import { AURA_BOT_ID, AURA_BOT_USER } from '../gemini/aura-bot.constant.js';
 
 
 export interface SearchUserItem {
@@ -27,12 +29,24 @@ import { RedisService } from '../redis/redis/redis.service.js';
 const SEARCH_MAX_TIME_MS = 8000;
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserRepository>,
     @Optional() private readonly neo4jService?: Neo4jService,
     @Optional() private readonly redisService?: RedisService,
   ) {}
+
+  async onModuleInit() {
+    try {
+      await this.userModel.updateOne(
+        { _id: AURA_BOT_USER._id },
+        { $set: AURA_BOT_USER },
+        { upsert: true },
+      );
+    } catch {
+      // Bỏ qua nếu MongoDB chưa sẵn sàng khi test
+    }
+  }
 
   async create(createUserDto: CreateUserData) {
     const { name, phone, email, password, firebaseUid, avatar, dateOfBirth } =
@@ -265,6 +279,9 @@ export class UsersService {
     return user;
   }
   async findById(id: string) {
+    if (id === AURA_BOT_ID || id?.toString() === AURA_BOT_ID) {
+      return AURA_BOT_USER as unknown as UserRepository;
+    }
     return this.userModel.findById(id).select('-password').exec();
   }
   async findByUid(firebaseUid: string) {
@@ -309,10 +326,11 @@ export class UsersService {
   }
 
   async findByIds(ids: (string | Types.ObjectId)[]) {
+    const hasAura = ids.some((id) => id?.toString() === AURA_BOT_ID);
     const objectIds = ids
       .filter((id) => Types.ObjectId.isValid(id.toString()))
       .map((id) => new Types.ObjectId(id.toString()));
-    return this.userModel
+    const users = await this.userModel
       .find({
         _id: { $in: objectIds },
         isDeleted: { $ne: true },
@@ -321,6 +339,11 @@ export class UsersService {
       .select('name email avatar phone bio createdAt')
       .lean()
       .exec();
+
+    if (hasAura && !users.some((u) => u._id.toString() === AURA_BOT_ID)) {
+      users.push(AURA_BOT_USER as unknown as (typeof users)[0]);
+    }
+    return users;
   }
 
   async findActiveUsersExcluding(excludeIds: (string | Types.ObjectId)[], limit = 30) {

@@ -9,6 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { UsersService } from '../users/users.service.js';
 import { ModerationService } from '../moderation/moderation.service.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
 import { Friendship, FriendshipDocument } from '../friends/schemas/friendship.schema.js';
 import { Post, PostDocument } from './schemas/post.schema.js';
 import type { PostPrivacy } from './schemas/post.schema.js';
@@ -98,6 +99,7 @@ export class PostsService {
     private readonly friendshipModel: Model<FriendshipDocument>,
     private readonly usersService: UsersService,
     @Optional() private readonly moderationService?: ModerationService,
+    @Optional() private readonly notificationsService?: NotificationsService,
   ) {}
 
   // ───────────────────────── Quan hệ & quyền xem ─────────────────────────
@@ -633,6 +635,41 @@ export class PostsService {
     });
     await this.postModel.updateOne({ _id: post._id }, { $inc: { commentCount: 1 } }).exec();
     const authors = await this.loadAuthors([created.authorId]);
+
+    // Gửi thông báo cho chủ bài viết (nếu không phải tự bình luận bài của mình)
+    if (post.authorId.toString() !== viewerId && this.notificationsService) {
+      const author = authors.get(viewerId);
+      const authorName = author?.name || 'Ai đó';
+      void this.notificationsService.createNotification({
+        recipientId: post.authorId.toString(),
+        actorId: viewerId,
+        type: 'post_comment',
+        title: 'Bình luận mới về bài viết',
+        content: `${authorName} đã bình luận: "${content.slice(0, 80)}"`,
+        link: `/profile/${post.authorId.toString()}`,
+      }).catch(() => {});
+    }
+
+    // Gửi thông báo cho người dùng được nhắc đến (@[Name](userId))
+    if (content && this.notificationsService) {
+      const author = authors.get(viewerId);
+      const authorName = author?.name || 'Ai đó';
+      const mentionIdMatches = Array.from(content.matchAll(/@\[([^\]]+)\]\(([a-f0-9]{24})\)/gi));
+      for (const match of mentionIdMatches) {
+        const taggedUserId = match[2];
+        if (taggedUserId && taggedUserId !== viewerId && taggedUserId !== post.authorId.toString()) {
+          void this.notificationsService.createNotification({
+            recipientId: taggedUserId,
+            actorId: viewerId,
+            type: 'mention',
+            title: 'Bạn được nhắc đến trong một bình luận',
+            content: `${authorName} đã nhắc đến bạn: "${content.slice(0, 80)}"`,
+            link: `/profile/${post.authorId.toString()}`,
+          }).catch(() => {});
+        }
+      }
+    }
+
     return this.toCommentView(created, authors, viewerId);
   }
 

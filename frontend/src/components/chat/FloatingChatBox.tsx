@@ -69,6 +69,11 @@ import LocationMessageItem from "./LocationMessageItem";
 import LocationPickerModal from "./LocationPickerModal";
 import AppGiphyPicker from "@/components/common/AppGiphyPicker";
 import { GifIcon } from "@/components/common/GifIcon";
+import MentionText from "@/components/common/MentionText";
+import MentionAutocomplete, { MentionAutocompleteHandle } from "@/components/common/MentionAutocomplete";
+import useMention from "@/hooks/useMention";
+import AiChatSummaryDialog from "./AiChatSummaryDialog";
+import { Sparkles } from "lucide-react";
 
 const POPULAR_EMOJIS = [
   "😀", "😂", "🥰", "😍", "😎", "🥳", "😭", "😮",
@@ -126,6 +131,10 @@ export default function FloatingChatBox({
   const [openThemeDialog, setOpenThemeDialog] = useState(false);
   const [openRestrictDialog, setOpenRestrictDialog] = useState(false);
   const [openReadReceiptsDialog, setOpenReadReceiptsDialog] = useState(false);
+  const [openSummaryDialog, setOpenSummaryDialog] = useState(false);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const mentionRef = useRef<MentionAutocompleteHandle | null>(null);
+  const { mentionOpen, mentionQuery, mentionAnchorEl, checkMention, insertMention, closeMention } = useMention(inputText, setInputText, inputRef);
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     const saved = localStorage.getItem("chat_read_receipts_enabled");
@@ -548,6 +557,7 @@ export default function FloatingChatBox({
   // 3. Xử lý gõ chữ & bắn event typing nhị phân
   const handleInputChange = (text: string) => {
     setInputText(text);
+    checkMention(text);
 
     if (!convId) return;
 
@@ -1072,6 +1082,7 @@ export default function FloatingChatBox({
         isRestricted={isRestricted}
         isBlockedByMe={isBlockedByMe}
         readReceiptsEnabled={readReceiptsEnabled}
+        onOpenSummary={() => setOpenSummaryDialog(true)}
         onClose={() => setMenuAnchorEl(null)}
         onOpenFullChat={() => void handleOpenFullChat()}
         onViewProfile={() => {
@@ -1392,7 +1403,7 @@ export default function FloatingChatBox({
                                 wordBreak: "break-word",
                               }}
                             >
-                              {msg.text}
+                              <MentionText text={msg.text} />
                             </Box>
                           )}
                         </Tooltip>
@@ -1635,7 +1646,8 @@ export default function FloatingChatBox({
               <TextField
                 fullWidth
                 size="small"
-                placeholder="Aa"
+                inputRef={inputRef}
+                placeholder="Aa (@ để tag hoặc hỏi @aura)"
                 value={inputText}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -1747,6 +1759,22 @@ export default function FloatingChatBox({
               height={360}
             />
           </Popover>
+
+          <MentionAutocomplete
+            ref={mentionRef}
+            open={mentionOpen}
+            anchorEl={mentionAnchorEl}
+            query={mentionQuery}
+            onSelect={insertMention}
+            onClose={closeMention}
+          />
+
+          <AiChatSummaryDialog
+            open={openSummaryDialog}
+            onClose={() => setOpenSummaryDialog(false)}
+            conversationId={convId || ""}
+            partnerName={targetUserName}
+          />
 
           {/* POPOVER GIPHY */}
           <Popover

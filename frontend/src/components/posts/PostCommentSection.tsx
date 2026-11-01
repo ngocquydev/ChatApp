@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { Alert, Box, Button, Skeleton, Typography } from "@mui/material";
+import { Sparkles } from "lucide-react";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import { summarizeComments } from "@/services/geminiApi";
+import AiCommentSummaryBox from "./AiCommentSummaryBox";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
@@ -45,6 +48,20 @@ export default function PostCommentSection({
   const [actionError, setActionError] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<CommentView | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+
+  const handleSummarize = async () => {
+    setLoadingSummary(true);
+    try {
+      const res = await summarizeComments(postId);
+      setSummary(res.summary);
+    } catch {
+      setActionError(tr("Không thể tóm tắt bình luận lúc này.", "Could not summarize comments at this time."));
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
 
   const handleSubmit = async (
     content: string,
@@ -165,6 +182,34 @@ export default function PostCommentSection({
 
       {list.status === "ready" && (
         <>
+          {list.items.length >= 2 && !summary && !loadingSummary && (
+            <Box sx={{ mb: 1, display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<Sparkles size={13} />}
+                onClick={() => void handleSummarize()}
+                sx={{
+                  borderRadius: "999px",
+                  fontSize: "0.75rem",
+                  fontWeight: 600,
+                  textTransform: "none",
+                  py: 0.3,
+                  px: 1.2,
+                }}
+              >
+                {tr("Tóm tắt bình luận (Gemini)", "Summarize comments (Gemini)")}
+              </Button>
+            </Box>
+          )}
+
+          <AiCommentSummaryBox
+            summary={summary}
+            loading={loadingSummary}
+            commentCount={list.items.length}
+            onRefresh={() => void handleSummarize()}
+            onClose={() => setSummary(null)}
+          />
           {list.items.length === 0 ? (
             <Typography variant="body2" color="text.secondary" sx={{ py: 0.5 }}>
               {tr("Chưa có bình luận nào. Hãy là người đầu tiên!", "No comments yet. Be the first to comment!")}
