@@ -24,6 +24,7 @@ import { GeminiModule } from '../gemini/gemini.module.js';
     UsersModule,
     RedisModule,
     GeminiModule,
+    GeminiModule,
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway, MqttBrokerService],

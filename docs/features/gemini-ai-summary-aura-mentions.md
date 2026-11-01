@@ -76,3 +76,4 @@ Thêm biến môi trường vào `backend/.env`:
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
 > **Lưu ý**: Nếu chưa cấu hình `GEMINI_API_KEY`, hệ thống đã được tích hợp bộ phân tích thông minh dự phòng (Rule-based Intelligent Fallback) tự động tóm tắt và phản hồi câu hỏi trực tiếp mà không gây lỗi máy chủ.
+

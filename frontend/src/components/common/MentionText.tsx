@@ -127,3 +127,4 @@ export function MentionText({ text, onMentionClick }: MentionTextProps) {
 }
 
 export default MentionText;
+

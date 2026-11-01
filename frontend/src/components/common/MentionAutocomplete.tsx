@@ -240,3 +240,4 @@ export const MentionAutocomplete = forwardRef<MentionAutocompleteHandle, Mention
 );
 
 export default MentionAutocomplete;
+

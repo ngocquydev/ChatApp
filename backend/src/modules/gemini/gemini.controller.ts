@@ -20,20 +20,11 @@ import { Post as PostEntity, PostDocument } from '../posts/schemas/post.schema.j
 import { PostComment, PostCommentDocument } from '../posts/schemas/post-comment.schema.js';
 import { Conversation, ConversationDocument } from '../chat/schemas/conversation.schema.js';
 import { Message, MessageDocument } from '../chat/schemas/message.schema.js';
-
-export class SummarizeCommentsDto {
-  postId: string;
-}
-
-export class SummarizeChatDto {
-  conversationId: string;
-  limit?: number;
-}
-
-export class AskAuraDto {
-  prompt: string;
-  conversationId?: string;
-}
+import {
+  SummarizeCommentsDto,
+  SummarizeChatDto,
+  AskAuraDto,
+} from './dto/gemini.dto.js';
 
 @ApiTags('Gemini & Aura AI')
 @ApiBearerAuth()

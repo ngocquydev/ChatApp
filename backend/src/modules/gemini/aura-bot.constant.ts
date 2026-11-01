@@ -12,3 +12,4 @@ export const AURA_BOT_USER = {
   isDeleted: false,
   isBan: false,
 };
+
