@@ -181,11 +181,7 @@ export default function Login() {
   // Tự động chuyển hướng nếu người dùng đã đăng nhập sẵn
   useEffect(() => {
     if (isAuthenticated && !isCheckingAuth) {
-      if (user?.role === "admin") {
-        router.replace("/admin");
-      } else {
-        router.replace("/");
-      }
+      router.replace("/");
     }
   }, [isAuthenticated, isCheckingAuth, user, router]);
 
@@ -244,8 +240,7 @@ export default function Login() {
 
       if (redirect) {
         router.push(redirect);
-      } else if (role === "admin") {
-        router.push("/admin");
+      
       } else {
         router.push("/");
       }

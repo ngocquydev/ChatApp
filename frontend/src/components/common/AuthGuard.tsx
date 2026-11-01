@@ -6,31 +6,21 @@ import { useAuthStore } from "@/store/useAuthStore";
 
 interface AuthGuardProps {
   children: ReactNode;
-  allowAdmin?: boolean;
 }
 
-export default function AuthGuard({ children, allowAdmin = false }: AuthGuardProps) {
-  const { isAuthenticated, isCheckingAuth, user } = useAuthStore();
+export default function AuthGuard({ children }: AuthGuardProps) {
+  const { isAuthenticated, isCheckingAuth } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isCheckingAuth) {
-      if (!isAuthenticated) {
-        router.replace("/login");
-      } else if (!allowAdmin && user?.role === "admin") {
-        router.replace("/admin");
-      }
+    if (!isCheckingAuth && !isAuthenticated) {
+      router.replace("/login");
     }
-  }, [isCheckingAuth, isAuthenticated, user, allowAdmin, router]);
+  }, [isCheckingAuth, isAuthenticated, router]);
 
-  // Khi chưa đăng nhập hoặc tài khoản quản trị truy cập trang của người dùng thường -> chặn render
-  if (!isCheckingAuth) {
-    if (!isAuthenticated) {
-      return null;
-    }
-    if (!allowAdmin && user?.role === "admin") {
-      return null;
-    }
+  // Khi chưa đăng nhập -> chặn render
+  if (!isCheckingAuth && !isAuthenticated) {
+    return null;
   }
 
   // Nếu ở client và rõ ràng không có phiên làm việc cũ (chưa từng đăng nhập)
@@ -38,19 +28,6 @@ export default function AuthGuard({ children, allowAdmin = false }: AuthGuardPro
     const hasSession = localStorage.getItem("has_session") === "true";
     if (!hasSession && !isAuthenticated) {
       return null;
-    }
-
-    // Nếu thông tin lưu trong bộ nhớ đệm xác định là admin nhưng trang không cho phép admin
-    try {
-      const rawUser = localStorage.getItem("chatapp_user_cache");
-      if (rawUser) {
-        const parsed = JSON.parse(rawUser);
-        if (!allowAdmin && parsed?.role === "admin") {
-          return null;
-        }
-      }
-    } catch {
-      // Bỏ qua lỗi phân tích cache
     }
   }
 

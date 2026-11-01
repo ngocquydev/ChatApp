@@ -135,6 +135,45 @@ export class AuthController {
     return result;
   }
 
+  @Post('admin/login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Đăng nhập cổng Quản trị viên và trả về cặp Access/Refresh Token (chỉ cho phép role admin)',
+  })
+  async adminLogin(
+    @Body() signInDto: SignInDto,
+    @Req() req: ExpressRequest,
+    @Res({ passthrough: true }) res: ExpressResponse,
+  ) {
+    const clientIp = getClientIp(req);
+
+    const turnstileToken =
+      signInDto['cf-turnstile-response'] || signInDto.turnstileToken;
+
+    await this.turnstileService.validateTurnstile(
+      turnstileToken,
+      clientIp === 'unknown' ? undefined : clientIp,
+      'admin_login',
+    );
+
+    const { email, password } = signInDto;
+    const result = await this.authService.signInAdmin(email, password);
+    this.authService.setTokenCookie(
+      res,
+      'accessToken',
+      result.accessToken,
+      ACCESS_TOKEN_MAX_AGE,
+    );
+    this.authService.setTokenCookie(
+      res,
+      'refreshToken',
+      result.refreshToken,
+      REFRESH_TOKEN_MAX_AGE,
+    );
+
+    return result;
+  }
+
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

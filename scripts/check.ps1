@@ -20,6 +20,13 @@ try {
 } finally {
     Pop-Location
 }
+Push-Location admin
+try {
+    npm run lint
+    npm run typecheck
+} finally {
+    Pop-Location
+}
 Write-Host "✅ [1/7] Cu phap & Types: PASSED" -ForegroundColor Green
 
 Write-Host "`n➡️ [2/7] Phan tich tinh: OWASP, Ro ri RAM, Tran bo nho & N+1 Query..." -ForegroundColor Yellow
@@ -75,7 +82,13 @@ try {
 } finally {
     Pop-Location
 }
-Write-Host "✅ [7/7] Backend & Frontend Build: PASSED" -ForegroundColor Green
+Push-Location admin
+try {
+    npm run build
+} finally {
+    Pop-Location
+}
+Write-Host "✅ [7/7] Backend, Frontend & Admin Build: PASSED" -ForegroundColor Green
 
 Write-Host "`n================================================================================" -ForegroundColor Cyan
 Write-Host "🎉 [CI Quality Gate] TAT CA BAI KIEM TRA DEU PASSED! Ma nguon dat chuan an toan!" -ForegroundColor Green

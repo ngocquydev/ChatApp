@@ -133,7 +133,8 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 
 | Tầng | Công nghệ / Thư viện chính |
 | :--- | :--- |
-| **Frontend** | **Next.js 16 (App Router + Turbopack)**, **React 19**, TypeScript, **Material UI (MUI v9)**, Emotion, Zustand, Socket.IO Client, MQTT.js, Protobuf.js, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase SDK, Lucide Icons, i18n Store |
+| **Frontend** | **Next.js 16 (App Router + Turbopack)**, **React 19**, TypeScript, **Material UI (MUI v9)**, Emotion, Zustand, Socket.IO Client, MQTT.js, Protobuf.js, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase SDK, Lucide Icons, i18n Store (Cổng 5173 - Dành riêng cho người dùng) |
+| **Admin Portal** | **React 19**, **Vite 6**, React Router DOM v7, Material UI (MUI v9), Zustand, Lucide Icons, i18n Store (Cổng 5174 - Phân hệ bảo mật & quản trị độc lập) |
 | **Backend** | **NestJS**, TypeScript, WebSockets (`@nestjs/websockets`, `@nestjs/platform-socket.io`), Aedes MQTT Broker, Passport JWT, Mongoose, Redis (IoRedis), Neo4j Driver, Firebase Admin SDK, Cloudflare Turnstile, AI Moderation & Trust Engine |
 | **Cơ sở dữ liệu Đồ thị** | **Neo4j 5.x** (Mô hình hóa thực thể User, quan hệ FRIEND, truy vấn Cypher Friends of Friends & Degree Centrality tối ưu cho mạng xã hội) |
 | **Cơ sở dữ liệu & Cache** | **MongoDB** (lưu trữ người dùng, bài viết, quan hệ bạn bè, tin nhắn), **Redis 7** (Blacklist, locations, friends sets, recommendations cache) |
@@ -178,7 +179,15 @@ chat/
 │   │       └── redis/           # Redis Service (Blacklist, GEO, Sets, Caching)
 │   └── test/                    # Bộ kiểm thử bảo mật OWASP, RAM, N+1, Unit Tests
 │
-└── frontend/                    # Mã nguồn Frontend (Next.js 16 + TypeScript)
+├── admin/                       # 🛡️ Cổng Quản trị độc lập (React 19 + Vite + React Router DOM)
+│   ├── src/
+│   │   ├── components/          # Dashboard, Users, Posts, Moderation, Security, System
+│   │   ├── services/            # Axios API (withCredentials) kết nối Backend
+│   │   ├── store/               # Admin Auth Store (đăng nhập /auth/admin/login)
+│   │   └── theme/               # Dark/Light MUI Theme & Tokens
+│   └── package.json
+│
+└── frontend/                    # Mã nguồn Frontend (Next.js 16 + TypeScript) - 100% Client thuần túy
     ├── public/                  # Tài nguyên tĩnh, robots.txt, logo
     └── src/
         ├── app/                 # Next.js App Router (chat, profile, explore, auth...)
@@ -246,6 +255,18 @@ npm run dev
 
 ---
 
+### 5. Cấu hình & Chạy Admin Portal (React 19 + Vite)
+```bash
+cd ../admin
+npm install
+
+# Khởi chạy cổng quản trị:
+npm run dev
+```
+- Truy cập trang Quản trị: `http://localhost:5174/login` (Tài khoản role `admin`)
+
+---
+
 ## 📚 Trung tâm tài liệu chuyên sâu (`docs/`)
 
 Toàn bộ tài liệu chi tiết, sơ đồ thiết kế kiến trúc và hướng dẫn kỹ thuật được phân loại khoa học trong thư mục [`docs/`](docs/):
@@ -258,6 +279,7 @@ Toàn bộ tài liệu chi tiết, sơ đồ thiết kế kiến trúc và hư�
 | 📰 **Bảng tin & Profile** | Đăng bài 4 ảnh magic-byte, phân quyền riêng tư, timeline cá nhân, học vấn (trường học) & tình trạng mối quan hệ | [Xem tài liệu](docs/features/social-feed-profile.md) |
 | 🛡️ **Kiểm duyệt AI** | NLP Classifier, Vision Scanner, Anomaly Detection (Isolation Forest, Autoencoder) | [Xem tài liệu](docs/features/moderation-trust.md) |
 | 🛡️ **Trung tâm Bảo mật WAF** | Bảng điều khiển `/admin/security`, WAF-as-Code CLI (`npm run cf:waf`), Turnstile Clearance, Auto-Ban tầng biên | [Xem tài liệu](docs/features/waf.md) |
+| 👑 **Cổng Quản Trị Độc Lập** | Kiến trúc tách biệt Admin React SPA (Cổng 5174), bảo mật phân quyền Role Admin, Dashboard & Giám sát hệ thống | [Xem tài liệu](docs/features/admin-portal.md) |
 | 🛡️ **Chống DDoS Cloudflare** | Anycast L3/L4 Mitigation, WAF Rules, Cloudflare Tunnel (ẩn 100% IP máy chủ), Rate Limiting | [Xem tài liệu](docs/features/cloudflare-ddos-protection.md) |
 | 🔒 **Bảo mật & CI/CD** | HttpOnly Cookies, Cloudflare Turnstile, OTP Mail, Cổng CI/CD 2 tầng tự động | [Xem tài liệu](docs/features/auth-security-cicd.md) |
 

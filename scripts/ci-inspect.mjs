@@ -15,6 +15,7 @@ import path from 'path';
 
 const BACKEND_SRC = path.resolve('backend/src');
 const FRONTEND_SRC = path.resolve('frontend/src');
+const ADMIN_SRC = path.resolve('admin/src');
 
 const errors = [];
 const warnings = [];
@@ -115,7 +116,7 @@ for (const file of backendFiles) {
 }
 
 // 2. Quét Frontend
-const frontendFiles = getAllFiles(FRONTEND_SRC);
+const frontendFiles = [...getAllFiles(FRONTEND_SRC), ...getAllFiles(ADMIN_SRC)];
 for (const file of frontendFiles) {
   const content = fs.readFileSync(file, 'utf-8');
   const relPath = path.relative(process.cwd(), file);

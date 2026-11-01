@@ -169,6 +169,56 @@ export class AuthService {
       ...tokens,
     };
   }
+
+  async signInAdmin(email: string, password: string) {
+    const user = await this.userService.findOne(email);
+    if (!user) {
+      throw new UnauthorizedException('Sai email hoặc tài khoản không tồn tại!');
+    }
+    if (!user.password) {
+      throw new UnauthorizedException(
+        'Tài khoản quản trị viên không thể đăng nhập bằng mạng xã hội!',
+      );
+    }
+
+    if (user.isDeleted) {
+      throw new ForbiddenException('Tài khoản này đã bị xóa!');
+    }
+
+    if (user.isBan) {
+      throw new ForbiddenException('Tài khoản của bạn hiện đang bị khóa!');
+    }
+
+    if (user.role !== 'admin') {
+      throw new ForbiddenException('Tài khoản này không có quyền quản trị viên!');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Mật khẩu không chính xác!');
+    }
+
+    const tokens = await this.generateTokens(
+      user._id.toString(),
+      user.email,
+      user.role,
+    );
+
+    return {
+      success: true,
+      message: 'Đăng nhập quản trị viên thành công!',
+      profile: {
+        _id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        avatar: user.avatar,
+      },
+      ...tokens,
+    };
+  }
+
   async getMe(userId: string) {
     const user = await this.userService.findById(userId);
     if (!user) {

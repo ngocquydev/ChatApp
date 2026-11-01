@@ -8,6 +8,7 @@ echo "==========================================================================
 echo -e "\n➡️ [1/7] Kiểm tra Cú pháp & TypeScript Types..."
 (cd backend && npm run lint && npm run typecheck)
 (cd frontend && npm run lint && npm run typecheck)
+(cd admin && npm run lint && npm run typecheck)
 echo "✅ [1/7] Cú pháp & Types: PASSED"
 
 echo -e "\n➡️ [2/7] Phân tích tĩnh: OWASP, Rò rỉ RAM, Tràn bộ nhớ & N+1 Query..."
@@ -33,7 +34,8 @@ echo "✅ [6/7] Backend Unit Tests: PASSED"
 echo -e "\n➡️ [7/7] Kiểm tra Biên dịch Đóng gói (Production Build)..."
 (cd backend && npm run build)
 (cd frontend && npm run build)
-echo "✅ [7/7] Backend & Frontend Build: PASSED"
+(cd admin && npm run build)
+echo "✅ [7/7] Backend, Frontend & Admin Build: PASSED"
 
 echo -e "\n================================================================================"
 echo "🎉 [CI Quality Gate] TẤT CẢ BÀI KIỂM TRA ĐỀU PASSED! Mã nguồn đạt chuẩn an toàn!"

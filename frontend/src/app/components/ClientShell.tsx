@@ -39,24 +39,17 @@ export default function ClientShell({ children }: ClientShellProps) {
   const { fetchUnreadCount } = useNotificationStore();
   const { t } = useTranslation();
 
-  const isAdmin = user?.role === "admin";
-  const isAdminRoute = Boolean(pathname?.startsWith("/admin"));
-
-  const hideAppBarRoutes = ["/login", "/register", "/forgot-password", "/admin"];
-  const shouldHideAppBar =
-    isAdmin ||
-    isAdminRoute ||
-    hideAppBarRoutes.some(
-      (route) => pathname === route || pathname?.startsWith(`${route}/`)
-    );
+  const hideAppBarRoutes = ["/login", "/register", "/forgot-password"];
+  const shouldHideAppBar = hideAppBarRoutes.some(
+    (route) => pathname === route || pathname?.startsWith(`${route}/`)
+  );
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
-    // Chỉ kết nối socket và nạp thông tin mạng xã hội cho người dùng thông thường, không áp dụng cho admin
-    if (isAuthenticated && user && user.role !== "admin") {
+    if (isAuthenticated && user) {
       connectSocket();
       fetchFriends();
       fetchRequests();
@@ -64,7 +57,7 @@ export default function ClientShell({ children }: ClientShellProps) {
     }
   }, [isAuthenticated, user, connectSocket, fetchFriends, fetchRequests, fetchUnreadCount]);
 
-  const showSocialWidgets = isAuthenticated && !isAdmin && !isAdminRoute;
+  const showSocialWidgets = isAuthenticated;
 
   return (
     <>

@@ -237,11 +237,7 @@ export default function Register() {
   // Chuyển hướng nếu đã đăng nhập
   useEffect(() => {
     if (isAuthenticated && !isCheckingAuth) {
-      if (user?.role === "admin") {
-        router.replace("/admin");
-      } else {
-        router.replace("/");
-      }
+      router.replace("/");
     }
   }, [isAuthenticated, isCheckingAuth, user, router]);
 

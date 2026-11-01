@@ -9,6 +9,7 @@
 | Thành phần | Công nghệ | Chạy |
 |---|---|---|
 | `frontend/` | Next.js 16 (App Router), React 19, MUI v9, Zustand, Socket.IO + MQTT, RHF + Zod, i18n VI/EN | `npm run dev` (cổng 5173) |
+| `admin/` | React 19, Vite, React Router v7, MUI v9, Zustand, Lucide, i18n VI/EN | `npm run dev` (cổng 5174) |
 | `backend/` | NestJS, MongoDB, Redis, Socket.IO, Swagger, Moderation & Trust Engine (NLP, Vision, Isolation Forest, Autoencoder) | `npm run start:dev` (cổng 3000) |
 | Hạ tầng | Docker (Mongo, Redis) | `docker compose up -d` (từ gốc repo) |
 | Cổng chất lượng | lint + typecheck + test bảo mật/RAM/N+1 | `scripts/check.ps1` (Windows) / `scripts/check.sh` |
