@@ -27,7 +27,8 @@
     "seed:million": "node scripts/seed-million-users.mjs",
     "seed:million:clean": "node scripts/seed-million-users.mjs --clean",
     "seed:million:info": "node scripts/seed-million-users.mjs --info",
-    "neo4j:sync": "node scripts/sync-neo4j.mjs"
+    "neo4j:sync": "node scripts/sync-neo4j.mjs",
+    "cf:waf": "nest build && node dist/modules/waf/cloudflare/cloudflare-waf.cli.js"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
