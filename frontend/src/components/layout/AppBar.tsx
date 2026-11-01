@@ -44,6 +44,7 @@ import {
   Clock,
   Check,
   UserCheck,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useFriendStore } from "../../store/useFriendStore";
@@ -176,6 +177,18 @@ function ResponsiveAppBar() {
         router.push("/profile");
       },
     },
+    // Lối vào trung tâm bảo mật chỉ hiện với admin (backend vẫn kiểm tra quyền ở mọi API)
+    ...(user?.role === "admin"
+      ? [
+          {
+            label: tr("Trung tâm bảo mật", "Security center"),
+            action: () => {
+              handleCloseUserMenu();
+              router.push("/admin/security");
+            },
+          },
+        ]
+      : []),
     {
       label: t("nav.logout"),
       action: () => {
@@ -895,6 +908,25 @@ function ResponsiveAppBar() {
               />
             </ListItemButton>
           </ListItem>
+          {user?.role === "admin" && (
+            <ListItem disablePadding>
+              <ListItemButton
+                selected={Boolean(pathname?.startsWith("/admin/security"))}
+                onClick={() => {
+                  handleDrawerToggle();
+                  router.push("/admin/security");
+                }}
+              >
+                <ListItemIcon>
+                  <ShieldCheck size={22} aria-hidden />
+                </ListItemIcon>
+                <ListItemText
+                  primary={tr("Trung tâm bảo mật", "Security center")}
+                  secondary={tr("Chống DDoS & tường lửa", "DDoS & firewall")}
+                />
+              </ListItemButton>
+            </ListItem>
+          )}
         </List>
       </Drawer>
     </>

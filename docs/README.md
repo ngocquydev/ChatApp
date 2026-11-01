@@ -28,6 +28,15 @@
   - Quét nhận diện hình ảnh/video nhạy cảm bằng Vision Models.
   - Phát hiện dị biệt Bot & Tài khoản ảo cày tương tác bằng thuật toán Isolation Forest & Mạng nơ-ron Autoencoder.
   - Bộ 17 test cases kiểm thử chuyên sâu bảo đảm độ tin cậy.
+- 🛡️ **[Trung Tâm Bảo Mật & Hệ Thống WAF Chống DDoS Đa Tầng (docs/features/waf.md)](features/waf.md)**:
+  - Bảng điều khiển quản trị `/admin/security` kiểm soát Under Attack, Bot Fight Mode và danh sách IP đen/trắng.
+  - WAF-as-Code CLI (`npm run cf:waf`) đồng bộ khai báo các bộ quy tắc chuẩn Cloudflare Free plan (Rate limit 10s window, scanner paths, bad bots, foreign challenge).
+  - Tầng WAF ứng dụng (In-App) với cơ chế cấp cookie `waf_clearance` qua thử thách Turnstile và tự động retry request ban đầu.
+  - Cơ chế tự động cấm IP tầng biên (Edge Auto-Ban) dựa trên bộ đếm vi phạm Redis kèm Safe Guards.
+- 🛡️ **[Phòng Thủ & Chống Tấn Công DDoS Bằng Cloudflare (docs/features/cloudflare-ddos-protection.md)](features/cloudflare-ddos-protection.md)**:
+  - Kiến trúc phòng vệ Anycast L3/L4 và Cloudflare Tunnel (`cloudflared`) ẩn 100% IP máy chủ gốc.
+  - Phục hồi Real IP và chống bypass máy chủ gốc bằng `CLOUDFLARE_PROXY_ONLY`.
+  - Bảo vệ kết nối WebSockets và MQTT realtime.
 - 🔒 **[Xác Thực Bảo Mật & Hệ Thống Cổng CI/CD (docs/features/auth-security-cicd.md)](features/auth-security-cicd.md)**:
   - Cặp token an toàn HttpOnly Cookie (AccessToken 1h, RefreshToken 7d), tự động làm mới ngầm (Silent Refresh).
   - Phòng chống Bot bằng Cloudflare Turnstile; đăng nhập mạng xã hội Firebase (Google/Facebook).

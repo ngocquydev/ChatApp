@@ -58,7 +58,7 @@ export class WafConfigService {
       .findOneAndUpdate(
         { key: SETTINGS_KEY },
         { $set: { ...patch, updatedBy } },
-        { upsert: true, new: true, setDefaultsOnInsert: true },
+        { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
       )
       .lean<Partial<WafConfig>>()
       .exec();
@@ -83,3 +83,4 @@ export class WafConfigService {
     return { config, engine: createWafEngine(config), loadedAt: Date.now() };
   }
 }
+

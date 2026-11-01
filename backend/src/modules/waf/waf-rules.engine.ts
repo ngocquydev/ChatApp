@@ -122,3 +122,4 @@ export function createWafEngine(config: WafConfig): WafEngine {
     },
   };
 }
+

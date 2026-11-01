@@ -26,3 +26,4 @@ ingress:
 
   # 4. Quy tắc Fallback (Trả về 404 cho mọi subdomain không khai báo)
   - service: http_status:404
+

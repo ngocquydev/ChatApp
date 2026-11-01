@@ -40,3 +40,4 @@ export function verifyClearance(
   const actual = Buffer.from(sig);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
+

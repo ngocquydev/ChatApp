@@ -31,6 +31,10 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 |:---:|:---:|
 | ![Hồ sơ cá nhân](docs/assets/screenshots/profile-timeline-view.png) | ![Kiểm thử AI Moderation](docs/assets/screenshots/ai-moderation-trust-tests.png) |
 
+| Trung tâm Bảo mật Quản trị viên (/admin/security) | Hộp thoại Thử thách Bảo mật Turnstile |
+|:---:|:---:|
+| ![Trung tâm Bảo mật](docs/assets/screenshots/waf-security-center.png) | ![Hộp thoại Thử thách](docs/assets/screenshots/waf-under-attack.png) |
+
 > 🌟 **Xem chi tiết toàn bộ các màn hình, quy trình thao tác và phân tích trải nghiệm người dùng tại:**
 > 👉 **[Tài liệu Tổng hợp Hình ảnh Demo & Trải nghiệm thực tế (docs/demo.md)](docs/demo.md)**
 
@@ -95,14 +99,18 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Dark / Light Mode:** Tự động theo hệ điều hành hoặc đổi 1 chạm trên thanh điều hướng. Sử dụng 100% Design Tokens tập trung (`src/theme/tokens.ts`), ESLint chặn mã màu hex trong component.
 - **Bản địa hóa 100% giao diện (i18n):** Chuyển đổi mượt mà giữa Tiếng Việt và Tiếng Anh qua Zustand Store, đồng bộ cả thanh điều hướng, bảng tin, tin nhắn, hộp thoại form và định dạng thời gian tự động (`formatTime.ts`).
 
-### 6. Xác Thực Bảo Mật, Chống DDoS & Bảo Vệ Phiên Làm Việc
+### 6. Xác Thực Bảo Mật, Trung Tâm Quản Trị WAF & Chống DDoS Đa Tầng
 - Cặp token an toàn: `AccessToken` (1 giờ) và `RefreshToken` (7 ngày) lưu trong HttpOnly Cookie chống XSS/CSRF.
 - **Phòng thủ & Chống tấn công DDoS bằng Cloudflare:** Hấp thụ tấn công L3/L4 bằng mạng Anycast toàn cầu, bảo vệ tầng L7 bằng Cloudflare WAF & Rate Limiting, ẩn 100% IP máy chủ gốc bằng **Cloudflare Tunnel (`cloudflared`)** không cần mở cổng Inbound.
+- **Trung Tâm Quản Trị Bảo Mật (`/admin/security`):** Bảng điều khiển quản trị tập trung điều khiển Under Attack Mode (Edge & In-App), Bot Fight Mode, đồng bộ quy tắc WAF, quản lý danh sách IP đen/trắng, và giám sát 100 sự kiện vi phạm thời gian thực.
+- **WAF-as-Code CLI (`npm run cf:waf`):** Bộ công cụ dòng lệnh đồng bộ khai báo bộ quy tắc WAF lên Cloudflare (Rate Limiting rule 10s window chuẩn Free plan với `cf.colo.id + ip.src`, Custom rules chặn scanner paths, bad bots, foreign challenge).
+- **In-App Application Firewall & Thử Thách Turnstile:** Nhận diện và chặn đứng các công cụ quét tự động (`sqlmap`, `nikto`, `masscan`, `dirbuster`) và đường dẫn nhạy cảm (`.env`, `.git`, `wp-*`, `*.php`). Cơ chế Under Attack yêu cầu thử thách Turnstile và cấp cookie `waf_clearance` ký HMAC-SHA256, với Axios Interceptor tự động retry request ban đầu trong suốt (Zero UX Interruption).
+- **Tự Động Cấm IP Tầng Biên (Edge Auto-Ban):** Bộ đếm vi phạm trên Redis (ngưỡng 3 vi phạm trong 10 phút -> cấm 1 giờ), tự động đẩy IP vi phạm lên Cloudflare IP Access Rules (`CLOUDFLARE_AUTO_BAN=true`) với cơ chế Safe Guards bảo vệ nghiêm ngặt các dải IP nội bộ và máy chủ Cloudflare.
 - **Chống giả mạo IP / header Cloudflare:** backend chỉ tin `cf-connecting-ip`, `x-forwarded-for` khi kết nối TCP đến từ dải IP Cloudflare hoặc cloudflared tunnel (`TRUSTED_PROXY_CIDRS`), nên kẻ tấn công gọi thẳng IP máy chủ không né được Rate Limit hay `CLOUDFLARE_PROXY_ONLY`.
 - Tự động làm mới phiên ngầm (Silent Refresh) qua Axios Interceptors khi gặp lỗi 401.
 - Tích hợp Cloudflare Turnstile chống bot và brute-force; đăng nhập mạng xã hội một chạm với Firebase (Google & Facebook).
 - Khôi phục mật khẩu 4 bước qua Email OTP và đưa token đã đăng xuất vào Redis Blacklist (hỗ trợ chế độ Fail-safe).
-- 📖 *Xem đặc tả chi tiết tại: [docs/features/auth-security-cicd.md](docs/features/auth-security-cicd.md) & [docs/features/cloudflare-ddos-protection.md](docs/features/cloudflare-ddos-protection.md)*
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/waf.md](docs/features/waf.md), [docs/features/cloudflare-ddos-protection.md](docs/features/cloudflare-ddos-protection.md) & [docs/features/auth-security-cicd.md](docs/features/auth-security-cicd.md)*
 
 ---
 
@@ -129,6 +137,8 @@ chat/
 │   │   ├── friend-recommendation.md # Gợi ý bạn bè & Thuật toán Đồ thị Neo4j
 │   │   ├── social-feed-profile.md   # Bảng tin & Hồ sơ cá nhân
 │   │   ├── moderation-trust.md  # Kiểm duyệt AI & Phát hiện Bot
+│   │   ├── waf.md               # Trung tâm bảo mật WAF & Chống DDoS đa tầng
+│   │   ├── cloudflare-ddos-protection.md # Anycast DDoS, WAF & Cloudflare Tunnel
 │   │   └── auth-security-cicd.md# Xác thực bảo mật & CI/CD
 │   ├── demo.md                  # Tổng hợp toàn bộ hình ảnh Demo & Trải nghiệm
 │   └── README.md                # Mục lục tài liệu kỹ thuật
@@ -147,6 +157,7 @@ chat/
 │   │       ├── friends/         # Hệ thống bạn bè & Tìm kiếm
 │   │       ├── neo4j/           # Neo4j Service & Cypher Queries đồ thị kết bạn
 │   │       ├── moderation/      # AI Moderation, NLP, Isolation Forest, Autoencoder
+│   │       ├── waf/             # WAF Engine, Clearance, Edge Auto-Ban & Cloudflare CLI
 │   │       ├── posts/           # Bảng tin, Thích, Bình luận, Tải ảnh
 │   │       ├── users/           # Hồ sơ người dùng
 │   │       └── redis/           # Redis Service (Blacklist, GEO, Sets, Caching)
@@ -195,6 +206,10 @@ cp .env.example .env
 
 # Khởi chạy server ở chế độ phát triển:
 npm run start:dev
+
+# (Tùy chọn) Đồng bộ bộ quy tắc WAF lên Cloudflare qua WAF-as-Code CLI:
+npm run cf:waf -- --status
+npm run cf:waf -- --sync
 ```
 - API Server: `http://localhost:3000`
 - Tài liệu Swagger API Docs tương tác: `http://localhost:3000/api-docs`
@@ -227,6 +242,7 @@ Toàn bộ tài liệu chi tiết, sơ đồ thiết kế kiến trúc và hư�
 | 🤝 **Gợi ý bạn bè** | Thuật toán đồ thị Neo4j (2-Hops & Degree Centrality), đồng bộ realtime, Redis Cache | [Xem tài liệu](docs/features/friend-recommendation.md) |
 | 📰 **Bảng tin & Profile** | Đăng bài 4 ảnh magic-byte, phân quyền riêng tư, timeline cá nhân, học vấn (trường học) & tình trạng mối quan hệ | [Xem tài liệu](docs/features/social-feed-profile.md) |
 | 🛡️ **Kiểm duyệt AI** | NLP Classifier, Vision Scanner, Anomaly Detection (Isolation Forest, Autoencoder) | [Xem tài liệu](docs/features/moderation-trust.md) |
+| 🛡️ **Trung tâm Bảo mật WAF** | Bảng điều khiển `/admin/security`, WAF-as-Code CLI (`npm run cf:waf`), Turnstile Clearance, Auto-Ban tầng biên | [Xem tài liệu](docs/features/waf.md) |
 | 🛡️ **Chống DDoS Cloudflare** | Anycast L3/L4 Mitigation, WAF Rules, Cloudflare Tunnel (ẩn 100% IP máy chủ), Rate Limiting | [Xem tài liệu](docs/features/cloudflare-ddos-protection.md) |
 | 🔒 **Bảo mật & CI/CD** | HttpOnly Cookies, Cloudflare Turnstile, OTP Mail, Cổng CI/CD 2 tầng tự động | [Xem tài liệu](docs/features/auth-security-cicd.md) |
 

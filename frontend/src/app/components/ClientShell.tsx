@@ -22,6 +22,11 @@ const CallModal = dynamic(() => import("@/components/chat/call/CallModal"), {
   ssr: false,
 });
 
+// Hộp thoại xác minh khi WAF yêu cầu (Under Attack Mode) — tải khi cần
+const WafChallengeDialog = dynamic(() => import("@/components/common/WafChallengeDialog"), {
+  ssr: false,
+});
+
 interface ClientShellProps {
   children: ReactNode;
 }
@@ -64,6 +69,7 @@ export default function ClientShell({ children }: ClientShellProps) {
       <FloatingChatDock />
       {isAuthenticated && <FriendNoticeToast />}
       {isAuthenticated && <CallModal />}
+      <WafChallengeDialog />
     </>
   );
 }

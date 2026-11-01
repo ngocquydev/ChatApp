@@ -21,3 +21,4 @@ export function resolveEffectiveRole(user: { email?: string | null; role?: strin
   if (user.role === 'admin' || isAdminEmail(user.email)) return 'admin';
   return user.role || 'user';
 }
+

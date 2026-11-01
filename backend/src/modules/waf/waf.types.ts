@@ -58,3 +58,4 @@ export const DEFAULT_WAF_CONFIG: WafConfig = {
 export const WAF_ERROR_BLOCKED = 'WAF_BLOCKED';
 export const WAF_ERROR_CHALLENGE = 'WAF_CHALLENGE_REQUIRED';
 export const WAF_CLEARANCE_COOKIE = 'waf_clearance';
+

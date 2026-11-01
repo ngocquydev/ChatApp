@@ -87,16 +87,25 @@ Trên trang quản trị DNS của Cloudflare:
 2. Truy cập **Security -> Bots**:
    - Bật **Bot Fight Mode** để tự động đặt thử thách Managed Challenge cho các crawler xấu.
 
-### 4.3. Bước 3: Cấu hình Rate Limiting Rules trên Cloudflare
-Truy cập **Security -> WAF -> Rate limiting rules**, bấm **Create rule**:
-- **Bảo vệ API Đăng nhập / Đăng ký:**
-  - *If incoming requests match:* `(http.request.uri.path in {"/auth/login" "/auth/register" "/auth/otp/send"})`
-  - *Rate:* Khi 1 IP gửi vượt quá `15 requests` trong `1 phút`.
-  - *Action:* `Block` hoặc `Managed Challenge` trong thời gian `10 phút`.
-- **Bảo vệ Endpoint Upload tệp nặng:**
-  - *If incoming requests match:* `(http.request.uri.path contains "/upload")`
-  - *Rate:* Khi vượt quá `30 requests` trong `1 phút`.
-  - *Action:* `Managed Challenge`.
+### 4.3. Bước 3: Cấu hình Rate Limiting & Custom Rules Tự Động (WAF-as-Code)
+Thay vì tạo thủ công qua giao diện web, dự án cung cấp bộ công cụ **WAF-as-Code CLI** và **Trung Tâm Quản Trị Bảo Mật** (`/admin/security`) để đồng bộ khai báo các bộ quy tắc chuẩn tương thích hoàn hảo với gói Cloudflare Free:
+
+```bash
+cd backend
+# Kiểm tra kế hoạch thay đổi (dry run)
+npm run cf:waf -- --plan
+
+# Áp dụng tự động toàn bộ quy tắc lên Cloudflare
+npm run cf:waf -- --sync
+```
+
+Các quy tắc được biên dịch tự động:
+1. **Rate Limiting Rule (Free Plan Standard):** Cửa sổ 10s, thời gian phạt 10s, characteristics `cf.colo.id + ip.src`, bảo vệ các endpoint `/api/auth/*` khỏi brute-force.
+2. **Scanner & Probe Paths Block:** Chặn đứng các truy vấn dò tìm `.env`, `.git`, `wp-*`, `*.php`.
+3. **Malicious User-Agent Block:** Chặn đứng các công cụ quét tự động `sqlmap`, `nikto`, `masscan`, `dirbuster`, `gobuster`.
+4. **Foreign Challenge on Auth:** Managed Challenge cho các kết nối ngoài Việt Nam truy cập trang xác thực.
+
+> 📖 *Xem hướng dẫn toàn diện về WAF và Giao diện Quản trị tại:* **[docs/features/waf.md](waf.md)**.
 
 ---
 

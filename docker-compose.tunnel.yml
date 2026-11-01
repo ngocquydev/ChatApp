@@ -9,3 +9,4 @@ services:
       # Lấy Token từ Cloudflare Zero Trust Dashboard: Networks -> Tunnels
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     network_mode: host
+

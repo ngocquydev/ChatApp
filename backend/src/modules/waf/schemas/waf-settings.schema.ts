@@ -38,3 +38,4 @@ export class WafSettings {
 
 export type WafSettingsDocument = HydratedDocument<WafSettings>;
 export const WafSettingsSchema = SchemaFactory.createForClass(WafSettings);
+

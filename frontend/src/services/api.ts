@@ -1,8 +1,11 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import { useWafChallengeStore } from "@/store/useWafChallengeStore";
 
 export interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
   skipAuthRefresh?: boolean;
+  /** Đã gửi lại sau khi vượt qua xác minh WAF (tránh lặp vô hạn) */
+  _wafRetry?: boolean;
 }
 
 const api = axios.create({
@@ -38,6 +41,21 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as CustomAxiosRequestConfig | undefined;
+
+    // 403 WAF_CHALLENGE_REQUIRED: tường lửa yêu cầu xác minh Turnstile → mở hộp thoại, xác minh xong gửi lại request
+    const errorCode = (error.response?.data as { error?: unknown } | undefined)?.error;
+    if (
+      error.response?.status === 403 &&
+      errorCode === "WAF_CHALLENGE_REQUIRED" &&
+      originalRequest &&
+      !originalRequest._wafRetry &&
+      !originalRequest.url?.includes("/waf/clearance") &&
+      typeof window !== "undefined"
+    ) {
+      originalRequest._wafRetry = true;
+      await useWafChallengeStore.getState().requestChallenge();
+      return api(originalRequest);
+    }
 
     // Không can thiệp nếu là các request xác thực cơ bản, đã retry, hoặc có cờ bỏ qua refresh
     const isAuthRoute =

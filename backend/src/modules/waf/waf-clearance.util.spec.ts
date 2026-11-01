@@ -32,3 +32,4 @@ describe('WAF clearance token', () => {
     expect(verifyClearance(token, '203.0.113.10', SECRET, NOW)).toBe(false);
   });
 });
+

@@ -25,3 +25,4 @@ describe('CreateUserDto', () => {
     expect(errors.map((e) => e.property)).toContain('role');
   });
 });
+
