@@ -79,3 +79,4 @@ npm run typecheck    # Kiểm tra kiểu dữ liệu TypeScript 0 lỗi
 npm run build        # Đóng gói sản phẩm sản xuất (Production Build)
 ```
 Mọi quy trình kiểm tra này đã được tự động tích hợp vào `scripts/check.ps1` và `scripts/check.sh` của toàn bộ repository.
+
