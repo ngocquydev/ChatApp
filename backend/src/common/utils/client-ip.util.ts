@@ -20,6 +20,27 @@ export function cleanIp(ip: string): string {
   return ip;
 }
 
+/**
+ * Làm mờ địa chỉ IP (che giấu 2 octet cuối của IPv4 hoặc các hextet cuối của IPv6)
+ * Đảm bảo địa chỉ IP thật của quản trị viên và người dùng không bị công khai ra ngoài.
+ */
+export function maskIp(ip: string): string {
+  if (!ip || ip === 'unknown') return '***';
+  const clean = cleanIp(ip.trim());
+  if (clean.includes('.')) {
+    const parts = clean.split('.');
+    if (parts.length === 4) {
+      return `${parts[0]}.${parts[1]}.***.***`;
+    }
+  } else if (clean.includes(':')) {
+    const parts = clean.split(':');
+    if (parts.length >= 2) {
+      return `${parts[0]}:${parts[1]}:****:****`;
+    }
+  }
+  return '***';
+}
+
 /** Trả về IP đã chuẩn hóa kèm họ địa chỉ, hoặc null nếu chuỗi không phải IP hợp lệ */
 function normalizeIp(raw: string): { ip: string; family: IpFamily } | null {
   const ip = cleanIp(raw.trim());

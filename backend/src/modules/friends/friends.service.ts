@@ -518,6 +518,16 @@ export class FriendsService {
       throw new BadRequestException('Tọa độ địa lý không hợp lệ');
     }
 
+    // 0. Bảo vệ quyền riêng tư: Nếu là quản trị viên (admin), tuyệt đối không lưu tọa độ địa lý hay công khai vị trí/IP
+    try {
+      const currentUser = await this.usersService.findById(userId);
+      if (currentUser?.role === 'admin') {
+        return { success: true, message: 'Đã bảo vệ vị trí của Quản trị viên' };
+      }
+    } catch {
+      // Tiếp tục xử lý nếu không truy vấn được người dùng
+    }
+
     // 1. Lưu vào Redis GEO với key 'users:locations'
     try {
       if (this.isRedisReady()) {

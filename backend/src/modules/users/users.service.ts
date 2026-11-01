@@ -354,6 +354,7 @@ export class UsersService {
     return this.userModel
       .find({
         _id: { $nin: objectIds },
+        role: { $ne: 'admin' }, // Bảo vệ quyền riêng tư tuyệt đối cho Quản trị viên: không lộ định vị và địa chỉ IP
         isDeleted: { $ne: true },
         isBan: { $ne: true },
         location: {

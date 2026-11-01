@@ -18,13 +18,30 @@ export const useSocialAuth = ({ onSuccess, onError }: UseSocialAuthOptions = {})
     isFacebookLoading,
   } = useAuthStore();
 
+  const redirectAfterLogin = () => {
+    const user = useAuthStore.getState().user;
+    const searchParams =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search)
+        : null;
+    const redirect = searchParams?.get("redirect");
+
+    if (redirect) {
+      router.push(redirect);
+    } else if (user?.role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push("/");
+    }
+  };
+
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push("/");
+        redirectAfterLogin();
       }
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string; response?: { data?: { message?: string | string[] } } };
@@ -58,7 +75,7 @@ export const useSocialAuth = ({ onSuccess, onError }: UseSocialAuthOptions = {})
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push("/");
+        redirectAfterLogin();
       }
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string; response?: { data?: { message?: string | string[] } } };

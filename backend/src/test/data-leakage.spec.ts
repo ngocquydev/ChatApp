@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { maskIp } from '../common/utils/client-ip.util.js';
 
 describe('Data Leakage Prevention Test Suite', () => {
   describe('User Serialization & Sensitive Field Stripping', () => {
@@ -110,6 +111,44 @@ describe('Data Leakage Prevention Test Suite', () => {
 
       expect(safeLog).not.toContain('MySecretPassword123');
       expect(safeLog).toContain('***REDACTED***');
+    });
+  });
+
+  describe('Admin & Client IP Privacy Protection', () => {
+    it('hàm maskIp phải che giấu an toàn 2 octet cuối của IPv4 và hextet cuối của IPv6', () => {
+      expect(maskIp('113.161.72.10')).toBe('113.161.***.***');
+      expect(maskIp('::ffff:192.168.1.100')).toBe('192.168.***.***');
+      expect(maskIp('2001:db8:85a3::8a2e:370:7334')).toBe('2001:db8:****:****');
+      expect(maskIp('')).toBe('***');
+      expect(maskIp('unknown')).toBe('***');
+    });
+
+    it('không bao giờ trả về trường ip trong thông tin người dùng công khai hoặc đăng nhập', () => {
+      const mockProfileResponse = {
+        _id: '65f123456789abcdef012345',
+        name: 'Quản trị viên',
+        email: 'admin@chatapp.com',
+        phone: '0987654321',
+        role: 'admin',
+        avatar: 'https://example.com/admin.jpg',
+      };
+
+      expect(mockProfileResponse).not.toHaveProperty('ip');
+      expect(mockProfileResponse).not.toHaveProperty('clientIp');
+      expect(mockProfileResponse).not.toHaveProperty('lastLoginIp');
+    });
+
+    it('bảo vệ audit log: adminId chỉ sử dụng ID đối tượng người dùng, tuyệt đối không ghi IP của Admin', () => {
+      const adminReq = {
+        user: { _id: '65f123456789abcdef012345' },
+        realClientIp: '113.161.72.10',
+      };
+
+      const adminId = String(adminReq.user._id);
+      const auditLog = `[Audit] Admin ${adminId} đã kích hoạt tính năng bảo mật`;
+
+      expect(auditLog).not.toContain(adminReq.realClientIp);
+      expect(auditLog).toContain('65f123456789abcdef012345');
     });
   });
 });

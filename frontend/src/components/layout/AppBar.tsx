@@ -177,11 +177,18 @@ function ResponsiveAppBar() {
         router.push("/profile");
       },
     },
-    // Lối vào trung tâm bảo mật chỉ hiện với admin (backend vẫn kiểm tra quyền ở mọi API)
+    // Lối vào quản trị và trung tâm an ninh chỉ hiện với tài khoản admin
     ...(user?.role === "admin"
       ? [
           {
-            label: tr("Trung tâm bảo mật", "Security center"),
+            label: tr("🛡️ Bảng điều khiển Quản trị", "🛡️ Admin Dashboard"),
+            action: () => {
+              handleCloseUserMenu();
+              router.push("/admin");
+            },
+          },
+          {
+            label: tr("Tường lửa & An ninh WAF", "Firewall & WAF Security"),
             action: () => {
               handleCloseUserMenu();
               router.push("/admin/security");
@@ -710,6 +717,34 @@ function ResponsiveAppBar() {
               </IconButton>
             </Box>
 
+            {/* Lối vào Bảng điều khiển Quản trị nổi bật cho Admin trên Desktop */}
+            {user?.role === "admin" && (
+              <Box sx={{ display: { xs: "none", sm: "flex" }, mr: 1 }}>
+                <Button
+                  onClick={() => router.push("/admin")}
+                  size="small"
+                  variant="contained"
+                  color="error"
+                  startIcon={<ShieldCheck size={16} />}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 700,
+                    fontSize: "0.8rem",
+                    borderRadius: "16px",
+                    px: 1.5,
+                    py: 0.5,
+                    boxShadow: "none",
+                    bgcolor: "error.main",
+                    "&:hover": {
+                      bgcolor: "error.dark",
+                    },
+                  }}
+                >
+                  {tr("Quản trị", "Admin Panel")}
+                </Button>
+              </Box>
+            )}
+
             {/* Chuông thông báo trên Desktop */}
             <Box sx={{ display: { xs: "none", md: "flex" }, mr: 0.5 }}>
               <NotificationBell />
@@ -760,6 +795,36 @@ function ResponsiveAppBar() {
                 open={Boolean(anchorElUser)}
                 onClose={handleCloseUserMenu}
               >
+                {user?.role === "admin" && (
+                  <Box
+                    sx={{
+                      px: 2,
+                      py: 1.2,
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 1,
+                      minWidth: 200,
+                    }}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
+                        {user.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
+                        {user.email}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label="ADMIN"
+                      size="small"
+                      color="error"
+                      sx={{ height: 20, fontSize: "0.65rem", fontWeight: 800 }}
+                    />
+                  </Box>
+                )}
                 {settings.map((setting, index) => (
                   <MenuItem
                     key={index}
@@ -911,18 +976,39 @@ function ResponsiveAppBar() {
           {user?.role === "admin" && (
             <ListItem disablePadding>
               <ListItemButton
-                selected={Boolean(pathname?.startsWith("/admin/security"))}
+                selected={Boolean(pathname?.startsWith("/admin"))}
                 onClick={() => {
                   handleDrawerToggle();
-                  router.push("/admin/security");
+                  router.push("/admin");
+                }}
+                sx={{
+                  bgcolor: "action.hover",
+                  mx: 1,
+                  borderRadius: "8px",
+                  mb: 0.5,
                 }}
               >
-                <ListItemIcon>
+                <ListItemIcon sx={{ color: "error.main" }}>
                   <ShieldCheck size={22} aria-hidden />
                 </ListItemIcon>
                 <ListItemText
-                  primary={tr("Trung tâm bảo mật", "Security center")}
-                  secondary={tr("Chống DDoS & tường lửa", "DDoS & firewall")}
+                  primary={
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                        {tr("Bảng điều khiển Quản trị", "Admin Dashboard")}
+                      </Typography>
+                      <Chip
+                        label="ADMIN"
+                        size="small"
+                        color="error"
+                        sx={{ height: 16, fontSize: "0.6rem", fontWeight: 800 }}
+                      />
+                    </Box>
+                  }
+                  secondary={tr(
+                    "Toàn quyền quản trị, kiểm duyệt & WAF",
+                    "Full administration, moderation & WAF"
+                  )}
                 />
               </ListItemButton>
             </ListItem>

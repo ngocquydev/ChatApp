@@ -33,9 +33,10 @@ export class TurnstileService {
     expectedAction = 'login',
   ): Promise<boolean> {
     const isTest = this.configService.get<string>('NODE_ENV') === 'test';
+    const isDev = this.configService.get<string>('NODE_ENV') !== 'production';
 
-    // Cho phép bỏ qua xác thực trong môi trường kiểm thử (Vitest / Supertest) nếu không truyền token
-    if (isTest && !token) {
+    // Cho phép bỏ qua xác thực trong môi trường kiểm thử (Vitest / Supertest) hoặc development local
+    if ((isTest || isDev) && (!token || token === 'dev_bypass_turnstile')) {
       return true;
     }
 

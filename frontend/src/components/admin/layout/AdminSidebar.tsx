@@ -245,9 +245,17 @@ export default function AdminSidebar({ onItemClick }: AdminSidebarProps) {
               size={36}
             />
             <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-              <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
-                {user.name}
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
+                <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
+                  {user.name}
+                </Typography>
+                <Chip
+                  label="ADMIN"
+                  size="small"
+                  color="error"
+                  sx={{ height: 16, fontSize: "0.6rem", fontWeight: 800 }}
+                />
+              </Box>
               <Typography variant="caption" noWrap color="text.secondary" sx={{ display: "block" }}>
                 {user.email}
               </Typography>

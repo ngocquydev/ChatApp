@@ -194,7 +194,14 @@ export default function Login() {
   }, [setValue]);
 
   const onSubmit = async (data: LoginFormData) => {
-    if (!turnstileToken) {
+    const isDev =
+      process.env.NODE_ENV !== "production" ||
+      (typeof window !== "undefined" &&
+        (window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1"));
+    const token = turnstileToken || (isDev ? "dev_bypass_turnstile" : "");
+
+    if (!token) {
       setAlertInfo({
         open: true,
         type: "warning",
@@ -208,11 +215,11 @@ export default function Login() {
 
     setAlertInfo({ open: false, type: "info", message: "" });
     try {
-      await loginMe({
+      const res = (await loginMe({
         email: data.email,
         password: data.password,
-        turnstileToken,
-      });
+        turnstileToken: token,
+      })) as { profile?: { role?: string }; user?: { role?: string } } | undefined;
 
       if (rememberMe) {
         localStorage.setItem("remember_email", data.email);
@@ -220,7 +227,23 @@ export default function Login() {
         localStorage.removeItem("remember_email");
       }
 
-      router.push("/");
+      const role =
+        res?.profile?.role ||
+        res?.user?.role ||
+        useAuthStore.getState().user?.role;
+      const searchParams =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search)
+          : null;
+      const redirect = searchParams?.get("redirect");
+
+      if (redirect) {
+        router.push(redirect);
+      } else if (role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
     } catch (err: unknown) {
       console.error("Lỗi đăng nhập:", err);
 
