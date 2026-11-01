@@ -49,10 +49,13 @@ const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(
       onSuccess,
       onError,
       onExpire,
-      siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
-        process.env.NEXT_PUBLIC_SITE_KEY ||
-        process.env.VITE_TURNSTILE_SITE_KEY ||
-        process.env.VITE_SITE_KEY ||
+      siteKey =
+        import.meta.env.VITE_TURNSTILE_SITE_KEY ||
+        import.meta.env.VITE_SITE_KEY ||
+        (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_TURNSTILE_SITE_KEY) ||
+        (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_SITE_KEY) ||
+        (typeof process !== "undefined" && process.env?.VITE_TURNSTILE_SITE_KEY) ||
+        (typeof process !== "undefined" && process.env?.VITE_SITE_KEY) ||
         "0x4AAAAAAFUR2RRMbBht62MJ",
       action = "login",
       theme = "light",
