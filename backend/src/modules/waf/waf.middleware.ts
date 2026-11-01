@@ -4,6 +4,7 @@ import { getClientIp } from '../../common/utils/client-ip.util.js';
 import { WafConfigService } from './waf-config.service.js';
 import { WafEventsService } from './waf-events.service.js';
 import { WafClearanceService } from './waf-clearance.service.js';
+import { EdgeBanService } from './edge-ban.service.js';
 import {
   WAF_ERROR_BLOCKED,
   WAF_ERROR_CHALLENGE,
@@ -17,13 +18,18 @@ type CloudflareAwareRequest = Request & {
   cfCountry?: string | string[] | null;
 };
 
+/** IP client đã chuẩn hóa (CloudflareMiddleware gắn sẵn realClientIp) */
+export function resolveWafIp(req: CloudflareAwareRequest): string {
+  return req.realClientIp ?? getClientIp(req);
+}
+
 /** Chuẩn hóa request Express thành ngữ cảnh đánh giá luật WAF */
 export function buildWafContext(
   req: CloudflareAwareRequest,
   hasClearance: (ip: string) => boolean,
   isBanned = false,
 ): WafRequestContext {
-  const ip = req.realClientIp ?? getClientIp(req);
+  const ip = resolveWafIp(req);
   const url = req.originalUrl || req.url || '/';
   const rawCountry = req.isCloudflare ? req.cfCountry : null;
   const country = typeof rawCountry === 'string' && /^[A-Za-z]{2}$/.test(rawCountry) ? rawCountry.toUpperCase() : null;
@@ -48,11 +54,13 @@ export class WafMiddleware implements NestMiddleware {
     private readonly configService: WafConfigService,
     private readonly events: WafEventsService,
     private readonly clearance: WafClearanceService,
+    private readonly bans: EdgeBanService,
   ) {}
 
   async use(req: Request, _res: Response, next: NextFunction): Promise<void> {
     const { engine } = await this.configService.getEngine();
-    const ctx = buildWafContext(req, (ip) => this.clearance.isValid(req, ip));
+    const isBanned = await this.bans.isBanned(resolveWafIp(req));
+    const ctx = buildWafContext(req, (ip) => this.clearance.isValid(req, ip), isBanned);
     const decision = engine.evaluate(ctx);
     this.enforce(decision, ctx);
     next();
@@ -69,6 +77,11 @@ export class WafMiddleware implements NestMiddleware {
       path: ctx.path,
       country: ctx.country,
     });
+
+    // Dò lỗ hổng / UA công cụ tấn công là vi phạm: tái phạm sẽ bị chặn tự động (cả ở Cloudflare nếu bật)
+    if (decision.reason === 'scanner_path' || decision.reason === 'bad_user_agent') {
+      void this.bans.reportOffense(ctx.ip, decision.reason);
+    }
 
     if (decision.action === 'challenge') {
       throw new HttpException(

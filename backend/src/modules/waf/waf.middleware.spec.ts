@@ -7,6 +7,7 @@ import { DEFAULT_WAF_CONFIG, WAF_ERROR_BLOCKED, WAF_ERROR_CHALLENGE, type WafCon
 import type { WafConfigService } from './waf-config.service.js';
 import type { WafEventsService } from './waf-events.service.js';
 import type { WafClearanceService } from './waf-clearance.service.js';
+import type { EdgeBanService } from './edge-ban.service.js';
 
 function makeReq(overrides: Record<string, unknown> = {}): Request {
   return {
@@ -21,6 +22,7 @@ function makeReq(overrides: Record<string, unknown> = {}): Request {
 describe('WafMiddleware', () => {
   let record: ReturnType<typeof vi.fn>;
   let isValid: ReturnType<typeof vi.fn>;
+  let bans: { isBanned: ReturnType<typeof vi.fn>; reportOffense: ReturnType<typeof vi.fn> };
   let next: NextFunction;
 
   function makeMiddleware(config: Partial<WafConfig> = {}) {
@@ -32,6 +34,7 @@ describe('WafMiddleware', () => {
       configService,
       { record } as unknown as WafEventsService,
       { isValid } as unknown as WafClearanceService,
+      bans as unknown as EdgeBanService,
     );
   }
 
@@ -47,6 +50,7 @@ describe('WafMiddleware', () => {
   beforeEach(() => {
     record = vi.fn();
     isValid = vi.fn().mockReturnValue(false);
+    bans = { isBanned: vi.fn().mockResolvedValue(false), reportOffense: vi.fn().mockResolvedValue(undefined) };
     next = vi.fn();
   });
 
@@ -64,6 +68,18 @@ describe('WafMiddleware', () => {
     expect(record).toHaveBeenCalledWith(
       expect.objectContaining({ ip: '203.0.113.10', action: 'block', reason: 'scanner_path', path: '/.env' }),
     );
+  });
+
+  it('ghi nhận vi phạm để tự động chặn kẻ dò lỗ hổng tái phạm', async () => {
+    await run(makeMiddleware(), makeReq({ originalUrl: '/wp-login.php' }));
+    expect(bans.reportOffense).toHaveBeenCalledWith('203.0.113.10', 'scanner_path');
+  });
+
+  it('chặn IP đang bị ban tự động, không ghi thêm vi phạm', async () => {
+    bans.isBanned.mockResolvedValue(true);
+    const err = await run(makeMiddleware(), makeReq());
+    expect(err?.getResponse()).toMatchObject({ error: WAF_ERROR_BLOCKED });
+    expect(bans.reportOffense).not.toHaveBeenCalled();
   });
 
   it('yêu cầu xác minh (WAF_CHALLENGE_REQUIRED) khi bật Under Attack và chưa có clearance', async () => {

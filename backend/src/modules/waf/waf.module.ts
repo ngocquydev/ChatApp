@@ -7,14 +7,24 @@ import { WafEventsService } from './waf-events.service.js';
 import { WafClearanceService } from './waf-clearance.service.js';
 import { WafMiddleware } from './waf.middleware.js';
 import { WafController } from './waf.controller.js';
+import { WafAdminController } from './waf-admin.controller.js';
+import { EdgeBanService } from './edge-ban.service.js';
+import { CloudflareWafService } from './cloudflare/cloudflare-waf.service.js';
 
 @Module({
   imports: [
     AuthModule,
     MongooseModule.forFeature([{ name: WafSettings.name, schema: WafSettingsSchema }]),
   ],
-  controllers: [WafController],
-  providers: [WafConfigService, WafEventsService, WafClearanceService, WafMiddleware],
-  exports: [WafConfigService, WafEventsService, WafClearanceService, WafMiddleware],
+  controllers: [WafController, WafAdminController],
+  providers: [
+    WafConfigService,
+    WafEventsService,
+    WafClearanceService,
+    WafMiddleware,
+    EdgeBanService,
+    CloudflareWafService,
+  ],
+  exports: [WafConfigService, WafEventsService, WafClearanceService, WafMiddleware, EdgeBanService],
 })
 export class WafModule {}

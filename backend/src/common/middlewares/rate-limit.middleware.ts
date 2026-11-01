@@ -7,13 +7,17 @@ import {
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { RedisService } from '../../modules/redis/redis/redis.service.js';
+import { EdgeBanService } from '../../modules/waf/edge-ban.service.js';
 import { getClientIp } from '../utils/client-ip.util.js';
 
 @Injectable()
 export class RateLimitMiddleware implements NestMiddleware {
   private readonly logger = new Logger(RateLimitMiddleware.name);
 
-  constructor(private readonly redisService: RedisService) {}
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly bans: EdgeBanService,
+  ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
     // 1. Lấy IP thực của client (Ưu tiên Cloudflare CF-Connecting-IP, X-Forwarded-For)
@@ -38,6 +42,11 @@ export class RateLimitMiddleware implements NestMiddleware {
         const currentTtl = await this.redisService.client.ttl(key);
         if (currentTtl === -1) {
           await this.redisService.client.expire(key, TTL_SECONDS);
+        }
+
+        // Ghi nhận vi phạm một lần mỗi cửa sổ (đúng lúc vừa vượt ngưỡng) để tự động chặn kẻ tái phạm
+        if (count === MAX_REQUESTS + 1) {
+          void this.bans.reportOffense(clientIp, 'rate_limit');
         }
 
         throw new HttpException(
