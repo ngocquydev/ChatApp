@@ -5,8 +5,10 @@ import { Box, ButtonBase, IconButton, Tooltip, Typography } from "@mui/material"
 import { Trash2 } from "lucide-react";
 import ImageLightbox from "@/components/posts/ImageLightbox";
 import { useTranslation } from "@/i18n/useTranslation";
-import { isVideoUrl, mediaUrl, type CommentView } from "@/services/postsApi";
+import { isVideoUrl, mediaUrl, type CommentView, type ReactionType } from "@/services/postsApi";
 import { formatFullDateTime, formatRelativeTime } from "@/utils/formatTime";
+import InlineReactionButton from "@/components/reactions/InlineReactionButton";
+import ReactionSummary from "@/components/reactions/ReactionSummary";
 import PostAuthorHeader from "./PostAuthorHeader";
 
 interface CommentItemProps {
@@ -14,6 +16,7 @@ interface CommentItemProps {
   currentUserId?: string;
   canDelete: boolean;
   onDelete: (comment: CommentView) => void;
+  onToggleReaction?: (comment: CommentView, type?: ReactionType) => void;
 }
 
 export default function CommentItem({
@@ -21,6 +24,7 @@ export default function CommentItem({
   currentUserId,
   canDelete,
   onDelete,
+  onToggleReaction,
 }: CommentItemProps) {
   const { tr } = useTranslation();
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -82,11 +86,29 @@ export default function CommentItem({
           )}
         </Box>
 
-        <Tooltip title={formatFullDateTime(comment.createdAt)}>
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", ml: 1.5, mt: 0.25 }}>
-            {formatRelativeTime(comment.createdAt)}
-          </Typography>
-        </Tooltip>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, ml: 1.5, mt: 0.25 }}>
+          {onToggleReaction && (
+            <InlineReactionButton
+              myReaction={comment.myReaction}
+              onReact={(type) => onToggleReaction(comment, type)}
+              onToggleDefault={() => onToggleReaction(comment)}
+            />
+          )}
+
+          <Tooltip title={formatFullDateTime(comment.createdAt)}>
+            <Typography variant="caption" color="text.secondary">
+              {formatRelativeTime(comment.createdAt)}
+            </Typography>
+          </Tooltip>
+
+          {(comment.likeCount ?? 0) > 0 && (
+            <ReactionSummary
+              size="small"
+              totalCount={comment.likeCount ?? 0}
+              reactionsCount={comment.reactionsCount}
+            />
+          )}
+        </Box>
       </Box>
 
       {canDelete && (

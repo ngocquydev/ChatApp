@@ -3,7 +3,18 @@ import { Document, Types } from 'mongoose';
 
 export type PostLikeDocument = PostLike & Document;
 
-/** Mỗi lượt thích là một bản ghi riêng (không nhét mảng vào bài viết để không phình tài liệu). */
+export const REACTION_TYPES = [
+  'like',
+  'love',
+  'care',
+  'haha',
+  'wow',
+  'sad',
+  'angry',
+] as const;
+export type ReactionType = (typeof REACTION_TYPES)[number];
+
+/** Mỗi lượt thích / thả cảm xúc là một bản ghi riêng (không nhét mảng vào bài viết để không phình tài liệu). */
 @Schema({ timestamps: { createdAt: true, updatedAt: false } })
 export class PostLike {
   @Prop({ type: Types.ObjectId, ref: 'Post', required: true })
@@ -11,6 +22,9 @@ export class PostLike {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
+
+  @Prop({ type: String, enum: REACTION_TYPES, default: 'like' })
+  type: ReactionType;
 
   createdAt?: Date;
 }

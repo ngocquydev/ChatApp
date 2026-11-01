@@ -32,6 +32,12 @@ export interface LocationData {
   isLiveActive?: boolean;
 }
 
+export interface MessageReactionItem {
+  userId: string;
+  type: string;
+  createdAt?: string;
+}
+
 export interface ChatMessage {
   _id: string;
   id?: string;
@@ -46,6 +52,7 @@ export interface ChatMessage {
   isDeleted?: boolean;
   deletedAt?: string | null;
   deletedBy?: string | null;
+  reactions?: MessageReactionItem[];
   createdAt: string;
 }
 
@@ -98,6 +105,7 @@ interface ChatState {
   restrictActiveConversation: (restrict: boolean) => Promise<{ success: boolean; message?: string }>;
   updateLiveLocation: (messageId: string, location: Partial<LocationData>) => void;
   stopLiveLocation: (messageId: string) => void;
+  reactToMessage: (messageId: string, type: string) => Promise<void>;
 }
 
 const BACKEND_URL =
@@ -501,6 +509,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     ? { ...m.location, ...data.location }
                     : data.location,
                 }
+              : m
+          ),
+        }));
+      }
+    );
+
+    // Lắng nghe cập nhật thả cảm xúc tin nhắn real-time
+    socket.on(
+      "message:reaction",
+      (data: {
+        messageId: string;
+        conversationId: string;
+        reactions: MessageReactionItem[];
+      }) => {
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m._id === data.messageId || m.id === data.messageId
+              ? { ...m, reactions: data.reactions }
               : m
           ),
         }));
@@ -1030,5 +1056,55 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   stopLiveLocation: (messageId: string) => {
     get().updateLiveLocation(messageId, { isLiveActive: false });
+  },
+
+  reactToMessage: async (messageId: string, type: string) => {
+    const { socket, activeConversation } = get();
+    const currentUser = useAuthStore.getState().user;
+    const currentUserId = String(currentUser?._id || currentUser?.id || "");
+    const partner = activeConversation?.participants.find(
+      (p) => String(p._id) !== currentUserId
+    );
+    const receiverId = partner?._id ? String(partner._id) : undefined;
+
+    // Optimistic local update
+    if (currentUserId) {
+      set((state) => ({
+        messages: state.messages.map((m) => {
+          if (m._id !== messageId && m.id !== messageId) return m;
+          const currentReactions = [...(m.reactions || [])];
+          const existIdx = currentReactions.findIndex((r) => r.userId === currentUserId);
+          if (existIdx > -1) {
+            if (currentReactions[existIdx].type === type) {
+              currentReactions.splice(existIdx, 1);
+            } else {
+              currentReactions[existIdx] = { ...currentReactions[existIdx], type };
+            }
+          } else {
+            currentReactions.push({
+              userId: currentUserId,
+              type,
+              createdAt: new Date().toISOString(),
+            });
+          }
+          return { ...m, reactions: currentReactions };
+        }),
+      }));
+    }
+
+    try {
+      if (socket && socket.connected) {
+        socket.emit("message:reaction", {
+          messageId,
+          conversationId: activeConversation?._id || "",
+          type,
+          receiverId,
+        });
+      } else {
+        await api.post(`/chat/messages/${messageId}/reaction`, { type });
+      }
+    } catch (err) {
+      console.error("Lỗi thả cảm xúc tin nhắn:", err);
+    }
   },
 }));

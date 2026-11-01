@@ -13,6 +13,7 @@ import {
 import {
   Message,
   MessageDocument,
+  MessageReaction,
   CallLogData,
   CallStatus,
   CallType,
@@ -470,6 +471,69 @@ export class ChatService {
     }
 
     return message;
+  }
+
+  /**
+   * Thả cảm xúc / xóa cảm xúc vào tin nhắn (Reaction)
+   */
+  async reactToMessage(
+    messageId: string,
+    userId: string,
+    type: string,
+  ): Promise<{
+    messageId: string;
+    conversationId: string;
+    reactions: MessageReaction[];
+  }> {
+    const validTypes = ['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'];
+    if (!validTypes.includes(type)) {
+      throw new BadRequestException('Loại cảm xúc không hợp lệ');
+    }
+
+    const message = await this.messageModel.findById(messageId);
+    if (!message) {
+      throw new NotFoundException('Không tìm thấy tin nhắn');
+    }
+
+    const isSender = message.senderId.toString() === userId;
+    const isReceiver = message.receiverId.toString() === userId;
+    if (!isSender && !isReceiver) {
+      throw new ForbiddenException('Bạn không thuộc cuộc hội thoại này');
+    }
+
+    if (!message.reactions) {
+      message.reactions = [];
+    }
+
+    const existingIdx = message.reactions.findIndex(
+      (r) => r.userId.toString() === userId,
+    );
+
+    if (existingIdx > -1) {
+      if (message.reactions[existingIdx].type === type) {
+        // Đã thả cùng loại -> Hủy cảm xúc (toggle off)
+        message.reactions.splice(existingIdx, 1);
+      } else {
+        // Đổi loại cảm xúc
+        message.reactions[existingIdx].type = type;
+        message.reactions[existingIdx].createdAt = new Date();
+      }
+    } else {
+      // Thêm mới
+      message.reactions.push({
+        userId: new Types.ObjectId(userId),
+        type,
+        createdAt: new Date(),
+      });
+    }
+
+    await message.save();
+
+    return {
+      messageId: message._id.toString(),
+      conversationId: message.conversationId.toString(),
+      reactions: message.reactions,
+    };
   }
 
   async getConversationById(id: string): Promise<ConversationDocument | null> {

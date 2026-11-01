@@ -10,8 +10,10 @@ import {
   apiErrorMessage,
   deleteComment,
   fetchComments,
+  toggleCommentReaction,
   uploadMedia,
   type CommentView,
+  type ReactionType,
 } from "@/services/postsApi";
 import CommentComposer from "./CommentComposer";
 import CommentItem from "./CommentItem";
@@ -82,6 +84,56 @@ export default function PostCommentSection({
     }
   };
 
+  const handleToggleCommentReaction = async (comment: CommentView, type?: ReactionType) => {
+    const targetType = type ?? (comment.myReaction ? comment.myReaction : "like");
+    const isUnreact = Boolean(comment.likedByMe && (!type || comment.myReaction === type));
+    const nextReaction = isUnreact ? null : targetType;
+    const nextLiked = !isUnreact;
+
+    list.patch(comment._id, (c) => {
+      const nextReactionsCount: Record<string, number> = { ...(c.reactionsCount || {}) };
+      if (isUnreact) {
+        if (c.myReaction && nextReactionsCount[c.myReaction]) {
+          nextReactionsCount[c.myReaction] = Math.max(0, nextReactionsCount[c.myReaction] - 1);
+        }
+      } else {
+        if (c.myReaction && nextReactionsCount[c.myReaction]) {
+          nextReactionsCount[c.myReaction] = Math.max(0, nextReactionsCount[c.myReaction] - 1);
+        }
+        nextReactionsCount[targetType] = (nextReactionsCount[targetType] || 0) + 1;
+      }
+      return {
+        ...c,
+        likedByMe: nextLiked,
+        myReaction: nextReaction,
+        likeCount: Math.max(
+          0,
+          (c.likeCount ?? 0) + (nextLiked && !c.likedByMe ? 1 : !nextLiked && c.likedByMe ? -1 : 0),
+        ),
+        reactionsCount: nextReactionsCount as Record<ReactionType, number>,
+      };
+    });
+
+    try {
+      const res = await toggleCommentReaction(postId, comment._id, type);
+      list.patch(comment._id, (c) => ({
+        ...c,
+        likedByMe: res.liked,
+        myReaction: res.myReaction,
+        likeCount: res.likeCount,
+        reactionsCount: res.reactionsCount as Record<ReactionType, number> | undefined,
+      }));
+    } catch {
+      list.patch(comment._id, (c) => ({
+        ...c,
+        likedByMe: comment.likedByMe,
+        myReaction: comment.myReaction,
+        likeCount: comment.likeCount,
+        reactionsCount: comment.reactionsCount,
+      }));
+    }
+  };
+
   return (
     <Box sx={{ pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
       {list.status === "loading" && (
@@ -121,6 +173,7 @@ export default function PostCommentSection({
                     currentUserId={currentUserId}
                     canDelete={c.author._id === currentUserId || postAuthorId === currentUserId}
                     onDelete={setToDelete}
+                    onToggleReaction={handleToggleCommentReaction}
                   />
                 ))}
             </Box>

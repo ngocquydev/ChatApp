@@ -19,6 +19,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { uploadMedia, MAX_FILE_BYTES } from "@/services/postsApi";
 import { LocationData } from "@/store/useChatStore";
 import LocationPickerModal from "../LocationPickerModal";
+import AppEmojiPicker from "@/components/common/AppEmojiPicker";
 
 const TYPING_THROTTLE_MS = 2500;
 const TYPING_IDLE_MS = 5000;
@@ -360,38 +361,22 @@ export default function MessageComposer({
         slotProps={{
           paper: {
             sx: {
-              p: 1.5,
               borderRadius: "16px",
-              maxWidth: 260,
+              overflow: "hidden",
+              boxShadow: 4,
               mb: 1,
             },
           },
         }}
       >
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, mb: 1, display: "block" }}>
-          {tr("Biểu tượng cảm xúc", "Emojis")}
-        </Typography>
-        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 0.5 }}>
-          {POPULAR_EMOJIS.map((emoji) => (
-            <ButtonBase
-              key={emoji}
-              aria-label={tr(`Chèn biểu tượng ${emoji}`, `Insert emoji ${emoji}`)}
-              onClick={() => {
-                handleChange(`${text}${emoji}`);
-                setEmojiAnchorEl(null);
-              }}
-              sx={{
-                fontSize: "1.35rem",
-                p: 0.6,
-                borderRadius: "8px",
-                transition: "transform 0.1s ease, background-color 0.1s ease",
-                "&:hover": { bgcolor: "action.hover", transform: "scale(1.18)" },
-              }}
-            >
-              {emoji}
-            </ButtonBase>
-          ))}
-        </Box>
+        <AppEmojiPicker
+          onEmojiSelect={(emoji) => {
+            handleChange(`${text}${emoji}`);
+            setEmojiAnchorEl(null);
+          }}
+          width={320}
+          height={380}
+        />
       </Popover>
 
       <Typography

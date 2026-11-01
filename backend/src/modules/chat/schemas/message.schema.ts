@@ -20,6 +20,12 @@ export interface LocationData {
   isLiveActive?: boolean;
 }
 
+export interface MessageReaction {
+  userId: Types.ObjectId;
+  type: string;
+  createdAt?: Date;
+}
+
 export type MessageDocument = Message & Document;
 
 @Schema({ timestamps: true })
@@ -95,6 +101,22 @@ export class Message {
     default: null,
   })
   readAt?: Date | null;
+
+  @Prop({
+    type: [
+      {
+        userId: { type: Types.ObjectId, ref: 'User', required: true },
+        type: {
+          type: String,
+          enum: ['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'],
+          required: true,
+        },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  })
+  reactions?: MessageReaction[];
 
   @Prop({
     type: Boolean,

@@ -53,6 +53,10 @@ import { useSoundStore } from "@/store/useSoundStore";
 import { soundNotification } from "@/utils/soundNotification";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import AppEmojiPicker from "@/components/common/AppEmojiPicker";
+import InlineReactionButton from "@/components/reactions/InlineReactionButton";
+import type { ReactionType } from "@/components/reactions/reactionConstants";
+import MessageReactionsDisplay from "./MessageReactionsDisplay";
 import ImageLightbox from "@/components/posts/ImageLightbox";
 import ThemeSelectDialog from "@/components/chat/app/ThemeSelectDialog";
 import RestrictInfoDialog from "@/components/chat/app/RestrictInfoDialog";
@@ -471,6 +475,20 @@ export default function FloatingChatBox({
       );
     };
 
+    const handleMessageReaction = (data: {
+      messageId: string;
+      conversationId: string;
+      reactions: { userId: string; type: string }[];
+    }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          String(m._id || m.id) === String(data.messageId)
+            ? { ...m, reactions: data.reactions }
+            : m
+        )
+      );
+    };
+
     const handleLocalLocationUpdate = (e: Event) => {
       const customEvent = e as CustomEvent<{ messageId: string } & Partial<LocationData>>;
       const { messageId, ...locUpdate } = customEvent.detail || {};
@@ -497,6 +515,7 @@ export default function FloatingChatBox({
       socket.on("conversation:unblocked", handleUnblocked);
       socket.on("message:deleted", handleMessageDeleted);
       socket.on("location:live_updated", handleLiveLocationUpdated);
+      socket.on("message:reaction", handleMessageReaction);
     }
     window.addEventListener("chatapp:location_updated", handleLocalLocationUpdate);
 
@@ -518,6 +537,7 @@ export default function FloatingChatBox({
         socket.off("conversation:unblocked", handleUnblocked);
         socket.off("message:deleted", handleMessageDeleted);
         socket.off("location:live_updated", handleLiveLocationUpdated);
+        socket.off("message:reaction", handleMessageReaction);
       }
     };
   }, [socket, convId, targetUserId, currentUserId, targetUserName, session.isMinimized, clearUnread, incrementUnread]);
@@ -705,6 +725,47 @@ export default function FloatingChatBox({
       );
     } catch (err) {
       console.error("Lỗi xóa tin nhắn:", err);
+    }
+  };
+
+  const handleReactMessage = async (msgId: string, type: ReactionType) => {
+    if (!convId) return;
+    // Optimistic local update
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m._id !== msgId && m.id !== msgId) return m;
+        const currentReactions = [...(m.reactions || [])];
+        const existIdx = currentReactions.findIndex((r) => r.userId === currentUserId);
+        if (existIdx > -1) {
+          if (currentReactions[existIdx].type === type) {
+            currentReactions.splice(existIdx, 1);
+          } else {
+            currentReactions[existIdx] = { ...currentReactions[existIdx], type };
+          }
+        } else {
+          currentReactions.push({
+            userId: currentUserId,
+            type,
+            createdAt: new Date().toISOString(),
+          });
+        }
+        return { ...m, reactions: currentReactions };
+      })
+    );
+
+    try {
+      if (socket && socket.connected) {
+        socket.emit("message:reaction", {
+          messageId: msgId,
+          conversationId: convId,
+          type,
+          receiverId: targetUserId,
+        });
+      } else {
+        await api.post(`/chat/messages/${msgId}/reaction`, { type });
+      }
+    } catch (err) {
+      console.error("Lỗi thả cảm xúc tin nhắn:", err);
     }
   };
 
@@ -1166,6 +1227,7 @@ export default function FloatingChatBox({
                         flexDirection: "column",
                         alignItems: isMe ? "flex-end" : "flex-start",
                         "&:hover .msg-delete-btn": { opacity: 1 },
+                        "&:hover .msg-reaction-btn": { opacity: 1 },
                       }}
                     >
                       <Box
@@ -1302,6 +1364,25 @@ export default function FloatingChatBox({
                           )}
                         </Tooltip>
 
+                        {!msg.isDeleted && (
+                          <Box
+                            className="msg-reaction-btn"
+                            sx={{
+                              opacity: { xs: 0.7, sm: 0 },
+                              transition: "opacity 0.15s ease",
+                            }}
+                          >
+                            <InlineReactionButton
+                              variant="icon"
+                              pickerPlacement="top"
+                              pickerAlign={isMe ? "right" : "left"}
+                              onReact={(type) =>
+                                void handleReactMessage(String(msg._id || msg.id || ""), type)
+                              }
+                            />
+                          </Box>
+                        )}
+
                         {isMe && !msg.isDeleted && (
                           <Tooltip title={tr("Thu hồi tin nhắn", "Unsend message")}>
                             <IconButton
@@ -1325,6 +1406,16 @@ export default function FloatingChatBox({
                           </Tooltip>
                         )}
                       </Box>
+
+                      {/* Hiển thị các cảm xúc đã thả */}
+                      <MessageReactionsDisplay
+                        reactions={msg.reactions}
+                        currentUserId={currentUserId}
+                        isMe={isMe}
+                        onToggleReaction={(type) =>
+                          void handleReactMessage(String(msg._id || msg.id || ""), type)
+                        }
+                      />
 
                       {/* Trạng thái đã xem kiểu Facebook Messenger (chỉ hiện ở tin nhắn cuối cùng) */}
                       {isMe && isLastMsg && !isRestricted && (
@@ -1598,44 +1689,18 @@ export default function FloatingChatBox({
             slotProps={{
               paper: {
                 sx: {
-                  p: 1.2,
                   borderRadius: "16px",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
-                  maxWidth: 240,
+                  overflow: "hidden",
+                  boxShadow: 4,
                 },
               },
             }}
           >
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, mb: 1, display: "block" }}>
-              {tr("Biểu tượng cảm xúc", "Emojis")}
-            </Typography>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: "repeat(5, 1fr)",
-                gap: 0.6,
-              }}
-            >
-              {POPULAR_EMOJIS.map((emoji) => (
-                <ButtonBase
-                  key={emoji}
-                  aria-label={tr(`Chèn biểu tượng ${emoji}`, `Insert emoji ${emoji}`)}
-                  onClick={() => handleSelectEmoji(emoji)}
-                  sx={{
-                    fontSize: "1.25rem",
-                    p: 0.5,
-                    borderRadius: "8px",
-                    transition: "transform 0.1s, background-color 0.1s",
-                    "&:hover": {
-                      bgcolor: "action.hover",
-                      transform: "scale(1.2)",
-                    },
-                  }}
-                >
-                  {emoji}
-                </ButtonBase>
-              ))}
-            </Box>
+            <AppEmojiPicker
+              onEmojiSelect={handleSelectEmoji}
+              width={300}
+              height={360}
+            />
           </Popover>
         </>
       )}

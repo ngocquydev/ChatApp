@@ -454,6 +454,58 @@ export class ChatGateway
   }
 
   /**
+   * Thả cảm xúc / xóa cảm xúc vào tin nhắn realtime (Like, Love, Care, Haha, Wow, Sad, Angry)
+   */
+  @SubscribeMessage('message:reaction')
+  async handleMessageReaction(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody()
+    payload: {
+      messageId: string;
+      conversationId: string;
+      type: string;
+      receiverId?: string;
+    },
+  ) {
+    const senderId = client.data?.user?.sub;
+    if (!senderId || !payload.messageId || !payload.type) {
+      return { success: false, message: 'Dữ liệu không hợp lệ' };
+    }
+
+    try {
+      const result = await this.chatService.reactToMessage(
+        payload.messageId,
+        senderId,
+        payload.type,
+      );
+
+      const emitData = {
+        messageId: payload.messageId,
+        conversationId: payload.conversationId,
+        reactions: result.reactions,
+        userId: senderId,
+        type: payload.type,
+      };
+
+      // Phát sự kiện cập nhật cảm xúc tin nhắn cho cả người gửi và người nhận
+      this.server.to(`user:${senderId}`).emit('message:reaction', emitData);
+      if (payload.receiverId) {
+        this.server.to(`user:${payload.receiverId}`).emit('message:reaction', emitData);
+      }
+
+      return { success: true, ...result };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Cập nhật cảm xúc tin nhắn thất bại',
+      };
+    }
+  }
+
+  /**
    * Cập nhật chủ đề / hình nền cuộc trò chuyện realtime
    */
   @SubscribeMessage('conversation:theme')

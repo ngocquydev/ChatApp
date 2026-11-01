@@ -28,6 +28,20 @@ export class Post {
   @Prop({ type: Number, default: 0, min: 0 })
   likeCount: number;
 
+  @Prop({
+    type: {
+      like: { type: Number, default: 0 },
+      love: { type: Number, default: 0 },
+      care: { type: Number, default: 0 },
+      haha: { type: Number, default: 0 },
+      wow: { type: Number, default: 0 },
+      sad: { type: Number, default: 0 },
+      angry: { type: Number, default: 0 },
+    },
+    default: () => ({ like: 0, love: 0, care: 0, haha: 0, wow: 0, sad: 0, angry: 0 }),
+  })
+  reactionsCount: Record<string, number>;
+
   @Prop({ type: Number, default: 0, min: 0 })
   commentCount: number;
 

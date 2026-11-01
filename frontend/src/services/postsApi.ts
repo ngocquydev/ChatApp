@@ -18,6 +18,8 @@ export interface SharedPostView {
   createdAt?: string;
 }
 
+export type ReactionType = "like" | "love" | "care" | "haha" | "wow" | "sad" | "angry";
+
 export interface PostView {
   _id: string;
   author: PostAuthor;
@@ -29,6 +31,8 @@ export interface PostView {
   commentCount: number;
   shareCount: number;
   likedByMe: boolean;
+  myReaction?: ReactionType | null;
+  reactionsCount?: Record<ReactionType, number>;
   /** null = bài thường; { unavailable } = bài gốc đã xóa / không còn quyền xem */
   sharedPost: SharedPostView | { unavailable: true } | null;
   isSensitive?: boolean;
@@ -45,6 +49,10 @@ export interface CommentView {
   mediaUrl?: string;
   mediaType?: "image" | "video";
   createdAt?: string;
+  likeCount?: number;
+  likedByMe?: boolean;
+  myReaction?: ReactionType | null;
+  reactionsCount?: Record<ReactionType, number>;
 }
 
 export interface CursorPage<T> {
@@ -253,9 +261,32 @@ export async function sharePost(
 
 export async function toggleLike(
   postId: string,
-): Promise<{ liked: boolean; likeCount: number }> {
-  const { data } = await api.post(`/posts/${postId}/like`);
-  return { liked: data.liked, likeCount: data.likeCount };
+  type?: ReactionType,
+): Promise<{
+  liked: boolean;
+  likeCount: number;
+  myReaction?: ReactionType | null;
+  reactionsCount?: Record<ReactionType, number>;
+}> {
+  const { data } = await api.post(`/posts/${postId}/like`, type ? { type } : {});
+  return data;
+}
+
+export async function toggleCommentReaction(
+  postId: string,
+  commentId: string,
+  type?: ReactionType,
+): Promise<{
+  liked: boolean;
+  likeCount: number;
+  myReaction?: ReactionType | null;
+  reactionsCount?: Record<ReactionType, number>;
+}> {
+  const { data } = await api.post(
+    `/posts/${postId}/comments/${commentId}/reaction`,
+    type ? { type } : {},
+  );
+  return data;
 }
 
 export async function fetchComments(

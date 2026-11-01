@@ -48,6 +48,7 @@ export default function ChatApp() {
     unblockActiveConversation,
     restrictActiveConversation,
     deleteChatMessage,
+    reactToMessage,
   } = useChatStore();
 
   const {
@@ -307,6 +308,7 @@ export default function ChatApp() {
                 await deleteChatMessage(msgId);
                 showToast(tr("Đã thu hồi tin nhắn", "Message unsent"), "info");
               }}
+              onReactMessage={(msgId, type) => void reactToMessage(msgId, type)}
             />
             <MessageComposer
               key={activeConversation._id}

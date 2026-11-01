@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { Box, Button, ButtonBase, Card, IconButton, ListItemIcon, Menu, MenuItem, Tooltip, Typography } from "@mui/material";
 import { Heart, MessageCircle, MoreHorizontal, Pencil, Share2, Trash2 } from "lucide-react";
-import { isSharedPostAvailable, type PostView } from "@/services/postsApi";
+import { isSharedPostAvailable, type PostView, type ReactionType } from "@/services/postsApi";
 import { useTranslation } from "@/i18n/useTranslation";
+import ReactionSummary from "@/components/reactions/ReactionSummary";
+import PostReactionButton from "@/components/reactions/PostReactionButton";
 import PostAuthorHeader from "./PostAuthorHeader";
 import PostCommentSection from "./PostCommentSection";
 import PostImages from "./PostImages";
@@ -16,7 +18,7 @@ interface PostCardProps {
   post: PostView;
   currentUserId?: string;
   priority?: boolean;
-  onToggleLike: (post: PostView) => void;
+  onToggleLike: (post: PostView, reactionType?: ReactionType) => void;
   onRequestEdit?: (post: PostView) => void;
   onRequestDelete: (post: PostView) => void;
   onRequestShare: (post: PostView) => void;
@@ -158,38 +160,11 @@ export default function PostCard({
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            {post.likeCount > 0 && (
-              <ButtonBase
-                onClick={() => onOpenEngagers?.(post._id, "likes")}
-                aria-label={`Xem danh sách ${post.likeCount} người thích bài viết`}
-                sx={{
-                  borderRadius: "6px",
-                  p: 0.25,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 0.75,
-                  "&:hover": { textDecoration: "underline" },
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: "50%",
-                    bgcolor: "error.main",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "common.white",
-                  }}
-                >
-                  <Heart size={11} fill="currentColor" strokeWidth={0} />
-                </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                  {post.likeCount}
-                </Typography>
-              </ButtonBase>
-            )}
+            <ReactionSummary
+              totalCount={post.likeCount}
+              reactionsCount={post.reactionsCount}
+              onClick={() => onOpenEngagers?.(post._id, "likes")}
+            />
           </Box>
 
           <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
@@ -223,33 +198,11 @@ export default function PostCard({
           gap: 0.5,
         }}
       >
-        <Button
-          color="inherit"
-          aria-pressed={post.likedByMe}
-          onClick={() => onToggleLike(post)}
-          startIcon={
-            <Heart
-              size={18}
-              fill={post.likedByMe ? "currentColor" : "none"}
-              color={post.likedByMe ? "currentColor" : undefined}
-              aria-hidden
-            />
-          }
-          sx={{
-            flex: 1,
-            minWidth: 0,
-            whiteSpace: "nowrap",
-            fontWeight: 600,
-            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-            color: post.likedByMe ? "error.main" : "text.secondary",
-            py: 0.8,
-            px: { xs: 0.5, sm: 1.5 },
-            borderRadius: "8px",
-            "&:hover": { bgcolor: "action.hover" },
-          }}
-        >
-          {t("feed.like")}
-        </Button>
+        <PostReactionButton
+          myReaction={post.myReaction ?? (post.likedByMe ? "like" : null)}
+          onReact={(type) => onToggleLike(post, type)}
+          onToggleDefault={() => onToggleLike(post)}
+        />
         <Button
           color="inherit"
           aria-expanded={showComments}

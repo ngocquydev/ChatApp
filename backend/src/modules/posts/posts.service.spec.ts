@@ -43,6 +43,7 @@ describe('PostsService', () => {
   };
   let likeModel: {
     find: ReturnType<typeof vi.fn>;
+    findOne: ReturnType<typeof vi.fn>;
     deleteOne: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
   };
@@ -74,7 +75,7 @@ describe('PostsService', () => {
       create: vi.fn(),
       updateOne: vi.fn(() => q({})),
     };
-    likeModel = { find: vi.fn(() => q([])), deleteOne: vi.fn(), create: vi.fn() };
+    likeModel = { find: vi.fn(() => q([])), findOne: vi.fn(() => q(null)), deleteOne: vi.fn(), create: vi.fn() };
     commentModel = {
       find: vi.fn(),
       findOne: vi.fn(),
@@ -341,42 +342,95 @@ describe('PostsService', () => {
       privacy: 'public',
     });
 
-    it('bỏ thích khi đã thích: xóa bản ghi và giảm bộ đếm không xuống dưới 0', async () => {
+    it('bỏ thích khi đã thích cùng loại: xóa bản ghi và giảm bộ đếm', async () => {
       const post = publicPost();
       postModel.findOne.mockReturnValue(q(post));
-      postModel.findById.mockReturnValue(q({ likeCount: 3 }));
+      postModel.findById.mockReturnValue(q({ likeCount: 2, reactionsCount: { like: 2 } }));
+      likeModel.findOne.mockReturnValue(q({ _id: new Types.ObjectId(), type: 'like' }));
       likeModel.deleteOne.mockReturnValue(q({ deletedCount: 1 }));
-      const result = await service.toggleLike(me, post._id.toString());
-      expect(result).toEqual({ success: true, liked: false, likeCount: 3 });
+      const result = await service.toggleLike(me, post._id.toString(), 'like');
+      expect(result).toEqual({
+        success: true,
+        liked: false,
+        myReaction: null,
+        likeCount: 2,
+        reactionsCount: { like: 2 },
+      });
       expect(postModel.updateOne).toHaveBeenCalledWith(
         { _id: post._id, likeCount: { $gt: 0 } },
-        { $inc: { likeCount: -1 } },
+        { $inc: { likeCount: -1, 'reactionsCount.like': -1 } },
       );
     });
 
     it('thích mới khi chưa thích: tạo bản ghi và tăng bộ đếm', async () => {
       const post = publicPost();
       postModel.findOne.mockReturnValue(q(post));
-      postModel.findById.mockReturnValue(q({ likeCount: 1 }));
-      likeModel.deleteOne.mockReturnValue(q({ deletedCount: 0 }));
+      postModel.findById.mockReturnValue(q({ likeCount: 1, reactionsCount: { like: 1 } }));
+      likeModel.findOne.mockReturnValue(q(null));
       likeModel.create.mockResolvedValue({});
-      const result = await service.toggleLike(me, post._id.toString());
+      const result = await service.toggleLike(me, post._id.toString(), 'like');
       expect(result.liked).toBe(true);
+      expect(result.myReaction).toBe('like');
       expect(postModel.updateOne).toHaveBeenCalledWith(
         { _id: post._id },
-        { $inc: { likeCount: 1 } },
+        { $inc: { likeCount: 1, 'reactionsCount.like': 1 } },
+      );
+    });
+
+    it('đổi loại cảm xúc khi đã thích loại khác (ví dụ từ like sang haha)', async () => {
+      const post = publicPost();
+      const existingLikeDoc = {
+        _id: new Types.ObjectId(),
+        type: 'like',
+        save: vi.fn().mockResolvedValue(true),
+      };
+      postModel.findOne.mockReturnValue(q(post));
+      postModel.findById.mockReturnValue(q({ likeCount: 1, reactionsCount: { haha: 1 } }));
+      likeModel.findOne.mockReturnValue(q(existingLikeDoc));
+      const result = await service.toggleLike(me, post._id.toString(), 'haha');
+      expect(result.liked).toBe(true);
+      expect(result.myReaction).toBe('haha');
+      expect(existingLikeDoc.save).toHaveBeenCalled();
+      expect(postModel.updateOne).toHaveBeenCalledWith(
+        { _id: post._id },
+        { $inc: { 'reactionsCount.like': -1, 'reactionsCount.haha': 1 } },
       );
     });
 
     it('hai lượt thích đồng thời (E11000) không làm hỏng và không tăng đếm hai lần', async () => {
       const post = publicPost();
       postModel.findOne.mockReturnValue(q(post));
-      postModel.findById.mockReturnValue(q({ likeCount: 1 }));
-      likeModel.deleteOne.mockReturnValue(q({ deletedCount: 0 }));
+      postModel.findById.mockReturnValue(q({ likeCount: 1, reactionsCount: { like: 1 } }));
+      likeModel.findOne.mockReturnValue(q(null));
       likeModel.create.mockRejectedValue({ code: 11000 });
-      const result = await service.toggleLike(me, post._id.toString());
+      const result = await service.toggleLike(me, post._id.toString(), 'like');
       expect(result.liked).toBe(true);
-      expect(postModel.updateOne).not.toHaveBeenCalled();
+      expect(result.myReaction).toBe('like');
+    });
+
+    it('thả và hủy cảm xúc bình luận thành công', async () => {
+      const post = publicPost();
+      const commentDoc = {
+        _id: new Types.ObjectId(),
+        postId: post._id,
+        reactions: [] as { userId: Types.ObjectId; type: string }[],
+        likeCount: 0,
+        save: vi.fn().mockResolvedValue(true),
+      };
+      postModel.findOne.mockReturnValue(q(post));
+      commentModel.findOne.mockResolvedValue(commentDoc);
+
+      // Thả haha vào bình luận
+      const res1 = await service.toggleCommentReaction(me, post._id.toString(), commentDoc._id.toString(), 'haha');
+      expect(res1.liked).toBe(true);
+      expect(res1.myReaction).toBe('haha');
+      expect(commentDoc.reactions.length).toBe(1);
+
+      // Thả lại haha -> hủy cảm xúc
+      const res2 = await service.toggleCommentReaction(me, post._id.toString(), commentDoc._id.toString(), 'haha');
+      expect(res2.liked).toBe(false);
+      expect(res2.myReaction).toBeNull();
+      expect(commentDoc.reactions.length).toBe(0);
     });
   });
 

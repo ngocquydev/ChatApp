@@ -3,6 +3,12 @@ import { Document, Types } from 'mongoose';
 
 export type PostCommentDocument = PostComment & Document;
 
+export interface CommentReaction {
+  userId: Types.ObjectId;
+  type: string;
+  createdAt?: Date;
+}
+
 @Schema({ timestamps: { createdAt: true, updatedAt: false } })
 export class PostComment {
   @Prop({ type: Types.ObjectId, ref: 'Post', required: true })
@@ -19,6 +25,25 @@ export class PostComment {
 
   @Prop({ type: String, required: false, enum: ['image', 'video'] })
   mediaType?: 'image' | 'video';
+
+  @Prop({
+    type: [
+      {
+        userId: { type: Types.ObjectId, ref: 'User', required: true },
+        type: {
+          type: String,
+          enum: ['like', 'love', 'care', 'haha', 'wow', 'sad', 'angry'],
+          default: 'like',
+        },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  })
+  reactions?: CommentReaction[];
+
+  @Prop({ type: Number, default: 0, min: 0 })
+  likeCount?: number;
 
   createdAt?: Date;
 }

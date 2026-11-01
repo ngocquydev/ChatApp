@@ -15,6 +15,9 @@ import { getChatTheme } from "./chatThemes";
 import CallMessageItem from "../call/CallMessageItem";
 import LocationMessageItem from "../LocationMessageItem";
 import InChatSafetyBanner from "../InChatSafetyBanner";
+import InlineReactionButton from "@/components/reactions/InlineReactionButton";
+import type { ReactionType } from "@/components/reactions/reactionConstants";
+import MessageReactionsDisplay from "../MessageReactionsDisplay";
 
 const GROUP_GAP_MS = 5 * 60 * 1000;
 
@@ -27,6 +30,7 @@ interface MessageListProps {
   isPartnerTyping: boolean;
   theme?: string;
   onDeleteMessage?: (messageId: string) => Promise<void> | void;
+  onReactMessage?: (messageId: string, type: ReactionType) => void;
 }
 
 type Row =
@@ -142,6 +146,7 @@ export default function MessageList({
   isPartnerTyping,
   theme = "default",
   onDeleteMessage,
+  onReactMessage,
 }: MessageListProps) {
   const { tr, language } = useTranslation();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -436,6 +441,24 @@ export default function MessageList({
                     })()}
                   </Tooltip>
 
+                  {/* Nút thả cảm xúc (Reaction) */}
+                  {!msg.isDeleted && Boolean(onReactMessage) && (
+                    <Box
+                      className="msg-action-btn"
+                      sx={{
+                        opacity: { xs: 0.7, sm: 0 },
+                        transition: "opacity 0.15s ease",
+                      }}
+                    >
+                      <InlineReactionButton
+                        variant="icon"
+                        pickerPlacement="top"
+                        pickerAlign={isMe ? "right" : "left"}
+                        onReact={(type) => onReactMessage?.(msg._id, type)}
+                      />
+                    </Box>
+                  )}
+
                   {/* Nút thu hồi tin nhắn cho tin nhắn của chính mình */}
                   {isMe && !msg.isDeleted && Boolean(onDeleteMessage) && (
                     <Tooltip title={tr("Thu hồi tin nhắn", "Unsend message")}>
@@ -457,6 +480,14 @@ export default function MessageList({
                     </Tooltip>
                   )}
                 </Box>
+
+                {/* Hiển thị các cảm xúc đã thả */}
+                <MessageReactionsDisplay
+                  reactions={msg.reactions}
+                  currentUserId={currentUserId}
+                  isMe={isMe}
+                  onToggleReaction={(type) => onReactMessage?.(msg._id, type)}
+                />
 
                 {isMe && isLatest && !msg.isDeleted && (
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4, px: 0.25 }}>

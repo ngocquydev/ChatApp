@@ -201,4 +201,19 @@ export class ChatController {
       message,
     };
   }
+
+  @Post('messages/:id/reaction')
+  @ApiOperation({ summary: 'Thả cảm xúc / xóa cảm xúc vào tin nhắn' })
+  async reactToMessage(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') messageId: string,
+    @Body('type') type: string,
+  ) {
+    const userId = this.extractUserId(req);
+    const result = await this.chatService.reactToMessage(messageId, userId, type);
+    return {
+      success: true,
+      ...result,
+    };
+  }
 }

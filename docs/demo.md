@@ -15,6 +15,7 @@
 7. [Trung Tâm Bảo Mật & Hệ Thống WAF Chống DDoS Đa Tầng (Admin Security Center & Turnstile Challenge)](#7-trung-tâm-bảo-mật--hệ-thống-waf-chống-ddos-đa-tầng-admin-security-center--turnstile-challenge)
 8. [Trang Quản Trị Hệ Thống Toàn Diện & Cổng React SPA Độc Lập](#8-trang-quản-trị-hệ-thống-toàn-diện--bố-cục-sidebar-2-cột-admin-control-panel)
 9. [Hệ Thống Sao Lưu & Phục Hồi Dữ Liệu Tự Động (Database Backup & Disaster Recovery)](#9-hệ-thống-sao-lưu--phục-hồi-dữ-liệu-tự-động-database-backup--disaster-recovery)
+10. [Hệ Thống Thả Cảm Xúc Chuẩn Facebook & Bảng Chọn Emoji](#10-hệ-thống-thả-cảm-xúc-chuẩn-facebook--bảng-chọn-emoji)
 
 ---
 
@@ -168,7 +169,23 @@ Hệ thống cung cấp giải pháp sao lưu và phục hồi cơ sở dữ li�
 
 ---
 
+## 10. Hệ Thống Thả Cảm Xúc Chuẩn Facebook & Bảng Chọn Emoji
+
+Mang lại trải nghiệm biểu cảm phong phú, tương tác đa chiều chuẩn Facebook và Facebook Messenger trên toàn bộ hệ thống:
+
+![Hệ thống Cảm xúc Facebook & Emoji Picker](assets/screenshots/facebook-reactions.png)
+
+### Điểm nổi bật:
+- **Bộ 7 cảm xúc Facebook:** Thích (Like 👍), Yêu thích (Love ❤️), Thương thương (Care 🥰), Haha (😆), Wow (😮), Buồn (Sad 😢), Phẫn nộ (Angry 😡).
+- **Cầu nối di chuột liền mạch (Zero-gap Hover Bridge):** Khắc phục triệt để hiện tượng mất thanh popover khi rê chuột lên với đệm thời gian 320ms và độ trễ kích hoạt 160ms.
+- **Thống kê cảm xúc xếp chồng (`ReactionSummary`):** Hiển thị các icon phổ biến nhất kèm tổng lượt tương tác trên từng bài viết.
+- **Cảm xúc tin nhắn thời gian thực:** Thả cảm xúc trực tiếp vào bong bóng chat, đồng bộ Socket.IO tức thì giữa các người dùng.
+- **Bảng chọn Emoji thông minh (`emoji-picker-react`):** Tích hợp vào ô soạn tin nhắn và Floating Chat Box, hỗ trợ tìm kiếm và tự động chuyển đổi theme Sáng/Tối.
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Hệ Thống Thả Cảm Xúc Facebook & Bảng Chọn Emoji (Reactions)](features/facebook-reactions.md)
 > - [Sao Lưu & Phục Hồi Dữ Liệu Tự Động (Database Backup)](features/database-backup.md)
 > - [Cổng Quản trị Độc lập React SPA (Admin Portal)](features/admin-portal.md)
 > - [Trang Quản trị Hệ thống Toàn diện (Admin Control Panel)](features/admin-panel.md)

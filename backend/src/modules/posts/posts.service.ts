@@ -12,7 +12,7 @@ import { ModerationService } from '../moderation/moderation.service.js';
 import { Friendship, FriendshipDocument } from '../friends/schemas/friendship.schema.js';
 import { Post, PostDocument } from './schemas/post.schema.js';
 import type { PostPrivacy } from './schemas/post.schema.js';
-import { PostLike, PostLikeDocument } from './schemas/post-like.schema.js';
+import { PostLike, PostLikeDocument, type ReactionType } from './schemas/post-like.schema.js';
 import { PostComment, PostCommentDocument } from './schemas/post-comment.schema.js';
 import type { CreatePostDto, SharePostDto, UpdatePostDto } from './dto/posts.dto.js';
 
@@ -44,6 +44,8 @@ export interface PostView {
   commentCount: number;
   shareCount: number;
   likedByMe: boolean;
+  myReaction?: ReactionType | null;
+  reactionsCount?: Record<string, number>;
   /** null = bài thường; { unavailable } = bài gốc đã xóa hoặc người xem không có quyền */
   sharedPost: SharedPostView | { unavailable: true } | null;
   isSensitive?: boolean;
@@ -60,6 +62,10 @@ export interface CommentView {
   mediaUrl?: string;
   mediaType?: 'image' | 'video';
   createdAt?: Date;
+  likeCount: number;
+  likedByMe: boolean;
+  myReaction?: ReactionType | null;
+  reactionsCount?: Record<string, number>;
 }
 
 export interface Page<T> {
@@ -189,7 +195,7 @@ export class PostsService {
         : Promise.resolve([] as LeanPost[]),
       this.likeModel
         .find({ userId: new Types.ObjectId(viewerId), postId: { $in: posts.map((p) => p._id) } })
-        .select('postId')
+        .select('postId type')
         .lean()
         .exec(),
       sharedIds.length ? this.getFriendIds(viewerId) : Promise.resolve([] as Types.ObjectId[]),
@@ -201,7 +207,9 @@ export class PostsService {
     ]);
     const authorOf = (id: Types.ObjectId) => authors.get(id.toString()) ?? PostsService.unknownAuthor(id);
 
-    const likedSet = new Set(likes.map((l) => l.postId.toString()));
+    const likeMap = new Map(
+      likes.map((l) => [l.postId.toString(), (l as { type?: ReactionType }).type || 'like']),
+    );
     const friendSet = new Set(friendIds.map((f) => f.toString()));
     const originalMap = new Map(originals.map((o) => [o._id.toString(), o]));
 
@@ -228,6 +236,7 @@ export class PostsService {
           sharedPost = { unavailable: true };
         }
       }
+      const myReaction = likeMap.get(p._id.toString()) || null;
       return {
         _id: p._id.toString(),
         author: authorOf(p.authorId),
@@ -238,7 +247,9 @@ export class PostsService {
         likeCount: p.likeCount,
         commentCount: p.commentCount,
         shareCount: p.shareCount,
-        likedByMe: likedSet.has(p._id.toString()),
+        likedByMe: Boolean(myReaction),
+        myReaction,
+        reactionsCount: (p as { reactionsCount?: Record<string, number> }).reactionsCount || { like: p.likeCount || 0 },
         isSensitive: p.isSensitive ?? false,
         moderationStatus: p.moderationStatus ?? 'approved',
         moderationReason: p.moderationReason,
@@ -486,35 +497,91 @@ export class PostsService {
 
   // ───────────────────────── Thích ─────────────────────────
 
-  /** Bật/tắt thích. Trả số lượt thích mới nhất. */
-  async toggleLike(viewerId: string, postId: string) {
+  /** Bật/tắt thích hoặc đổi loại cảm xúc (like, love, care, haha, wow, sad, angry). */
+  async toggleLike(
+    viewerId: string,
+    postId: string,
+    reactionType: ReactionType = 'like',
+  ) {
     const post = await this.loadVisiblePost(postId, viewerId);
     const userId = new Types.ObjectId(viewerId);
 
-    const removed = await this.likeModel.deleteOne({ postId: post._id, userId }).exec();
+    const existing = await this.likeModel.findOne({ postId: post._id, userId }).exec();
     let liked: boolean;
-    if (removed.deletedCount === 1) {
-      liked = false;
-      await this.postModel
-        .updateOne({ _id: post._id, likeCount: { $gt: 0 } }, { $inc: { likeCount: -1 } })
-        .exec();
+    let myReaction: ReactionType | null = null;
+
+    if (existing) {
+      if (existing.type === reactionType) {
+        // Hủy thích (cùng reaction)
+        await this.likeModel.deleteOne({ _id: existing._id }).exec();
+        liked = false;
+        myReaction = null;
+        await this.postModel
+          .updateOne(
+            { _id: post._id, likeCount: { $gt: 0 } },
+            {
+              $inc: {
+                likeCount: -1,
+                [`reactionsCount.${reactionType}`]: -1,
+              },
+            },
+          )
+          .exec();
+      } else {
+        // Đổi loại cảm xúc (ví dụ từ like sang love)
+        const oldType = existing.type || 'like';
+        existing.type = reactionType;
+        await existing.save();
+        liked = true;
+        myReaction = reactionType;
+        await this.postModel
+          .updateOne(
+            { _id: post._id },
+            {
+              $inc: {
+                [`reactionsCount.${oldType}`]: -1,
+                [`reactionsCount.${reactionType}`]: 1,
+              },
+            },
+          )
+          .exec();
+      }
     } else {
       try {
-        await this.likeModel.create({ postId: post._id, userId });
+        await this.likeModel.create({ postId: post._id, userId, type: reactionType });
         liked = true;
-        await this.postModel.updateOne({ _id: post._id }, { $inc: { likeCount: 1 } }).exec();
+        myReaction = reactionType;
+        await this.postModel
+          .updateOne(
+            { _id: post._id },
+            {
+              $inc: {
+                likeCount: 1,
+                [`reactionsCount.${reactionType}`]: 1,
+              },
+            },
+          )
+          .exec();
       } catch (err) {
-        // Hai yêu cầu "thích" đồng thời: bản ghi đã có → coi như đã thích
         if ((err as { code?: number }).code !== 11000) throw err;
         liked = true;
+        myReaction = reactionType;
       }
     }
+
     const fresh = await this.postModel
       .findById(post._id)
-      .select('likeCount')
-      .lean<{ likeCount: number }>()
+      .select('likeCount reactionsCount')
+      .lean<{ likeCount: number; reactionsCount?: Record<string, number> }>()
       .exec();
-    return { success: true, liked, likeCount: fresh?.likeCount ?? 0 };
+
+    return {
+      success: true,
+      liked,
+      myReaction,
+      likeCount: fresh?.likeCount ?? 0,
+      reactionsCount: fresh?.reactionsCount ?? {},
+    };
   }
 
   // ───────────────────────── Bình luận ─────────────────────────
@@ -539,7 +606,7 @@ export class PostsService {
     const hasMore = rows.length > limit;
     const pageRows = hasMore ? rows.slice(0, limit) : rows;
     const authors = await this.loadAuthors(pageRows.map((r) => r.authorId));
-    const items = pageRows.map((r) => this.toCommentView(r, authors));
+    const items = pageRows.map((r) => this.toCommentView(r, authors, viewerId));
     return { items, hasMore, nextCursor: hasMore ? items[items.length - 1]._id : null };
   }
 
@@ -566,7 +633,7 @@ export class PostsService {
     });
     await this.postModel.updateOne({ _id: post._id }, { $inc: { commentCount: 1 } }).exec();
     const authors = await this.loadAuthors([created.authorId]);
-    return this.toCommentView(created, authors);
+    return this.toCommentView(created, authors, viewerId);
   }
 
   async deleteComment(viewerId: string, postId: string, commentId: string) {
@@ -586,6 +653,71 @@ export class PostsService {
         .exec();
     }
     return { success: true, message: 'Đã xóa bình luận' };
+  }
+
+  /** Bật/tắt thích hoặc thả cảm xúc cho bình luận. */
+  async toggleCommentReaction(
+    viewerId: string,
+    postId: string,
+    commentId: string,
+    reactionType: ReactionType = 'like',
+  ) {
+    const post = await this.loadVisiblePost(postId, viewerId);
+    const comment = await this.commentModel.findOne({
+      _id: toObjectId(commentId, 'Mã bình luận không hợp lệ'),
+      postId: post._id,
+    });
+    if (!comment) throw new NotFoundException('Bình luận không tồn tại');
+
+    if (!comment.reactions) {
+      comment.reactions = [];
+    }
+    const existingIndex = comment.reactions.findIndex(
+      (r) => r.userId.toString() === viewerId,
+    );
+
+    let liked: boolean;
+    let myReaction: ReactionType | null = null;
+
+    if (existingIndex > -1) {
+      if (comment.reactions[existingIndex].type === reactionType) {
+        // Hủy thích (cùng reaction)
+        comment.reactions.splice(existingIndex, 1);
+        comment.likeCount = Math.max(0, (comment.likeCount ?? 1) - 1);
+        liked = false;
+        myReaction = null;
+      } else {
+        // Đổi loại cảm xúc
+        comment.reactions[existingIndex].type = reactionType;
+        comment.reactions[existingIndex].createdAt = new Date();
+        liked = true;
+        myReaction = reactionType;
+      }
+    } else {
+      comment.reactions.push({
+        userId: new Types.ObjectId(viewerId),
+        type: reactionType,
+        createdAt: new Date(),
+      });
+      comment.likeCount = (comment.likeCount ?? 0) + 1;
+      liked = true;
+      myReaction = reactionType;
+    }
+
+    await comment.save();
+
+    const reactionsCount: Record<string, number> = {};
+    for (const r of comment.reactions) {
+      reactionsCount[r.type] = (reactionsCount[r.type] || 0) + 1;
+    }
+
+    return {
+      success: true,
+      liked,
+      myReaction,
+      likeCount: comment.likeCount ?? comment.reactions.length,
+      reactionsCount,
+    };
   }
 
   // ───────────────────────── Danh sách người thích & người bình luận ─────────────────────────
@@ -620,7 +752,17 @@ export class PostsService {
   private toCommentView(
     row: PostComment & { _id: Types.ObjectId },
     authors: Map<string, PostAuthorView>,
+    viewerId?: string,
   ): CommentView {
+    const reactions = row.reactions || [];
+    const myReactionObj = viewerId
+      ? reactions.find((r) => r.userId.toString() === viewerId)
+      : undefined;
+    const reactionsCount: Record<string, number> = {};
+    for (const r of reactions) {
+      reactionsCount[r.type] = (reactionsCount[r.type] || 0) + 1;
+    }
+
     return {
       _id: row._id.toString(),
       postId: row.postId.toString(),
@@ -629,6 +771,10 @@ export class PostsService {
       mediaUrl: row.mediaUrl,
       mediaType: row.mediaType,
       createdAt: row.createdAt,
+      likeCount: row.likeCount ?? reactions.length,
+      likedByMe: Boolean(myReactionObj),
+      myReaction: (myReactionObj?.type as ReactionType) || null,
+      reactionsCount,
     };
   }
 }

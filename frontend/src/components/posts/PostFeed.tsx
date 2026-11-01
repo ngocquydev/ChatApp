@@ -13,6 +13,7 @@ import {
   toggleLike,
   type CursorPage,
   type PostView,
+  type ReactionType,
 } from "@/services/postsApi";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -79,20 +80,53 @@ export default function PostFeed({
     list.items.length,
   );
 
-  const handleToggleLike = async (post: PostView) => {
-    const optimistic = !post.likedByMe;
-    list.patch(post._id, (p) => ({
-      ...p,
-      likedByMe: optimistic,
-      likeCount: Math.max(0, p.likeCount + (optimistic ? 1 : -1)),
-    }));
+  const handleToggleLike = async (post: PostView, reactionType?: ReactionType) => {
+    const targetType = reactionType ?? (post.myReaction ? post.myReaction : "like");
+    const isUnreact = Boolean(post.likedByMe && (!reactionType || post.myReaction === reactionType));
+    const nextReaction = isUnreact ? null : targetType;
+    const nextLiked = !isUnreact;
+
+    // Cập nhật giao diện lập tức (Optimistic update)
+    list.patch(post._id, (p) => {
+      const nextReactionsCount: Record<string, number> = { ...(p.reactionsCount || {}) };
+      if (isUnreact) {
+        if (p.myReaction && nextReactionsCount[p.myReaction]) {
+          nextReactionsCount[p.myReaction] = Math.max(0, nextReactionsCount[p.myReaction] - 1);
+        }
+      } else {
+        if (p.myReaction && nextReactionsCount[p.myReaction]) {
+          nextReactionsCount[p.myReaction] = Math.max(0, nextReactionsCount[p.myReaction] - 1);
+        }
+        nextReactionsCount[targetType] = (nextReactionsCount[targetType] || 0) + 1;
+      }
+      return {
+        ...p,
+        likedByMe: nextLiked,
+        myReaction: nextReaction,
+        likeCount: Math.max(0, p.likeCount + (nextLiked && !p.likedByMe ? 1 : !nextLiked && p.likedByMe ? -1 : 0)),
+        reactionsCount: nextReactionsCount as Record<ReactionType, number>,
+      };
+    });
+
     try {
-      const result = await toggleLike(post._id);
-      list.patch(post._id, (p) => ({ ...p, likedByMe: result.liked, likeCount: result.likeCount }));
+      const result = await toggleLike(post._id, reactionType);
+      list.patch(post._id, (p) => ({
+        ...p,
+        likedByMe: result.liked,
+        myReaction: result.myReaction,
+        likeCount: result.likeCount,
+        reactionsCount: result.reactionsCount as Record<ReactionType, number> | undefined,
+      }));
     } catch (err) {
       // Hoàn tác khi lỗi
-      list.patch(post._id, (p) => ({ ...p, likedByMe: post.likedByMe, likeCount: post.likeCount }));
-      setToast({ message: apiErrorMessage(err, "Không thể thích bài viết."), severity: "error" });
+      list.patch(post._id, (p) => ({
+        ...p,
+        likedByMe: post.likedByMe,
+        myReaction: post.myReaction,
+        likeCount: post.likeCount,
+        reactionsCount: post.reactionsCount,
+      }));
+      setToast({ message: apiErrorMessage(err, "Không thể thao tác cảm xúc."), severity: "error" });
     }
   };
 

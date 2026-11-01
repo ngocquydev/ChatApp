@@ -487,4 +487,88 @@ describe('ChatService', () => {
       );
     });
   });
+
+  describe('reactToMessage', () => {
+    it('should add reaction to message successfully', async () => {
+      const msgId = new Types.ObjectId().toString();
+      const mockMsg = {
+        _id: new Types.ObjectId(msgId),
+        conversationId: new Types.ObjectId(conversationId),
+        senderId: new Types.ObjectId(userAId),
+        receiverId: new Types.ObjectId(userBId),
+        reactions: [] as { userId: Types.ObjectId; type: string }[],
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockMessageModel.findById.mockResolvedValue(mockMsg);
+
+      const result = await service.reactToMessage(msgId, userBId, 'haha');
+      expect(result.reactions.length).toBe(1);
+      expect(result.reactions[0].type).toBe('haha');
+      expect(mockMsg.save).toHaveBeenCalled();
+    });
+
+    it('should toggle off reaction when reacting with same type', async () => {
+      const msgId = new Types.ObjectId().toString();
+      const mockMsg = {
+        _id: new Types.ObjectId(msgId),
+        conversationId: new Types.ObjectId(conversationId),
+        senderId: new Types.ObjectId(userAId),
+        receiverId: new Types.ObjectId(userBId),
+        reactions: [
+          { userId: new Types.ObjectId(userBId), type: 'haha' },
+        ],
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockMessageModel.findById.mockResolvedValue(mockMsg);
+
+      const result = await service.reactToMessage(msgId, userBId, 'haha');
+      expect(result.reactions.length).toBe(0);
+      expect(mockMsg.save).toHaveBeenCalled();
+    });
+
+    it('should switch reaction when reacting with different type', async () => {
+      const msgId = new Types.ObjectId().toString();
+      const mockMsg = {
+        _id: new Types.ObjectId(msgId),
+        conversationId: new Types.ObjectId(conversationId),
+        senderId: new Types.ObjectId(userAId),
+        receiverId: new Types.ObjectId(userBId),
+        reactions: [
+          { userId: new Types.ObjectId(userBId), type: 'like' },
+        ],
+        save: vi.fn().mockResolvedValue(true),
+      };
+      mockMessageModel.findById.mockResolvedValue(mockMsg);
+
+      const result = await service.reactToMessage(msgId, userBId, 'love');
+      expect(result.reactions.length).toBe(1);
+      expect(result.reactions[0].type).toBe('love');
+      expect(mockMsg.save).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException for invalid reaction type', async () => {
+      const msgId = new Types.ObjectId().toString();
+      await expect(service.reactToMessage(msgId, userAId, 'unknown_emotion')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw ForbiddenException if user is not in conversation', async () => {
+      const msgId = new Types.ObjectId().toString();
+      const outsiderId = new Types.ObjectId().toString();
+      const mockMsg = {
+        _id: new Types.ObjectId(msgId),
+        conversationId: new Types.ObjectId(conversationId),
+        senderId: new Types.ObjectId(userAId),
+        receiverId: new Types.ObjectId(userBId),
+        reactions: [],
+        save: vi.fn(),
+      };
+      mockMessageModel.findById.mockResolvedValue(mockMsg);
+
+      await expect(service.reactToMessage(msgId, outsiderId, 'like')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
 });

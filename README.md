@@ -39,6 +39,10 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 |:---:|:---:|
 | ![Bảng điều khiển Quản trị](docs/assets/screenshots/admin-dashboard.png) | ![Quản lý Người dùng](docs/assets/screenshots/admin-users.png) |
 
+| Cảm xúc Facebook Chuẩn & Bảng chọn Emoji | |
+|:---:|:---:|
+| ![Hệ thống Cảm xúc Facebook](docs/assets/screenshots/facebook-reactions.png) | |
+
 > 🌟 **Xem chi tiết toàn bộ các màn hình, quy trình thao tác và phân tích trải nghiệm người dùng tại:**
 > 👉 **[Tài liệu Tổng hợp Hình ảnh Demo & Trải nghiệm thực tế (docs/demo.md)](docs/demo.md)**
 
@@ -135,6 +139,16 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Chính sách lưu trữ thông minh (Retention Policy):** Giữ tối đa 10 bản sao lưu gần nhất trong vòng 7 ngày, tự động loại bỏ các file cũ nhằm bảo vệ dung lượng đĩa cứng.
 - **Kịch bản dòng lệnh CLI độc lập:** Cung cấp sẵn `scripts/backup-database.ps1` (PowerShell) và `scripts/backup-database.sh` (Bash) cho sysadmin/cronjob.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/database-backup.md](docs/features/database-backup.md)*
+
+### 9. Hệ Thống Thả Cảm Xúc Chuẩn Facebook (Reactions) & Bảng Chọn Emoji
+- **Bộ 7 cảm xúc Facebook chân thực:** Thích (`like`), Yêu thích (`love`), Thương thương (`care`), Haha (`haha`), Wow (`wow`), Buồn (`sad`), Phẫn nộ (`angry`) với màu sắc và animation nảy chuẩn thiết kế.
+- **Cầu nối di chuột liền mạch (Zero-Gap Hover Bridge & Grace Period):** Loại bỏ hoàn toàn lỗi biến mất thanh cảm xúc khi rê chuột lên; trang bị bộ đệm thời gian 320ms và độ trễ kích hoạt 160ms siêu mượt.
+- **Tương tác đa tầng xuyên suốt ứng dụng:**
+  - **Bài viết (Posts):** Hover mở thanh cảm xúc, click 1 chạm để thích/bỏ thích nhanh, hiển thị cụm biểu tượng cảm xúc xếp chồng kèm tổng số tương tác (`ReactionSummary`).
+  - **Bình luận (Comments):** Nút cảm xúc inline cho từng bình luận, hỗ trợ chuyển đổi cảm xúc linh hoạt.
+  - **Tin nhắn trò chuyện (Chat Messages & Floating Chat):** Thả cảm xúc trực tiếp vào tin nhắn với huy hiệu phong cách Messenger, đồng bộ tức thời qua Socket.IO mà không cần tải lại trang.
+- **Tích hợp bảng chọn biểu tượng cảm xúc (`emoji-picker-react`):** Bộ chọn emoji chuyên nghiệp với khả năng tìm kiếm từ khóa, phân nhóm danh mục và tự động chuyển đổi theme Sáng/Tối.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/facebook-reactions.md](docs/features/facebook-reactions.md)*
 
 ---
 

@@ -21,6 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import type { AuthenticatedRequest } from '../auth/types/auth.types.js';
 import { PostsService } from './posts.service.js';
 import { CloudinaryService } from '../cloudinary/cloudinary.service.js';
+import type { ReactionType } from './schemas/post-like.schema.js';
 import {
   CreateCommentDto,
   CreatePostDto,
@@ -168,9 +169,29 @@ export class PostsController {
   }
 
   @Post(':postId/like')
-  @ApiOperation({ summary: 'Thích / bỏ thích bài viết' })
-  like(@Req() req: AuthenticatedRequest, @Param('postId') postId: string) {
-    return this.postsService.toggleLike(this.extractUserId(req), postId);
+  @ApiOperation({ summary: 'Thích / bỏ thích / thả cảm xúc bài viết' })
+  like(
+    @Req() req: AuthenticatedRequest,
+    @Param('postId') postId: string,
+    @Body('type') type?: ReactionType,
+  ) {
+    return this.postsService.toggleLike(this.extractUserId(req), postId, type || 'like');
+  }
+
+  @Post(':postId/comments/:commentId/reaction')
+  @ApiOperation({ summary: 'Thích / bỏ thích / thả cảm xúc bình luận' })
+  commentReaction(
+    @Req() req: AuthenticatedRequest,
+    @Param('postId') postId: string,
+    @Param('commentId') commentId: string,
+    @Body('type') type?: ReactionType,
+  ) {
+    return this.postsService.toggleCommentReaction(
+      this.extractUserId(req),
+      postId,
+      commentId,
+      type || 'like',
+    );
   }
 
   @Get(':postId/likes')
