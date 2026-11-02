@@ -52,7 +52,14 @@
 ### 6. Đa điểm truy cập nhanh (Omni-channel Entry Points)
 - **Danh sách hội thoại (`/chat`)**: Ghim mục Aura AI ở đầu danh sách với nhãn AI nổi bật.
 - **Thanh danh bạ trang chủ (`PersonCall`)**: Nằm ngay đầu mục "Người liên hệ" để mở chat nổi chỉ với 1 click.
-- **Popover tin nhắn trên AppBar (`RecentChatsPopover`)**: Lối tắt truy cập nhanh ở vị trí trên cùng.
+- **Popover tin nhắn trên AppBar (`RecentChatsPopover`)**: Lối tắt truy cập nhanh ở vị trí trên cùng với trích đoạn tin nhắn gần nhất, tách biệt khỏi danh sách hội thoại cá nhân.
+
+### 7. Tách biệt Chatbot khỏi tài khoản cá nhân & Xóa vĩnh viễn hội thoại
+- **Không phải tài khoản cá nhân**: Aura AI là trợ lý ảo hỗ trợ người dùng hỏi đáp & tóm tắt, không phải tài khoản người dùng bình thường. Hệ thống loại trừ hoàn toàn Aura AI khỏi trang cá nhân (`/profile`), tìm kiếm người dùng, gợi ý kết bạn và các menu hành vi cá nhân (như Chặn, Hạn chế).
+- **Xóa cuộc hội thoại vĩnh viễn (`DELETE /chat/conversations/:id`)**:
+  - Khi người dùng xóa đoạn chat với Aura AI, backend dọn dẹp sạch sẽ toàn bộ hội thoại và tin nhắn khỏi MongoDB.
+  - Khi tải lại trang (F5/Reload), đoạn chat đã xóa sẽ biến mất hoàn toàn và không bao giờ tự ý xuất hiện trở lại.
+  - Với hội thoại giữa người dùng thật: cơ chế `deletedByUsers` ẩn hội thoại cho người xóa và tự phục hồi khi có tin nhắn mới.
 
 ---
 
