@@ -19,10 +19,7 @@ export interface AuraChatContextOptions {
   partnerId?: string;
 }
 
-/**
- * Dịch vụ AI của ChatApp (Aura), gọi mô hình qua Groq Cloud (API tương thích OpenAI),
- * mặc định llama-3.3-70b-versatile.
- */
+
 @Injectable()
 export class GroqService {
   private readonly logger = new Logger(GroqService.name);
@@ -53,16 +50,37 @@ export class GroqService {
     }
   }
 
+  /** Lấy API key động từ ConfigService hoặc process.env */
+  private getApiKey(): string {
+    return (
+      process.env.GROQ_API_KEY ||
+      this.configService.get<string>('GROQ_API_KEY') ||
+      this.apiKey ||
+      ''
+    ).trim();
+  }
+
+  /** Lấy model name động từ ConfigService hoặc process.env */
+  private getModelName(): string {
+    return (
+      process.env.GROQ_MODEL ||
+      this.configService.get<string>('GROQ_MODEL') ||
+      this.modelName ||
+      GroqService.DEFAULT_MODEL
+    ).trim();
+  }
+
   /** Tên mô hình đang sử dụng (phản ánh vào response API). */
   get model(): string {
-    return this.modelName;
+    return this.getModelName();
   }
 
   /**
    * Gọi Groq Cloud Chat Completions bằng HTTP REST (Zero extra dependency)
    */
   async generateText(prompt: string, systemInstruction?: string): Promise<string> {
-    if (!this.apiKey) {
+    const apiKey = this.getApiKey();
+    if (!apiKey) {
       return this.fallbackTextGeneration(prompt, systemInstruction);
     }
 
@@ -73,7 +91,7 @@ export class GroqService {
     messages.push({ role: 'user', content: prompt });
 
     const payload = {
-      model: this.modelName,
+      model: this.getModelName(),
       messages,
       temperature: 0.7,
       top_p: 0.95,
@@ -87,7 +105,7 @@ export class GroqService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
         signal: controller.signal,
@@ -180,9 +198,7 @@ export class GroqService {
     return this.generateText(prompt, systemPrompt);
   }
 
-  /**
-   * Sinh câu trả lời khi người dùng chat trực tiếp với Aura (@aura), ứng dụng kỹ thuật RAG
-   */
+  
   async generateAuraChatReply(
     userPrompt: string,
     history: ChatMessageItem[] = [],
@@ -212,15 +228,14 @@ export class GroqService {
       }
     }
 
-    // 2. Persona của Aura AI: Hài hước, dí dỏm, năng lượng Gen Z, bóc phốt duyên dáng, thân thiện
+    // 2. Persona của Aura AI: Giống Meta AI - Cực kỳ ngắn gọn, tự nhiên, thân thiện
     const systemPrompt =
-      'Bạn là Aura AI (@aura) - trợ lý ảo vui vẻ, cực kỳ dí dỏm, thông minh và tràn đầy năng lượng của mạng xã hội ChatApp, được vận hành bởi mô hình Llama 3.3 70B (Groq) kết hợp công nghệ RAG (Retrieval-Augmented Generation).\n\n' +
-      'VĂN PHONG VÀ TÍNH CÁCH:\n' +
-      '1. Nói chuyện vui vẻ, duyên dáng, lầy lội vừa đủ ("nhắn vui vui"), dùng ngôn ngữ tự nhiên, hiện đại của giới trẻ (kèo thơm, cạ cứng, dính chưởng, 10 điểm không có nhưng, đỉnh nóc kịch trần, flex, bóc phốt nhẹ nhàng...).\n' +
-      '2. Sử dụng thông tin từ [KHO DỮ LIỆU ĐƯỢC TRÍCH XUẤT TỪ CHATAPP - RAG CONTEXT] để trả lời chính xác, gọi tên người dùng thân mật, khéo léo trích dẫn chi tiết thật (số tin nhắn mỗi người đã gửi, kèo ăn uống đã bàn, trường học, sở thích...) một cách hài hước.\n' +
-      '3. Khi được nhờ bóc phốt "ai nhắn nhiều hơn", hãy dẫn số liệu thống kê thực tế được cung cấp và trao vương miện "quán quân nói nhiều" cho người gửi nhiều tin hơn một cách hóm hỉnh.\n' +
-      '4. Khi được nhờ "chấm điểm cạ cứng", "làm thơ", "chọn kèo ăn", hãy sáng tạo câu trả lời độc lạ, gieo vần hài hước kèm emoji sinh động.\n' +
-      '5. Luôn giữ thái độ thân thiện, ấm áp và tôn trọng người dùng.';
+      'Bạn là Aura (@aura) - trợ lý trò chuyện trực tiếp của mạng xã hội ChatApp.\n' +
+      'QUY TẮC PHẢN HỒI BẮT BUỘC:\n' +
+      '1. Trả lời cực kỳ ngắn gọn, súc tích (1-2 câu ngắn, tối đa 3 câu khi giải thích).\n' +
+      '2. Khi người dùng chào hỏi ngắn ("chào", "hi", "hello"), chỉ chào lại thật ngắn và tự nhiên (ví dụ: "Chào bạn! 👋 Có gì vui không nè?").\n' +
+      '3. Tuyệt đối không tự giới thiệu dài dòng kiểu văn mẫu "Tôi là Aura AI trợ lý ảo...", không lặp lại câu hỏi của người dùng.\n' +
+      '4. Giọng điệu thân thiện, tự nhiên như bạn bè nhắn tin với nhau, dùng emoji tinh tế.';
 
     const promptParts: string[] = [];
 
@@ -237,7 +252,7 @@ export class GroqService {
     const finalPrompt = promptParts.join('\n\n');
 
     // Nếu không có API Key, sử dụng bộ sinh phản hồi dự phòng dựa trên dữ liệu RAG đã trích xuất
-    if (!this.apiKey && ragContextData && this.auraRagService) {
+    if (!this.getApiKey() && ragContextData && this.auraRagService) {
       return this.auraRagService.generateFallbackRagReply(cleanPrompt, ragContextData);
     }
 
@@ -276,11 +291,19 @@ export class GroqService {
       );
     }
 
-    // Fallback cho câu hỏi trò chuyện trực tiếp với Aura
-    return (
-      '👋 Chào bạn! Tôi là **Aura AI** (@aura), trợ lý thông minh và vui vẻ của ChatApp.\n\n' +
-      'Rất vui được trò chuyện cùng bạn hôm nay! Bạn có muốn bàn kèo gì vui, hỏi mẹo hay cần mình hỗ trợ điều gì không nè? ✨'
-    );
+    // Fallback cho câu hỏi trò chuyện trực tiếp với Aura (ngắn gọn, tự nhiên chuẩn Meta AI)
+    const lower = prompt.toLowerCase();
+    if (
+      lower.includes('chào') ||
+      lower.includes('hi') ||
+      lower.includes('hello') ||
+      lower.includes('hé lô') ||
+      lower.includes('hey')
+    ) {
+      return 'Chào bạn! Aura đây 👋\nCó gì vui không nè?';
+    }
+
+    return 'Chào bạn! Aura đây ✨ Có gì mới hay cần mình giúp không nè?';
   }
 }
 
