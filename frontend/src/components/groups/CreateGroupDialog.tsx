@@ -9,12 +9,13 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  IconButton,
   MenuItem,
   Switch,
   TextField,
   Typography,
 } from "@mui/material";
-import { Users } from "lucide-react";
+import { Users, X } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { communityGroupsApi, CommunityGroupItem } from "@/services/communityGroupsApi";
 
@@ -106,35 +107,59 @@ export default function CreateGroupDialog({
       }}
     >
       <form onSubmit={handleSubmit}>
-        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 1 }}>
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: "12px",
-              bgcolor: "primary.main",
-              color: "primary.contrastText",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Users size={20} />
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            p: 2.5,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0, pr: 1 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: "12px",
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Users size={20} />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                {tr("Tạo Hội nhóm mới", "Create New Community Group")}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                {tr(
+                  "Xây dựng không gian giao lưu, chia sẻ bài viết cùng bạn bè và cộng đồng",
+                  "Build a space to connect, share posts with friends and community"
+                )}
+              </Typography>
+            </Box>
           </Box>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
-              {tr("Tạo Hội nhóm mới", "Create New Community Group")}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {tr(
-                "Xây dựng không gian giao lưu, chia sẻ bài viết cùng bạn bè và cộng đồng",
-                "Build a space to connect, share posts with friends and community"
-              )}
-            </Typography>
-          </Box>
+          <IconButton onClick={onClose} size="small" aria-label={tr("Đóng", "Close")} sx={{ flexShrink: 0 }}>
+            <X size={18} />
+          </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1.5 }}>
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2.5,
+            pt: "24px !important",
+            px: 3,
+            pb: 2,
+          }}
+        >
           {error && (
             <Box
               sx={{
@@ -157,6 +182,7 @@ export default function CreateGroupDialog({
             required
             fullWidth
             size="small"
+            sx={{ mt: 0.5 }}
             placeholder={tr("Ví dụ: Hội Thích Đọc Sách", "E.g. Book Lovers Club")}
           />
 

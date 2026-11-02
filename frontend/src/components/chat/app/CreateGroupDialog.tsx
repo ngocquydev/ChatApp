@@ -125,9 +125,11 @@ export default function CreateGroupDialog({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          pb: 1,
-          pt: 1.5,
+          pb: 1.5,
+          pt: 2,
           px: 2.5,
+          borderBottom: "1px solid",
+          borderColor: "divider",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -141,7 +143,7 @@ export default function CreateGroupDialog({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ px: 2.5, pt: 1, pb: 1 }}>
+      <DialogContent sx={{ px: 2.5, pt: "20px !important", pb: 1 }}>
         <TextField
           fullWidth
           size="small"

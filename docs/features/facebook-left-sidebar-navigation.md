@@ -30,3 +30,4 @@ Tính năng cập nhật cấu trúc điều hướng toàn diện cho ChatApp t
 - `frontend/src/components/layout/AppBar.tsx`: Tách biệt `desktopTabs` dạng icon tabs và `drawerPages` cho mobile drawer, đưa Friend requests và Messenger ra cụm thao tác nhanh bên phải.
 - `frontend/src/components/groups/GroupsExplore.tsx` & `frontend/src/components/pages/PagesExplore.tsx`: Bọc layout 2 cột với `LeftSidebar` và căn lề tự động theo kích thước màn hình.
 - `backend/src/modules/chat/chat.service.ts`: Cập nhật logic xóa cuộc hội thoại triệt để với Aura AI bot và áp dụng `$nin` trên mảng `deletedByUsers`.
+

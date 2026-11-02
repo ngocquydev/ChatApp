@@ -8,11 +8,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   MenuItem,
   TextField,
   Typography,
 } from "@mui/material";
-import { Flag } from "lucide-react";
+import { Flag, X } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { pagesApi, PageItem } from "@/services/pagesApi";
 
@@ -112,35 +113,59 @@ export default function CreatePageDialog({
       }}
     >
       <form onSubmit={handleSubmit}>
-        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 1 }}>
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: "12px",
-              bgcolor: "primary.main",
-              color: "primary.contrastText",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Flag size={20} />
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            p: 2.5,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0, pr: 1 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: "12px",
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Flag size={20} />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
+                {tr("Tạo Trang mới", "Create New Page")}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                {tr(
+                  "Kết nối với người theo dõi và chia sẻ nội dung dưới tư cách Trang",
+                  "Connect with followers and share content as a Page"
+                )}
+              </Typography>
+            </Box>
           </Box>
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
-              {tr("Tạo Trang mới", "Create New Page")}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {tr(
-                "Kết nối với người theo dõi và chia sẻ nội dung dưới tư cách Trang",
-                "Connect with followers and share content as a Page"
-              )}
-            </Typography>
-          </Box>
+          <IconButton onClick={onClose} size="small" aria-label={tr("Đóng", "Close")} sx={{ flexShrink: 0 }}>
+            <X size={18} />
+          </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1.5 }}>
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2.5,
+            pt: "24px !important",
+            px: 3,
+            pb: 2,
+          }}
+        >
           {error && (
             <Box
               sx={{
@@ -163,6 +188,7 @@ export default function CreatePageDialog({
             required
             fullWidth
             size="small"
+            sx={{ mt: 0.5 }}
             placeholder={tr("Ví dụ: Hội yêu Lập trình", "E.g. Developers Club")}
           />
 
