@@ -178,7 +178,10 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     try {
       const res = await api.get("/friends");
       if (res.data?.friends) {
-        set({ friends: res.data.friends });
+        const cleanFriends = res.data.friends.filter(
+          (f: { friend?: { role?: string } }) => f.friend?.role !== "admin" && f.friend?.role !== "bot"
+        );
+        set({ friends: cleanFriends });
       }
     } catch (err) {
       console.error("Lỗi lấy danh sách bạn bè:", err);
@@ -191,9 +194,15 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     set({ isLoadingRequests: true });
     try {
       const res = await api.get("/friends/requests");
+      const cleanReceived = (res.data?.received || []).filter(
+        (r: { requesterId?: { role?: string } }) => r.requesterId?.role !== "admin" && r.requesterId?.role !== "bot"
+      );
+      const cleanSent = (res.data?.sent || []).filter(
+        (r: { recipientId?: { role?: string } }) => r.recipientId?.role !== "admin" && r.recipientId?.role !== "bot"
+      );
       set({
-        receivedRequests: res.data?.received || [],
-        sentRequests: res.data?.sent || [],
+        receivedRequests: cleanReceived,
+        sentRequests: cleanSent,
       });
     } catch (err) {
       console.error("Lỗi lấy danh sách lời mời:", err);
@@ -222,8 +231,10 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       const res = await api.get(`/friends/search?${params.toString()}`);
       // Chỉ cập nhật nếu request này là mới nhất (tránh race condition giữa các phím gõ nhanh)
       if (get().searchSeq === nextSeq) {
+        const rawUsers = (res.data?.users || []) as (UserRelationResult & { role?: string })[];
+        const cleanUsers = rawUsers.filter((u) => u.role !== "admin" && u.role !== "bot");
         set({
-          searchResults: res.data?.users || [],
+          searchResults: cleanUsers,
           searchHasMore: Boolean(res.data?.hasMore),
           searchCursor: res.data?.nextCursor ?? null,
           isSearching: false,
@@ -285,7 +296,9 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       }
       const res = await api.get(url);
       if (res.data?.recommendations) {
-        set({ recommendations: res.data.recommendations });
+        const rawRecs = (res.data.recommendations || []) as (FriendRecommendationResult & { role?: string })[];
+        const cleanRecs = rawRecs.filter((r) => r.role !== "admin" && r.role !== "bot");
+        set({ recommendations: cleanRecs });
       }
     } catch (err) {
       console.error("Lỗi lấy danh sách gợi ý bạn bè:", err);

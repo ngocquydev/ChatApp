@@ -136,8 +136,14 @@ export class FriendsService {
     }
 
     const recipient = await this.usersService.findById(recipientId);
-    if (!recipient) {
-      throw new NotFoundException('Người dùng nhận lời mời không tồn tại');
+    if (
+      !recipient ||
+      recipient.isDeleted ||
+      recipient.isBan ||
+      recipient.role === 'admin' ||
+      recipient.role === 'bot'
+    ) {
+      throw new NotFoundException('Người dùng không tồn tại hoặc không thể nhận lời mời kết bạn');
     }
 
     const reqObjId = new Types.ObjectId(requesterId);
@@ -315,21 +321,28 @@ export class FriendsService {
         status: 'accepted',
         $or: [{ requesterId: userObjId }, { recipientId: userObjId }],
       })
-      .populate('requesterId', 'name email avatar phone bio')
-      .populate('recipientId', 'name email avatar phone bio')
+      .populate('requesterId', 'name email avatar phone bio role')
+      .populate('recipientId', 'name email avatar phone bio role')
       .exec();
 
-    return friendships.map((f) => {
-      const requester = f.requesterId as unknown as { _id?: Types.ObjectId | string };
-      const recipient = f.recipientId as unknown as { _id?: Types.ObjectId | string };
-      const friend =
-        requester?._id?.toString() === userId ? recipient : requester;
-      return {
-        friendshipId: f._id,
-        friend,
-        createdAt: f.createdAt,
-      };
-    });
+    return friendships
+      .filter((f) => {
+        const requester = f.requesterId as unknown as { _id?: Types.ObjectId | string; role?: string };
+        const recipient = f.recipientId as unknown as { _id?: Types.ObjectId | string; role?: string };
+        const friend = requester?._id?.toString() === userId ? recipient : requester;
+        return friend && friend.role !== 'admin' && friend.role !== 'bot';
+      })
+      .map((f) => {
+        const requester = f.requesterId as unknown as { _id?: Types.ObjectId | string };
+        const recipient = f.recipientId as unknown as { _id?: Types.ObjectId | string };
+        const friend =
+          requester?._id?.toString() === userId ? recipient : requester;
+        return {
+          friendshipId: f._id,
+          friend,
+          createdAt: f.createdAt,
+        };
+      });
   }
 
   /**
@@ -344,17 +357,26 @@ export class FriendsService {
     const [received, sent] = await Promise.all([
       this.friendshipModel
         .find({ recipientId: userObjId, status: 'pending' })
-        .populate('requesterId', 'name email avatar bio')
+        .populate('requesterId', 'name email avatar bio role')
         .sort({ createdAt: -1 })
         .exec(),
       this.friendshipModel
         .find({ requesterId: userObjId, status: 'pending' })
-        .populate('recipientId', 'name email avatar bio')
+        .populate('recipientId', 'name email avatar bio role')
         .sort({ createdAt: -1 })
         .exec(),
     ]);
 
-    return { received, sent };
+    const validReceived = received.filter((r) => {
+      const u = r.requesterId as unknown as { role?: string };
+      return u && u.role !== 'admin' && u.role !== 'bot';
+    });
+    const validSent = sent.filter((r) => {
+      const u = r.recipientId as unknown as { role?: string };
+      return u && u.role !== 'admin' && u.role !== 'bot';
+    });
+
+    return { received: validReceived, sent: validSent };
   }
 
   /**
@@ -442,7 +464,12 @@ export class FriendsService {
       );
     }
     const target = await this.usersService.findById(targetId);
-    if (!target || target.isDeleted || target.isBan) {
+    if (
+      !target ||
+      target.isDeleted ||
+      target.isBan ||
+      (target.role === 'admin' && viewerId !== targetId)
+    ) {
       throw new NotFoundException('Người dùng không tồn tại');
     }
 
@@ -655,6 +682,17 @@ export class FriendsService {
     const excludedIds = new Set<string>();
     excludedIds.add(currentUserId);
     excludedIds.add(AURA_BOT_ID);
+
+    // Loại trừ toàn bộ tài khoản quản trị viên (admin) khỏi danh sách gợi ý
+    try {
+      const adminIds = await this.usersService.findAdminIds();
+      for (const aId of adminIds) {
+        excludedIds.add(aId);
+      }
+    } catch {
+      // Bỏ qua nếu lỗi truy vấn admin
+    }
+
     for (const rel of existingRelations) {
       const otherId =
         rel.requesterId.toString() === currentUserId
@@ -679,6 +717,9 @@ export class FriendsService {
             const results: FriendRecommendationResult[] = [];
             for (const s of validSuggestions) {
               const u = userMap.get(s.id);
+              if (!u || u.role === 'admin' || u.role === 'bot' || u.isDeleted || u.isBan) {
+                continue;
+              }
               results.push({
                 _id: s.id,
                 name: u?.name || s.name,

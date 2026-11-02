@@ -6,6 +6,7 @@ export interface Neo4jFriendSuggestion {
   id: string;
   name: string;
   avatar?: string;
+  role?: string;
   mutualFriendsCount: number;
   mutualFriendNames: string[];
   friendsCount?: number;

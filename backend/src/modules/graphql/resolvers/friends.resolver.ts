@@ -44,25 +44,27 @@ export class FriendsResolver {
   ): Promise<UserSuggestionType[]> {
     const currentUserId = this.extractUserId(ctx);
 
-    // 1. Thử lấy gợi ý từ đồ thị Neo4j (Friends of Friends)
+    // Ưu tiên đồ thị Neo4j nếu service online
     if (this.neo4jService.isAvailable()) {
       const neo4jSuggestions = await this.neo4jService.getFriendSuggestions(currentUserId, limit);
       if (neo4jSuggestions.length > 0) {
-        return neo4jSuggestions.map((s) => ({
-          _id: s.id,
-          name: s.name,
-          avatar: s.avatar,
-          mutualFriendsCount: s.mutualFriendsCount,
-          mutualFriendNames: s.mutualFriendNames,
-          score: s.score,
-          reason: s.reason,
-        }));
+        return neo4jSuggestions
+          .filter((s) => s.role !== 'admin' && s.role !== 'bot')
+          .map((s) => ({
+            _id: s.id,
+            name: s.name,
+            avatar: s.avatar,
+            mutualFriendsCount: s.mutualFriendsCount,
+            mutualFriendNames: s.mutualFriendNames,
+            score: s.score,
+            reason: s.reason,
+          }));
       }
     }
 
-    // 2. Dự phòng: Sử dụng thuật toán gợi ý hiện có (Redis + Mongo)
-    const fallbackRecs = await this.friendsService.getFriendRecommendations(currentUserId, { limit });
-    return fallbackRecs.map((r) => ({
+    // Lấy gợi ý từ friendsService (đã tích hợp Neo4j đồ thị, loại trừ bot & admin, kèm Redis cache)
+    const recs = await this.friendsService.getFriendRecommendations(currentUserId, { limit });
+    return recs.map((r) => ({
       _id: r._id,
       name: r.name,
       avatar: r.avatar,

@@ -136,7 +136,7 @@ export class UsersService implements OnModuleInit {
     const query: Record<string, unknown> = {
       isDeleted: { $ne: true },
       isBan: { $ne: true },
-      role: { $ne: 'bot' },
+      role: { $nin: ['bot', 'admin'] },
     };
     const idFilter: Record<string, unknown> = {};
     if (excludeUserId) {
@@ -345,6 +345,18 @@ export class UsersService implements OnModuleInit {
       users.push(AURA_BOT_USER as unknown as (typeof users)[0]);
     }
     return users;
+  }
+
+  /**
+   * Lấy danh sách ID của các quản trị viên (để loại trừ khỏi gợi ý kết bạn và tìm kiếm)
+   */
+  async findAdminIds(): Promise<string[]> {
+    const admins = await this.userModel
+      .find({ role: 'admin' })
+      .select('_id')
+      .lean()
+      .exec();
+    return admins.map((a) => a._id.toString());
   }
 
   async findActiveUsersExcluding(excludeIds: (string | Types.ObjectId)[], limit = 30) {
