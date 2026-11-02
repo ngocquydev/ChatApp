@@ -1277,7 +1277,7 @@ export default function FloatingChatBox({
                 placeholder={
                   isAuraChat
                     ? tr("Nhắn cho Aura AI…", "Message Aura AI…")
-                    : "Aa (@ để tag hoặc hỏi @aura)"
+                    : "Aa"
                 }
                 value={inputText}
                 onChange={(e) => handleInputChange(e.target.value, e.target.selectionStart ?? undefined)}
@@ -1289,9 +1289,10 @@ export default function FloatingChatBox({
                       wordBreak: "break-word",
                       overflowWrap: "anywhere",
                       whiteSpace: "pre-wrap",
-                      maxHeight: 130,
+                      maxHeight: 120,
                       overflowY: "auto",
-                      lineHeight: 1.42,
+                      lineHeight: 1.4,
+                      padding: 0,
                     },
                   },
                   input: {
@@ -1323,22 +1324,27 @@ export default function FloatingChatBox({
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    borderRadius: (inputText.includes("\n") || inputText.length > 25) ? "16px" : "999px",
+                    borderRadius: "18px",
                     bgcolor: "action.hover",
                     fontSize: "0.875rem",
-                    py: 0.6,
+                    py: 0.5,
                     pl: 1.5,
                     pr: 1,
                     minHeight: 36,
-                    maxHeight: 150,
+                    maxHeight: 140,
                     alignItems: "flex-end",
-                    transition: "border-radius 0.15s ease",
                     "& fieldset": { borderColor: "transparent" },
                     "&:hover fieldset": { borderColor: "transparent" },
                     "&.Mui-focused fieldset": { borderColor: "primary.main" },
                   },
                   "& .MuiInputBase-input": {
                     py: 0.25,
+                    minHeight: "20px !important",
+                  },
+                  "& textarea::placeholder": {
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   },
                 }}
               />
