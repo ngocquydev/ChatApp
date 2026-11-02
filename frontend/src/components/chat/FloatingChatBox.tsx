@@ -104,6 +104,7 @@ export default function FloatingChatBox({
   useEffect(() => {
     inputTextRef.current = inputText;
   }, [inputText]);
+  const isMultiline = inputText.includes("\n") || inputText.length > 25;
   const [isPartnerTyping, setIsPartnerTyping] = useState(false);
   const [partnerSeenAt, setPartnerSeenAt] = useState<string | null>(null);
 
@@ -1216,7 +1217,7 @@ export default function FloatingChatBox({
                   py: 0.85,
                   px: 1,
                   display: "flex",
-                  alignItems: "flex-end",
+                  alignItems: isMultiline ? "flex-end" : "center",
                   gap: 0.5,
                 }}
               >
@@ -1234,7 +1235,7 @@ export default function FloatingChatBox({
                     disabled={uploadingMedia}
                     aria-label={tr("Đính kèm tệp hoặc ảnh (tối đa 100MB)", "Attach file or image (max 100MB)")}
                     onClick={() => docInputRef.current?.click()}
-                    sx={{ color: "primary.main", p: 0.65, mb: 0.15 }}
+                    sx={{ color: "primary.main", p: 0.65, mb: isMultiline ? 0.15 : 0 }}
                   >
                     <Paperclip size={18} />
                   </IconButton>
@@ -1246,7 +1247,7 @@ export default function FloatingChatBox({
                   size="small"
                   aria-label={tr("Chia sẻ vị trí", "Share location")}
                   onClick={() => setOpenLocationPicker(true)}
-                  sx={{ color: "primary.main", p: 0.65, mb: 0.15 }}
+                  sx={{ color: "primary.main", p: 0.65, mb: isMultiline ? 0.15 : 0 }}
                 >
                   <MapPin size={18} />
                 </IconButton>
@@ -1260,7 +1261,7 @@ export default function FloatingChatBox({
                   sx={{
                     color: showAuraSuggestions || inputText.includes("@aura") ? "primary.main" : "text.secondary",
                     p: 0.65,
-                    mb: 0.15,
+                    mb: isMultiline ? 0.15 : 0,
                   }}
                 >
                   <Sparkles size={18} />
@@ -1291,13 +1292,19 @@ export default function FloatingChatBox({
                       whiteSpace: "pre-wrap",
                       maxHeight: 120,
                       overflowY: "auto",
-                      lineHeight: 1.4,
+                      lineHeight: 1.42,
                       padding: 0,
                     },
                   },
                   input: {
                     endAdornment: (
-                      <InputAdornment position="end" sx={{ mb: 0.2, alignSelf: "flex-end" }}>
+                      <InputAdornment
+                        position="end"
+                        sx={{
+                          mb: isMultiline ? 0.2 : 0,
+                          alignSelf: isMultiline ? "flex-end" : "center",
+                        }}
+                      >
                         <Tooltip title={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}>
                           <IconButton
                             size="small"
@@ -1332,14 +1339,14 @@ export default function FloatingChatBox({
                     pr: 1,
                     minHeight: 36,
                     maxHeight: 140,
-                    alignItems: "flex-end",
+                    alignItems: isMultiline ? "flex-end" : "center",
                     "& fieldset": { borderColor: "transparent" },
                     "&:hover fieldset": { borderColor: "transparent" },
                     "&.Mui-focused fieldset": { borderColor: "primary.main" },
                   },
                   "& .MuiInputBase-input": {
-                    py: 0.25,
-                    minHeight: "20px !important",
+                    py: 0,
+                    lineHeight: 1.42,
                   },
                   "& textarea::placeholder": {
                     whiteSpace: "nowrap",
@@ -1359,7 +1366,7 @@ export default function FloatingChatBox({
                     sx={{
                       color: "primary.main",
                       p: 0.7,
-                      mb: 0.15,
+                      mb: isMultiline ? 0.15 : 0,
                       "&:hover": { bgcolor: "action.hover" },
                     }}
                   >
@@ -1375,7 +1382,7 @@ export default function FloatingChatBox({
                     sx={{
                       color: "primary.main",
                       p: 0.7,
-                      mb: 0.15,
+                      mb: isMultiline ? 0.15 : 0,
                       "&:hover": { bgcolor: "action.hover", transform: "scale(1.1)" },
                       transition: "all 0.15s ease",
                     }}

@@ -90,6 +90,7 @@ export default function MessageComposer({
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSentRef = useRef(0);
   const canSend = text.trim().length > 0;
+  const isMultiline = text.includes("\n") || text.length > 35;
 
   const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -240,11 +241,11 @@ export default function MessageComposer({
       <Box
         sx={{
           display: "flex",
-          alignItems: "flex-end",
+          alignItems: isMultiline ? "flex-end" : "center",
           gap: 0.75,
         }}
       >
-        <Box sx={{ display: "flex", pb: 0.35, alignItems: "center", gap: 0.25 }}>
+        <Box sx={{ display: "flex", pb: isMultiline ? 0.35 : 0, alignItems: "center", gap: 0.25 }}>
           <input
             ref={fileInputRef}
             type="file"
@@ -314,14 +315,15 @@ export default function MessageComposer({
           sx={{
             flex: 1,
             display: "flex",
-            alignItems: "flex-end",
+            alignItems: isMultiline ? "flex-end" : "center",
             bgcolor: "action.hover",
             border: "1px solid",
             borderColor: "transparent",
-            borderRadius: "24px",
+            borderRadius: "20px",
+            minHeight: 38,
             pl: 2,
             pr: 0.75,
-            py: 0.25,
+            py: isMultiline ? 0.25 : 0,
             transition: "border-color 150ms, background-color 150ms",
             "&:focus-within": {
               borderColor: "primary.main",
@@ -338,7 +340,7 @@ export default function MessageComposer({
             placeholder={
               isAura
                 ? tr("Nhắn cho Aura AI…", "Message Aura AI…")
-                : tr("Aa (@ để tag bạn bè hoặc @aura)", "Aa (@ to tag friends or @aura)")
+                : "Aa"
             }
             value={text}
             onChange={(e) => handleChange(e.target.value)}
@@ -350,9 +352,23 @@ export default function MessageComposer({
                 style: {
                   wordBreak: "break-word",
                   overflowWrap: "anywhere",
+                  whiteSpace: "pre-wrap",
+                  lineHeight: 1.45,
+                  padding: 0,
                 },
               },
-              input: { disableUnderline: true, sx: { py: 0.65, fontSize: "0.9375rem" } },
+              input: {
+                disableUnderline: true,
+                sx: {
+                  py: isMultiline ? 0.65 : 0.45,
+                  fontSize: "0.9375rem",
+                  "& textarea::placeholder": {
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  },
+                },
+              },
             }}
           />
 
@@ -361,7 +377,7 @@ export default function MessageComposer({
               size="small"
               aria-label={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}
               onClick={(e: MouseEvent<HTMLButtonElement>) => setGifAnchorEl(e.currentTarget)}
-              sx={{ color: "primary.main", mb: 0.25 }}
+              sx={{ color: "primary.main", mb: isMultiline ? 0.25 : 0 }}
             >
               <GifIcon size={20} />
             </IconButton>
@@ -372,7 +388,7 @@ export default function MessageComposer({
               size="small"
               aria-label={tr("Chọn biểu tượng cảm xúc", "Choose emoji")}
               onClick={(e: MouseEvent<HTMLButtonElement>) => setEmojiAnchorEl(e.currentTarget)}
-              sx={{ color: "primary.main", mb: 0.25 }}
+              sx={{ color: "primary.main", mb: isMultiline ? 0.25 : 0 }}
             >
               <Smile size={20} />
             </IconButton>
@@ -385,7 +401,7 @@ export default function MessageComposer({
               onClick={() => void submit()}
               aria-label={tr("Gửi tin nhắn", "Send message")}
               sx={{
-                mb: 0.25,
+                mb: isMultiline ? 0.25 : 0,
                 width: 38,
                 height: 38,
                 color: "primary.main",
@@ -401,7 +417,7 @@ export default function MessageComposer({
               onClick={() => void submit("👍")}
               aria-label={tr("Gửi biểu tượng thích", "Send a like")}
               sx={{
-                mb: 0.25,
+                mb: isMultiline ? 0.25 : 0,
                 width: 38,
                 height: 38,
                 color: "primary.main",

@@ -32,6 +32,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
   const { mentionOpen, mentionQuery, mentionAnchorEl, checkMention, insertMention, closeMention } = useMention(text, setText, inputRef);
 
   const trimmed = text.trim();
+  const isMultiline = text.includes("\n") || text.length > 50;
 
   useEffect(() => {
     return () => {
@@ -174,7 +175,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
       )}
 
       {/* Hàng ô nhập kèm nút ảnh/video, nút GIF và gửi */}
-      <Box sx={{ display: "flex", gap: 0.75, alignItems: "flex-end" }}>
+      <Box sx={{ display: "flex", gap: 0.75, alignItems: isMultiline ? "flex-end" : "center" }}>
         <input
           ref={fileInputRef}
           type="file"
@@ -231,7 +232,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
               aria-label={tr("Đính kèm ảnh hoặc video", "Attach photo or video")}
               disabled={sending}
               onClick={() => fileInputRef.current?.click()}
-              sx={{ p: 1 }}
+              sx={{ p: 1, mb: isMultiline ? 0.25 : 0 }}
             >
               <ImageIcon size={20} aria-hidden />
             </IconButton>
@@ -246,7 +247,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
               aria-label={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}
               disabled={sending}
               onClick={(e: MouseEvent<HTMLButtonElement>) => setGifAnchorEl(e.currentTarget)}
-              sx={{ p: 1 }}
+              sx={{ p: 1, mb: isMultiline ? 0.25 : 0 }}
             >
               <GifIcon size={20} />
             </IconButton>
@@ -261,7 +262,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
               aria-label={tr("Chọn biểu tượng cảm xúc", "Choose emoji")}
               disabled={sending}
               onClick={(e: MouseEvent<HTMLButtonElement>) => setEmojiAnchorEl(e.currentTarget)}
-              sx={{ p: 1 }}
+              sx={{ p: 1, mb: isMultiline ? 0.25 : 0 }}
             >
               <Smile size={20} />
             </IconButton>
@@ -314,7 +315,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
               aria-label={tr("Gửi bình luận", "Send comment")}
               disabled={(!trimmed && !attachedFile && !attachedGifUrl) || sending}
               onClick={() => void handleSend()}
-              sx={{ p: 1 }}
+              sx={{ p: 1, mb: isMultiline ? 0.25 : 0 }}
             >
               {sending ? <CircularProgress size={20} /> : <SendHorizontal size={20} aria-hidden />}
             </IconButton>
