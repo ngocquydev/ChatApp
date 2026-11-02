@@ -1275,11 +1275,7 @@ export default function FloatingChatBox({
                 minRows={1}
                 maxRows={5}
                 inputRef={inputRef}
-                placeholder={
-                  isAuraChat
-                    ? tr("Nhắn cho Aura AI…", "Message Aura AI…")
-                    : "Aa"
-                }
+                placeholder="Aa"
                 value={inputText}
                 onChange={(e) => handleInputChange(e.target.value, e.target.selectionStart ?? undefined)}
                 onKeyDown={handleKeyDown}

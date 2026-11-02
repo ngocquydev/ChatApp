@@ -401,7 +401,7 @@ function Message({ friend, onClose }: MessageProps) {
             <TextField
               fullWidth
               size="small"
-              placeholder="Nhập tin nhắn..."
+              placeholder="Aa"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}

@@ -337,11 +337,7 @@ export default function MessageComposer({
             inputRef={inputRef}
             maxRows={5}
             variant="standard"
-            placeholder={
-              isAura
-                ? tr("Nhắn cho Aura AI…", "Message Aura AI…")
-                : "Aa"
-            }
+            placeholder="Aa"
             value={text}
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKeyDown}
