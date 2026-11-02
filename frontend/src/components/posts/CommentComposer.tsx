@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState, MouseEvent } from "react";
 import { Box, CircularProgress, IconButton, Popover, TextField, Tooltip } from "@mui/material";
-import { Image as ImageIcon, SendHorizontal, X } from "lucide-react";
+import { Image as ImageIcon, SendHorizontal, Smile, X } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { COMMENT_MAX_LENGTH, MAX_IMAGE_BYTES } from "@/services/postsApi";
 import AppGiphyPicker from "@/components/common/AppGiphyPicker";
+import AppEmojiPicker from "@/components/common/AppEmojiPicker";
 import { GifIcon } from "@/components/common/GifIcon";
 import MentionAutocomplete, { MentionAutocompleteHandle } from "@/components/common/MentionAutocomplete";
 import useMention from "@/hooks/useMention";
@@ -25,6 +26,7 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isAttachedVideo, setIsAttachedVideo] = useState(false);
   const [gifAnchorEl, setGifAnchorEl] = useState<HTMLElement | null>(null);
+  const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLElement | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const mentionRef = useRef<MentionAutocompleteHandle | null>(null);
   const { mentionOpen, mentionQuery, mentionAnchorEl, checkMention, insertMention, closeMention } = useMention(text, setText, inputRef);
@@ -79,6 +81,24 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
     setPreviewUrl(null);
     setIsAttachedVideo(false);
     setAttachedGifUrl(url);
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    const input = inputRef.current;
+    if (input && typeof input.selectionStart === "number" && typeof input.selectionEnd === "number") {
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const nextText = text.slice(0, start) + emoji + text.slice(end);
+      setText(nextText);
+      setEmojiAnchorEl(null);
+      setTimeout(() => {
+        input.focus();
+        input.setSelectionRange(start + emoji.length, start + emoji.length);
+      }, 0);
+    } else {
+      setText((prev) => `${prev}${emoji}`);
+      setEmojiAnchorEl(null);
+    }
   };
 
   return (
@@ -224,6 +244,21 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
           </span>
         </Tooltip>
 
+        {/* Nút chọn biểu tượng cảm xúc (Emoji / Icon) */}
+        <Tooltip title={tr("Chọn biểu tượng cảm xúc", "Choose emoji")}>
+          <span>
+            <IconButton
+              color="primary"
+              aria-label={tr("Chọn biểu tượng cảm xúc", "Choose emoji")}
+              disabled={sending}
+              onClick={(e: MouseEvent<HTMLButtonElement>) => setEmojiAnchorEl(e.currentTarget)}
+              sx={{ p: 1 }}
+            >
+              <Smile size={20} />
+            </IconButton>
+          </span>
+        </Tooltip>
+
         <Popover
           open={Boolean(gifAnchorEl)}
           anchorEl={gifAnchorEl}
@@ -241,6 +276,25 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
           }}
         >
           <AppGiphyPicker onSelect={handlePickGif} onClose={() => setGifAnchorEl(null)} />
+        </Popover>
+
+        <Popover
+          open={Boolean(emojiAnchorEl)}
+          anchorEl={emojiAnchorEl}
+          onClose={() => setEmojiAnchorEl(null)}
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+          transformOrigin={{ vertical: "bottom", horizontal: "right" }}
+          slotProps={{
+            paper: {
+              sx: {
+                borderRadius: "16px",
+                boxShadow: "0 8px 30px rgba(0, 0, 0, 0.2)",
+                overflow: "hidden",
+              },
+            },
+          }}
+        >
+          <AppEmojiPicker onEmojiSelect={handleEmojiSelect} width={320} height={380} />
         </Popover>
 
         {/* Nút gửi */}
