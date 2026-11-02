@@ -344,7 +344,14 @@ export default function MessageComposer({
             onChange={(e) => handleChange(e.target.value)}
             onKeyDown={handleKeyDown}
             slotProps={{
-              htmlInput: { "aria-label": tr("Nội dung tin nhắn", "Message content"), enterKeyHint: "send" },
+              htmlInput: {
+                "aria-label": tr("Nội dung tin nhắn", "Message content"),
+                enterKeyHint: "send",
+                style: {
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
+                },
+              },
               input: { disableUnderline: true, sx: { py: 0.65, fontSize: "0.9375rem" } },
             }}
           />

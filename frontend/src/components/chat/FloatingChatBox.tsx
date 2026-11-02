@@ -580,18 +580,20 @@ export default function FloatingChatBox({
   }, [socket, convId, targetUserId, currentUserId, targetUserName, session.isMinimized, clearUnread, incrementUnread]);
 
   // 3. Xử lý gõ chữ & bắn event typing nhị phân
-  const handleInputChange = (text: string) => {
+  const handleInputChange = (text: string, cursorIndex?: number) => {
     setInputText(text);
-    checkMention(text);
+    checkMention(text, cursorIndex);
 
     if (!convId) return;
 
+    // Dọn dẹp timer cũ trước khi đặt timer mới (tránh tích lũy timer khi gõ nhanh)
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+
     // Nếu người dùng xóa sạch nội dung -> Dừng trạng thái typing ngay lập tức
     if (!text.trim()) {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = null;
-      }
       emitTyping(false);
       lastTypingSentRef.current = 0;
       return;
@@ -604,16 +606,11 @@ export default function FloatingChatBox({
       lastTypingSentRef.current = now;
     }
 
-    // Xóa bộ đếm dừng cũ
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    // Chỉ khi dừng gõ quá 5 giây mới gửi tín hiệu dừng (tránh bị biến mất khi người dùng tạm dừng suy nghĩ)
+    // Chỉ khi dừng gõ quá 3.5 giây mới gửi tín hiệu dừng
     typingTimeoutRef.current = setTimeout(() => {
       emitTyping(false);
       lastTypingSentRef.current = 0;
-    }, 5000);
+    }, 3500);
   };
 
   // 4. Gửi tin nhắn (ưu tiên Protocol Buffers nhị phân qua MQTT)
@@ -717,11 +714,12 @@ export default function FloatingChatBox({
     ]
   );
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement | HTMLTextAreaElement>) => {
+    if (mentionRef.current?.handleKeyDown(e as any)) return;
     if (e.nativeEvent.isComposing) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      void handleSendMessage();
     }
   };
 
@@ -851,6 +849,14 @@ export default function FloatingChatBox({
     },
     [convId, currentUserId, socket, targetUserId]
   );
+
+  const handlePromptDeleteMessage = useCallback((msgId: string) => {
+    setDeleteMsgId(msgId);
+  }, []);
+
+  const handleOpenLightbox = useCallback((url: string) => {
+    setLightboxUrl(url);
+  }, []);
 
   // 5. Mở toàn màn hình trong trang /chat
   const handleOpenFullChat = async () => {
@@ -1158,10 +1164,10 @@ export default function FloatingChatBox({
             chatTheme={chatTheme}
             convId={convId}
             messagesEndRef={messagesEndRef}
-            onSendMessage={(txt) => void handleSendMessage(txt)}
-            onReactMessage={(msgId, type) => void handleReactMessage(msgId, type)}
-            onDeleteMessage={(msgId) => setDeleteMsgId(msgId)}
-            onOpenLightbox={(url) => setLightboxUrl(url)}
+            onSendMessage={handleSendMessage}
+            onReactMessage={handleReactMessage}
+            onDeleteMessage={handlePromptDeleteMessage}
+            onOpenLightbox={handleOpenLightbox}
           />
 
           {/* FOOTER: Thanh nhập tin nhắn chuẩn Facebook Messenger ("Aa" + Emoji bên trong) */}
@@ -1210,7 +1216,7 @@ export default function FloatingChatBox({
                   py: 0.85,
                   px: 1,
                   display: "flex",
-                  alignItems: "center",
+                  alignItems: "flex-end",
                   gap: 0.5,
                 }}
               >
@@ -1228,7 +1234,7 @@ export default function FloatingChatBox({
                     disabled={uploadingMedia}
                     aria-label={tr("Đính kèm tệp hoặc ảnh (tối đa 100MB)", "Attach file or image (max 100MB)")}
                     onClick={() => docInputRef.current?.click()}
-                    sx={{ color: "primary.main", p: 0.65 }}
+                    sx={{ color: "primary.main", p: 0.65, mb: 0.15 }}
                   >
                     <Paperclip size={18} />
                   </IconButton>
@@ -1240,7 +1246,7 @@ export default function FloatingChatBox({
                   size="small"
                   aria-label={tr("Chia sẻ vị trí", "Share location")}
                   onClick={() => setOpenLocationPicker(true)}
-                  sx={{ color: "primary.main", p: 0.65 }}
+                  sx={{ color: "primary.main", p: 0.65, mb: 0.15 }}
                 >
                   <MapPin size={18} />
                 </IconButton>
@@ -1254,16 +1260,19 @@ export default function FloatingChatBox({
                   sx={{
                     color: showAuraSuggestions || inputText.includes("@aura") ? "primary.main" : "text.secondary",
                     p: 0.65,
+                    mb: 0.15,
                   }}
                 >
                   <Sparkles size={18} />
                 </IconButton>
               </Tooltip>
 
-              {/* Ô nhập tin nhắn kiểu "Aa" có nút Emoji bên phải trong ô */}
+              {/* Ô nhập tin nhắn kiểu "Aa" chuẩn Facebook Messenger (tự động xuống dòng, mở rộng tối đa 5 dòng) */}
               <TextField
                 fullWidth
-                size="small"
+                multiline
+                minRows={1}
+                maxRows={5}
                 inputRef={inputRef}
                 placeholder={
                   isAuraChat
@@ -1271,13 +1280,23 @@ export default function FloatingChatBox({
                     : "Aa (@ để tag hoặc hỏi @aura)"
                 }
                 value={inputText}
-                onChange={(e) => handleInputChange(e.target.value)}
+                onChange={(e) => handleInputChange(e.target.value, e.target.selectionStart ?? undefined)}
                 onKeyDown={handleKeyDown}
                 slotProps={{
-                  htmlInput: { "aria-label": tr("Nội dung tin nhắn", "Message content") },
+                  htmlInput: {
+                    "aria-label": tr("Nội dung tin nhắn", "Message content"),
+                    style: {
+                      wordBreak: "break-word",
+                      overflowWrap: "anywhere",
+                      whiteSpace: "pre-wrap",
+                      maxHeight: 130,
+                      overflowY: "auto",
+                      lineHeight: 1.42,
+                    },
+                  },
                   input: {
                     endAdornment: (
-                      <InputAdornment position="end">
+                      <InputAdornment position="end" sx={{ mb: 0.2, alignSelf: "flex-end" }}>
                         <Tooltip title={tr("Chọn ảnh GIF từ GIPHY", "Choose GIF from GIPHY")}>
                           <IconButton
                             size="small"
@@ -1304,19 +1323,22 @@ export default function FloatingChatBox({
                 }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
-                    borderRadius: "999px",
+                    borderRadius: (inputText.includes("\n") || inputText.length > 25) ? "16px" : "999px",
                     bgcolor: "action.hover",
                     fontSize: "0.875rem",
-                    py: 0.15,
+                    py: 0.6,
                     pl: 1.5,
                     pr: 1,
-                    height: 36,
+                    minHeight: 36,
+                    maxHeight: 150,
+                    alignItems: "flex-end",
+                    transition: "border-radius 0.15s ease",
                     "& fieldset": { borderColor: "transparent" },
                     "&:hover fieldset": { borderColor: "transparent" },
                     "&.Mui-focused fieldset": { borderColor: "primary.main" },
                   },
                   "& .MuiInputBase-input": {
-                    py: 0.5,
+                    py: 0.25,
                   },
                 }}
               />
@@ -1331,6 +1353,7 @@ export default function FloatingChatBox({
                     sx={{
                       color: "primary.main",
                       p: 0.7,
+                      mb: 0.15,
                       "&:hover": { bgcolor: "action.hover" },
                     }}
                   >
@@ -1346,6 +1369,7 @@ export default function FloatingChatBox({
                     sx={{
                       color: "primary.main",
                       p: 0.7,
+                      mb: 0.15,
                       "&:hover": { bgcolor: "action.hover", transform: "scale(1.1)" },
                       transition: "all 0.15s ease",
                     }}

@@ -202,7 +202,16 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
               void handleSend();
             }
           }}
-          slotProps={{ htmlInput: { maxLength: COMMENT_MAX_LENGTH, "aria-label": tr("Viết bình luận", "Write a comment") } }}
+          slotProps={{
+            htmlInput: {
+              maxLength: COMMENT_MAX_LENGTH,
+              "aria-label": tr("Viết bình luận", "Write a comment"),
+              style: {
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
+              },
+            },
+          }}
         />
 
         <MentionAutocomplete
