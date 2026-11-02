@@ -145,7 +145,7 @@ export class GroqService {
       const fallback = this.fallbackTextGeneration(prompt, systemInstruction);
       for (const chunk of this.chunkString(fallback)) {
         yield chunk;
-        await new Promise((r) => setTimeout(r, 25));
+        await new Promise((r) => setTimeout(r, 45));
       }
       return;
     }
@@ -185,7 +185,7 @@ export class GroqService {
         const fallback = this.fallbackTextGeneration(prompt, systemInstruction);
         for (const chunk of this.chunkString(fallback)) {
           yield chunk;
-          await new Promise((r) => setTimeout(r, 25));
+          await new Promise((r) => setTimeout(r, 45));
         }
         return;
       }
@@ -224,7 +224,7 @@ export class GroqService {
       const fallback = this.fallbackTextGeneration(prompt, systemInstruction);
       for (const chunk of this.chunkString(fallback)) {
         yield chunk;
-        await new Promise((r) => setTimeout(r, 25));
+        await new Promise((r) => setTimeout(r, 45));
       }
     } finally {
       clearTimeout(timeout);
@@ -385,7 +385,7 @@ export class GroqService {
       const summary = await this.summarizeChat(history);
       for (const chunk of this.chunkString(summary)) {
         yield chunk;
-        await new Promise((r) => setTimeout(r, 25));
+        await new Promise((r) => setTimeout(r, 45));
       }
       return;
     }
@@ -435,7 +435,7 @@ export class GroqService {
       const fallbackRag = this.auraRagService.generateFallbackRagReply(cleanPrompt, ragContextData);
       for (const chunk of this.chunkString(fallbackRag)) {
         yield chunk;
-        await new Promise((r) => setTimeout(r, 25));
+        await new Promise((r) => setTimeout(r, 45));
       }
       return;
     }

@@ -392,23 +392,28 @@ export class ChatGateway
         });
       }
 
-      // 2. Stream từng chunk về client
+      // 2. Stream từng chunk về client với nhịp điệu gõ chữ tự nhiên (typewriter pacing)
       let accumulatedText = '';
-      for await (const chunk of this.groqService.streamAuraChatReply(text, history, {
+      for await (const rawChunk of this.groqService.streamAuraChatReply(text, history, {
         conversationId,
         senderId,
         partnerId: isAuraDirect ? undefined : receiverId,
       })) {
-        accumulatedText += chunk;
-        const chunkPayload = {
-          messageId,
-          conversationId,
-          chunk,
-          text: accumulatedText,
-        };
-        this.server?.to(`user:${senderId}`).emit('message:stream_chunk', chunkPayload);
-        if (!isAuraDirect) {
-          this.server?.to(`user:${receiverId}`).emit('message:stream_chunk', chunkPayload);
+        const subChunks = this.splitIntoNaturalChunks(rawChunk);
+        for (const chunk of subChunks) {
+          accumulatedText += chunk;
+          const chunkPayload = {
+            messageId,
+            conversationId,
+            chunk,
+            text: accumulatedText,
+          };
+          this.server?.to(`user:${senderId}`).emit('message:stream_chunk', chunkPayload);
+          if (!isAuraDirect) {
+            this.server?.to(`user:${receiverId}`).emit('message:stream_chunk', chunkPayload);
+          }
+          // Nhịp điệu đọc tự nhiên chuẩn Gemini/ChatGPT (~45ms/từ)
+          await new Promise((resolve) => setTimeout(resolve, 45));
         }
       }
 
@@ -458,6 +463,22 @@ export class ChatGateway
         });
       }
     }
+  }
+
+  /**
+   * Tách chuỗi văn bản thành các chunk từ ngữ tự nhiên kèm khoảng trắng
+   */
+  private splitIntoNaturalChunks(text: string): string[] {
+    const parts = text.split(/(\s+)/);
+    const chunks: string[] = [];
+    for (let i = 0; i < parts.length; i += 2) {
+      const word = parts[i];
+      const space = parts[i + 1] || '';
+      if (word || space) {
+        chunks.push(word + space);
+      }
+    }
+    return chunks.length > 0 ? chunks : [text];
   }
 
   @SubscribeMessage('location:live_update')
