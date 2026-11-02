@@ -38,12 +38,24 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
   private wssSecure: WebSocketServer | null = null;
   private readonly userClientMap = new Map<string, Set<string>>();
 
-  /** Callback lắng nghe tin nhắn mới nhận được từ MQTT để Gateway kích hoạt Aura AI */
+  /** Callback lắng nghe tin nhắn mới nhận được từ MQTT để Gateway kích hoạt Aura AI & đồng bộ Socket.IO */
   public onChatMessageReceived?: (data: {
     senderId: string;
     receiverId: string;
     text: string;
     conversationId: string;
+    message?: {
+      _id: string;
+      id: string;
+      conversationId: string;
+      senderId: string;
+      receiverId: string;
+      text: string;
+      createdAt: string;
+      readAt: string | null;
+      type: string;
+      callLog?: string;
+    };
   }) => void;
 
   constructor(
@@ -315,13 +327,25 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
           this.publishBinary(`chat/user/${decoded.receiverId}`, binaryEncoded);
           this.publishBinary(`chat/user/${senderId}`, binaryEncoded);
 
-          // Kích hoạt Aura Bot nếu tin nhắn gửi tới Aura hoặc nhắc tới @aura
+          // Kích hoạt Aura Bot nếu tin nhắn gửi tới Aura hoặc nhắc tới @aura, đồng bộ Socket.IO
           if (this.onChatMessageReceived) {
             this.onChatMessageReceived({
               senderId,
               receiverId: decoded.receiverId,
               text: decoded.text,
               conversationId: message.conversationId.toString(),
+              message: {
+                _id: messageProtoPayload.id,
+                id: messageProtoPayload.id,
+                conversationId: messageProtoPayload.conversationId,
+                senderId,
+                receiverId: decoded.receiverId,
+                text: message.text,
+                createdAt: messageProtoPayload.createdAt,
+                readAt: messageProtoPayload.readAt || null,
+                type: messageProtoPayload.type,
+                callLog: messageProtoPayload.callLog,
+              },
             });
           }
         } catch (error) {

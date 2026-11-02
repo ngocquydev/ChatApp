@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar, Box, ButtonBase, IconButton, Skeleton, Tooltip, Typography } from "@mui/material";
-import { Check, Sparkles, Trash2 } from "lucide-react";
+import { Check, Clock, Sparkles, Trash2 } from "lucide-react";
 import EmptyState from "@/components/common/EmptyState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import MentionText from "@/components/common/MentionText";
@@ -466,6 +466,8 @@ export default function MessageList({
                             border: isMe ? "none" : "1px solid",
                             borderColor: isMe ? "transparent" : themeConfig.partnerBorder,
                             borderRadius: bubbleRadius,
+                            opacity: msg.isOptimistic ? 0.75 : 1,
+                            transition: "opacity 0.2s ease",
                           }}
                         >
                           {senderOf(msg) === "666666666666666666666666" && (
@@ -558,7 +560,19 @@ export default function MessageList({
 
                 {isMe && isLatest && !msg.isDeleted && (
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4, px: 0.25 }}>
-                    {msg.readAt ? (
+                    {msg.isOptimistic ? (
+                      <Tooltip title={tr("Đang gửi…", "Sending…")}>
+                        <Box
+                          component="span"
+                          sx={{ display: "inline-flex", color: themeConfig.metaTextColor, opacity: 0.7 }}
+                        >
+                          <Clock size={13} aria-hidden />
+                          <Box component="span" sx={visuallyHidden}>
+                            {tr("Đang gửi…", "Sending…")}
+                          </Box>
+                        </Box>
+                      </Tooltip>
+                    ) : msg.readAt ? (
                       <Tooltip title={`${tr("Đã xem lúc", "Seen at")} ${formatClockTime(msg.readAt)}`}>
                         <Avatar
                           src={partner?.avatar}

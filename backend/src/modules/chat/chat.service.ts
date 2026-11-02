@@ -98,19 +98,19 @@ export class ChatService {
       location?: LocationData | null;
     },
   ): Promise<MessageDocument> {
-    const receiver = await this.usersService.findById(receiverId);
+    const [receiver, foundConv] = await Promise.all([
+      this.usersService.findById(receiverId),
+      conversationId
+        ? this.conversationModel.findById(conversationId)
+        : Promise.resolve(null),
+    ]);
     if (!receiver) {
       throw new NotFoundException('Người nhận không tồn tại');
     }
 
     let conversation: ConversationDocument;
-    if (conversationId) {
-      const found = await this.conversationModel.findById(conversationId);
-      if (!found) {
-        conversation = await this.getOrCreateConversation(senderId, receiverId);
-      } else {
-        conversation = found;
-      }
+    if (foundConv) {
+      conversation = foundConv;
     } else {
       conversation = await this.getOrCreateConversation(senderId, receiverId);
     }

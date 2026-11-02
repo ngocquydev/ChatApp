@@ -75,6 +75,12 @@ export class ChatGateway
     this.logger.log('Chat WebSocket Gateway đã khởi tạo thành công');
     this.mqttBrokerService.onChatMessageReceived = (data) => {
       void this.triggerAuraReply(data);
+      if (data.message) {
+        this.server
+          ?.to(`user:${data.senderId}`)
+          ?.to(`user:${data.receiverId}`)
+          ?.emit('message:new', data.message);
+      }
     };
   }
 

@@ -54,6 +54,8 @@ export interface ChatMessage {
   deletedBy?: string | null;
   reactions?: MessageReactionItem[];
   createdAt: string;
+  isOptimistic?: boolean;
+  status?: "sending" | "sent" | "error";
 }
 
 export interface ConversationItem {
@@ -237,12 +239,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         if (isMatchActive) {
           set((state) => {
+            const realId = String(newMsg._id || newMsg.id);
             const exists = state.messages.some(
-              (m) => String(m._id || m.id) === String(newMsg._id || newMsg.id)
+              (m) => !m.isOptimistic && String(m._id || m.id) === realId
             );
-            return exists
-              ? state
-              : { messages: [...state.messages, newMsg as unknown as ChatMessage] };
+            if (exists) return state;
+
+            // Nếu người gửi là chính mình, thay thế tin nhắn optimistic
+            if (senderId === myId) {
+              const optIndex = state.messages.findIndex(
+                (m) => m.isOptimistic && m.text.trim() === (newMsg.text || "").trim()
+              );
+              if (optIndex !== -1) {
+                const nextMessages = [...state.messages];
+                nextMessages[optIndex] = {
+                  ...newMsg,
+                  isOptimistic: false,
+                  status: "sent",
+                } as unknown as ChatMessage;
+                return { messages: nextMessages };
+              }
+            }
+
+            return { messages: [...state.messages, newMsg as unknown as ChatMessage] };
           });
 
           mqttChatClient.sendRead(msgConvId || activeConvId, newMsg.senderId);
@@ -415,12 +434,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       if (isMatchActive) {
         set((state) => {
+          const realId = String(newMsg._id || newMsg.id);
           const exists = state.messages.some(
-            (m) => String(m._id || m.id) === String(newMsg._id || newMsg.id)
+            (m) => !m.isOptimistic && String(m._id || m.id) === realId
           );
-          return exists
-            ? state
-            : { messages: [...state.messages, newMsg] };
+          if (exists) return state;
+
+          // Nếu người gửi là chính mình, thay thế tin nhắn optimistic
+          if (senderId === myId) {
+            const optIndex = state.messages.findIndex(
+              (m) => m.isOptimistic && m.text.trim() === (newMsg.text || "").trim()
+            );
+            if (optIndex !== -1) {
+              const nextMessages = [...state.messages];
+              nextMessages[optIndex] = {
+                ...newMsg,
+                isOptimistic: false,
+                status: "sent",
+              };
+              return { messages: nextMessages };
+            }
+          }
+
+          return { messages: [...state.messages, newMsg] };
         });
 
         socket.emit("message:read", {
@@ -758,15 +794,51 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     if (!otherParticipant?._id) return;
 
+    const textToSend = text.trim();
+    const tempId = `opt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const optimisticMessage: ChatMessage = {
+      _id: tempId,
+      id: tempId,
+      conversationId: active._id,
+      senderId: currentUserId || "",
+      receiverId: otherParticipant._id,
+      text: textToSend,
+      type: options?.type || "text",
+      location: options?.location || null,
+      createdAt: new Date().toISOString(),
+      readAt: null,
+      isDeleted: false,
+      isOptimistic: true,
+      status: "sending",
+    };
+
+    // 1. CẬP NHẬT TỨC THÌ (OPTIMISTIC UI): Đưa tin nhắn lên màn hình ngay lập tức 0ms
+    set((state) => ({
+      messages: [...state.messages, optimisticMessage],
+      conversations: state.conversations.map((c) =>
+        c._id === active._id
+          ? {
+              ...c,
+              lastMessage: {
+                text: textToSend,
+                senderId: currentUserId || "",
+                createdAt: optimisticMessage.createdAt,
+              },
+              updatedAt: optimisticMessage.createdAt,
+            }
+          : c
+      ),
+    }));
+
     const isLocationMsg = options?.type === "location" && options.location;
 
-    // 1. Nếu là tin nhắn text thông thường, ưu tiên gửi qua MQTT Protobuf
+    // 2. Nếu là tin nhắn text thông thường, ưu tiên gửi qua MQTT Protobuf
     let sentViaMqtt = false;
     if (!isLocationMsg) {
       sentViaMqtt = mqttChatClient.sendMessage(
         active._id,
         otherParticipant._id,
-        text.trim()
+        textToSend
       );
     }
 
@@ -780,7 +852,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       } = {
         conversationId: active._id,
         receiverId: otherParticipant._id,
-        text: text.trim(),
+        text: textToSend,
         type: options?.type,
         location: options?.location,
       };
@@ -789,10 +861,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
         socket.emit("message:send", payload);
       } else {
         // Fallback qua REST API nếu socket chưa kết nối
-        const res = await api.post("/chat/messages", payload);
-        if (res.data?.message) {
+        try {
+          const res = await api.post("/chat/messages", payload);
+          if (res.data?.message) {
+            const confirmed = res.data.message;
+            set((state) => ({
+              messages: state.messages.map((m) =>
+                m._id === tempId
+                  ? { ...confirmed, isOptimistic: false, status: "sent" }
+                  : m
+              ),
+            }));
+          }
+        } catch {
           set((state) => ({
-            messages: [...state.messages, res.data.message],
+            messages: state.messages.map((m) =>
+              m._id === tempId ? { ...m, status: "error" } : m
+            ),
           }));
         }
       }

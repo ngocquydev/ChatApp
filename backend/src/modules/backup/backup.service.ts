@@ -54,21 +54,16 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
    */
   public getNextScheduledTime(): Date {
     const now = new Date();
-    // Giờ hiện tại theo UTC+7
-    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
-    const vnNow = new Date(utcTime + 7 * 3600000);
+    // 17:00 hàng ngày theo giờ Việt Nam (UTC+7) tương ứng với 10:00 UTC
+    const target = new Date(now);
+    target.setUTCHours(10, 0, 0, 0);
 
-    const targetVn = new Date(vnNow);
-    targetVn.setHours(17, 0, 0, 0);
-
-    // Nếu hôm nay đã qua 17:00, chuyển sang 17:00 ngày mai
-    if (vnNow.getTime() >= targetVn.getTime()) {
-      targetVn.setDate(targetVn.getDate() + 1);
+    // Nếu thời điểm hiện tại đã qua 10:00 UTC (17:00 VN), chuyển sang ngày tiếp theo
+    if (now.getTime() >= target.getTime()) {
+      target.setUTCDate(target.getUTCDate() + 1);
     }
 
-    // Chuyển ngược lại thời gian UTC thực tế
-    const targetUtc = targetVn.getTime() - 7 * 3600000;
-    return new Date(targetUtc);
+    return target;
   }
 
   /**
