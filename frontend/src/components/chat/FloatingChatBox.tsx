@@ -32,9 +32,7 @@ import {
   CheckCheck,
   ChevronUp,
   ChevronDown,
-  Palette,
   Trash2,
-  Image as ImageIcon,
   MapPin,
   Phone,
   Video,
@@ -152,7 +150,6 @@ export default function FloatingChatBox({
   const [showAuraSuggestions, setShowAuraSuggestions] = useState(false);
   const [openLocationPicker, setOpenLocationPicker] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const docInputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -812,24 +809,6 @@ export default function FloatingChatBox({
   const handleSelectEmoji = (emoji: string) => {
     setInputText((prev) => prev + emoji);
     handleCloseEmoji();
-  };
-
-  const handleMediaSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !convId) return;
-    e.target.value = "";
-    if (file.size > MAX_FILE_BYTES) return;
-    setUploadingMedia(true);
-    try {
-      const res = await uploadMedia(file);
-      if (res?.url) {
-        await handleSendMessage(res.url);
-      }
-    } catch {
-      // bỏ qua lỗi tải tệp
-    } finally {
-      setUploadingMedia(false);
-    }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1629,40 +1608,18 @@ export default function FloatingChatBox({
                 }}
               >
               <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                hidden
-                onChange={handleMediaSelect}
-                aria-label={tr("Chọn ảnh hoặc video để gửi", "Choose image or video to send")}
-              />
-              <Tooltip title={uploadingMedia ? tr("Đang tải tệp lên…", "Uploading file…") : tr("Đính kèm ảnh hoặc video", "Attach image or video")}>
-                <span>
-                  <IconButton
-                    size="small"
-                    disabled={uploadingMedia}
-                    aria-label={tr("Đính kèm ảnh hoặc video", "Attach image or video")}
-                    onClick={() => fileInputRef.current?.click()}
-                    sx={{ color: "primary.main", p: 0.65 }}
-                  >
-                    {uploadingMedia ? <CircularProgress size={16} /> : <ImageIcon size={19} />}
-                  </IconButton>
-                </span>
-              </Tooltip>
-
-              <input
                 ref={docInputRef}
                 type="file"
                 hidden
                 onChange={handleFileSelect}
-                aria-label={tr("Chọn tệp để gửi (tối đa 100MB)", "Choose file to send (max 100MB)")}
+                aria-label={tr("Chọn tệp hoặc ảnh để gửi (tối đa 100MB)", "Choose file or image to send (max 100MB)")}
               />
-              <Tooltip title={uploadingMedia ? tr("Đang tải tệp lên…", "Uploading file…") : tr("Đính kèm tệp (tối đa 100MB)", "Attach file (max 100MB)")}>
+              <Tooltip title={uploadingMedia ? tr("Đang tải tệp lên…", "Uploading file…") : tr("Đính kèm tệp hoặc ảnh (tối đa 100MB)", "Attach file or image (max 100MB)")}>
                 <span>
                   <IconButton
                     size="small"
                     disabled={uploadingMedia}
-                    aria-label={tr("Đính kèm tệp (tối đa 100MB)", "Attach file (max 100MB)")}
+                    aria-label={tr("Đính kèm tệp hoặc ảnh (tối đa 100MB)", "Attach file or image (max 100MB)")}
                     onClick={() => docInputRef.current?.click()}
                     sx={{ color: "primary.main", p: 0.65 }}
                   >
@@ -1679,17 +1636,6 @@ export default function FloatingChatBox({
                   sx={{ color: "primary.main", p: 0.65 }}
                 >
                   <MapPin size={18} />
-                </IconButton>
-              </Tooltip>
-
-              <Tooltip title={tr("Đổi chủ đề cuộc trò chuyện", "Change chat theme")}>
-                <IconButton
-                  size="small"
-                  aria-label={tr("Đổi chủ đề cuộc trò chuyện", "Change chat theme")}
-                  onClick={() => setOpenThemeDialog(true)}
-                  sx={{ color: "primary.main", p: 0.65 }}
-                >
-                  <Palette size={18} />
                 </IconButton>
               </Tooltip>
 
