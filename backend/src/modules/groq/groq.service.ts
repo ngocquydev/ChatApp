@@ -36,14 +36,16 @@ export class GroqService {
     @Optional()
     private readonly auraRagService?: AuraRagService,
   ) {
-    this.apiKey =
+    this.apiKey = (
       this.configService.get<string>('GROQ_API_KEY') ||
       process.env.GROQ_API_KEY ||
-      '';
-    this.modelName =
+      ''
+    ).trim();
+    this.modelName = (
       this.configService.get<string>('GROQ_MODEL') ||
       process.env.GROQ_MODEL ||
-      GroqService.DEFAULT_MODEL;
+      GroqService.DEFAULT_MODEL
+    ).trim();
     if (!this.apiKey) {
       this.logger.warn('GROQ_API_KEY chưa được cấu hình. Hệ thống sẽ sử dụng bộ xử lý tóm tắt & phản hồi thông minh dự phòng.');
     } else {
@@ -246,10 +248,16 @@ export class GroqService {
    * Bộ sinh văn bản thông minh dự phòng khi không có mạng hoặc chưa nạp API key
    */
   private fallbackTextGeneration(prompt: string, systemInstruction?: string): string {
-    const lower = prompt.toLowerCase();
+    const isCommentSummary =
+      Boolean(systemInstruction?.includes('tóm tắt thông minh của mạng xã hội')) ||
+      Boolean(systemInstruction?.includes('đọc nội dung bài viết và các bình luận'));
+
+    const isConversationSummary =
+      Boolean(systemInstruction?.includes('phân tích hội thoại')) ||
+      Boolean(systemInstruction?.includes('tóm tắt cuộc trò chuyện'));
 
     // Fallback cho tóm tắt bình luận
-    if (lower.includes('bình luận') || systemInstruction?.includes('tóm tắt thông minh của mạng xã hội')) {
+    if (isCommentSummary) {
       return (
         '📌 **Tóm tắt bình luận nhanh (Aura Engine):**\n' +
         '• Cộng đồng đang tích cực trao đổi và chia sẻ nhiều góc nhìn xoay quanh chủ đề của bài viết.\n' +
@@ -259,7 +267,7 @@ export class GroqService {
     }
 
     // Fallback cho tóm tắt hội thoại chat
-    if (lower.includes('cuộc trò chuyện') || systemInstruction?.includes('phân tích hội thoại')) {
+    if (isConversationSummary) {
       return (
         '✨ **Tóm tắt cuộc trò chuyện (Aura Engine):**\n' +
         '• **Chủ đề chính:** Trao đổi thông tin, cập nhật tiến độ và thảo luận các vấn đề quan trọng.\n' +
@@ -268,14 +276,10 @@ export class GroqService {
       );
     }
 
-    // Fallback cho câu hỏi chat với Aura
+    // Fallback cho câu hỏi trò chuyện trực tiếp với Aura
     return (
-      '👋 Chào bạn! Tôi là **Aura AI** (@aura), trợ lý thông minh của ChatApp sử dụng mô hình **Llama 3.3 70B (Groq)**.\n\n' +
-      'Tôi có thể giúp bạn:\n' +
-      '• 📝 Tóm tắt nhanh bình luận bài viết hoặc cuộc hội thoại dài\n' +
-      '• 💡 Giải đáp thắc mắc, gợi ý ý tưởng và soạn thảo nội dung\n' +
-      '• 🌐 Dịch thuật và hỗ trợ giao tiếp hàng ngày\n\n' +
-      'Bạn cần tôi hỗ trợ thêm điều gì về chủ đề này không?'
+      '👋 Chào bạn! Tôi là **Aura AI** (@aura), trợ lý thông minh và vui vẻ của ChatApp.\n\n' +
+      'Rất vui được trò chuyện cùng bạn hôm nay! Bạn có muốn bàn kèo gì vui, hỏi mẹo hay cần mình hỗ trợ điều gì không nè? ✨'
     );
   }
 }
