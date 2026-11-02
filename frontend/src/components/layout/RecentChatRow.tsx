@@ -3,6 +3,8 @@
 import { Box, ButtonBase, IconButton, Typography } from "@mui/material";
 import { MoreHorizontal } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
+import VerifiedBadge from "@/components/common/VerifiedBadge";
+import { isAuraBot } from "@/constants/auraBot";
 import { useLanguageStore } from "@/i18n/useLanguageStore";
 import { useTranslation } from "@/i18n/useTranslation";
 import { ConversationItem } from "@/store/useChatStore";
@@ -61,6 +63,7 @@ export default function RecentChatRow({
 }: RecentChatRowProps) {
   const { tr } = useTranslation();
   const other = conv.participants.find((p) => String(p._id || p.id) !== currentUserId) || conv.participants[0];
+  const isOtherAura = isAuraBot(other?._id || other?.id);
   const isSentByMe = String(conv.lastMessage?.senderId || "") === currentUserId;
   const preview = formatChatPreview(conv.lastMessage?.text, conv.lastMessage?.isDeleted);
   const timeStr = formatChatShortTime(conv.lastMessage?.createdAt || conv.updatedAt);
@@ -93,11 +96,19 @@ export default function RecentChatRow({
           borderRadius: "12px",
         }}
       >
-        <PresenceAvatar name={other?.name} src={other?.avatar} size={50} online={isOnline} />
+        <PresenceAvatar
+          name={isOtherAura ? "Aura AI" : other?.name}
+          src={isOtherAura ? "/assets/avatars/aura-bot.svg" : other?.avatar}
+          size={50}
+          online={isOtherAura || isOnline}
+        />
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="subtitle2" noWrap sx={{ fontWeight: isUnread ? 700 : 600, fontSize: "0.92rem" }}>
-            {other?.name || tr("Người dùng", "User")}
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Typography variant="subtitle2" noWrap sx={{ fontWeight: isUnread ? 700 : 600, fontSize: "0.92rem" }}>
+              {isOtherAura ? "Aura AI" : other?.name || tr("Người dùng", "User")}
+            </Typography>
+            {isOtherAura && <VerifiedBadge size={14} />}
+          </Box>
           <Typography
             variant="body2"
             noWrap

@@ -19,6 +19,7 @@ import { ChatGateway } from '../chat/chat.gateway.js';
 import { RedisService } from '../redis/redis/redis.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import { Neo4jService } from '../neo4j/neo4j.service.js';
+import { AURA_BOT_ID } from '../groq/aura-bot.constant.js';
 
 export interface UserRelationResult {
   _id: string;
@@ -435,6 +436,11 @@ export class FriendsService {
     if (!Types.ObjectId.isValid(targetId)) {
       throw new BadRequestException('Mã người dùng không hợp lệ');
     }
+    if (targetId === AURA_BOT_ID) {
+      throw new NotFoundException(
+        'Aura AI là trợ lý ảo thông minh, không có trang cá nhân.',
+      );
+    }
     const target = await this.usersService.findById(targetId);
     if (!target || target.isDeleted || target.isBan) {
       throw new NotFoundException('Người dùng không tồn tại');
@@ -648,6 +654,7 @@ export class FriendsService {
 
     const excludedIds = new Set<string>();
     excludedIds.add(currentUserId);
+    excludedIds.add(AURA_BOT_ID);
     for (const rel of existingRelations) {
       const otherId =
         rel.requesterId.toString() === currentUserId

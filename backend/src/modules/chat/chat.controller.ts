@@ -135,6 +135,20 @@ export class ChatController {
     return this.chatService.markAsRead(conversationId, userId);
   }
 
+  @Delete('conversations/:id')
+  @ApiOperation({ summary: 'Xóa cuộc hội thoại' })
+  async deleteConversation(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') conversationId: string,
+  ) {
+    const userId = this.extractUserId(req);
+    await this.chatService.deleteConversation(conversationId, userId);
+    return {
+      success: true,
+      message: 'Đã xóa cuộc hội thoại thành công',
+    };
+  }
+
   @Patch('conversations/:id/block')
   @ApiOperation({ summary: 'Chặn cuộc hội thoại' })
   async blockConversation(

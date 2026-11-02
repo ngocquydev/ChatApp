@@ -106,6 +106,7 @@ interface ChatState {
   blockActiveConversation: () => Promise<{ success: boolean; message?: string }>;
   unblockActiveConversation: () => Promise<{ success: boolean; message?: string }>;
   restrictActiveConversation: (restrict: boolean) => Promise<{ success: boolean; message?: string }>;
+  deleteConversation: (conversationId: string) => Promise<{ success: boolean; message?: string }>;
   updateLiveLocation: (messageId: string, location: Partial<LocationData>) => void;
   stopLiveLocation: (messageId: string) => void;
   reactToMessage: (messageId: string, type: string) => Promise<void>;
@@ -1305,6 +1306,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     } catch (err) {
       console.error("Lỗi thả cảm xúc tin nhắn:", err);
+    }
+  },
+
+  deleteConversation: async (conversationId: string) => {
+    try {
+      await api.delete(`/chat/conversations/${conversationId}`);
+      set((state) => {
+        const nextConversations = state.conversations.filter(
+          (c) => c._id !== conversationId
+        );
+        const isCurrentActive =
+          state.activeConversation?._id === conversationId;
+        return {
+          conversations: nextConversations,
+          activeConversation: isCurrentActive ? null : state.activeConversation,
+          messages: isCurrentActive ? [] : state.messages,
+        };
+      });
+      return { success: true };
+    } catch (err: unknown) {
+      console.error("Lỗi khi xóa cuộc hội thoại:", err);
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Xóa cuộc hội thoại thất bại";
+      return { success: false, message: msg };
     }
   },
 }));

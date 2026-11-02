@@ -11,12 +11,15 @@ describe('ChatService', () => {
     findById: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     save: ReturnType<typeof vi.fn>;
+    updateOne: ReturnType<typeof vi.fn>;
+    deleteOne: ReturnType<typeof vi.fn>;
   };
   let mockMessageModel: {
     find: ReturnType<typeof vi.fn>;
     findById: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     updateMany: ReturnType<typeof vi.fn>;
+    deleteMany: ReturnType<typeof vi.fn>;
   };
   let mockUsersService: {
     findById: ReturnType<typeof vi.fn>;
@@ -33,6 +36,8 @@ describe('ChatService', () => {
       findById: vi.fn(),
       create: vi.fn(),
       save: vi.fn(),
+      updateOne: vi.fn().mockReturnValue({ exec: vi.fn().mockResolvedValue({}) }),
+      deleteOne: vi.fn().mockReturnValue({ exec: vi.fn().mockResolvedValue({}) }),
     };
 
     mockMessageModel = {
@@ -40,6 +45,7 @@ describe('ChatService', () => {
       findById: vi.fn(),
       create: vi.fn(),
       updateMany: vi.fn(),
+      deleteMany: vi.fn().mockReturnValue({ exec: vi.fn().mockResolvedValue({}) }),
     };
 
     mockUsersService = {
@@ -568,6 +574,74 @@ describe('ChatService', () => {
 
       await expect(service.reactToMessage(msgId, outsiderId, 'like')).rejects.toThrow(
         ForbiddenException,
+      );
+    });
+  });
+
+  describe('deleteConversation', () => {
+    it('should throw BadRequestException if conversationId is invalid', async () => {
+      await expect(service.deleteConversation('invalid-id', userAId)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw NotFoundException if conversation does not exist', async () => {
+      mockConversationModel.findById.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(null),
+      });
+      await expect(service.deleteConversation(conversationId, userAId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw ForbiddenException if user is not a participant', async () => {
+      const outsiderId = new Types.ObjectId().toString();
+      mockConversationModel.findById.mockReturnValue({
+        exec: vi.fn().mockResolvedValue({
+          _id: new Types.ObjectId(conversationId),
+          participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+        }),
+      });
+      await expect(service.deleteConversation(conversationId, outsiderId)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should completely delete conversation and messages if chatting with Aura AI bot', async () => {
+      const auraBotId = '666666666666666666666666';
+      mockConversationModel.findById.mockReturnValue({
+        exec: vi.fn().mockResolvedValue({
+          _id: new Types.ObjectId(conversationId),
+          participants: [new Types.ObjectId(userAId), new Types.ObjectId(auraBotId)],
+        }),
+      });
+
+      await service.deleteConversation(conversationId, userAId);
+      expect(mockConversationModel.deleteOne).toHaveBeenCalled();
+      expect(mockMessageModel.deleteMany).toHaveBeenCalled();
+    });
+
+    it('should mark conversation as deleted for user if normal conversation', async () => {
+      mockConversationModel.findById
+        .mockReturnValueOnce({
+          exec: vi.fn().mockResolvedValue({
+            _id: new Types.ObjectId(conversationId),
+            participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+            deletedByUsers: [],
+          }),
+        })
+        .mockReturnValueOnce({
+          exec: vi.fn().mockResolvedValue({
+            _id: new Types.ObjectId(conversationId),
+            participants: [new Types.ObjectId(userAId), new Types.ObjectId(userBId)],
+            deletedByUsers: [new Types.ObjectId(userAId)],
+          }),
+        });
+
+      await service.deleteConversation(conversationId, userAId);
+      expect(mockConversationModel.updateOne).toHaveBeenCalledWith(
+        { _id: new Types.ObjectId(conversationId) },
+        { $addToSet: { deletedByUsers: new Types.ObjectId(userAId) } },
       );
     });
   });

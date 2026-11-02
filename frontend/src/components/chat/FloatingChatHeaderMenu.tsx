@@ -23,6 +23,7 @@ interface FloatingChatHeaderMenuProps {
   isRestricted: boolean;
   isBlockedByMe: boolean;
   readReceiptsEnabled: boolean;
+  isAuraChat?: boolean;
   onClose: () => void;
   onOpenFullChat: () => void;
   onViewProfile: () => void;
@@ -33,6 +34,7 @@ interface FloatingChatHeaderMenuProps {
   onOpenRestrict: () => void;
   onArchiveChat: () => void;
   onCloseChat: () => void;
+  onDeleteChat?: () => void;
   onOpenSummary?: () => void;
 }
 
@@ -42,6 +44,7 @@ export default function FloatingChatHeaderMenu({
   isRestricted,
   isBlockedByMe,
   readReceiptsEnabled,
+  isAuraChat = false,
   onClose,
   onOpenFullChat,
   onViewProfile,
@@ -52,6 +55,7 @@ export default function FloatingChatHeaderMenu({
   onOpenRestrict,
   onArchiveChat,
   onCloseChat,
+  onDeleteChat,
   onOpenSummary,
 }: FloatingChatHeaderMenuProps) {
   const { tr } = useTranslation();
@@ -99,22 +103,24 @@ export default function FloatingChatHeaderMenu({
         </ListItemText>
       </MenuItem>
 
-      <MenuItem
-        onClick={() => {
-          onViewProfile();
-          onClose();
-        }}
-        sx={itemSx}
-      >
-        <ListItemIcon sx={{ minWidth: 34, color: "text.primary" }}>
-          <User size={18} aria-hidden />
-        </ListItemIcon>
-        <ListItemText>
-          <Typography variant="body2" sx={labelSx}>
-            {tr("Xem trang cá nhân", "View profile")}
-          </Typography>
-        </ListItemText>
-      </MenuItem>
+      {!isAuraChat && (
+        <MenuItem
+          onClick={() => {
+            onViewProfile();
+            onClose();
+          }}
+          sx={itemSx}
+        >
+          <ListItemIcon sx={{ minWidth: 34, color: "text.primary" }}>
+            <User size={18} aria-hidden />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2" sx={labelSx}>
+              {tr("Xem trang cá nhân", "View profile")}
+            </Typography>
+          </ListItemText>
+        </MenuItem>
+      )}
 
       <MenuItem
         onClick={() => {
@@ -152,22 +158,24 @@ export default function FloatingChatHeaderMenu({
         </ListItemText>
       </MenuItem>
 
-      <MenuItem
-        onClick={() => {
-          onOpenBlock();
-          onClose();
-        }}
-        sx={itemSx}
-      >
-        <ListItemIcon sx={{ minWidth: 34, color: "text.primary" }}>
-          <UserX size={18} aria-hidden />
-        </ListItemIcon>
-        <ListItemText>
-          <Typography variant="body2" sx={labelSx}>
-            {isBlockedByMe ? tr("Bỏ chặn", "Unblock") : tr("Chặn", "Block")}
-          </Typography>
-        </ListItemText>
-      </MenuItem>
+      {!isAuraChat && (
+        <MenuItem
+          onClick={() => {
+            onOpenBlock();
+            onClose();
+          }}
+          sx={itemSx}
+        >
+          <ListItemIcon sx={{ minWidth: 34, color: "text.primary" }}>
+            <UserX size={18} aria-hidden />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2" sx={labelSx}>
+              {isBlockedByMe ? tr("Bỏ chặn", "Unblock") : tr("Chặn", "Block")}
+            </Typography>
+          </ListItemText>
+        </MenuItem>
+      )}
 
       <MenuItem
         onClick={() => {
@@ -213,35 +221,56 @@ export default function FloatingChatHeaderMenu({
 
       <Divider sx={{ my: 0.75 }} />
 
-      <MenuItem
-        onClick={() => {
-          onArchiveChat();
-          onClose();
-        }}
-        sx={itemSx}
-      >
-        <ListItemIcon sx={{ minWidth: 34, color: "text.primary" }}>
-          <Archive size={18} aria-hidden />
-        </ListItemIcon>
-        <ListItemText>
-          <Typography variant="body2" sx={labelSx}>
-            {isRestricted ? tr("Bỏ lưu trữ đoạn chat", "Unarchive chat") : tr("Lưu trữ đoạn chat", "Archive chat")}
-          </Typography>
-        </ListItemText>
-      </MenuItem>
+      {!isAuraChat && (
+        <MenuItem
+          onClick={() => {
+            onArchiveChat();
+            onClose();
+          }}
+          sx={itemSx}
+        >
+          <ListItemIcon sx={{ minWidth: 34, color: "text.primary" }}>
+            <Archive size={18} aria-hidden />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2" sx={labelSx}>
+              {isRestricted ? tr("Bỏ lưu trữ đoạn chat", "Unarchive chat") : tr("Lưu trữ đoạn chat", "Archive chat")}
+            </Typography>
+          </ListItemText>
+        </MenuItem>
+      )}
+
+      {onDeleteChat && (
+        <MenuItem
+          onClick={() => {
+            onDeleteChat();
+            onClose();
+          }}
+          sx={{ ...itemSx, color: "error.main" }}
+        >
+          <ListItemIcon sx={{ minWidth: 34, color: "error.main" }}>
+            <Trash2 size={18} aria-hidden />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2" sx={{ ...labelSx, color: "error.main" }}>
+              {tr("Xóa đoạn chat", "Delete chat")}
+            </Typography>
+          </ListItemText>
+        </MenuItem>
+      )}
 
       <MenuItem
         onClick={() => {
           onCloseChat();
           onClose();
         }}
-        sx={{ ...itemSx, color: "error.main" }}
+        sx={{ ...itemSx, color: "text.secondary" }}
       >
-        <ListItemIcon sx={{ minWidth: 34, color: "error.main" }}>
+        <ListItemIcon sx={{ minWidth: 34, color: "text.secondary" }}>
           <Trash2 size={18} aria-hidden />
         </ListItemIcon>
         <ListItemText>
-          <Typography variant="body2" sx={{ ...labelSx, color: "error.main" }}>
+          <Typography variant="body2" sx={labelSx}>
             {tr("Đóng đoạn chat", "Close chat")}
           </Typography>
         </ListItemText>

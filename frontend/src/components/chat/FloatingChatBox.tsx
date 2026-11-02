@@ -130,6 +130,7 @@ export default function FloatingChatBox({
     return saved !== null ? saved === "true" : true;
   });
   const [openBlockConfirm, setOpenBlockConfirm] = useState(false);
+  const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
   const [deleteMsgId, setDeleteMsgId] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
@@ -841,6 +842,19 @@ export default function FloatingChatBox({
     }
   };
 
+  const handleDeleteConversation = async () => {
+    if (!convId) {
+      onClose();
+      return;
+    }
+    try {
+      await useChatStore.getState().deleteConversation(convId);
+      onClose();
+    } catch (err) {
+      console.error("Lỗi xóa hội thoại:", err);
+    }
+  };
+
   const handleToggleReadReceipts = (enabled: boolean) => {
     setReadReceiptsEnabled(enabled);
     if (typeof window !== "undefined") {
@@ -1191,6 +1205,7 @@ export default function FloatingChatBox({
         isRestricted={isRestricted}
         isBlockedByMe={isBlockedByMe}
         readReceiptsEnabled={readReceiptsEnabled}
+        isAuraChat={isAuraChat}
         onOpenSummary={() => setOpenSummaryDialog(true)}
         onClose={() => setMenuAnchorEl(null)}
         onOpenFullChat={() => void handleOpenFullChat()}
@@ -1205,6 +1220,7 @@ export default function FloatingChatBox({
         onOpenRestrict={() => setOpenRestrictDialog(true)}
         onArchiveChat={() => void handleToggleRestrict()}
         onCloseChat={onClose}
+        onDeleteChat={() => setOpenDeleteConfirm(true)}
       />
 
       {/* BODY KHI MỞ RỘNG */}
@@ -1600,6 +1616,27 @@ export default function FloatingChatBox({
             setDeleteMsgId(null);
           }
         }}
+      />
+
+      {/* Dialog Xác Nhận Xóa Cuộc Hội Thoại */}
+      <ConfirmDialog
+        open={openDeleteConfirm}
+        title={tr("Xóa đoạn chat?", "Delete chat?")}
+        description={
+          isAuraChat
+            ? tr(
+                "Toàn bộ tin nhắn với trợ lý ảo Aura AI sẽ bị xóa vĩnh viễn.",
+                "All messages with smart assistant Aura AI will be permanently deleted."
+              )
+            : tr(
+                "Bạn sẽ không thể xem lại các tin nhắn này nữa. Người kia vẫn có thể xem cuộc trò chuyện của họ.",
+                "You won't be able to view these messages anymore. The other person can still view their conversation."
+              )
+        }
+        confirmLabel={tr("Xóa đoạn chat", "Delete chat")}
+        cancelLabel={tr("Hủy", "Cancel")}
+        onClose={() => setOpenDeleteConfirm(false)}
+        onConfirm={() => void handleDeleteConversation()}
       />
     </Paper>
   );

@@ -22,6 +22,7 @@ import {
   Palette,
   Phone,
   ShieldAlert,
+  Trash2,
   User as UserIcon,
   Video,
   Volume2,
@@ -78,6 +79,7 @@ export default function ChatHeader({
   const [openRestrictDialog, setOpenRestrictDialog] = useState(false);
   const [openBlockConfirm, setOpenBlockConfirm] = useState(false);
   const [openSummaryDialog, setOpenSummaryDialog] = useState(false);
+  const [openDeleteConfirm, setOpenDeleteConfirm] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
   const activeThemeConfig = getChatTheme(currentTheme);
@@ -147,7 +149,7 @@ export default function ChatHeader({
           <ArrowLeft size={22} />
         </IconButton>
 
-        {partnerId ? (
+        {partnerId && !isAura ? (
           <ButtonBase
             component={NextLink}
             href={`/profile/${partnerId}`}
@@ -176,7 +178,6 @@ export default function ChatHeader({
                 <Typography variant="subtitle1" component="h2" noWrap sx={{ fontWeight: 700, lineHeight: 1.25 }}>
                   {partnerName}
                 </Typography>
-                {isAura && <VerifiedBadge size={16} />}
               </Box>
               <Typography
                 variant="caption"
@@ -189,11 +190,11 @@ export default function ChatHeader({
             </Box>
           </ButtonBase>
         ) : (
-          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 1.5 }, minWidth: 0 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 1.5 }, minWidth: 0, p: 0.5, pr: 1.25 }}>
             <PresenceAvatar
-              name={partner?.name}
-              src={partner?.avatar}
-              online={!isRestricted && isOnline}
+              name={isAura ? "Aura AI" : partner?.name}
+              src={isAura ? "/assets/avatars/aura-bot.svg" : partner?.avatar}
+              online={isAura || (!isRestricted && isOnline)}
               size={42}
             />
             <Box sx={{ minWidth: 0 }}>
@@ -323,7 +324,7 @@ export default function ChatHeader({
             },
           }}
         >
-          {partnerId && (
+          {partnerId && !isAura && (
             <MenuItem
               component={NextLink}
               href={`/profile/${partnerId}`}
@@ -375,38 +376,61 @@ export default function ChatHeader({
             </ListItemText>
           </MenuItem>
 
+          {!isAura && <Divider sx={{ my: 0.5 }} />}
+
+          {!isAura && (
+            <MenuItem
+              onClick={() => {
+                handleCloseMenu();
+                setOpenRestrictDialog(true);
+              }}
+              sx={{ borderRadius: "8px", py: 1 }}
+            >
+              <ListItemIcon>
+                <ShieldAlert size={18} color="var(--mui-palette-warning-main)" />
+              </ListItemIcon>
+              <ListItemText>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {isRestricted ? tr("Bỏ hạn chế", "Unrestrict") : tr("Hạn chế người dùng", "Restrict user")}
+                </Typography>
+              </ListItemText>
+            </MenuItem>
+          )}
+
+          {!isAura && (
+            <MenuItem
+              onClick={() => {
+                handleCloseMenu();
+                setOpenBlockConfirm(true);
+              }}
+              sx={{ borderRadius: "8px", py: 1, color: "error.main" }}
+            >
+              <ListItemIcon>
+                <Ban size={18} color="var(--mui-palette-error-main)" />
+              </ListItemIcon>
+              <ListItemText>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: "error.main" }}>
+                  {isBlockedByMe ? tr("Bỏ chặn người dùng", "Unblock user") : tr("Chặn người dùng", "Block user")}
+                </Typography>
+              </ListItemText>
+            </MenuItem>
+          )}
+
           <Divider sx={{ my: 0.5 }} />
 
           <MenuItem
             onClick={() => {
               handleCloseMenu();
-              setOpenRestrictDialog(true);
-            }}
-            sx={{ borderRadius: "8px", py: 1 }}
-          >
-            <ListItemIcon>
-              <ShieldAlert size={18} color="var(--mui-palette-warning-main)" />
-            </ListItemIcon>
-            <ListItemText>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {isRestricted ? tr("Bỏ hạn chế", "Unrestrict") : tr("Hạn chế người dùng", "Restrict user")}
-              </Typography>
-            </ListItemText>
-          </MenuItem>
-
-          <MenuItem
-            onClick={() => {
-              handleCloseMenu();
-              setOpenBlockConfirm(true);
+              setOpenDeleteConfirm(true);
             }}
             sx={{ borderRadius: "8px", py: 1, color: "error.main" }}
           >
             <ListItemIcon>
-              <Ban size={18} color="var(--mui-palette-error-main)" />
+              <Trash2 size={18} color="var(--mui-palette-error-main)" />
             </ListItemIcon>
             <ListItemText>
               <Typography variant="body2" sx={{ fontWeight: 600, color: "error.main" }}>
-                {isBlockedByMe ? tr("Bỏ chặn người dùng", "Unblock user") : tr("Chặn người dùng", "Block user")}
+                {tr("Xóa cuộc hội thoại", "Delete conversation")}
               </Typography>
             </ListItemText>
           </MenuItem>
@@ -454,6 +478,40 @@ export default function ChatHeader({
           try {
             await onToggleBlock();
             setOpenBlockConfirm(false);
+          } finally {
+            setIsPending(false);
+          }
+        }}
+      />
+
+      {/* Dialog Xác Nhận Xóa Cuộc Hội Thoại */}
+      <ConfirmDialog
+        open={openDeleteConfirm}
+        title={tr("Xóa cuộc hội thoại?", "Delete conversation?")}
+        description={
+          isAura
+            ? tr(
+                "Toàn bộ tin nhắn với trợ lý ảo Aura AI sẽ bị xóa vĩnh viễn.",
+                "All messages with smart assistant Aura AI will be permanently deleted."
+              )
+            : tr(
+                `Bạn sẽ không thể xem lại các tin nhắn này nữa. ${partnerName} vẫn có thể xem cuộc trò chuyện của họ.`,
+                `You won't be able to view these messages anymore. ${partnerName} can still view their conversation.`
+              )
+        }
+        confirmLabel={tr("Xóa hội thoại", "Delete conversation")}
+        cancelLabel={tr("Hủy", "Cancel")}
+        pending={isPending}
+        onClose={() => setOpenDeleteConfirm(false)}
+        onConfirm={async () => {
+          if (!activeConversation) return;
+          setIsPending(true);
+          try {
+            await useChatStore.getState().deleteConversation(activeConversation._id);
+            setOpenDeleteConfirm(false);
+            onBack();
+          } catch (err) {
+            console.error("Lỗi xóa hội thoại:", err);
           } finally {
             setIsPending(false);
           }

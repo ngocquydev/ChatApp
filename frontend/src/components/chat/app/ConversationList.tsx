@@ -265,7 +265,12 @@ export default function ConversationList({
                   aria-current={isActive ? "true" : undefined}
                   sx={{ gap: 1.5, px: 1.5, py: 1.25, mb: 0.25, alignItems: "center" }}
                 >
-                  <PresenceAvatar name={other?.name} src={other?.avatar} online={isOnline} size={48} />
+                  <PresenceAvatar
+                    name={isOtherAura ? "Aura AI" : other?.name}
+                    src={isOtherAura ? "/assets/avatars/aura-bot.svg" : other?.avatar}
+                    online={isOnline}
+                    size={48}
+                  />
 
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 1 }}>

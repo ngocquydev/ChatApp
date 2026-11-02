@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import UserProfile from "@/components/pages/UserProfile";
 import JsonLd from "@/components/seo/JsonLd";
+import { AURA_BOT_ID } from "@/constants/auraBot";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -35,6 +37,12 @@ async function getProfileData(id: string): Promise<ProfileResponse | null> {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
+  if (id === AURA_BOT_ID) {
+    return {
+      title: "Aura AI",
+      description: "Trợ lý ảo thông minh ChatApp",
+    };
+  }
   const profile = await getProfileData(id);
 
   if (!profile?.user) {
@@ -83,6 +91,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function UserProfilePage({ params }: PageProps) {
   const { id } = await params;
+  if (id === AURA_BOT_ID) {
+    redirect("/chat");
+  }
   const profile = await getProfileData(id);
 
   const personStructuredData = profile?.user

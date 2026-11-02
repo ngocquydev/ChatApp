@@ -74,10 +74,17 @@ export class Conversation {
   })
   restrictedBy: Types.ObjectId[];
 
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'User' }],
+    default: [],
+  })
+  deletedByUsers: Types.ObjectId[];
+
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export const ConversationSchema = SchemaFactory.createForClass(Conversation);
 ConversationSchema.index({ participants: 1 });
+ConversationSchema.index({ deletedByUsers: 1 });
 ConversationSchema.index({ updatedAt: -1 });

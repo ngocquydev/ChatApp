@@ -20,6 +20,7 @@ interface RecentChatRowMenuProps {
   isMuted: boolean;
   isBlockedByMe: boolean;
   isRestricted: boolean;
+  isAuraChat?: boolean;
   onClose: () => void;
   onToggleUnread: () => void;
   onOpenInMessenger: () => void;
@@ -27,7 +28,7 @@ interface RecentChatRowMenuProps {
   onViewProfile: () => void;
   onToggleBlock: () => void;
   onToggleRestrict: () => void;
-  onHideChat: () => void;
+  onDeleteChat: () => void;
 }
 
 export default function RecentChatRowMenu({
@@ -36,6 +37,7 @@ export default function RecentChatRowMenu({
   isMuted,
   isBlockedByMe,
   isRestricted,
+  isAuraChat = false,
   onClose,
   onToggleUnread,
   onOpenInMessenger,
@@ -43,7 +45,7 @@ export default function RecentChatRowMenu({
   onViewProfile,
   onToggleBlock,
   onToggleRestrict,
-  onHideChat,
+  onDeleteChat,
 }: RecentChatRowMenuProps) {
   const { tr } = useTranslation();
   const itemSx = { py: 1, px: 1.5, borderRadius: "8px", gap: 0.5 };
@@ -125,62 +127,68 @@ export default function RecentChatRowMenu({
         </ListItemText>
       </MenuItem>
 
+      {!isAuraChat && (
+        <MenuItem
+          onClick={() => {
+            onViewProfile();
+            onClose();
+          }}
+          sx={itemSx}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: "text.primary" }}>
+            <User size={18} aria-hidden />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2" sx={labelSx}>
+              {tr("Xem trang cá nhân", "View profile")}
+            </Typography>
+          </ListItemText>
+        </MenuItem>
+      )}
+
+      {!isAuraChat && <Divider sx={{ my: 0.5 }} />}
+
+      {!isAuraChat && (
+        <MenuItem
+          onClick={() => {
+            onToggleBlock();
+            onClose();
+          }}
+          sx={itemSx}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: "text.primary" }}>
+            <UserX size={18} aria-hidden />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2" sx={labelSx}>
+              {isBlockedByMe ? tr("Bỏ chặn", "Unblock") : tr("Chặn", "Block")}
+            </Typography>
+          </ListItemText>
+        </MenuItem>
+      )}
+
+      {!isAuraChat && (
+        <MenuItem
+          onClick={() => {
+            onToggleRestrict();
+            onClose();
+          }}
+          sx={itemSx}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: "text.primary" }}>
+            <Archive size={18} aria-hidden />
+          </ListItemIcon>
+          <ListItemText>
+            <Typography variant="body2" sx={labelSx}>
+              {isRestricted ? tr("Bỏ lưu trữ đoạn chat", "Unarchive chat") : tr("Lưu trữ đoạn chat", "Archive chat")}
+            </Typography>
+          </ListItemText>
+        </MenuItem>
+      )}
+
       <MenuItem
         onClick={() => {
-          onViewProfile();
-          onClose();
-        }}
-        sx={itemSx}
-      >
-        <ListItemIcon sx={{ minWidth: 32, color: "text.primary" }}>
-          <User size={18} aria-hidden />
-        </ListItemIcon>
-        <ListItemText>
-          <Typography variant="body2" sx={labelSx}>
-            {tr("Xem trang cá nhân", "View profile")}
-          </Typography>
-        </ListItemText>
-      </MenuItem>
-
-      <Divider sx={{ my: 0.5 }} />
-
-      <MenuItem
-        onClick={() => {
-          onToggleBlock();
-          onClose();
-        }}
-        sx={itemSx}
-      >
-        <ListItemIcon sx={{ minWidth: 32, color: "text.primary" }}>
-          <UserX size={18} aria-hidden />
-        </ListItemIcon>
-        <ListItemText>
-          <Typography variant="body2" sx={labelSx}>
-            {isBlockedByMe ? tr("Bỏ chặn", "Unblock") : tr("Chặn", "Block")}
-          </Typography>
-        </ListItemText>
-      </MenuItem>
-
-      <MenuItem
-        onClick={() => {
-          onToggleRestrict();
-          onClose();
-        }}
-        sx={itemSx}
-      >
-        <ListItemIcon sx={{ minWidth: 32, color: "text.primary" }}>
-          <Archive size={18} aria-hidden />
-        </ListItemIcon>
-        <ListItemText>
-          <Typography variant="body2" sx={labelSx}>
-            {isRestricted ? tr("Bỏ lưu trữ đoạn chat", "Unarchive chat") : tr("Lưu trữ đoạn chat", "Archive chat")}
-          </Typography>
-        </ListItemText>
-      </MenuItem>
-
-      <MenuItem
-        onClick={() => {
-          onHideChat();
+          onDeleteChat();
           onClose();
         }}
         sx={{ ...itemSx, color: "error.main" }}

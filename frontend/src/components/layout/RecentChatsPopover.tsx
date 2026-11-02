@@ -10,17 +10,17 @@ import { useChatBoxStore } from "@/store/useChatBoxStore";
 import { ConversationItem, useChatStore } from "@/store/useChatStore";
 import { useSoundStore } from "@/store/useSoundStore";
 import { v } from "@/theme/tokens";
-import RecentChatRow from "./RecentChatRow";
+import RecentChatRow, { formatChatPreview } from "./RecentChatRow";
 import RecentChatRowMenu from "./RecentChatRowMenu";
 import RecentChatsHeaderMenu from "./RecentChatsHeaderMenu";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import VerifiedBadge from "@/components/common/VerifiedBadge";
-import { AURA_BOT_USER } from "@/constants/auraBot";
+import { AURA_BOT_USER, isAuraBot } from "@/constants/auraBot";
 
 export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }: { anchorEl: HTMLElement | null; currentUserId: string; onClose: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { conversations, onlineUserIds, selectConversation, fetchConversations } = useChatStore();
+  const { conversations, onlineUserIds, selectConversation, fetchConversations, deleteConversation } = useChatStore();
   const { openChat } = useChatBoxStore();
   const { isMuted, toggleMute } = useSoundStore();
   const { tr } = useTranslation();
@@ -28,21 +28,29 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const [manualUnreadIds, setManualUnreadIds] = useState<string[]>([]);
-  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
   const [headerMenuAnchor, setHeaderMenuAnchor] = useState<HTMLElement | null>(null);
   const [menuTarget, setMenuTarget] = useState<{ el: HTMLElement; conv: ConversationItem } | null>(null);
+
+  const auraConv = useMemo(() => {
+    return conversations.find((c) =>
+      c.participants.some((p) => isAuraBot(p?._id || p?.id))
+    );
+  }, [conversations]);
 
   const visibleList = useMemo(() => {
     const q = query.trim().toLowerCase();
     return conversations.filter((c) => {
-      if (hiddenIds.includes(c._id) || (currentUserId && c.restrictedBy?.includes(currentUserId))) return false;
+      if (currentUserId && c.restrictedBy?.includes(currentUserId)) return false;
       const other = c.participants.find((p) => String(p._id || p.id) !== currentUserId) || c.participants[0];
+      const otherId = String(other?._id || other?.id || "");
+      // AI là chatbot thông minh, được ghim chuyên biệt ở đầu danh sách nên không hiển thị lẫn vào danh sách hội thoại bạn bè
+      if (isAuraBot(otherId)) return false;
       const isUnread = Number(c.unreadCounts?.[currentUserId] || 0) > 0 || manualUnreadIds.includes(c._id);
       if (filter === "unread" && !isUnread) return false;
       if (!q) return true;
       return (other?.name || "").toLowerCase().includes(q) || (c.lastMessage?.text || "").toLowerCase().includes(q);
     });
-  }, [conversations, hiddenIds, currentUserId, manualUnreadIds, filter, query]);
+  }, [conversations, currentUserId, manualUnreadIds, filter, query]);
 
   const handleOpenConv = async (conv: ConversationItem) => {
     const other = conv.participants.find((p) => String(p._id || p.id) !== currentUserId) || conv.participants[0];
@@ -164,7 +172,18 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
           <ButtonBase
             onClick={() => {
               onClose();
-              openChat(AURA_BOT_USER);
+              if (pathname === "/chat" || (typeof window !== "undefined" && window.innerWidth < 600)) {
+                if (auraConv) {
+                  void selectConversation(auraConv);
+                } else {
+                  void useChatStore.getState().startConversationWithUser(AURA_BOT_USER).then((conv) => {
+                    if (conv) selectConversation(conv);
+                  });
+                }
+                if (pathname !== "/chat") router.push("/chat");
+              } else {
+                openChat(AURA_BOT_USER, auraConv?._id);
+              }
             }}
             sx={{
               width: "100%",
@@ -190,8 +209,18 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
                 </Typography>
                 <VerifiedBadge size={14} />
               </Box>
-              <Typography variant="caption" noWrap sx={{ color: "primary.main", fontWeight: 600, display: "block" }}>
-                {tr("Trợ lý ảo AI • Nhắn tin ngay", "Smart AI Assistant • Chat now")}
+              <Typography
+                variant="caption"
+                noWrap
+                sx={{
+                  color: auraConv?.lastMessage?.text ? "text.secondary" : "primary.main",
+                  fontWeight: auraConv?.lastMessage?.text ? 500 : 600,
+                  display: "block",
+                }}
+              >
+                {auraConv?.lastMessage?.text
+                  ? formatChatPreview(auraConv.lastMessage.text)
+                  : tr("Trợ lý ảo AI • Nhắn tin ngay", "Smart AI Assistant • Chat now")}
               </Typography>
             </Box>
           </ButtonBase>
@@ -271,7 +300,15 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
           const restricted = Boolean(targetConv.restrictedBy?.includes(currentUserId));
           void api.patch(`/chat/conversations/${targetConv._id}/restrict`, { restrict: !restricted }).then(() => fetchConversations());
         }}
-        onHideChat={() => targetConv && setHiddenIds((prev) => [...prev, targetConv._id])}
+        isAuraChat={Boolean(targetOther && isAuraBot(targetOther._id || targetOther.id))}
+        onDeleteChat={async () => {
+          if (!targetConv) return;
+          try {
+            await deleteConversation(targetConv._id);
+          } catch (e) {
+            console.error("Lỗi xóa cuộc hội thoại:", e);
+          }
+        }}
       />
 
       <RecentChatsHeaderMenu

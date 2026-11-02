@@ -136,6 +136,7 @@ export class UsersService implements OnModuleInit {
     const query: Record<string, unknown> = {
       isDeleted: { $ne: true },
       isBan: { $ne: true },
+      role: { $ne: 'bot' },
     };
     const idFilter: Record<string, unknown> = {};
     if (excludeUserId) {
@@ -347,12 +348,13 @@ export class UsersService implements OnModuleInit {
   }
 
   async findActiveUsersExcluding(excludeIds: (string | Types.ObjectId)[], limit = 30) {
-    const objectIds = excludeIds
+    const objectIds = [...excludeIds, AURA_BOT_ID]
       .filter((id) => Types.ObjectId.isValid(id.toString()))
       .map((id) => new Types.ObjectId(id.toString()));
     return this.userModel
       .find({
         _id: { $nin: objectIds },
+        role: { $nin: ['bot', 'admin'] },
         isDeleted: { $ne: true },
         isBan: { $ne: true },
       })
@@ -370,14 +372,14 @@ export class UsersService implements OnModuleInit {
     excludeIds: (string | Types.ObjectId)[] = [],
     limit = 30,
   ) {
-    const objectIds = excludeIds
+    const objectIds = [...excludeIds, AURA_BOT_ID]
       .filter((id) => Types.ObjectId.isValid(id.toString()))
       .map((id) => new Types.ObjectId(id.toString()));
 
     return this.userModel
       .find({
         _id: { $nin: objectIds },
-        role: { $ne: 'admin' }, // Bảo vệ quyền riêng tư tuyệt đối cho Quản trị viên: không lộ định vị và địa chỉ IP
+        role: { $nin: ['bot', 'admin'] }, // Bot AI và Quản trị viên không xuất hiện trong tìm kiếm lân cận
         isDeleted: { $ne: true },
         isBan: { $ne: true },
         location: {

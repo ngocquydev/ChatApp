@@ -20,6 +20,7 @@ import {
   LocationData,
 } from './schemas/message.schema.js';
 import { UsersService } from '../users/users.service.js';
+import { AURA_BOT_ID } from '../groq/aura-bot.constant.js';
 
 @Injectable()
 export class ChatService {
@@ -71,15 +72,16 @@ export class ChatService {
   }
 
   /**
-   * Lấy danh sách cuộc hội thoại của một người dùng
+   * Lấy danh sách cuộc hội thoại của một người dùng (loại trừ các hội thoại người dùng đã xóa)
    */
   async getUserConversations(userId: string): Promise<ConversationDocument[]> {
     const objId = new Types.ObjectId(userId);
     return this.conversationModel
       .find({
         participants: objId,
+        deletedByUsers: { $ne: objId },
       })
-      .populate('participants', 'name email avatar')
+      .populate('participants', 'name email avatar isBan isDeleted')
       .sort({ updatedAt: -1 })
       .exec();
   }
@@ -160,6 +162,23 @@ export class ChatService {
     conversation.unreadCounts.set(receiverId, currentUnread + 1);
 
     await conversation.save();
+
+    // Khôi phục hội thoại nếu người gửi hoặc người nhận trước đó đã từng xóa hội thoại
+    await this.conversationModel
+      .updateOne(
+        { _id: conversation._id },
+        {
+          $pull: {
+            deletedByUsers: {
+              $in: [
+                new Types.ObjectId(senderId),
+                new Types.ObjectId(receiverId),
+              ],
+            },
+          },
+        },
+      )
+      .exec();
 
     return message;
   }
@@ -317,6 +336,69 @@ export class ChatService {
       success: true,
       modifiedCount: updateResult.modifiedCount || 0,
     };
+  }
+
+  /**
+   * Xóa cuộc hội thoại:
+   * - Nếu là hội thoại với Aura AI (bot): Xóa vĩnh viễn cuộc hội thoại và toàn bộ tin nhắn khỏi DB.
+   * - Nếu là người dùng: Thêm userId vào deletedByUsers (ẩn vĩnh viễn với user này).
+   *   Nếu tất cả thành viên đều đã xóa, dọn dẹp triệt để hội thoại và tin nhắn khỏi MongoDB.
+   */
+  async deleteConversation(
+    conversationId: string,
+    userId: string,
+  ): Promise<void> {
+    if (!Types.ObjectId.isValid(conversationId)) {
+      throw new BadRequestException('Mã cuộc hội thoại không hợp lệ');
+    }
+    const objConvId = new Types.ObjectId(conversationId);
+    const objUserId = new Types.ObjectId(userId);
+    const conversation = await this.conversationModel.findById(objConvId).exec();
+    if (!conversation) {
+      throw new NotFoundException('Cuộc hội thoại không tồn tại');
+    }
+    const isParticipant = conversation.participants.some(
+      (p) => p.toString() === userId,
+    );
+    if (!isParticipant) {
+      throw new ForbiddenException(
+        'Bạn không có quyền xóa cuộc hội thoại này',
+      );
+    }
+
+    const isAuraChat = conversation.participants.some(
+      (p) => p.toString() === AURA_BOT_ID,
+    );
+
+    if (isAuraChat) {
+      await Promise.all([
+        this.conversationModel.deleteOne({ _id: objConvId }).exec(),
+        this.messageModel.deleteMany({ conversationId: objConvId }).exec(),
+      ]);
+      return;
+    }
+
+    await this.conversationModel
+      .updateOne(
+        { _id: objConvId },
+        { $addToSet: { deletedByUsers: objUserId } },
+      )
+      .exec();
+
+    const updated = await this.conversationModel.findById(objConvId).exec();
+    if (
+      updated &&
+      updated.participants.every((p) =>
+        (updated.deletedByUsers || []).some(
+          (d) => d.toString() === p.toString(),
+        ),
+      )
+    ) {
+      await Promise.all([
+        this.conversationModel.deleteOne({ _id: objConvId }).exec(),
+        this.messageModel.deleteMany({ conversationId: objConvId }).exec(),
+      ]);
+    }
   }
 
   /**
