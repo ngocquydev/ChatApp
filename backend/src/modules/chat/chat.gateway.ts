@@ -12,6 +12,7 @@ import { Logger, Optional } from '@nestjs/common';
 import { AsyncLocalStorage } from 'async_hooks';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
+import { Types } from 'mongoose';
 import { ChatService } from './chat.service.js';
 import { SendMessageDto } from './dto/send-message.dto.js';
 import { RedisService } from '../redis/redis/redis.service.js';
@@ -358,20 +359,28 @@ export class ChatGateway
         text: m.text,
       }));
 
-      const replyText = await this.groqService.generateAuraChatReply(text, history, {
-        conversationId,
-        senderId,
-        partnerId: isAuraDirect ? undefined : receiverId,
-      });
+      // 1. Khởi tạo trước messageId và phát sự kiện stream_start
+      const messageId = new Types.ObjectId().toString();
+      const createdAt = new Date().toISOString();
 
-      // Lưu tin nhắn phản hồi của Aura Bot
-      const auraMsg = await this.chatService.saveMessage(
-        AURA_BOT_ID,
-        senderId,
-        replyText,
+      const streamStartPayload = {
+        _id: messageId,
+        id: messageId,
         conversationId,
-      );
+        senderId: AURA_BOT_ID,
+        receiverId: senderId,
+        text: '',
+        type: 'text',
+        createdAt,
+        isStreaming: true,
+      };
 
+      this.server?.to(`user:${senderId}`).emit('message:stream_start', streamStartPayload);
+      if (!isAuraDirect) {
+        this.server?.to(`user:${receiverId}`).emit('message:stream_start', streamStartPayload);
+      }
+
+      // Ngừng typing indicator khi bắt đầu bắn chữ
       this.server?.to(`user:${senderId}`).emit('typing:stop', {
         conversationId,
         userId: AURA_BOT_ID,
@@ -383,25 +392,58 @@ export class ChatGateway
         });
       }
 
-      this.broadcastNewMessage(auraMsg);
+      // 2. Stream từng chunk về client
+      let accumulatedText = '';
+      for await (const chunk of this.groqService.streamAuraChatReply(text, history, {
+        conversationId,
+        senderId,
+        partnerId: isAuraDirect ? undefined : receiverId,
+      })) {
+        accumulatedText += chunk;
+        const chunkPayload = {
+          messageId,
+          conversationId,
+          chunk,
+          text: accumulatedText,
+        };
+        this.server?.to(`user:${senderId}`).emit('message:stream_chunk', chunkPayload);
+        if (!isAuraDirect) {
+          this.server?.to(`user:${receiverId}`).emit('message:stream_chunk', chunkPayload);
+        }
+      }
+
+      // 3. Lưu toàn bộ tin nhắn đã hoàn thiện vào database với đúng messageId
+      const finalReply = accumulatedText.trim() || 'Aura AI đã nhận được tin nhắn của bạn.';
+      const auraMsg = await this.chatService.saveMessage(
+        AURA_BOT_ID,
+        senderId,
+        finalReply,
+        conversationId,
+        { customMessageId: messageId },
+      );
+
+      const streamEndPayload = {
+        _id: auraMsg._id.toString(),
+        id: auraMsg._id.toString(),
+        conversationId: auraMsg.conversationId.toString(),
+        senderId: AURA_BOT_ID,
+        receiverId: senderId,
+        text: auraMsg.text,
+        type: auraMsg.type || 'text',
+        createdAt:
+          typeof auraMsg.createdAt === 'string'
+            ? auraMsg.createdAt
+            : auraMsg.createdAt
+              ? auraMsg.createdAt.toISOString()
+              : createdAt,
+        readAt: null,
+        isDeleted: false,
+        isStreaming: false,
+      };
+
+      this.server?.to(`user:${senderId}`).emit('message:stream_end', streamEndPayload);
       if (!isAuraDirect) {
-        this.server?.to(`user:${receiverId}`).emit('message:new', {
-          _id: auraMsg._id.toString(),
-          id: auraMsg._id.toString(),
-          conversationId: auraMsg.conversationId.toString(),
-          senderId: AURA_BOT_ID,
-          receiverId: senderId,
-          text: auraMsg.text,
-          type: auraMsg.type || 'text',
-          createdAt:
-            typeof auraMsg.createdAt === 'string'
-              ? auraMsg.createdAt
-              : auraMsg.createdAt
-                ? auraMsg.createdAt.toISOString()
-                : new Date().toISOString(),
-          readAt: null,
-          isDeleted: false,
-        });
+        this.server?.to(`user:${receiverId}`).emit('message:stream_end', streamEndPayload);
       }
     } catch (err: unknown) {
       this.logger.error(`Lỗi Aura bot phản hồi: ${err instanceof Error ? err.message : String(err)}`);

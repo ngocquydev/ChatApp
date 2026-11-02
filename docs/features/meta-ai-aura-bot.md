@@ -42,7 +42,14 @@
   - *📝 Giúp tôi tóm tắt bài viết*
   - *🎯 Lên kế hoạch một ngày hiệu quả*
 
-### 5. Đa điểm truy cập nhanh (Omni-channel Entry Points)
+### 5. Cơ chế phản hồi luồng chữ theo thời gian thực (Streaming Chunks / Typewriter Effect - "Nhắn từ từ")
+- **Trải nghiệm gõ chữ sống động chuẩn Gemini / ChatGPT**: Thay vì chờ đợi vài giây rồi nhận một khối văn bản dài đột ngột, Aura AI lập tức mở luồng Server-Sent Events (SSE) và phát từng cụm từ (chunk/token) theo thời gian thực về giao diện người dùng.
+- **Con trỏ nhấp nháy phát sáng (`auraBlink`)**: Trong suốt quá trình AI sinh văn bản, con trỏ thanh đứng `▊` nhấp nháy mượt mà ở cuối câu chữ đang xuất hiện và các nút chức năng phụ tạm ẩn để tạo cảm giác tập trung.
+- **Tự động cuộn theo dòng chữ (Auto-scroll smooth)**: Giao diện tự động cuộn êm ái theo từng dòng chữ mới sinh ra, đảm bảo người dùng luôn theo dõi được mạch trò chuyện.
+- **Lưu trữ toàn vẹn (Eventual Consistency)**: Sau khi luồng chunk kết thúc (`message:stream_end`), toàn bộ nội dung tin nhắn được lưu trữ bền vững vào cơ sở dữ liệu MongoDB với đúng ID đã phát, đảm bảo đồng bộ hoàn hảo với các thiết bị khác.
+- **Dự phòng thông minh (Fallback Chunker)**: Khi chạy offline hoặc chưa nạp API Key, bộ sinh dự phòng tự động phân tách câu từ và stream với nhịp 25ms - 35ms mượt mà.
+
+### 6. Đa điểm truy cập nhanh (Omni-channel Entry Points)
 - **Danh sách hội thoại (`/chat`)**: Ghim mục Aura AI ở đầu danh sách với nhãn AI nổi bật.
 - **Thanh danh bạ trang chủ (`PersonCall`)**: Nằm ngay đầu mục "Người liên hệ" để mở chat nổi chỉ với 1 click.
 - **Popover tin nhắn trên AppBar (`RecentChatsPopover`)**: Lối tắt truy cập nhanh ở vị trí trên cùng.

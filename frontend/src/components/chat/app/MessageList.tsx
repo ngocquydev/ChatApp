@@ -498,18 +498,37 @@ export default function MessageList({
                             sx={{ fontSize: "0.9375rem", lineHeight: 1.45, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
                           >
                             <MentionText text={msg.text} />
+                            {msg.isStreaming && (
+                              <Box
+                                component="span"
+                                sx={{
+                                  display: "inline-block",
+                                  width: "7px",
+                                  height: "15px",
+                                  bgcolor: "primary.main",
+                                  ml: 0.5,
+                                  verticalAlign: "middle",
+                                  borderRadius: "1px",
+                                  animation: "auraBlink 0.8s infinite ease-in-out",
+                                  "@keyframes auraBlink": {
+                                    "0%, 100%": { opacity: 1 },
+                                    "50%": { opacity: 0.2 },
+                                  },
+                                }}
+                              />
+                            )}
                           </Typography>
                         </Box>
                       );
                     })()}
                   </Tooltip>
 
-                  {!msg.isDeleted && senderOf(msg) === AURA_BOT_ID && (
+                  {!msg.isDeleted && !msg.isStreaming && senderOf(msg) === AURA_BOT_ID && (
                     <AuraFeedbackButtons messageId={msg._id} />
                   )}
 
                   {/* Nút thả cảm xúc (Reaction) */}
-                  {!msg.isDeleted && Boolean(onReactMessage) && (
+                  {!msg.isDeleted && !msg.isStreaming && Boolean(onReactMessage) && (
                     <Box
                       className="msg-action-btn"
                       sx={{

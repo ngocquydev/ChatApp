@@ -96,6 +96,7 @@ export class ChatService {
       type?: 'text' | 'call' | 'location';
       callLog?: CallLogData | null;
       location?: LocationData | null;
+      customMessageId?: string;
     },
   ): Promise<MessageDocument> {
     const [receiver, foundConv] = await Promise.all([
@@ -120,6 +121,9 @@ export class ChatService {
     }
 
     const message = await this.messageModel.create({
+      ...(options?.customMessageId
+        ? { _id: new Types.ObjectId(options.customMessageId) }
+        : {}),
       conversationId: conversation._id,
       senderId: new Types.ObjectId(senderId),
       receiverId: new Types.ObjectId(receiverId),

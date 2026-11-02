@@ -404,10 +404,18 @@ export default function FloatingChatBox({
         }
         setMessages((prev) => {
           const realId = String(newMsg._id || newMsg.id);
-          const exists = prev.some(
-            (m) => !m.isOptimistic && String(m._id || m.id) === realId
+          const existingIndex = prev.findIndex(
+            (m) => String(m._id || m.id) === realId
           );
-          if (exists) return prev;
+          if (existingIndex !== -1) {
+            const copy = [...prev];
+            copy[existingIndex] = {
+              ...copy[existingIndex],
+              ...newMsg,
+              isStreaming: false,
+            };
+            return copy;
+          }
 
           // Nếu tin nhắn do chính mình gửi, thay thế tin optimistic
           if (senderId === currentUserId) {
@@ -543,8 +551,57 @@ export default function FloatingChatBox({
       );
     };
 
+    const handleStreamStart = (newMsg: ChatMessage) => {
+      const msgConvId = String(newMsg.conversationId || "");
+      const currentConvId = String(convId || "");
+      if (currentConvId && msgConvId && msgConvId !== currentConvId) return;
+      setMessages((prev) => {
+        const realId = String(newMsg._id || newMsg.id);
+        const exists = prev.some((m) => String(m._id || m.id) === realId);
+        if (exists) return prev;
+        return [...prev, { ...newMsg, text: "", isStreaming: true }];
+      });
+      scrollToBottom("smooth");
+    };
+
+    const handleStreamChunk = (data: {
+      messageId: string;
+      conversationId: string;
+      chunk: string;
+      text: string;
+    }) => {
+      const msgConvId = String(data.conversationId || "");
+      const currentConvId = String(convId || "");
+      if (currentConvId && msgConvId && msgConvId !== currentConvId) return;
+      setMessages((prev) =>
+        prev.map((m) =>
+          String(m._id || m.id) === String(data.messageId)
+            ? { ...m, text: data.text, isStreaming: true }
+            : m
+        )
+      );
+      scrollToBottom("smooth");
+    };
+
+    const handleStreamEnd = (data: ChatMessage) => {
+      const msgConvId = String(data.conversationId || "");
+      const currentConvId = String(convId || "");
+      if (currentConvId && msgConvId && msgConvId !== currentConvId) return;
+      setMessages((prev) =>
+        prev.map((m) =>
+          String(m._id || m.id) === String(data._id || data.id)
+            ? { ...m, ...data, isStreaming: false }
+            : m
+        )
+      );
+      scrollToBottom("smooth");
+    };
+
     if (socket) {
       socket.on("message:new", handleNewMessage);
+      socket.on("message:stream_start", handleStreamStart);
+      socket.on("message:stream_chunk", handleStreamChunk);
+      socket.on("message:stream_end", handleStreamEnd);
       socket.on("typing:start", handleTypingStart);
       socket.on("typing:stop", handleTypingStop);
       socket.on("message:seen", handleMessageSeen);
@@ -567,6 +624,9 @@ export default function FloatingChatBox({
       window.removeEventListener("chatapp:location_updated", handleLocalLocationUpdate);
       if (socket) {
         socket.off("message:new", handleNewMessage);
+        socket.off("message:stream_start", handleStreamStart);
+        socket.off("message:stream_chunk", handleStreamChunk);
+        socket.off("message:stream_end", handleStreamEnd);
         socket.off("typing:start", handleTypingStart);
         socket.off("typing:stop", handleTypingStop);
         socket.off("message:seen", handleMessageSeen);
@@ -578,7 +638,7 @@ export default function FloatingChatBox({
         socket.off("message:reaction", handleMessageReaction);
       }
     };
-  }, [socket, convId, targetUserId, currentUserId, targetUserName, session.isMinimized, clearUnread, incrementUnread]);
+  }, [socket, convId, targetUserId, currentUserId, targetUserName, session.isMinimized, clearUnread, incrementUnread, scrollToBottom]);
 
   // 3. Xử lý gõ chữ & bắn event typing nhị phân
   const handleInputChange = (text: string, cursorIndex?: number) => {

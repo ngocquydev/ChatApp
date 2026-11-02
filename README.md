@@ -167,6 +167,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Huy hiệu tích xanh chính thức (Verified Badge):** Nhận diện thương hiệu chuẩn xác ngay cạnh tên Aura AI trên thanh tiêu đề, danh bạ liên hệ và danh sách đoạn chat.
 - **Nút đánh giá phản hồi 👍/👎 trực quan:** Đặt ngay cạnh bong bóng tin nhắn của bot, cho phép người dùng đánh giá mức độ hữu ích của câu trả lời với 1-chạm.
 - **Thẻ chào mừng sinh động & Gợi ý mở đầu (`AuraWelcomeCard`):** Giúp người dùng bắt đầu câu chuyện một cách hào hứng với các chip câu hỏi gợi ý nhanh.
+- **Phản hồi luồng chữ theo thời gian thực (Streaming Chunks - "Nhắn từ từ"):** Chữ chạy ra từng token mượt mà theo hiệu ứng typewriter như Gemini/ChatGPT kèm con trỏ nhấp nháy phát sáng và tự động cuộn màn hình êm ái.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/meta-ai-aura-bot.md](docs/features/meta-ai-aura-bot.md)*
 
 ---

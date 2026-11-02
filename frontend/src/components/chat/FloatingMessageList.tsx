@@ -483,15 +483,34 @@ function FloatingMessageListComponent({
                           </Box>
                         )}
                         <MentionText text={msg.text} />
+                        {msg.isStreaming && (
+                          <Box
+                            component="span"
+                            sx={{
+                              display: "inline-block",
+                              width: "7px",
+                              height: "14px",
+                              bgcolor: "primary.main",
+                              ml: 0.5,
+                              verticalAlign: "middle",
+                              borderRadius: "1px",
+                              animation: "auraBlink 0.8s infinite ease-in-out",
+                              "@keyframes auraBlink": {
+                                "0%, 100%": { opacity: 1 },
+                                "50%": { opacity: 0.2 },
+                              },
+                            }}
+                          />
+                        )}
                       </Box>
                     )}
                   </Tooltip>
 
-                  {!msg.isDeleted && String(msg.senderId) === AURA_BOT_ID && (
+                  {!msg.isDeleted && !msg.isStreaming && String(msg.senderId) === AURA_BOT_ID && (
                     <AuraFeedbackButtons messageId={String(msg._id || msg.id || "")} />
                   )}
 
-                  {!msg.isDeleted && (
+                  {!msg.isDeleted && !msg.isStreaming && (
                     <Box
                       className="msg-reaction-btn"
                       sx={{

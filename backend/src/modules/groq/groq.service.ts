@@ -137,6 +137,117 @@ export class GroqService {
   }
 
   /**
+   * Sinh văn bản qua Groq API dạng luồng dữ liệu (Stream Chunks)
+   */
+  async *streamText(prompt: string, systemInstruction?: string): AsyncGenerator<string> {
+    const apiKey = this.getApiKey();
+    if (!apiKey) {
+      const fallback = this.fallbackTextGeneration(prompt, systemInstruction);
+      for (const chunk of this.chunkString(fallback)) {
+        yield chunk;
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      return;
+    }
+
+    const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
+    if (systemInstruction) {
+      messages.push({ role: 'system', content: systemInstruction });
+    }
+    messages.push({ role: 'user', content: prompt });
+
+    const payload = {
+      model: this.getModelName(),
+      messages,
+      temperature: 0.7,
+      top_p: 0.95,
+      max_tokens: 1024,
+      stream: true,
+    };
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+
+    try {
+      const res = await fetch(GroqService.ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        const errorText = !res.ok ? await res.text() : 'No response body';
+        this.logger.warn(`Groq API stream trả về lỗi ${res.status}: ${errorText}`);
+        const fallback = this.fallbackTextGeneration(prompt, systemInstruction);
+        for (const chunk of this.chunkString(fallback)) {
+          yield chunk;
+          await new Promise((r) => setTimeout(r, 25));
+        }
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data:')) continue;
+          const dataStr = trimmed.replace(/^data:\s*/, '');
+          if (dataStr === '[DONE]') return;
+          try {
+            const parsed = JSON.parse(dataStr) as {
+              choices?: Array<{ delta?: { content?: string | null } }>;
+            };
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              yield delta;
+            }
+          } catch {
+            // bỏ qua chunk JSON chưa hoàn chỉnh
+          }
+        }
+      }
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Lỗi khi stream từ Groq (${this.modelName}): ${errMsg}`);
+      const fallback = this.fallbackTextGeneration(prompt, systemInstruction);
+      for (const chunk of this.chunkString(fallback)) {
+        yield chunk;
+        await new Promise((r) => setTimeout(r, 25));
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  /**
+   * Chia nhỏ chuỗi thành các chunk từ ngữ tự nhiên kèm khoảng trắng
+   */
+  private chunkString(text: string): string[] {
+    const parts = text.split(/(\s+)/);
+    const chunks: string[] = [];
+    for (let i = 0; i < parts.length; i += 2) {
+      const word = parts[i];
+      const space = parts[i + 1] || '';
+      if (word || space) {
+        chunks.push(word + space);
+      }
+    }
+    return chunks.length > 0 ? chunks : [text];
+  }
+
+  /**
    * Tóm tắt danh sách bình luận dưới bài viết
    */
   async summarizeComments(postContent: string, comments: CommentSummaryItem[]): Promise<string> {
@@ -257,6 +368,79 @@ export class GroqService {
     }
 
     return this.generateText(finalPrompt, systemPrompt);
+  }
+
+  /**
+   * Trả lời trực tiếp của Aura Bot dạng luồng token (Streaming chunks)
+   */
+  async *streamAuraChatReply(
+    userPrompt: string,
+    history: ChatMessageItem[] = [],
+    contextOptions?: AuraChatContextOptions,
+  ): AsyncGenerator<string> {
+    const isSummarizeRequest =
+      /\b(tóm tắt|summarize|tổng kết|tổng hợp)\b/i.test(userPrompt);
+
+    if (isSummarizeRequest && history.length > 2) {
+      const summary = await this.summarizeChat(history);
+      for (const chunk of this.chunkString(summary)) {
+        yield chunk;
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      return;
+    }
+
+    // 1. Kỹ thuật RAG: Truy xuất thông tin người dùng, lịch sử chat ngữ nghĩa & thống kê tương tác
+    let ragContextString = '';
+    let ragContextData: RetrievedRagContext | null = null;
+    if (this.auraRagService && contextOptions?.senderId) {
+      try {
+        ragContextData = await this.auraRagService.retrieveContext({
+          conversationId: contextOptions.conversationId,
+          senderId: contextOptions.senderId,
+          partnerId: contextOptions.partnerId,
+          query: userPrompt,
+        });
+        ragContextString = this.auraRagService.buildRagPromptContext(ragContextData);
+      } catch (err: unknown) {
+        this.logger.warn(`Lỗi khi trích xuất dữ liệu RAG cho Aura: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    // 2. Persona của Aura AI: Giống Meta AI - Cực kỳ ngắn gọn, tự nhiên, thân thiện
+    const systemPrompt =
+      'Bạn là Aura (@aura) - trợ lý trò chuyện trực tiếp của mạng xã hội ChatApp.\n' +
+      'QUY TẮC PHẢN HỒI BẮT BUỘC:\n' +
+      '1. Trả lời cực kỳ ngắn gọn, súc tích (1-2 câu ngắn, tối đa 3 câu khi giải thích).\n' +
+      '2. Khi người dùng chào hỏi ngắn ("chào", "hi", "hello"), chỉ chào lại thật ngắn và tự nhiên (ví dụ: "Chào bạn! 👋 Có gì vui không nè?").\n' +
+      '3. Tuyệt đối không tự giới thiệu dài dòng kiểu văn mẫu "Tôi là Aura AI trợ lý ảo...", không lặp lại câu hỏi của người dùng.\n' +
+      '4. Giọng điệu thân thiện, tự nhiên như bạn bè nhắn tin với nhau, dùng emoji tinh tế.';
+
+    const promptParts: string[] = [];
+
+    if (ragContextString) {
+      promptParts.push(`[KHO DỮ LIỆU ĐƯỢC TRÍCH XUẤT TỪ CHATAPP - RAG CONTEXT]:\n${ragContextString}`);
+    } else if (history.length > 0) {
+      const recent = history.slice(-6).map((m) => `${m.senderName}: ${m.text}`).join('\n');
+      promptParts.push(`Ngữ cảnh các tin nhắn trước:\n${recent}`);
+    }
+
+    const cleanPrompt = userPrompt.replace(/@aura\b/gi, '').trim();
+    promptParts.push(`Người dùng yêu cầu: "${cleanPrompt || 'Chào Aura, hãy nói một câu vui vui đi!'}"`);
+
+    const finalPrompt = promptParts.join('\n\n');
+
+    // Nếu không có API Key, sử dụng bộ sinh phản hồi dự phòng dựa trên dữ liệu RAG đã trích xuất
+    if (!this.getApiKey() && ragContextData && this.auraRagService) {
+      const fallbackRag = this.auraRagService.generateFallbackRagReply(cleanPrompt, ragContextData);
+      for (const chunk of this.chunkString(fallbackRag)) {
+        yield chunk;
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      return;
+    }
+
+    yield* this.streamText(finalPrompt, systemPrompt);
   }
 
   /**

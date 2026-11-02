@@ -55,6 +55,7 @@ export interface ChatMessage {
   reactions?: MessageReactionItem[];
   createdAt: string;
   isOptimistic?: boolean;
+  isStreaming?: boolean;
   status?: "sending" | "sent" | "error";
 }
 
@@ -435,10 +436,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (isMatchActive) {
         set((state) => {
           const realId = String(newMsg._id || newMsg.id);
-          const exists = state.messages.some(
-            (m) => !m.isOptimistic && String(m._id || m.id) === realId
+          const existingIndex = state.messages.findIndex(
+            (m) => String(m._id || m.id) === realId
           );
-          if (exists) return state;
+          if (existingIndex !== -1) {
+            const nextMessages = [...state.messages];
+            nextMessages[existingIndex] = {
+              ...nextMessages[existingIndex],
+              ...newMsg,
+              isStreaming: false,
+            };
+            return { messages: nextMessages };
+          }
 
           // Nếu người gửi là chính mình, thay thế tin nhắn optimistic
           if (senderId === myId) {
@@ -487,6 +496,112 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 isNotActive && senderId !== myId
                   ? { ...c.unreadCounts, [myId]: currentUnread + 1 }
                   : c.unreadCounts,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return c;
+        });
+
+        updated.sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
+
+        return { conversations: updated };
+      });
+    });
+
+    // Lắng nghe sự kiện luồng tin nhắn AI (Streaming Chunks)
+    socket.on("message:stream_start", (newMsg: ChatMessage) => {
+      const active = get().activeConversation;
+      const msgConvId = String(newMsg.conversationId || "");
+      const activeConvId = String(active?._id || "");
+      const isMatchActive =
+        Boolean(active) &&
+        Boolean(msgConvId) &&
+        Boolean(activeConvId) &&
+        activeConvId === msgConvId;
+
+      if (isMatchActive) {
+        set((state) => {
+          const realId = String(newMsg._id || newMsg.id);
+          const exists = state.messages.some(
+            (m) => String(m._id || m.id) === realId
+          );
+          if (exists) return state;
+          return {
+            messages: [
+              ...state.messages,
+              { ...newMsg, text: "", isStreaming: true },
+            ],
+          };
+        });
+      }
+    });
+
+    socket.on(
+      "message:stream_chunk",
+      (data: {
+        messageId: string;
+        conversationId: string;
+        chunk: string;
+        text: string;
+      }) => {
+        const active = get().activeConversation;
+        const msgConvId = String(data.conversationId || "");
+        const activeConvId = String(active?._id || "");
+        const isMatchActive =
+          Boolean(active) &&
+          Boolean(msgConvId) &&
+          Boolean(activeConvId) &&
+          activeConvId === msgConvId;
+
+        if (isMatchActive) {
+          set((state) => ({
+            messages: state.messages.map((m) =>
+              String(m._id || m.id) === String(data.messageId)
+                ? { ...m, text: data.text, isStreaming: true }
+                : m
+            ),
+          }));
+        }
+      }
+    );
+
+    socket.on("message:stream_end", (data: ChatMessage) => {
+      const active = get().activeConversation;
+      const msgConvId = String(data.conversationId || "");
+      const activeConvId = String(active?._id || "");
+      const isMatchActive =
+        Boolean(active) &&
+        Boolean(msgConvId) &&
+        Boolean(activeConvId) &&
+        activeConvId === msgConvId;
+
+      if (isMatchActive) {
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            String(m._id || m.id) === String(data._id || data.id)
+              ? { ...m, ...data, isStreaming: false }
+              : m
+          ),
+        }));
+      }
+
+      set((state) => {
+        const senderId =
+          typeof data.senderId === "string"
+            ? data.senderId
+            : String(data.senderId?._id || data.senderId?.id || "");
+        const updated = state.conversations.map((c) => {
+          if (String(c._id) === msgConvId) {
+            return {
+              ...c,
+              lastMessage: {
+                text: data.text,
+                senderId,
+                createdAt: data.createdAt,
+              },
               updatedAt: new Date().toISOString(),
             };
           }
