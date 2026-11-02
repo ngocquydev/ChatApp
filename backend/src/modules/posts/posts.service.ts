@@ -53,6 +53,8 @@ export interface PostView {
   moderationStatus?: 'approved' | 'flagged' | 'rejected';
   moderationReason?: string;
   toxicityScore?: number;
+  pageId?: string;
+  groupId?: string;
 }
 
 export interface CommentView {
@@ -256,6 +258,8 @@ export class PostsService {
         moderationStatus: p.moderationStatus ?? 'approved',
         moderationReason: p.moderationReason,
         toxicityScore: p.toxicityScore,
+        pageId: p.pageId ? p.pageId.toString() : undefined,
+        groupId: p.groupId ? p.groupId.toString() : undefined,
         sharedPost,
       };
     });
@@ -315,6 +319,34 @@ export class PostsService {
     const relation = await this.relationBetween(viewerId, targetUserId);
     return this.toPage(
       { authorId: target, privacy: { $in: PostsService.privaciesFor(relation) } },
+      viewerId,
+      options,
+    );
+  }
+
+  /** Dòng thời gian của một Trang Fanpage */
+  async getPagePosts(
+    viewerId: string,
+    pageId: string,
+    options: { limit?: number; after?: string },
+  ) {
+    const pageObjId = toObjectId(pageId, 'Mã trang không hợp lệ');
+    return this.toPage(
+      { pageId: pageObjId },
+      viewerId,
+      options,
+    );
+  }
+
+  /** Dòng thời gian thảo luận của một Hội nhóm */
+  async getGroupPosts(
+    viewerId: string,
+    groupId: string,
+    options: { limit?: number; after?: string },
+  ) {
+    const groupObjId = toObjectId(groupId, 'Mã nhóm không hợp lệ');
+    return this.toPage(
+      { groupId: groupObjId },
       viewerId,
       options,
     );
@@ -408,6 +440,8 @@ export class PostsService {
       content,
       images,
       privacy: dto.privacy ?? 'friends',
+      pageId: dto.pageId ? new Types.ObjectId(dto.pageId) : undefined,
+      groupId: dto.groupId ? new Types.ObjectId(dto.groupId) : undefined,
       isSensitive,
       moderationStatus,
       toxicityScore,

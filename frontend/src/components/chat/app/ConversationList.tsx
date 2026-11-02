@@ -5,14 +5,16 @@ import {
   Box,
   Button,
   Chip,
+  IconButton,
   InputAdornment,
   List,
   ListItemButton,
   Skeleton,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import { MessageSquare, Search, ShieldAlert } from "lucide-react";
+import { MessageSquare, Search, ShieldAlert, UserPlus, Users } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import EmptyState from "@/components/common/EmptyState";
 import VerifiedBadge from "@/components/common/VerifiedBadge";
@@ -22,6 +24,7 @@ import { ConversationItem, useChatStore } from "@/store/useChatStore";
 import { AURA_BOT_USER, isAuraBot } from "@/constants/auraBot";
 import { isVideoUrl } from "@/services/postsApi";
 import { formatConversationTime } from "@/utils/formatTime";
+import CreateGroupDialog from "./CreateGroupDialog";
 
 function formatLastMessagePreview(rawText?: string, isDeleted?: boolean): string {
   const isEn = useLanguageStore.getState().language === "en";
@@ -76,6 +79,7 @@ export default function ConversationList({
   const { tr } = useTranslation();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "restricted">("all");
+  const [openCreateGroup, setOpenCreateGroup] = useState(false);
 
   const restrictedCount = useMemo(() => {
     if (!currentUserId) return 0;
@@ -98,14 +102,17 @@ export default function ConversationList({
     const q = query.trim().toLowerCase();
     if (!q) return list;
     return list.filter((c) => {
+      if (c.type === "group") {
+        return (c.name || tr("Nhóm chat", "Group chat")).toLowerCase().includes(q);
+      }
       const other = c.participants.find((u) => u._id !== currentUserId);
-      return other?.name.toLowerCase().includes(q);
+      return other?.name?.toLowerCase().includes(q);
     });
-  }, [conversations, filter, query, currentUserId]);
+  }, [conversations, filter, query, currentUserId, tr]);
 
   return (
     <Box sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
+      <Box sx={{ px: 2, pt: 1.5, pb: 1, display: "flex", gap: 1, alignItems: "center" }}>
         <TextField
           fullWidth
           size="small"
@@ -125,6 +132,23 @@ export default function ConversationList({
           }}
           sx={{ "& .MuiOutlinedInput-root": { bgcolor: "background.default" } }}
         />
+        <Tooltip title={tr("Tạo nhóm chat mới", "Create new group chat")}>
+          <IconButton
+            color="primary"
+            onClick={() => setOpenCreateGroup(true)}
+            aria-label={tr("Tạo nhóm chat mới", "Create new group chat")}
+            sx={{
+              bgcolor: "action.hover",
+              borderRadius: "10px",
+              width: 38,
+              height: 38,
+              flexShrink: 0,
+              "&:hover": { bgcolor: "action.selected" },
+            }}
+          >
+            <UserPlus size={18} />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* Bộ lọc Hộp thư / Bị hạn chế */}
@@ -187,10 +211,11 @@ export default function ConversationList({
           )
         ) : (
           <List disablePadding aria-label={tr("Danh sách hội thoại", "Conversations list")}>
-            {/* Mục Aura AI ghim cố định nếu người dùng chưa bắt đầu hội thoại */}
+            {/* Mục Aura AI chỉ hiển thị khi người dùng tìm kiếm "aura" và chưa có hội thoại */}
             {filter === "all" &&
               !hasAuraInConversations &&
-              (!query.trim() || "aura ai".includes(query.trim().toLowerCase())) && (
+              query.trim() &&
+              "aura ai".includes(query.trim().toLowerCase()) && (
                 <ListItemButton
                   onClick={async () => {
                     try {
@@ -244,11 +269,13 @@ export default function ConversationList({
               )}
 
             {filtered.map((item) => {
-              const other =
-                item.participants.find((p) => p._id !== currentUserId) || item.participants[0];
-              const isOtherAura = isAuraBot(other?._id || other?.id);
+              const isGroup = item.type === "group";
+              const other = isGroup
+                ? null
+                : item.participants.find((p) => p._id !== currentUserId) || item.participants[0];
+              const isOtherAura = !isGroup && isAuraBot(other?._id || other?.id);
               const isActive = activeConversationId === item._id;
-              const isRestricted = Boolean(currentUserId && item.restrictedBy?.includes(currentUserId));
+              const isRestricted = Boolean(!isGroup && currentUserId && item.restrictedBy?.includes(currentUserId));
               const isOnline = isOtherAura || (!isRestricted && other?._id ? onlineUserIds.includes(other._id) : false);
               const unreadCount = item.unreadCounts?.[currentUserId || ""] || 0;
               const lastText = formatLastMessagePreview(
@@ -256,6 +283,14 @@ export default function ConversationList({
                 item.lastMessage?.isDeleted
               );
               const sentByMe = item.lastMessage?.senderId === currentUserId;
+              const displayName = isGroup
+                ? item.name || tr("Nhóm chat", "Group chat")
+                : other?.name || tr("Người dùng", "User");
+              const avatarSrc = isGroup
+                ? item.avatar
+                : isOtherAura
+                  ? "/assets/avatars/aura-bot.svg"
+                  : other?.avatar;
 
               return (
                 <ListItemButton
@@ -266,8 +301,8 @@ export default function ConversationList({
                   sx={{ gap: 1.5, px: 1.5, py: 1.25, mb: 0.25, alignItems: "center" }}
                 >
                   <PresenceAvatar
-                    name={isOtherAura ? "Aura AI" : other?.name}
-                    src={isOtherAura ? "/assets/avatars/aura-bot.svg" : other?.avatar}
+                    name={isOtherAura ? "Aura AI" : displayName}
+                    src={avatarSrc || undefined}
                     online={isOnline}
                     size={48}
                   />
@@ -280,9 +315,26 @@ export default function ConversationList({
                           noWrap
                           sx={{ fontWeight: unreadCount > 0 || isActive ? 700 : 600 }}
                         >
-                          {other?.name || tr("Người dùng", "User")}
+                          {displayName}
                         </Typography>
                         {isOtherAura && <VerifiedBadge size={14} />}
+                        {isGroup && (
+                          <Chip
+                            label={tr(
+                              `${item.participants.length} thành viên`,
+                              `${item.participants.length} members`
+                            )}
+                            size="small"
+                            sx={{
+                              height: 18,
+                              fontSize: "0.65rem",
+                              fontWeight: 700,
+                              bgcolor: "action.hover",
+                              color: "text.secondary",
+                              borderRadius: "6px",
+                            }}
+                          />
+                        )}
                       </Box>
                       <Typography
                         variant="caption"
@@ -340,6 +392,11 @@ export default function ConversationList({
           </List>
         )}
       </Box>
+
+      <CreateGroupDialog
+        open={openCreateGroup}
+        onClose={() => setOpenCreateGroup(false)}
+      />
     </Box>
   );
 }

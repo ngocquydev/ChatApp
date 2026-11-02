@@ -21,6 +21,10 @@ import {
 } from './schemas/message.schema.js';
 import { UsersService } from '../users/users.service.js';
 import { AURA_BOT_ID } from '../groq/aura-bot.constant.js';
+import {
+  CreateGroupDto,
+  UpdateGroupDto,
+} from './dto/group-chat.dto.js';
 
 @Injectable()
 export class ChatService {
@@ -48,6 +52,7 @@ export class ChatService {
 
     let conversation = await this.conversationModel
       .findOne({
+        type: { $ne: 'group' },
         participants: { $all: [objId1, objId2], $size: 2 },
       })
       .populate('participants', 'name email avatar isBan isDeleted');
@@ -58,6 +63,7 @@ export class ChatService {
       unreadMap.set(userId2, 0);
 
       const created = await this.conversationModel.create({
+        type: 'direct',
         participants: [objId1, objId2],
         unreadCounts: unreadMap,
         lastMessage: null,
@@ -82,6 +88,8 @@ export class ChatService {
         deletedByUsers: { $ne: objId },
       })
       .populate('participants', 'name email avatar isBan isDeleted')
+      .populate('adminIds', 'name avatar')
+      .populate('creatorId', 'name avatar')
       .sort({ updatedAt: -1 })
       .exec();
   }
@@ -582,8 +590,17 @@ export class ChatService {
     }
 
     const isSender = message.senderId.toString() === userId;
-    const isReceiver = message.receiverId.toString() === userId;
-    if (!isSender && !isReceiver) {
+    const isReceiver = message.receiverId
+      ? message.receiverId.toString() === userId
+      : false;
+    let isMember = isSender || isReceiver;
+    if (!isMember) {
+      const conv = await this.conversationModel.findById(message.conversationId);
+      isMember = Boolean(
+        conv?.participants.some((p) => p.toString() === userId),
+      );
+    }
+    if (!isMember) {
       throw new ForbiddenException('Bạn không thuộc cuộc hội thoại này');
     }
 
@@ -628,5 +645,518 @@ export class ChatService {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Tạo cuộc trò chuyện nhóm mới
+   */
+  async createGroupConversation(
+    creatorId: string,
+    dto: CreateGroupDto,
+  ): Promise<ConversationDocument> {
+    const creatorObjId = new Types.ObjectId(creatorId);
+    // Loại trừ trùng lặp ID và bỏ chính creatorId nếu lỡ truyền vào
+    const rawMemberIds = Array.from(
+      new Set(dto.memberIds.filter((id) => id !== creatorId)),
+    );
+    if (rawMemberIds.length < 2) {
+      throw new BadRequestException(
+        'Nhóm trò chuyện cần tối thiểu 3 thành viên (bao gồm bạn)',
+      );
+    }
+
+    // Kiểm tra các thành viên có tồn tại và hợp lệ không
+    const validUsers = await Promise.all(
+      rawMemberIds.map((id) => this.usersService.findById(id)),
+    );
+    const validMemberIds = validUsers
+      .filter((u) => u && !u.isDeleted && !u.isBan)
+      .map((u) => u?._id.toString())
+      .filter((id): id is string => Boolean(id));
+
+    if (validMemberIds.length < 2) {
+      throw new BadRequestException(
+        'Các thành viên được chọn không hợp lệ hoặc đã bị vô hiệu hóa',
+      );
+    }
+
+    const allMemberIds = [creatorId, ...validMemberIds];
+    const allParticipantObjIds = allMemberIds.map((id) => new Types.ObjectId(id));
+
+    const unreadMap = new Map<string, number>();
+    allMemberIds.forEach((id) => unreadMap.set(id, 0));
+
+    const conversation = await this.conversationModel.create({
+      type: 'group',
+      name: dto.name.trim(),
+      avatar: dto.avatar || null,
+      creatorId: creatorObjId,
+      adminIds: [creatorObjId],
+      participants: allParticipantObjIds,
+      unreadCounts: unreadMap,
+      theme: 'default',
+      restrictedBy: [],
+      deletedByUsers: [],
+    });
+
+    const creator = await this.usersService.findById(creatorId);
+    const creatorName = creator?.name || 'Thành viên';
+
+    // Tạo tin nhắn hệ thống thông báo tạo nhóm
+    const systemMessage = await this.messageModel.create({
+      conversationId: conversation._id,
+      senderId: creatorObjId,
+      receiverId: null,
+      text: `${creatorName} đã tạo nhóm "${dto.name.trim()}"`,
+      type: 'system',
+      readAt: new Date(),
+    });
+
+    conversation.lastMessage = {
+      text: systemMessage.text,
+      senderId: systemMessage.senderId,
+      createdAt: systemMessage.createdAt || new Date(),
+      type: 'system',
+    };
+    await conversation.save();
+
+    const populated = await this.conversationModel
+      .findById(conversation._id)
+      .populate('participants', 'name email avatar isBan isDeleted')
+      .populate('adminIds', 'name avatar')
+      .populate('creatorId', 'name avatar')
+      .exec();
+
+    return populated as ConversationDocument;
+  }
+
+  /**
+   * Lưu tin nhắn nhóm (gửi tới conversationId thay vì receiverId đơn lẻ)
+   */
+  async saveGroupMessage(
+    senderId: string,
+    conversationId: string,
+    text: string,
+    options?: {
+      type?: 'text' | 'call' | 'location' | 'system';
+      callLog?: CallLogData | null;
+      location?: LocationData | null;
+      customMessageId?: string;
+    },
+  ): Promise<MessageDocument> {
+    const conversation = await this.conversationModel.findById(conversationId);
+    if (!conversation) {
+      throw new NotFoundException('Cuộc hội thoại nhóm không tồn tại');
+    }
+    if (conversation.type !== 'group') {
+      throw new BadRequestException('Cuộc hội thoại này không phải là nhóm');
+    }
+
+    const isMember = conversation.participants.some(
+      (p) => p.toString() === senderId,
+    );
+    if (!isMember) {
+      throw new ForbiddenException('Bạn không phải thành viên của nhóm này');
+    }
+
+    const message = await this.messageModel.create({
+      ...(options?.customMessageId
+        ? { _id: new Types.ObjectId(options.customMessageId) }
+        : {}),
+      conversationId: conversation._id,
+      senderId: new Types.ObjectId(senderId),
+      receiverId: null,
+      text: text.trim(),
+      type: options?.type || 'text',
+      callLog: options?.callLog || null,
+      location: options?.location || null,
+      readAt: null,
+      isDeleted: false,
+    });
+
+    // Cập nhật số tin nhắn chưa đọc cho tất cả thành viên khác trong nhóm
+    conversation.participants.forEach((p) => {
+      const pid = p.toString();
+      if (pid !== senderId) {
+        const cur = conversation.unreadCounts.get(pid) || 0;
+        conversation.unreadCounts.set(pid, cur + 1);
+      }
+    });
+
+    conversation.lastMessage = {
+      text: message.text,
+      senderId: message.senderId,
+      createdAt: message.createdAt || new Date(),
+      type: message.type || 'text',
+    };
+    conversation.updatedAt = new Date();
+    await conversation.save();
+
+    return message;
+  }
+
+  /**
+   * Lưu bản ghi tin nhắn cuộc gọi nhóm
+   */
+  async saveGroupCallMessage(
+    callerId: string,
+    conversationId: string,
+    callType: CallType = 'video',
+    status: CallStatus = 'completed',
+    duration = 0,
+    participantCount = 1,
+  ): Promise<MessageDocument> {
+    const formatDuration = (sec: number) => {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const isVideo = callType === 'video';
+    const text = isVideo
+      ? `📹 Cuộc gọi video nhóm (${participantCount} người, ${formatDuration(duration)})`
+      : `📞 Cuộc gọi thoại nhóm (${participantCount} người, ${formatDuration(duration)})`;
+
+    return this.saveGroupMessage(callerId, conversationId, text, {
+      type: 'call',
+      callLog: {
+        callType,
+        status,
+        duration,
+      },
+    });
+  }
+
+  /**
+   * Thêm thành viên mới vào nhóm
+   */
+  async addGroupMembers(
+    callerId: string,
+    conversationId: string,
+    newMemberIds: string[],
+  ): Promise<ConversationDocument> {
+    const conversation = await this.conversationModel.findById(conversationId);
+    if (!conversation || conversation.type !== 'group') {
+      throw new NotFoundException('Nhóm không tồn tại');
+    }
+
+    const isCallerMember = conversation.participants.some(
+      (p) => p.toString() === callerId,
+    );
+    if (!isCallerMember) {
+      throw new ForbiddenException('Bạn không phải thành viên của nhóm này');
+    }
+
+    const currentMemberSet = new Set(
+      conversation.participants.map((p) => p.toString()),
+    );
+    const toAdd = Array.from(new Set(newMemberIds)).filter(
+      (id) => !currentMemberSet.has(id),
+    );
+
+    if (toAdd.length === 0) {
+      return conversation;
+    }
+
+    // Kiểm tra người dùng hợp lệ
+    const validUsers = await Promise.all(
+      toAdd.map((id) => this.usersService.findById(id)),
+    );
+    const addedUsers = validUsers.filter(
+      (u): u is NonNullable<typeof u> => Boolean(u && !u.isDeleted && !u.isBan),
+    );
+    if (addedUsers.length === 0) {
+      return conversation;
+    }
+
+    addedUsers.forEach((u) => {
+      const uid = u._id.toString();
+      conversation.participants.push(new Types.ObjectId(uid));
+      conversation.unreadCounts.set(uid, 0);
+    });
+
+    const caller = await this.usersService.findById(callerId);
+    const callerName = caller?.name || 'Thành viên';
+    const addedNames = addedUsers.map((u) => u.name).join(', ');
+
+    const systemMsg = await this.messageModel.create({
+      conversationId: conversation._id,
+      senderId: new Types.ObjectId(callerId),
+      receiverId: null,
+      text: `${callerName} đã thêm ${addedNames} vào nhóm`,
+      type: 'system',
+      readAt: new Date(),
+    });
+
+    conversation.lastMessage = {
+      text: systemMsg.text,
+      senderId: systemMsg.senderId,
+      createdAt: systemMsg.createdAt || new Date(),
+      type: 'system',
+    };
+    conversation.updatedAt = new Date();
+    await conversation.save();
+
+    const populated = await this.conversationModel
+      .findById(conversation._id)
+      .populate('participants', 'name email avatar isBan isDeleted')
+      .populate('adminIds', 'name avatar')
+      .populate('creatorId', 'name avatar')
+      .exec();
+
+    return populated as ConversationDocument;
+  }
+
+  /**
+   * Xóa thành viên hoặc thành viên tự rời nhóm
+   */
+  async removeGroupMember(
+    callerId: string,
+    conversationId: string,
+    targetMemberId: string,
+  ): Promise<ConversationDocument> {
+    const conversation = await this.conversationModel.findById(conversationId);
+    if (!conversation || conversation.type !== 'group') {
+      throw new NotFoundException('Nhóm không tồn tại');
+    }
+
+    const isCallerMember = conversation.participants.some(
+      (p) => p.toString() === callerId,
+    );
+    if (!isCallerMember) {
+      throw new ForbiddenException('Bạn không phải thành viên của nhóm này');
+    }
+
+    const callerIsAdmin = conversation.adminIds.some(
+      (a) => a.toString() === callerId,
+    );
+    const isSelfLeaving = callerId === targetMemberId;
+
+    if (!isSelfLeaving && !callerIsAdmin) {
+      throw new ForbiddenException(
+        'Chỉ quản trị viên mới có quyền xóa thành viên khỏi nhóm',
+      );
+    }
+
+    const targetUser = await this.usersService.findById(targetMemberId);
+    const targetName = targetUser?.name || 'Thành viên';
+    const caller = await this.usersService.findById(callerId);
+    const callerName = caller?.name || 'Thành viên';
+
+    // Xóa target khỏi participants và adminIds
+    conversation.participants = conversation.participants.filter(
+      (p) => p.toString() !== targetMemberId,
+    );
+    conversation.adminIds = conversation.adminIds.filter(
+      (a) => a.toString() !== targetMemberId,
+    );
+    conversation.unreadCounts.delete(targetMemberId);
+
+    // Nếu người rời đi là admin và nhóm không còn admin nào, tự động thăng cấp thành viên đầu tiên còn lại
+    if (
+      conversation.adminIds.length === 0 &&
+      conversation.participants.length > 0
+    ) {
+      conversation.adminIds.push(conversation.participants[0]);
+    }
+
+    const messageText = isSelfLeaving
+      ? `${callerName} đã rời khỏi nhóm`
+      : `${callerName} đã xóa ${targetName} khỏi nhóm`;
+
+    const systemMsg = await this.messageModel.create({
+      conversationId: conversation._id,
+      senderId: new Types.ObjectId(callerId),
+      receiverId: null,
+      text: messageText,
+      type: 'system',
+      readAt: new Date(),
+    });
+
+    conversation.lastMessage = {
+      text: systemMsg.text,
+      senderId: systemMsg.senderId,
+      createdAt: systemMsg.createdAt || new Date(),
+      type: 'system',
+    };
+    conversation.updatedAt = new Date();
+    await conversation.save();
+
+    const populated = await this.conversationModel
+      .findById(conversation._id)
+      .populate('participants', 'name email avatar isBan isDeleted')
+      .populate('adminIds', 'name avatar')
+      .populate('creatorId', 'name avatar')
+      .exec();
+
+    return populated as ConversationDocument;
+  }
+
+  /**
+   * Cập nhật thông tin nhóm (Tên, Ảnh đại diện)
+   */
+  async updateGroupInfo(
+    callerId: string,
+    conversationId: string,
+    dto: UpdateGroupDto,
+  ): Promise<ConversationDocument> {
+    const conversation = await this.conversationModel.findById(conversationId);
+    if (!conversation || conversation.type !== 'group') {
+      throw new NotFoundException('Nhóm không tồn tại');
+    }
+
+    const isCallerMember = conversation.participants.some(
+      (p) => p.toString() === callerId,
+    );
+    if (!isCallerMember) {
+      throw new ForbiddenException('Bạn không phải thành viên của nhóm này');
+    }
+
+    const caller = await this.usersService.findById(callerId);
+    const callerName = caller?.name || 'Thành viên';
+    let systemText = '';
+
+    if (dto.name && dto.name.trim() !== conversation.name) {
+      conversation.name = dto.name.trim();
+      systemText = `${callerName} đã đổi tên nhóm thành "${dto.name.trim()}"`;
+    }
+    if (dto.avatar !== undefined) {
+      conversation.avatar = dto.avatar || null;
+      if (!systemText) {
+        systemText = `${callerName} đã cập nhật ảnh đại diện của nhóm`;
+      }
+    }
+
+    if (systemText) {
+      const systemMsg = await this.messageModel.create({
+        conversationId: conversation._id,
+        senderId: new Types.ObjectId(callerId),
+        receiverId: null,
+        text: systemText,
+        type: 'system',
+        readAt: new Date(),
+      });
+
+      conversation.lastMessage = {
+        text: systemMsg.text,
+        senderId: systemMsg.senderId,
+        createdAt: systemMsg.createdAt || new Date(),
+        type: 'system',
+      };
+    }
+
+    conversation.updatedAt = new Date();
+    await conversation.save();
+
+    const populated = await this.conversationModel
+      .findById(conversation._id)
+      .populate('participants', 'name email avatar isBan isDeleted')
+      .populate('adminIds', 'name avatar')
+      .populate('creatorId', 'name avatar')
+      .exec();
+
+    return populated as ConversationDocument;
+  }
+
+  /**
+   * Bổ nhiệm Quản trị viên nhóm
+   */
+  async promoteGroupAdmin(
+    callerId: string,
+    conversationId: string,
+    targetUserId: string,
+  ): Promise<ConversationDocument> {
+    const conversation = await this.conversationModel.findById(conversationId);
+    if (!conversation || conversation.type !== 'group') {
+      throw new NotFoundException('Nhóm không tồn tại');
+    }
+
+    const callerIsAdmin = conversation.adminIds.some(
+      (a) => a.toString() === callerId,
+    );
+    if (!callerIsAdmin) {
+      throw new ForbiddenException(
+        'Chỉ quản trị viên mới có quyền bổ nhiệm quản trị viên khác',
+      );
+    }
+
+    const isTargetMember = conversation.participants.some(
+      (p) => p.toString() === targetUserId,
+    );
+    if (!isTargetMember) {
+      throw new BadRequestException(
+        'Người dùng được chọn không phải thành viên của nhóm',
+      );
+    }
+
+    const isAlreadyAdmin = conversation.adminIds.some(
+      (a) => a.toString() === targetUserId,
+    );
+    if (isAlreadyAdmin) {
+      return conversation;
+    }
+
+    conversation.adminIds.push(new Types.ObjectId(targetUserId));
+
+    const caller = await this.usersService.findById(callerId);
+    const targetUser = await this.usersService.findById(targetUserId);
+    const callerName = caller?.name || 'Quản trị viên';
+    const targetName = targetUser?.name || 'Thành viên';
+
+    const systemMsg = await this.messageModel.create({
+      conversationId: conversation._id,
+      senderId: new Types.ObjectId(callerId),
+      receiverId: null,
+      text: `${callerName} đã bổ nhiệm ${targetName} làm quản trị viên`,
+      type: 'system',
+      readAt: new Date(),
+    });
+
+    conversation.lastMessage = {
+      text: systemMsg.text,
+      senderId: systemMsg.senderId,
+      createdAt: systemMsg.createdAt || new Date(),
+      type: 'system',
+    };
+    conversation.updatedAt = new Date();
+    await conversation.save();
+
+    const populated = await this.conversationModel
+      .findById(conversation._id)
+      .populate('participants', 'name email avatar isBan isDeleted')
+      .populate('adminIds', 'name avatar')
+      .populate('creatorId', 'name avatar')
+      .exec();
+
+    return populated as ConversationDocument;
+  }
+
+  /**
+   * Lấy chi tiết nhóm trò chuyện kèm danh sách thành viên đầy đủ
+   */
+  async getGroupDetails(
+    userId: string,
+    conversationId: string,
+  ): Promise<ConversationDocument> {
+    const conversation = await this.conversationModel
+      .findById(conversationId)
+      .populate('participants', 'name email avatar bio isOnline lastActiveAt role')
+      .populate('adminIds', 'name email avatar role')
+      .populate('creatorId', 'name email avatar')
+      .exec();
+
+    if (!conversation || conversation.type !== 'group') {
+      throw new NotFoundException('Nhóm không tồn tại');
+    }
+
+    const isMember = conversation.participants.some(
+      (p: { _id?: Types.ObjectId | string }) =>
+        p._id?.toString() === userId,
+    );
+    if (!isMember) {
+      throw new ForbiddenException('Bạn không thuộc nhóm này');
+    }
+
+    return conversation;
   }
 }

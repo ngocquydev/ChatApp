@@ -39,6 +39,8 @@ export interface PostView {
   moderationStatus?: "approved" | "flagged" | "rejected";
   moderationReason?: string;
   toxicityScore?: number;
+  pageId?: string;
+  groupId?: string;
 }
 
 export interface CommentView {
@@ -171,6 +173,22 @@ export async function fetchFeed(options: PageOptions = {}): Promise<CursorPage<P
   return data;
 }
 
+export async function fetchPagePosts(
+  pageId: string,
+  options: PageOptions = {},
+): Promise<CursorPage<PostView>> {
+  const { data } = await api.get(`/posts/page/${pageId}`, { params: pageParams(options) });
+  return data;
+}
+
+export async function fetchGroupPosts(
+  groupId: string,
+  options: PageOptions = {},
+): Promise<CursorPage<PostView>> {
+  const { data } = await api.get(`/posts/group/${groupId}`, { params: pageParams(options) });
+  return data;
+}
+
 export async function fetchUserPosts(
   userId: string,
   options: PageOptions = {},
@@ -230,6 +248,8 @@ export async function createPost(input: {
   content: string;
   images: string[];
   privacy: PostPrivacy;
+  pageId?: string;
+  groupId?: string;
 }): Promise<PostView> {
   const { data } = await api.post("/posts", input);
   return data.post;

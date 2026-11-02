@@ -48,6 +48,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore, ChatMessage, ChatUser, LocationData } from "@/store/useChatStore";
 import { useChatBoxStore, ChatBoxSession } from "@/store/useChatBoxStore";
 import { useCallStore } from "@/store/useCallStore";
+import { useGroupCallStore } from "@/store/useGroupCallStore";
 import { useSoundStore } from "@/store/useSoundStore";
 import { soundNotification } from "@/utils/soundNotification";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
@@ -95,6 +96,7 @@ export default function FloatingChatBox({
   const { setConversationId, incrementUnread, clearUnread } = useChatBoxStore();
   const { isMuted, toggleMute } = useSoundStore();
   const { startCall } = useCallStore();
+  const { initiateGroupCall } = useGroupCallStore();
 
   const [convId, setConvId] = useState<string | null>(session.conversationId || null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -1112,15 +1114,27 @@ export default function FloatingChatBox({
                   aria-label={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}
                   onClick={(e) => {
                     e.stopPropagation();
-                    void startCall(
-                      {
-                        id: targetUserId,
-                        name: targetUser.name,
-                        avatar: targetUser.avatar,
-                        conversationId: convId || undefined,
-                      },
-                      "audio"
-                    );
+                    const groupConv = convId
+                      ? useChatStore.getState().conversations.find((c) => c._id === convId && c.type === "group")
+                      : null;
+                    if (groupConv) {
+                      void initiateGroupCall(
+                        groupConv._id,
+                        groupConv.name || tr("Nhóm chat", "Group chat"),
+                        groupConv.avatar || undefined,
+                        "audio"
+                      );
+                    } else {
+                      void startCall(
+                        {
+                          id: targetUserId,
+                          name: targetUser.name,
+                          avatar: targetUser.avatar,
+                          conversationId: convId || undefined,
+                        },
+                        "audio"
+                      );
+                    }
                   }}
                   sx={{
                     color: "primary.main",
@@ -1138,15 +1152,27 @@ export default function FloatingChatBox({
                   aria-label={tr("Bắt đầu cuộc gọi video", "Start video call")}
                   onClick={(e) => {
                     e.stopPropagation();
-                    void startCall(
-                      {
-                        id: targetUserId,
-                        name: targetUser.name,
-                        avatar: targetUser.avatar,
-                        conversationId: convId || undefined,
-                      },
-                      "video"
-                    );
+                    const groupConv = convId
+                      ? useChatStore.getState().conversations.find((c) => c._id === convId && c.type === "group")
+                      : null;
+                    if (groupConv) {
+                      void initiateGroupCall(
+                        groupConv._id,
+                        groupConv.name || tr("Nhóm chat", "Group chat"),
+                        groupConv.avatar || undefined,
+                        "video"
+                      );
+                    } else {
+                      void startCall(
+                        {
+                          id: targetUserId,
+                          name: targetUser.name,
+                          avatar: targetUser.avatar,
+                          conversationId: convId || undefined,
+                        },
+                        "video"
+                      );
+                    }
                   }}
                   sx={{
                     color: "primary.main",

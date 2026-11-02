@@ -19,6 +19,8 @@
 11. [Tích Hợp GIPHY GIF Động & Bố Cục Thác Nước Masonry](#11-tích-hợp-giphy-gif-động--bố-cục-thác-nước-masonry)
 12. [Trợ Lý AI Llama 3.3 (Groq), Aura Bot (@aura) & Gắn Thẻ Bạn Bè (@mentions)](#12-trợ-lý-ai-llama-33-groq-aura-bot-aura--gắn-thẻ-bạn-bè-mentions)
 13. [Trợ Lý Ảo Aura AI Phong Cách Meta AI (Direct Bot Chat, Tích Xanh & Đánh Giá 👍/👎)](#13-trợ-lý-ảo-aura-ai-phong-cách-meta-ai-direct-bot-chat-tích-xanh--đánh-giá-)
+14. [Nhóm Trò Chuyện & Gọi Thoại/Video Nhóm WebRTC Tối Ưu Băng Thông (Group Chat & Mesh-Lite Call)](#14-nhóm-trò-chuyện--gọi-thoạivideo-nhóm-webrtc-tối-ưu-băng-thông-group-chat--mesh-lite-call)
+15. [Trang Fanpage & Hội Nhóm Cộng Đồng (Fanpages & Community Groups with Feed)](#15-trang-fanpage--hội-nhóm-cộng-đồng-fanpages--community-groups-with-feed)
 
 ---
 
@@ -230,7 +232,39 @@ Trải nghiệm trò chuyện 1-1 trực tiếp với **Aura AI** theo phong cá
 
 ---
 
+## 14. Nhóm Trò Chuyện & Gọi Thoại/Video Nhóm WebRTC Tối Ưu Băng Thông (Group Chat & Mesh-Lite Call)
+
+Tính năng nhóm trò chuyện đa thành viên kết hợp gọi thoại & gọi video nhóm trực tiếp bằng công nghệ **WebRTC Mesh-Lite**:
+
+### Điểm nổi bật:
+- **Tạo & Quản lý nhóm trò chuyện (`CreateGroupDialog` & `GroupInfoModal`):** Thêm bạn bè vào nhóm với tính năng tìm kiếm, gán quyền Quản trị viên nhóm (Admin), đổi tên nhóm, cập nhật avatar nhóm và ghim tin nhắn.
+- **Cuộc gọi thoại & Gọi video nhóm tối ưu băng thông (`GroupCallModal`):**
+  - **Tự động phát hiện giọng nói (VAD - Voice Activity Detection):** Phân tích tín hiệu âm thanh trực tiếp bằng Web Audio API để làm sáng viền xanh phát sáng quanh khung hình người đang nói (Active Speaker).
+  - **Tối ưu chất lượng luồng truyền:** Giới hạn 360p @ 15fps cho mỗi luồng video và nén audio Opus trần 32kbps, đảm bảo nhiều người cùng tham gia mà không bị nghẽn mạng hay quá tải CPU.
+  - **Lưới hiển thị thích ứng (Dynamic Grid):** Tự động điều chỉnh kích thước khung hình từ 1 người (toàn màn hình), 2 người, 4 người (lưới 2x2) đến 9 người (lưới 3x3) kèm hiển thị avatar thay thế khi camera tắt.
+- 📖 *Xem chi tiết: [docs/features/group-chat-call-pages-groups.md](features/group-chat-call-pages-groups.md)*
+
+---
+
+## 15. Trang Fanpage & Hội Nhóm Cộng Đồng (Fanpages & Community Groups with Feed)
+
+Mở rộng trải nghiệm mạng xã hội toàn diện với Trang Fanpage chính thức và Hội nhóm cộng đồng chuyên biệt:
+
+### Điểm nổi bật:
+- **Khám phá & Tạo Trang Fanpage (`/pages` & `PagesExplore`):**
+  - Tạo trang theo danh mục (Công nghệ, Doanh nghiệp, Ẩm thực, Giải trí...), tự động sinh URL slug thân thiện.
+  - Hồ sơ trang (`/pages/[slug]`): Nút Theo dõi/Bỏ theo dõi với số lượng follower cập nhật tức thì.
+  - Bảng tin bài viết Fanpage (`PostFeed`): Quản trị viên đăng bài chính thức từ trang, người theo dõi xem bài và tương tác bình luận/thả cảm xúc.
+- **Hội nhóm cộng đồng (`/groups` & `GroupsExplore`):**
+  - Hỗ trợ chế độ Công khai (Public) hoặc Riêng tư (Private).
+  - Tham gia, rời nhóm hoặc gửi yêu cầu tham gia nhóm riêng tư.
+  - Bảng tin thảo luận nội bộ (`GroupFeed`): Thành viên trong nhóm có thể đăng bài viết, chia sẻ ảnh và thảo luận cùng cộng đồng.
+- 📖 *Xem chi tiết: [docs/features/group-chat-call-pages-groups.md](features/group-chat-call-pages-groups.md)*
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Nhóm trò chuyện, Gọi nhóm WebRTC tối ưu, Fanpage & Hội nhóm](features/group-chat-call-pages-groups.md)
 > - [Trợ lý ảo Aura AI phong cách Meta AI (Direct Bot Chat & Reactions)](features/meta-ai-aura-bot.md)
 > - [Trợ Lý AI Llama 3.3 (Groq), Aura Bot & Gắn Thẻ Bạn Bè](features/groq-ai-summary-aura-mentions.md)
 > - [Hệ Thống Thả Cảm Xúc Facebook & Bảng Chọn Emoji (Reactions)](features/facebook-reactions.md)

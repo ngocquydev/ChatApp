@@ -366,7 +366,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
               </Box>
             )}
 
-            {!isLoadingFriends && (!searchFriend.trim() || "aura ai".includes(searchFriend.trim().toLowerCase())) && (
+            {!isLoadingFriends && searchFriend.trim() && "aura ai".includes(searchFriend.trim().toLowerCase()) && (
               <ButtonBase
                 component="div"
                 aria-label={tr("Trò chuyện với Aura AI", "Chat with Aura AI")}

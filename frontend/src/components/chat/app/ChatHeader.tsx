@@ -5,6 +5,7 @@ import NextLink from "next/link";
 import {
   Box,
   ButtonBase,
+  Chip,
   Divider,
   IconButton,
   ListItemIcon,
@@ -24,6 +25,7 @@ import {
   ShieldAlert,
   Trash2,
   User as UserIcon,
+  Users,
   Video,
   Volume2,
   VolumeX,
@@ -35,10 +37,12 @@ import { isAuraBot } from "@/constants/auraBot";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useChatStore, ChatUser } from "@/store/useChatStore";
 import { useCallStore } from "@/store/useCallStore";
+import { useGroupCallStore } from "@/store/useGroupCallStore";
 import { getChatTheme } from "./chatThemes";
 import ThemeSelectDialog from "./ThemeSelectDialog";
 import RestrictInfoDialog from "./RestrictInfoDialog";
 import AiChatSummaryDialog from "../AiChatSummaryDialog";
+import GroupInfoModal from "./GroupInfoModal";
 
 interface ChatHeaderProps {
   partner: ChatUser | null;
@@ -73,6 +77,7 @@ export default function ChatHeader({
 }: ChatHeaderProps) {
   const { tr } = useTranslation();
   const { startCall } = useCallStore();
+  const { initiateGroupCall } = useGroupCallStore();
   const activeConversation = useChatStore((s) => s.activeConversation);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [openThemeDialog, setOpenThemeDialog] = useState(false);
@@ -83,6 +88,8 @@ export default function ChatHeader({
   const [isPending, setIsPending] = useState(false);
 
   const activeThemeConfig = getChatTheme(currentTheme);
+  const isGroup = activeConversation?.type === "group";
+  const [openGroupInfoModal, setOpenGroupInfoModal] = useState(false);
 
   const handleOpenMenu = (e: MouseEvent<HTMLElement>) => {
     setMenuAnchor(e.currentTarget);
@@ -92,11 +99,22 @@ export default function ChatHeader({
     setMenuAnchor(null);
   };
 
+  const displayName = isGroup
+    ? activeConversation.name || tr("Nhóm trò chuyện", "Group Chat")
+    : partner?.name || tr("Người dùng", "User");
   const partnerName = partner?.name || tr("Người dùng", "User");
+  const avatarSrc = isGroup ? activeConversation.avatar : partner?.avatar;
   const partnerId = partner?._id || partner?.id;
-  const isAura = isAuraBot(partnerId);
+  const isAura = !isGroup && isAuraBot(partnerId);
 
-  const statusText = isAura
+  const statusText = isGroup
+    ? isTyping
+      ? tr("Ai đó đang soạn tin…", "Someone is typing…")
+      : tr(
+          `${activeConversation.participants.length} thành viên`,
+          `${activeConversation.participants.length} members`
+        )
+    : isAura
     ? isTyping
       ? tr("Aura đang suy nghĩ…", "Aura is thinking…")
       : tr("Trợ lý ảo AI • Trực tuyến", "AI Assistant • Online")
@@ -112,7 +130,9 @@ export default function ChatHeader({
     ? tr("Đang hoạt động", "Online")
     : tr("Ngoại tuyến", "Offline");
 
-  const statusColor = isAura
+  const statusColor = isGroup
+    ? "text.secondary"
+    : isAura
     ? "primary.main"
     : isTyping
     ? "primary.main"
@@ -149,7 +169,57 @@ export default function ChatHeader({
           <ArrowLeft size={22} />
         </IconButton>
 
-        {partnerId && !isAura ? (
+        {isGroup ? (
+          <ButtonBase
+            onClick={() => setOpenGroupInfoModal(true)}
+            aria-label={tr(`Xem thông tin nhóm ${displayName}`, `View group details for ${displayName}`)}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: { xs: 1, sm: 1.5 },
+              minWidth: 0,
+              textAlign: "left",
+              borderRadius: "12px",
+              p: 0.5,
+              pr: 1.25,
+              transition: "background-color 0.15s ease",
+              "&:hover": { bgcolor: "action.hover" },
+            }}
+          >
+            <PresenceAvatar
+              name={displayName}
+              src={avatarSrc || undefined}
+              size={42}
+            />
+            <Box sx={{ minWidth: 0 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Typography variant="subtitle1" component="h2" noWrap sx={{ fontWeight: 700, lineHeight: 1.25 }}>
+                  {displayName}
+                </Typography>
+                <Chip
+                  label={tr("Nhóm", "Group")}
+                  size="small"
+                  sx={{
+                    height: 18,
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    bgcolor: "action.hover",
+                    color: "text.secondary",
+                    borderRadius: "6px",
+                  }}
+                />
+              </Box>
+              <Typography
+                variant="caption"
+                role="status"
+                aria-live="polite"
+                sx={{ color: statusColor, fontWeight: 600, display: "block" }}
+              >
+                {statusText}
+              </Typography>
+            </Box>
+          </ButtonBase>
+        ) : partnerId && !isAura ? (
           <ButtonBase
             component={NextLink}
             href={`/profile/${partnerId}`}
@@ -244,12 +314,29 @@ export default function ChatHeader({
 
         {!isAura && (
           <Box sx={{ display: { xs: "none", sm: "flex" }, gap: 0.25 }}>
-            <Tooltip title={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}>
+            <Tooltip
+              title={
+                isGroup
+                  ? tr("Bắt đầu cuộc gọi thoại nhóm", "Start group voice call")
+                  : tr("Bắt đầu cuộc gọi thoại", "Start voice call")
+              }
+            >
               <IconButton
-                aria-label={tr("Bắt đầu cuộc gọi thoại", "Start voice call")}
-                disabled={!partner}
+                aria-label={
+                  isGroup
+                    ? tr("Bắt đầu cuộc gọi thoại nhóm", "Start group voice call")
+                    : tr("Bắt đầu cuộc gọi thoại", "Start voice call")
+                }
+                disabled={isGroup ? false : !partner}
                 onClick={() => {
-                  if (partner) {
+                  if (isGroup && activeConversation) {
+                    void initiateGroupCall(
+                      activeConversation._id,
+                      activeConversation.name || tr("Nhóm chat", "Group chat"),
+                      activeConversation.avatar || undefined,
+                      "audio"
+                    );
+                  } else if (partner) {
                     void startCall(
                       {
                         id: String(partner._id || partner.id || ""),
@@ -267,12 +354,29 @@ export default function ChatHeader({
               </IconButton>
             </Tooltip>
 
-            <Tooltip title={tr("Bắt đầu cuộc gọi video", "Start video call")}>
+            <Tooltip
+              title={
+                isGroup
+                  ? tr("Bắt đầu cuộc gọi video nhóm", "Start group video call")
+                  : tr("Bắt đầu cuộc gọi video", "Start video call")
+              }
+            >
               <IconButton
-                aria-label={tr("Bắt đầu cuộc gọi video", "Start video call")}
-                disabled={!partner}
+                aria-label={
+                  isGroup
+                    ? tr("Bắt đầu cuộc gọi video nhóm", "Start group video call")
+                    : tr("Bắt đầu cuộc gọi video", "Start video call")
+                }
+                disabled={isGroup ? false : !partner}
                 onClick={() => {
-                  if (partner) {
+                  if (isGroup && activeConversation) {
+                    void initiateGroupCall(
+                      activeConversation._id,
+                      activeConversation.name || tr("Nhóm chat", "Group chat"),
+                      activeConversation.avatar || undefined,
+                      "video"
+                    );
+                  } else if (partner) {
                     void startCall(
                       {
                         id: String(partner._id || partner.id || ""),
@@ -324,6 +428,25 @@ export default function ChatHeader({
             },
           }}
         >
+          {isGroup && (
+            <MenuItem
+              onClick={() => {
+                handleCloseMenu();
+                setOpenGroupInfoModal(true);
+              }}
+              sx={{ borderRadius: "8px", py: 1 }}
+            >
+              <ListItemIcon>
+                <Users size={18} color="var(--mui-palette-primary-main)" />
+              </ListItemIcon>
+              <ListItemText>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {tr("Thông tin nhóm", "Group details")}
+                </Typography>
+              </ListItemText>
+            </MenuItem>
+          )}
+
           {partnerId && !isAura && (
             <MenuItem
               component={NextLink}
@@ -524,6 +647,12 @@ export default function ChatHeader({
         onClose={() => setOpenSummaryDialog(false)}
         conversationId={activeConversation?._id || ""}
         partnerName={partner?.name}
+      />
+      {/* Dialog Thông tin & Quản trị nhóm chat */}
+      <GroupInfoModal
+        open={openGroupInfoModal}
+        conversation={activeConversation}
+        onClose={() => setOpenGroupInfoModal(false)}
       />
     </Box>
   );

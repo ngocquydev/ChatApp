@@ -30,6 +30,8 @@ interface PostComposerProps {
   userAvatar?: string;
   defaultPrivacy?: PostPrivacy;
   onCreated: (post: PostView) => void;
+  pageId?: string;
+  groupId?: string;
 }
 
 const ACCEPT = "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime";
@@ -53,6 +55,8 @@ export default function PostComposer({
   userAvatar,
   defaultPrivacy = "friends",
   onCreated,
+  pageId,
+  groupId,
 }: PostComposerProps) {
   const uid = useId();
   const { t, isVietnamese } = useTranslation();
@@ -145,6 +149,8 @@ export default function PostComposer({
         content: trimmed,
         images: attachments.flatMap((a) => (a.url ? [a.url] : [])),
         privacy,
+        pageId,
+        groupId,
       });
       setText("");
       setAttachments([]);

@@ -204,6 +204,7 @@ export class UsersService implements OnModuleInit {
         const rangeQuery: Record<string, unknown> = {
           isDeleted: query.isDeleted,
           isBan: query.isBan,
+          role: query.role,
           $or: [{ name: makeRange(upperFirst) }, { name: makeRange(lowerFirst) }],
         };
         if (query._id) rangeQuery._id = query._id;

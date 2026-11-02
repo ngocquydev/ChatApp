@@ -64,6 +64,26 @@ export class ChatGateway
     }
   >();
 
+  // Map theo dõi phiên cuộc gọi nhóm: conversationId -> { callType, startedAt, initiatorId, participants }
+  private readonly activeGroupCalls = new Map<
+    string,
+    {
+      conversationId: string;
+      callType: CallType;
+      startedAt: number;
+      initiatorId: string;
+      participants: Map<
+        string,
+        {
+          joinedAt: number;
+          socketId: string;
+          name?: string;
+          avatar?: string;
+        }
+      >;
+    }
+  >();
+
   constructor(
     private readonly chatService: ChatService,
     private readonly jwtService: JwtService,
@@ -203,17 +223,24 @@ export class ChatGateway
           });
       }
     }
+
+    // Dọn dẹp nếu user ngắt kết nối khi đang tham gia cuộc gọi nhóm
+    for (const [convId, groupCall] of this.activeGroupCalls.entries()) {
+      if (groupCall.participants.has(userId)) {
+        void this.processUserLeaveGroupCall(userId, convId);
+      }
+    }
   }
 
   /**
-   * Broadcast tin nhắn mới tới cả 2 người dùng qua cả MQTT Protobuf và Socket.IO
+   * Broadcast tin nhắn mới tới các bên liên quan qua cả MQTT Protobuf và Socket.IO
    */
   private broadcastNewMessage(message: {
     _id: { toString(): string } | string;
     id?: { toString(): string } | string;
     conversationId: { toString(): string } | string;
     senderId: { toString(): string } | string;
-    receiverId: { toString(): string } | string;
+    receiverId?: { toString(): string } | string | null;
     text: string;
     type?: string;
     callLog?: unknown;
@@ -222,12 +249,16 @@ export class ChatGateway
     readAt?: Date | string | null;
     isDeleted?: boolean;
   }) {
-    const senderId = message.senderId.toString();
-    const receiverId = message.receiverId.toString();
+    const senderId = message.senderId ? message.senderId.toString() : '';
+    const receiverId = message.receiverId ? message.receiverId.toString() : null;
+    const convId = message.conversationId ? message.conversationId.toString() : '';
 
     // 1. Phát qua MQTT nhị phân (Protocol Buffers)
     try {
-      this.mqttBrokerService.publishChatMessage(message);
+      this.mqttBrokerService.publishChatMessage({
+        ...message,
+        receiverId: receiverId || '',
+      });
     } catch (err) {
       this.logger.error(
         `Lỗi publish MQTT tin nhắn: ${err instanceof Error ? err.message : String(err)}`,
@@ -238,7 +269,7 @@ export class ChatGateway
     const serializedMessage = {
       _id: message._id.toString(),
       id: message._id.toString(),
-      conversationId: message.conversationId.toString(),
+      conversationId: convId,
       senderId,
       receiverId,
       text: message.text,
@@ -260,8 +291,27 @@ export class ChatGateway
       isDeleted: Boolean(message.isDeleted),
     };
 
-    // 3. Phát qua Socket.IO tới cả hai phía
-    this.server.to(`user:${senderId}`).to(`user:${receiverId}`).emit('message:new', serializedMessage);
+    // 3. Phát qua Socket.IO: nếu 1-1 thì gửi tới sender và receiver; nếu group thì gửi tới room conversation và từng thành viên
+    if (receiverId) {
+      this.server.to(`user:${senderId}`).to(`user:${receiverId}`).emit('message:new', serializedMessage);
+    } else {
+      this.server.to(`conversation:${convId}`).emit('message:new', serializedMessage);
+      void this.chatService
+        .getConversationById(convId)
+        .then((conv) => {
+          if (conv) {
+            conv.participants.forEach((p) => {
+              const pid = p.toString();
+              this.server.to(`user:${pid}`).emit('message:new', serializedMessage);
+            });
+          }
+        })
+        .catch((err) => {
+          this.logger.warn(
+            `Lỗi gửi message:new tới participants: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        });
+    }
   }
 
   /**
@@ -981,6 +1031,248 @@ export class ChatGateway
       senderId,
       signal: payload.signal,
     });
+  }
+
+  /**
+   * Tham gia phòng chat nhóm để nhận sự kiện realtime
+   */
+  @SubscribeMessage('conversation:join')
+  handleJoinConversation(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { conversationId: string },
+  ) {
+    if (payload?.conversationId) {
+      void client.join(`conversation:${payload.conversationId}`);
+    }
+    return { success: true };
+  }
+
+  /**
+   * Rời khỏi phòng chat nhóm
+   */
+  @SubscribeMessage('conversation:leave')
+  handleLeaveConversation(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { conversationId: string },
+  ) {
+    if (payload?.conversationId) {
+      void client.leave(`conversation:${payload.conversationId}`);
+    }
+    return { success: true };
+  }
+
+  /**
+   * Khởi tạo cuộc gọi nhóm WebRTC
+   */
+  @SubscribeMessage('call:group:initiate')
+  async handleGroupCallInitiate(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody()
+    payload: {
+      conversationId: string;
+      callType: CallType;
+      callerName?: string;
+      callerAvatar?: string;
+    },
+  ) {
+    const callerId = client.data?.user?.sub;
+    if (!callerId || !payload?.conversationId) return;
+
+    const conversation = await this.chatService.getGroupDetails(payload.conversationId, callerId);
+    if (!conversation) return;
+
+    let groupCall = this.activeGroupCalls.get(payload.conversationId);
+    if (!groupCall) {
+      groupCall = {
+        conversationId: payload.conversationId,
+        callType: payload.callType || 'video',
+        startedAt: Date.now(),
+        initiatorId: callerId,
+        participants: new Map(),
+      };
+      this.activeGroupCalls.set(payload.conversationId, groupCall);
+    }
+
+    groupCall.participants.set(callerId, {
+      joinedAt: Date.now(),
+      socketId: client.id,
+      name: payload.callerName || client.data?.user?.email,
+      avatar: payload.callerAvatar,
+    });
+
+    void client.join(`call:group:${payload.conversationId}`);
+
+    // Phát thông báo tới toàn bộ thành viên trong nhóm
+    for (const participant of conversation.participants) {
+      const pId = participant._id ? participant._id.toString() : participant.toString();
+      if (pId !== callerId) {
+        this.server.to(`user:${pId}`).emit('call:group:incoming', {
+          conversationId: payload.conversationId,
+          groupName: conversation.name || 'Nhóm chat',
+          groupAvatar: conversation.avatar,
+          callerId,
+          callerName: payload.callerName || client.data?.user?.email,
+          callerAvatar: payload.callerAvatar,
+          callType: payload.callType || 'video',
+          participantCount: groupCall.participants.size,
+        });
+      }
+    }
+  }
+
+  /**
+   * Người dùng tham gia cuộc gọi nhóm
+   */
+  @SubscribeMessage('call:group:join')
+  handleGroupCallJoin(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody()
+    payload: {
+      conversationId: string;
+      userName?: string;
+      userAvatar?: string;
+    },
+  ) {
+    const userId = client.data?.user?.sub;
+    if (!userId || !payload?.conversationId) return;
+
+    let groupCall = this.activeGroupCalls.get(payload.conversationId);
+    if (!groupCall) {
+      groupCall = {
+        conversationId: payload.conversationId,
+        callType: 'video',
+        startedAt: Date.now(),
+        initiatorId: userId,
+        participants: new Map(),
+      };
+      this.activeGroupCalls.set(payload.conversationId, groupCall);
+    }
+
+    // Lấy danh sách thành viên đang có mặt trước đó
+    const existingParticipants = Array.from(groupCall.participants.entries()).map(
+      ([pId, pData]) => ({
+        userId: pId,
+        name: pData.name,
+        avatar: pData.avatar,
+      }),
+    );
+
+    groupCall.participants.set(userId, {
+      joinedAt: Date.now(),
+      socketId: client.id,
+      name: payload.userName || client.data?.user?.email,
+      avatar: payload.userAvatar,
+    });
+
+    void client.join(`call:group:${payload.conversationId}`);
+
+    // Gửi danh sách thành viên hiện hữu cho người mới vào
+    client.emit('call:group:existing_participants', {
+      conversationId: payload.conversationId,
+      callType: groupCall.callType,
+      participants: existingParticipants,
+    });
+
+    // Thông báo cho tất cả thành viên trong phòng về người mới
+    this.server.to(`call:group:${payload.conversationId}`).emit('call:group:user_joined', {
+      conversationId: payload.conversationId,
+      userId,
+      name: payload.userName || client.data?.user?.email,
+      avatar: payload.userAvatar,
+    });
+  }
+
+  /**
+   * Chuyển tiếp tín hiệu WebRTC giữa 2 peer trong nhóm
+   */
+  @SubscribeMessage('call:group:signal')
+  handleGroupCallSignal(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody()
+    payload: {
+      conversationId: string;
+      targetUserId: string;
+      signal: unknown;
+    },
+  ) {
+    const senderId = client.data?.user?.sub;
+    if (!senderId || !payload?.targetUserId || !payload?.signal) return;
+
+    this.server.to(`user:${payload.targetUserId}`).emit('call:group:signal', {
+      conversationId: payload.conversationId,
+      senderId,
+      signal: payload.signal,
+    });
+  }
+
+  /**
+   * Đồng bộ trạng thái Mic/Cam trong cuộc gọi nhóm
+   */
+  @SubscribeMessage('call:group:media_state')
+  handleGroupMediaState(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody()
+    payload: {
+      conversationId: string;
+      isMuted: boolean;
+      isVideoEnabled: boolean;
+    },
+  ) {
+    const userId = client.data?.user?.sub;
+    if (!userId || !payload?.conversationId) return;
+
+    this.server.to(`call:group:${payload.conversationId}`).emit('call:group:media_state', {
+      conversationId: payload.conversationId,
+      userId,
+      isMuted: payload.isMuted,
+      isVideoEnabled: payload.isVideoEnabled,
+    });
+  }
+
+  /**
+   * Người dùng rời khỏi cuộc gọi nhóm
+   */
+  @SubscribeMessage('call:group:leave')
+  async handleGroupCallLeave(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: { conversationId: string },
+  ) {
+    const userId = client.data?.user?.sub;
+    if (!userId || !payload?.conversationId) return;
+    await this.processUserLeaveGroupCall(userId, payload.conversationId);
+  }
+
+  /**
+   * Xử lý logic khi thành viên rời cuộc gọi nhóm
+   */
+  private async processUserLeaveGroupCall(userId: string, conversationId: string) {
+    const groupCall = this.activeGroupCalls.get(conversationId);
+    if (!groupCall) return;
+
+    groupCall.participants.delete(userId);
+    this.server.to(`call:group:${conversationId}`).emit('call:group:user_left', {
+      conversationId,
+      userId,
+    });
+
+    if (groupCall.participants.size === 0) {
+      this.activeGroupCalls.delete(conversationId);
+      const duration = Math.max(1, Math.round((Date.now() - groupCall.startedAt) / 1000));
+      try {
+        const msg = await this.chatService.saveGroupCallMessage(
+          groupCall.initiatorId,
+          conversationId,
+          groupCall.callType,
+          'completed',
+          duration,
+        );
+        this.broadcastNewMessage(msg);
+      } catch (err) {
+        this.logger.error(
+          `Lỗi lưu log cuộc gọi nhóm: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
   }
 
   /**

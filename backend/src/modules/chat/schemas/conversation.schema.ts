@@ -43,6 +43,45 @@ export class Conversation {
   participants: Types.ObjectId[];
 
   @Prop({
+    type: String,
+    enum: ['direct', 'group'],
+    default: 'direct',
+  })
+  type: 'direct' | 'group';
+
+  @Prop({
+    type: String,
+    default: null,
+  })
+  name?: string | null;
+
+  @Prop({
+    type: String,
+    default: null,
+  })
+  avatar?: string | null;
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'User',
+    default: null,
+  })
+  creatorId?: Types.ObjectId | null;
+
+  @Prop({
+    type: [{ type: Types.ObjectId, ref: 'User' }],
+    default: [],
+  })
+  adminIds: Types.ObjectId[];
+
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'Message',
+    default: null,
+  })
+  pinnedMessageId?: Types.ObjectId | null;
+
+  @Prop({
     type: LastMessageSchema,
     default: null,
   })

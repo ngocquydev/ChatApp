@@ -645,4 +645,160 @@ describe('ChatService', () => {
       );
     });
   });
+
+  describe('Group Chat Features', () => {
+    const userCId = new Types.ObjectId().toString();
+    const groupConvId = new Types.ObjectId().toString();
+
+    it('should throw BadRequestException if fewer than 2 other members are provided', async () => {
+      await expect(
+        service.createGroupConversation(userAId, {
+          name: 'Nhóm Game',
+          memberIds: [userBId], // Only 1 other member
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should create group conversation successfully with creator as admin and system message', async () => {
+      mockUsersService.findById
+        .mockResolvedValueOnce({ _id: new Types.ObjectId(userBId), name: 'User B' })
+        .mockResolvedValueOnce({ _id: new Types.ObjectId(userCId), name: 'User C' })
+        .mockResolvedValueOnce({ _id: new Types.ObjectId(userAId), name: 'User A' });
+
+      const mockGroup = {
+        _id: new Types.ObjectId(groupConvId),
+        type: 'group',
+        name: 'Nhóm Anh Em',
+        creatorId: new Types.ObjectId(userAId),
+        adminIds: [new Types.ObjectId(userAId)],
+        participants: [
+          new Types.ObjectId(userAId),
+          new Types.ObjectId(userBId),
+          new Types.ObjectId(userCId),
+        ],
+        save: vi.fn().mockResolvedValue(true),
+      };
+
+      mockConversationModel.create.mockResolvedValue(mockGroup);
+      mockMessageModel.create.mockResolvedValue({
+        _id: new Types.ObjectId(),
+        text: 'User A đã tạo nhóm "Nhóm Anh Em"',
+        senderId: new Types.ObjectId(userAId),
+        type: 'system',
+      });
+
+      const execPopulated = vi.fn().mockResolvedValue(mockGroup);
+      const mockPopulate3 = vi.fn().mockReturnValue({ exec: execPopulated });
+      const mockPopulate2 = vi.fn().mockReturnValue({ populate: mockPopulate3 });
+      const mockPopulate1 = vi.fn().mockReturnValue({ populate: mockPopulate2 });
+      mockConversationModel.findById.mockReturnValue({ populate: mockPopulate1 });
+
+      const result = await service.createGroupConversation(userAId, {
+        name: 'Nhóm Anh Em',
+        memberIds: [userBId, userCId],
+      });
+
+      expect(result).toBeDefined();
+      expect(mockConversationModel.create).toHaveBeenCalled();
+      expect(mockMessageModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'system' }),
+      );
+    });
+
+    it('should save group message and update unread count for other participants', async () => {
+      const unreadMap = new Map<string, number>([
+        [userAId, 0],
+        [userBId, 0],
+        [userCId, 0],
+      ]);
+
+      const mockGroup = {
+        _id: new Types.ObjectId(groupConvId),
+        type: 'group',
+        participants: [
+          new Types.ObjectId(userAId),
+          new Types.ObjectId(userBId),
+          new Types.ObjectId(userCId),
+        ],
+        unreadCounts: unreadMap,
+        save: vi.fn().mockResolvedValue(true),
+      };
+
+      mockConversationModel.findById.mockResolvedValue(mockGroup);
+      mockMessageModel.create.mockResolvedValue({
+        _id: new Types.ObjectId(),
+        conversationId: mockGroup._id,
+        senderId: new Types.ObjectId(userAId),
+        text: 'Hello anh em',
+        type: 'text',
+      });
+
+      const msg = await service.saveGroupMessage(userAId, groupConvId, 'Hello anh em');
+      expect(msg.text).toBe('Hello anh em');
+      expect(unreadMap.get(userBId)).toBe(1);
+      expect(unreadMap.get(userCId)).toBe(1);
+      expect(unreadMap.get(userAId)).toBe(0);
+      expect(mockGroup.save).toHaveBeenCalled();
+    });
+
+    it('should allow admin to remove a member', async () => {
+      const mockGroup = {
+        _id: new Types.ObjectId(groupConvId),
+        type: 'group',
+        adminIds: [new Types.ObjectId(userAId)],
+        participants: [
+          new Types.ObjectId(userAId),
+          new Types.ObjectId(userBId),
+          new Types.ObjectId(userCId),
+        ],
+        unreadCounts: new Map(),
+        save: vi.fn().mockResolvedValue(true),
+      };
+
+      mockConversationModel.findById
+        .mockResolvedValueOnce(mockGroup)
+        .mockReturnValueOnce({
+          populate: vi.fn().mockReturnValue({
+            populate: vi.fn().mockReturnValue({
+              populate: vi.fn().mockReturnValue({
+                exec: vi.fn().mockResolvedValue(mockGroup),
+              }),
+            }),
+          }),
+        });
+
+      mockUsersService.findById
+        .mockResolvedValueOnce({ _id: new Types.ObjectId(userBId), name: 'User B' })
+        .mockResolvedValueOnce({ _id: new Types.ObjectId(userAId), name: 'User A' });
+
+      mockMessageModel.create.mockResolvedValue({
+        _id: new Types.ObjectId(),
+        text: 'User A đã xóa User B khỏi nhóm',
+        type: 'system',
+      });
+
+      await service.removeGroupMember(userAId, groupConvId, userBId);
+      expect(mockGroup.participants.map((p) => p.toString())).not.toContain(userBId);
+      expect(mockGroup.save).toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException if non-admin attempts to kick another member', async () => {
+      const mockGroup = {
+        _id: new Types.ObjectId(groupConvId),
+        type: 'group',
+        adminIds: [new Types.ObjectId(userAId)], // User A is admin, User B is not
+        participants: [
+          new Types.ObjectId(userAId),
+          new Types.ObjectId(userBId),
+          new Types.ObjectId(userCId),
+        ],
+      };
+
+      mockConversationModel.findById.mockResolvedValue(mockGroup);
+
+      await expect(
+        service.removeGroupMember(userBId, groupConvId, userCId),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
 });

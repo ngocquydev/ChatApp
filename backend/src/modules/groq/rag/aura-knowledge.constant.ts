@@ -11,6 +11,78 @@ export interface AppFeatureDoc {
 
 export const CHATAPP_KNOWLEDGE_BASE: AppFeatureDoc[] = [
   {
+    id: 'app_overview',
+    title: 'Tổng quan toàn bộ tính năng siêu ứng dụng ChatApp',
+    keywords: ['tính năng', 'chức năng', 'có gì', 'làm được gì', 'tổng quan', 'chatapp có', 'app có', 'features'],
+    description:
+      'ChatApp là mạng xã hội & ứng dụng trò chuyện thời gian thực hiện đại, bao gồm: 1) Nhắn tin đa phương tiện & Nhóm chat đa người dùng (file 100MB, kho GIF, voice audio, 7 reactions Facebook, đổi màu chat); 2) Gọi thoại & Gọi video chất lượng cao WebRTC (1-1 và Gọi nhóm tối ưu Mesh với nhận diện người nói VAD); 3) Mạng xã hội Bảng tin (News Feed, đăng bài, bình luận ảnh/GIF); 4) Trang Fanpage doanh nghiệp & cá nhân; 5) Hội nhóm cộng đồng (Groups); 6) Trợ lý ảo AI Aura (Llama 3.3 70B, tóm tắt bài viết, tóm tắt chat, bóc phốt tương tác); 7) Chia sẻ vị trí thời gian thực (Live GPS); 8) Hệ thống AI kiểm duyệt an toàn, chống bot và lừa đảo 24/7; 9) Dark Mode & Hỗ trợ song ngữ Tiếng Việt/Tiếng Anh.',
+    usageTips: 'Bạn có thể truy cập các tab Bảng tin, Khám phá, Trang, Nhóm, hoặc mở Đoạn chat để trải nghiệm ngay!',
+  },
+  {
+    id: 'group_chat',
+    title: 'Nhóm trò chuyện (Group Chat) đa người dùng',
+    keywords: ['nhóm chat', 'tạo nhóm', 'group chat', 'thêm thành viên', 'quản trị viên nhóm', 'nhóm'],
+    description:
+      'ChatApp cho phép tạo nhóm trò chuyện không giới hạn, thêm/xóa thành viên, đặt tên & avatar nhóm, trao quyền Quản trị viên nhóm, ghim tin nhắn quan trọng và trò chuyện tức thì.',
+    usageTips: 'Nhấn vào nút tạo nhóm (icon Users với dấu +) trong danh sách chat, đặt tên nhóm và chọn bạn bè tham gia.',
+  },
+  {
+    id: 'group_call_webrtc',
+    title: 'Gọi thoại & Gọi video nhóm tối ưu băng thông (WebRTC Mesh-Lite)',
+    keywords: ['gọi nhóm', 'call nhóm', 'video nhóm', 'group call', 'họp nhóm', 'vad', 'tiết kiệm băng thông'],
+    description:
+      'Hỗ trợ gọi thoại & gọi video nhóm trực tiếp bằng WebRTC Mesh-Lite độ trễ cực thấp. Tự động nhận diện người đang nói (Voice Activity Detection - VAD) với viền xanh phát sáng, tối ưu độ phân giải 360p @ 15fps và trần âm thanh Opus 32kbps siêu nhẹ và mượt mà cho nhiều người cùng tham gia.',
+    usageTips: 'Trong cửa sổ nhóm chat, nhấn biểu tượng Gọi thoại hoặc Gọi video ở thanh tiêu đề để bắt đầu cuộc gọi nhóm.',
+  },
+  {
+    id: 'audio_video_call',
+    title: 'Gọi thoại & Gọi video 1-1 WebRTC P2P chất lượng cao',
+    keywords: ['gọi điện', 'gọi thoại', 'gọi video', 'call', 'video call', 'thoại', 'p2p'],
+    description:
+      'Gọi điện thoại và gọi video 1-1 sắc nét, mã hóa đầu cuối P2P qua WebRTC, hỗ trợ bật/tắt camera, micro, chuyển đổi camera và toàn màn hình mượt mà.',
+    usageTips: 'Mở cửa sổ chat với người bạn muốn gọi, sau đó bấm biểu tượng điện thoại hoặc máy quay phim ở góc trên.',
+  },
+  {
+    id: 'fanpages',
+    title: 'Trang Fanpage MXH dành cho cá nhân & doanh nghiệp',
+    keywords: ['fanpage', 'trang', 'page', 'tạo trang', 'doanh nghiệp', 'theo dõi trang'],
+    description:
+      'Tạo và quản lý các Trang Fanpage công khai theo danh mục (Công nghệ, Giải trí, Ẩm thực, Tin tức, Doanh nghiệp...), thu hút người theo dõi và đăng tải bài viết chính thức.',
+    usageTips: 'Truy cập mục "Trang" trên thanh điều hướng để khám phá các trang nổi bật hoặc bấm "Tạo trang mới".',
+  },
+  {
+    id: 'community_groups',
+    title: 'Hội nhóm cộng đồng (Community Groups)',
+    keywords: ['hội nhóm', 'cộng đồng', 'community group', 'nhóm mxh', 'nhóm công khai', 'nhóm riêng tư'],
+    description:
+      'Tạo hội nhóm theo sở thích, học tập hoặc thảo luận với chế độ Công khai (Public) hoặc Riêng tư (Private). Hỗ trợ xét duyệt thành viên, phân quyền Quản trị viên và bảng tin thảo luận nội bộ nhóm.',
+    usageTips: 'Truy cập mục "Nhóm" trên thanh điều hướng để xem các nhóm bạn tham gia hoặc tạo nhóm cộng đồng mới.',
+  },
+  {
+    id: 'social_feed_posts',
+    title: 'Mạng xã hội: Bảng tin (News Feed) & Bài viết',
+    keywords: ['bài viết', 'bảng tin', 'news feed', 'post', 'đăng bài', 'bình luận', 'chia sẻ'],
+    description:
+      'Đăng bài viết chia sẻ trạng thái, kèm tối đa 4 ảnh chất lượng cao hoặc video, tùy chỉnh quyền riêng tư (Công khai, Bạn bè, Chỉ mình tôi). Tương tác với 7 sắc thái cảm xúc, bình luận đa cấp kèm ảnh/GIF và chia sẻ bài viết về trang cá nhân.',
+    usageTips: 'Vào Trang chủ (Bảng tin) và nhập nội dung vào ô "Bạn đang nghĩ gì thế?" để đăng bài.',
+  },
+  {
+    id: 'voice_messages',
+    title: 'Tin nhắn thoại trực quan (Voice Messages)',
+    keywords: ['tin nhắn thoại', 'voice', 'ghi âm', 'âm thanh', 'voice message', 'sóng âm'],
+    description:
+      'Ghi âm và gửi tin nhắn thoại với giao diện hiển thị biểu đồ sóng âm thời gian thực, điều khiển phát/dừng và tua đoạn âm thanh tiện lợi.',
+    usageTips: 'Nhấn và giữ biểu tượng Micro cạnh ô nhập tin nhắn để ghi âm và thả tay để gửi.',
+  },
+  {
+    id: 'ai_moderation_engine',
+    title: 'Hệ thống kiểm duyệt an toàn AI & Chống bot thông minh',
+    keywords: ['kiểm duyệt', 'an toàn', 'chống bot', 'lừa đảo', 'moderation', 'trust engine', 'độc hại'],
+    description:
+      'Tích hợp đa mô hình học máy (NLP đa ngôn ngữ, Vision OCR, Isolation Forest và Autoencoder) tự động phát hiện ngôn từ độc hại, nội dung nhạy cảm, hành vi bot bất thường và cảnh báo lừa đảo số tài khoản/OTP trong tin nhắn.',
+    usageTips: 'Hệ thống chạy ngầm tự động bảo vệ tài khoản và môi trường mạng xã hội lành mạnh suốt 24/7.',
+  },
+  {
     id: 'live_location',
     title: 'Chia sẻ vị trí thời gian thực (Live Location Sharing)',
     keywords: ['vị trí', 'location', 'bản đồ', 'tọa độ', 'định vị', 'đang ở đâu', 'live location', 'gps'],

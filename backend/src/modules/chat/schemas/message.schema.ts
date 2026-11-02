@@ -49,10 +49,11 @@ export class Message {
   @Prop({
     type: Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
+    default: null,
     index: true,
   })
-  receiverId: Types.ObjectId;
+  receiverId?: Types.ObjectId | null;
 
   @Prop({
     type: String,
@@ -63,10 +64,10 @@ export class Message {
 
   @Prop({
     type: String,
-    enum: ['text', 'call', 'location'],
+    enum: ['text', 'call', 'location', 'system'],
     default: 'text',
   })
-  type?: 'text' | 'call' | 'location';
+  type?: 'text' | 'call' | 'location' | 'system';
 
   @Prop({
     type: {

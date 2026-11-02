@@ -22,6 +22,10 @@ const CallModal = dynamic(() => import("@/components/chat/call/CallModal"), {
   ssr: false,
 });
 
+const GroupCallModal = dynamic(() => import("@/components/chat/call/GroupCallModal"), {
+  ssr: false,
+});
+
 // Hộp thoại xác minh khi WAF yêu cầu (Under Attack Mode) — tải khi cần
 const WafChallengeDialog = dynamic(() => import("@/components/common/WafChallengeDialog"), {
   ssr: false,
@@ -71,6 +75,7 @@ export default function ClientShell({ children }: ClientShellProps) {
       {showSocialWidgets && <FloatingChatDock />}
       {showSocialWidgets && <FriendNoticeToast />}
       {showSocialWidgets && <CallModal />}
+      {showSocialWidgets && <GroupCallModal />}
       <WafChallengeDialog />
     </>
   );

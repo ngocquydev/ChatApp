@@ -11,6 +11,14 @@ export class Post {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   authorId: Types.ObjectId;
 
+  /** Đăng dưới tư cách Trang (Fanpage) */
+  @Prop({ type: Types.ObjectId, ref: 'Page', default: null, index: true })
+  pageId?: Types.ObjectId | null;
+
+  /** Đăng trong Hội nhóm (Community Group) */
+  @Prop({ type: Types.ObjectId, ref: 'CommunityGroup', default: null, index: true })
+  groupId?: Types.ObjectId | null;
+
   @Prop({ type: String, default: '', maxlength: 5000 })
   content: string;
 

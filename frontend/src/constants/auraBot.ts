@@ -12,8 +12,10 @@ export const AURA_BOT_USER: ChatUser = {
   role: "bot",
 };
 
-export function isAuraBot(userId?: string | null): boolean {
-  if (!userId) return false;
-  return String(userId) === AURA_BOT_ID;
+export function isAuraBot(userId?: string | null, name?: string | null): boolean {
+  if (!userId && !name) return false;
+  if (userId && String(userId) === AURA_BOT_ID) return true;
+  if (name && (name.toLowerCase() === "aura ai" || name.toLowerCase() === "aura")) return true;
+  return false;
 }
 

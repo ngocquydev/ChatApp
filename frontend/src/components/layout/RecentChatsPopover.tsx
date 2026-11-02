@@ -33,7 +33,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
 
   const auraConv = useMemo(() => {
     return conversations.find((c) =>
-      c.participants.some((p) => isAuraBot(p?._id || p?.id))
+      c.participants.some((p) => isAuraBot(p?._id || p?.id, p?.name))
     );
   }, [conversations]);
 
@@ -42,13 +42,10 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
     return conversations.filter((c) => {
       if (currentUserId && c.restrictedBy?.includes(currentUserId)) return false;
       const other = c.participants.find((p) => String(p._id || p.id) !== currentUserId) || c.participants[0];
-      const otherId = String(other?._id || other?.id || "");
-      // AI là chatbot thông minh, được ghim chuyên biệt ở đầu danh sách nên không hiển thị lẫn vào danh sách hội thoại bạn bè
-      if (isAuraBot(otherId)) return false;
       const isUnread = Number(c.unreadCounts?.[currentUserId] || 0) > 0 || manualUnreadIds.includes(c._id);
       if (filter === "unread" && !isUnread) return false;
       if (!q) return true;
-      return (other?.name || "").toLowerCase().includes(q) || (c.lastMessage?.text || "").toLowerCase().includes(q);
+      return (c.name || other?.name || "").toLowerCase().includes(q) || (c.lastMessage?.text || "").toLowerCase().includes(q);
     });
   }, [conversations, currentUserId, manualUnreadIds, filter, query]);
 
@@ -168,21 +165,17 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
       </Box>
 
       <Box sx={{ flex: 1, overflowY: "auto", px: 1, pb: 1, maxHeight: 350 }}>
-        {filter === "all" && (!query.trim() || "aura ai".includes(query.trim().toLowerCase())) && (
+        {filter === "all" && query.trim() && "aura ai".includes(query.trim().toLowerCase()) && !auraConv && (
           <ButtonBase
             onClick={() => {
               onClose();
               if (pathname === "/chat" || (typeof window !== "undefined" && window.innerWidth < 600)) {
-                if (auraConv) {
-                  void selectConversation(auraConv);
-                } else {
-                  void useChatStore.getState().startConversationWithUser(AURA_BOT_USER).then((conv) => {
-                    if (conv) selectConversation(conv);
-                  });
-                }
+                void useChatStore.getState().startConversationWithUser(AURA_BOT_USER).then((conv) => {
+                  if (conv) selectConversation(conv);
+                });
                 if (pathname !== "/chat") router.push("/chat");
               } else {
-                openChat(AURA_BOT_USER, auraConv?._id);
+                openChat(AURA_BOT_USER);
               }
             }}
             sx={{
@@ -213,14 +206,12 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
                 variant="caption"
                 noWrap
                 sx={{
-                  color: auraConv?.lastMessage?.text ? "text.secondary" : "primary.main",
-                  fontWeight: auraConv?.lastMessage?.text ? 500 : 600,
+                  color: "primary.main",
+                  fontWeight: 600,
                   display: "block",
                 }}
               >
-                {auraConv?.lastMessage?.text
-                  ? formatChatPreview(auraConv.lastMessage.text)
-                  : tr("Trợ lý ảo AI • Nhắn tin ngay", "Smart AI Assistant • Chat now")}
+                {tr("Trợ lý ảo AI • Nhắn tin ngay", "Smart AI Assistant • Chat now")}
               </Typography>
             </Box>
           </ButtonBase>

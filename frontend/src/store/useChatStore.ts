@@ -43,9 +43,9 @@ export interface ChatMessage {
   id?: string;
   conversationId: string;
   senderId: string | ChatUser;
-  receiverId: string | ChatUser;
+  receiverId?: string | ChatUser | null;
   text: string;
-  type?: "text" | "call" | "location";
+  type?: "text" | "call" | "location" | "system";
   location?: LocationData | null;
   callLog?: CallLogData | null;
   readAt?: string | null;
@@ -61,12 +61,18 @@ export interface ChatMessage {
 
 export interface ConversationItem {
   _id: string;
+  type?: "direct" | "group";
+  name?: string | null;
+  avatar?: string | null;
+  creatorId?: string | ChatUser | null;
+  adminIds?: (string | ChatUser)[];
   participants: ChatUser[];
   lastMessage?: {
     text: string;
     senderId: string;
     createdAt: string;
     isDeleted?: boolean;
+    type?: string;
   } | null;
   unreadCounts?: Record<string, number>;
   theme?: string;
@@ -93,6 +99,12 @@ interface ChatState {
   selectConversation: (conversation: ConversationItem) => Promise<void>;
   clearActiveConversation: () => void;
   startConversationWithUser: (user: ChatUser) => Promise<ConversationItem>;
+  createGroupChat: (name: string, memberIds: string[], avatar?: string) => Promise<ConversationItem>;
+  addGroupMembers: (conversationId: string, memberIds: string[]) => Promise<void>;
+  removeGroupMember: (conversationId: string, memberId: string) => Promise<void>;
+  updateGroupInfo: (conversationId: string, data: { name?: string; avatar?: string }) => Promise<void>;
+  promoteGroupAdmin: (conversationId: string, targetUserId: string) => Promise<void>;
+  fetchGroupDetails: (conversationId: string) => Promise<ConversationItem | null>;
   sendMessage: (
     text: string,
     options?: {
@@ -779,6 +791,49 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     );
 
+    socket.on("conversation:created", (data: { conversation: ConversationItem }) => {
+      if (data?.conversation?._id) {
+        set((state) => ({
+          conversations: [
+            data.conversation,
+            ...state.conversations.filter((c) => c._id !== data.conversation._id),
+          ],
+        }));
+      }
+    });
+
+    socket.on("conversation:updated", (data: { conversation: ConversationItem }) => {
+      if (data?.conversation?._id) {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === data.conversation._id ? data.conversation : c
+          ),
+          activeConversation:
+            state.activeConversation?._id === data.conversation._id
+              ? data.conversation
+              : state.activeConversation,
+        }));
+      }
+    });
+
+    socket.on("group:kicked", (data: { conversationId: string }) => {
+      if (data?.conversationId) {
+        set((state) => ({
+          conversations: state.conversations.filter(
+            (c) => c._id !== data.conversationId
+          ),
+          activeConversation:
+            state.activeConversation?._id === data.conversationId
+              ? null
+              : state.activeConversation,
+          messages:
+            state.activeConversation?._id === data.conversationId
+              ? []
+              : state.messages,
+        }));
+      }
+    });
+
     set({ socket });
   },
 
@@ -846,6 +901,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       const socket = get().socket;
       if (socket && socket.connected) {
+        socket.emit("conversation:join", {
+          conversationId: conversation._id,
+        });
         // Tìm partner ID
         const other = conversation.participants.find(
           (p) => p._id !== conversation.participants[0]?._id
@@ -860,6 +918,164 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } finally {
       set({ isLoadingMessages: false });
     }
+  },
+
+  createGroupChat: async (name: string, memberIds: string[], avatar?: string) => {
+    try {
+      const res = await api.post("/chat/group", { name, memberIds, avatar });
+      if (res.data?.conversation) {
+        const newGroup = res.data.conversation as ConversationItem;
+        set((state) => ({
+          conversations: [
+            newGroup,
+            ...state.conversations.filter((c) => c._id !== newGroup._id),
+          ],
+        }));
+        await get().selectConversation(newGroup);
+        return newGroup;
+      }
+    } catch (err) {
+      console.error("Lỗi tạo nhóm chat:", err);
+      throw err;
+    }
+    throw new Error("Không thể tạo nhóm chat");
+  },
+
+  addGroupMembers: async (conversationId: string, memberIds: string[]) => {
+    try {
+      const res = await api.post(`/chat/group/${conversationId}/members`, {
+        memberIds,
+      });
+      if (res.data?.conversation) {
+        const updated = res.data.conversation as ConversationItem;
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === conversationId ? updated : c
+          ),
+          activeConversation:
+            state.activeConversation?._id === conversationId
+              ? updated
+              : state.activeConversation,
+        }));
+      }
+    } catch (err) {
+      console.error("Lỗi thêm thành viên:", err);
+      throw err;
+    }
+  },
+
+  removeGroupMember: async (conversationId: string, memberId: string) => {
+    try {
+      const res = await api.delete(
+        `/chat/group/${conversationId}/members/${memberId}`
+      );
+      if (res.data?.conversation) {
+        const updated = res.data.conversation as ConversationItem;
+        const myId = String(
+          useAuthStore.getState().user?._id ||
+            useAuthStore.getState().user?.id ||
+            ""
+        );
+        if (memberId === myId) {
+          // Tự rời nhóm
+          set((state) => ({
+            conversations: state.conversations.filter(
+              (c) => c._id !== conversationId
+            ),
+            activeConversation:
+              state.activeConversation?._id === conversationId
+                ? null
+                : state.activeConversation,
+            messages:
+              state.activeConversation?._id === conversationId
+                ? []
+                : state.messages,
+          }));
+        } else {
+          set((state) => ({
+            conversations: state.conversations.map((c) =>
+              c._id === conversationId ? updated : c
+            ),
+            activeConversation:
+              state.activeConversation?._id === conversationId
+                ? updated
+                : state.activeConversation,
+          }));
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi xóa/rời thành viên:", err);
+      throw err;
+    }
+  },
+
+  updateGroupInfo: async (
+    conversationId: string,
+    data: { name?: string; avatar?: string }
+  ) => {
+    try {
+      const res = await api.patch(`/chat/group/${conversationId}`, data);
+      if (res.data?.conversation) {
+        const updated = res.data.conversation as ConversationItem;
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === conversationId ? updated : c
+          ),
+          activeConversation:
+            state.activeConversation?._id === conversationId
+              ? updated
+              : state.activeConversation,
+        }));
+      }
+    } catch (err) {
+      console.error("Lỗi cập nhật nhóm:", err);
+      throw err;
+    }
+  },
+
+  promoteGroupAdmin: async (conversationId: string, targetUserId: string) => {
+    try {
+      const res = await api.post(
+        `/chat/group/${conversationId}/admins/${targetUserId}`
+      );
+      if (res.data?.conversation) {
+        const updated = res.data.conversation as ConversationItem;
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === conversationId ? updated : c
+          ),
+          activeConversation:
+            state.activeConversation?._id === conversationId
+              ? updated
+              : state.activeConversation,
+        }));
+      }
+    } catch (err) {
+      console.error("Lỗi bổ nhiệm admin:", err);
+      throw err;
+    }
+  },
+
+  fetchGroupDetails: async (conversationId: string) => {
+    try {
+      const res = await api.get(`/chat/group/${conversationId}`);
+      if (res.data?.conversation) {
+        const updated = res.data.conversation as ConversationItem;
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c._id === conversationId ? updated : c
+          ),
+          activeConversation:
+            state.activeConversation?._id === conversationId
+              ? updated
+              : state.activeConversation,
+        }));
+        return updated;
+      }
+    } catch (err) {
+      console.error("Lỗi lấy thông tin nhóm:", err);
+    }
+    return null;
   },
 
   startConversationWithUser: async (user: ChatUser) => {
@@ -899,10 +1115,75 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const active = get().activeConversation;
     if (!active || !text.trim()) return;
 
-    // Tìm người nhận trong participants
-    const participants = active.participants;
     const headers = api.defaults.headers as unknown as Record<string, unknown>;
     const currentUserId = typeof headers?.["X-User-Id"] === "string" ? headers["X-User-Id"] : undefined; // fallback
+
+    // Xử lý gửi tin nhắn cho cuộc trò chuyện nhóm
+    if (active.type === "group") {
+      const textToSend = text.trim();
+      const tempId = `opt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const optimisticMessage: ChatMessage = {
+        _id: tempId,
+        id: tempId,
+        conversationId: active._id,
+        senderId: currentUserId || "",
+        receiverId: null,
+        text: textToSend,
+        type: options?.type || "text",
+        location: options?.location || null,
+        createdAt: new Date().toISOString(),
+        readAt: null,
+        isDeleted: false,
+        isOptimistic: true,
+        status: "sending",
+      };
+
+      set((state) => ({
+        messages: [...state.messages, optimisticMessage],
+        conversations: state.conversations.map((c) =>
+          c._id === active._id
+            ? {
+                ...c,
+                lastMessage: {
+                  text: textToSend,
+                  senderId: currentUserId || "",
+                  createdAt: optimisticMessage.createdAt,
+                  type: optimisticMessage.type,
+                },
+                updatedAt: optimisticMessage.createdAt,
+              }
+            : c
+        ),
+      }));
+
+      try {
+        const res = await api.post(`/chat/group/${active._id}/messages`, {
+          conversationId: active._id,
+          text: textToSend,
+          type: options?.type || "text",
+          location: options?.location,
+        });
+        if (res.data?.message) {
+          const realMsg = res.data.message;
+          set((state) => ({
+            messages: state.messages.map((m) =>
+              m._id === tempId ? { ...realMsg, isOptimistic: false, status: "sent" } : m
+            ),
+          }));
+        }
+      } catch (err) {
+        console.error("Lỗi gửi tin nhắn nhóm:", err);
+        set((state) => ({
+          messages: state.messages.map((m) =>
+            m._id === tempId ? { ...m, status: "error" } : m
+          ),
+        }));
+      }
+      return;
+    }
+
+    // Tìm người nhận trong participants (cho hội thoại 1-1)
+    const participants = active.participants;
     const socket = get().socket;
 
     const otherParticipant =

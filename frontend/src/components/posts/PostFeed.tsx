@@ -14,6 +14,7 @@ import {
   type CursorPage,
   type PostView,
   type ReactionType,
+  type PostPrivacy,
 } from "@/services/postsApi";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -32,6 +33,9 @@ interface PostFeedProps {
   emptyAction?: ReactNode;
   /** Gọi khi dữ liệu bài viết của mình thay đổi (đăng/xóa/chia sẻ) — vd. làm mới khung "Ảnh" */
   onOwnPostsChanged?: () => void;
+  pageId?: string;
+  groupId?: string;
+  defaultPrivacy?: PostPrivacy;
 }
 
 type Toast = { message: string; severity: "success" | "error" } | null;
@@ -61,6 +65,9 @@ export default function PostFeed({
   emptyDescription,
   emptyAction,
   onOwnPostsChanged,
+  pageId,
+  groupId,
+  defaultPrivacy,
 }: PostFeedProps) {
   const { user } = useAuthStore();
   const { t } = useTranslation();
@@ -174,7 +181,14 @@ export default function PostFeed({
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {canCompose && (
-        <PostComposer userName={user?.name} userAvatar={user?.avatar} onCreated={handleCreated} />
+        <PostComposer
+          userName={user?.name}
+          userAvatar={user?.avatar}
+          defaultPrivacy={defaultPrivacy}
+          pageId={pageId}
+          groupId={groupId}
+          onCreated={handleCreated}
+        />
       )}
 
       <Box component="section" aria-label="Bài viết" aria-busy={list.status === "loading"} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>

@@ -111,6 +111,28 @@ export class PostsController {
     return { success: true, ...page };
   }
 
+  @Get('page/:pageId')
+  @ApiOperation({ summary: 'Bài viết trên một Trang Fanpage' })
+  async pagePosts(
+    @Req() req: AuthenticatedRequest,
+    @Param('pageId') pageId: string,
+    @Query() query: PageQueryDto,
+  ) {
+    const page = await this.postsService.getPagePosts(this.extractUserId(req), pageId, query);
+    return { success: true, ...page };
+  }
+
+  @Get('group/:groupId')
+  @ApiOperation({ summary: 'Bài viết trong một Hội nhóm cộng đồng' })
+  async groupPosts(
+    @Req() req: AuthenticatedRequest,
+    @Param('groupId') groupId: string,
+    @Query() query: PageQueryDto,
+  ) {
+    const page = await this.postsService.getGroupPosts(this.extractUserId(req), groupId, query);
+    return { success: true, ...page };
+  }
+
   @Get('user/:userId/photos')
   @ApiOperation({ summary: 'Ảnh gần đây của một người dùng' })
   async userPhotos(

@@ -67,7 +67,7 @@ export class AuraRagService {
     if (/(làm thơ|thơ|rap|bài thơ|thơ con cóc|sáng tác)/i.test(q)) {
       return 'poem';
     }
-    if (/(tính năng|chatapp|làm sao|cách|hướng dẫn|app này|location|vị trí|gửi file|gif|theme)/i.test(q)) {
+    if (/(tính năng|chatapp|làm sao|cách|hướng dẫn|app này|app đang sài|có những gì|làm được gì|chức năng|location|vị trí|gửi file|gif|theme|gọi nhóm|fanpage|hội nhóm)/i.test(q)) {
       return 'app_help';
     }
 
@@ -339,16 +339,30 @@ export class AuraRagService {
           `Tình bạn keo sơn mãi đong đầy! 🌸✨`
         );
 
-      case 'app_help':
-        if (rag.matchedFeatureDocs.length > 0) {
-          const doc = rag.matchedFeatureDocs[0];
+      case 'app_help': {
+        const isGeneralFeatureInquiry = /(tính năng|chức năng|có gì|làm được gì|tổng quan|tổng hợp|app đang sài)/i.test(query);
+        if (isGeneralFeatureInquiry || !rag.matchedFeatureDocs.length || rag.matchedFeatureDocs.some(d => d.id === 'app_overview')) {
           return (
-            `⚡ **Mẹo ChatApp cực xịn từ Aura:**\n\n` +
-            `• **${doc.title}**: ${doc.description}\n` +
-            `👉 **Cách dùng:** ${doc.usageTips} 🚀`
+            `✨ **ChatApp sở hữu trọn bộ tính năng siêu đỉnh:**\n\n` +
+            `• 💬 **Nhắn tin realtime & Nhóm chat:** Gửi ảnh, video, file 100MB, tin nhắn thoại, kho GIF, thả 7 cảm xúc Facebook, đổi màu nền chat.\n` +
+            `• 📞 **Gọi thoại & Gọi video chất lượng cao:** Gọi 1-1 và Gọi nhóm WebRTC Mesh tối ưu băng thông (VAD nhận diện người đang nói).\n` +
+            `• 📰 **Mạng xã hội & Bảng tin:** Đăng bài viết chia sẻ trạng thái, ảnh, video, bình luận lồng nhau kèm GIF.\n` +
+            `• 🚩 **Trang Fanpage:** Tạo và theo dõi các Trang chính thức cho cá nhân, doanh nghiệp và người sáng tạo.\n` +
+            `• 👥 **Hội nhóm cộng đồng:** Tham gia các nhóm sở thích Công khai/Riêng tư với bảng tin thảo luận riêng.\n` +
+            `• 🤖 **Trợ lý thông minh Aura AI:** Tóm tắt bài viết, tóm tắt cuộc trò chuyện, phân tích bóc phốt tương tác vui nhộn.\n` +
+            `• 📍 **Chia sẻ vị trí Live GPS:** Định vị thời gian thực trên bản đồ với radar nhấp nháy.\n` +
+            `• 🛡️ **Kiểm duyệt an toàn & Chống bot:** AI bảo vệ người dùng 24/7, cảnh báo lừa đảo tài khoản ngân hàng/OTP.\n` +
+            `• 🌓 **Dark Mode & Đa ngôn ngữ:** Tự động theo giao diện máy và hỗ trợ song ngữ Tiếng Việt / Tiếng Anh.\n\n` +
+            `Bạn muốn khám phá chi tiết tính năng nào trước nè? 🚀`
           );
         }
-        return `⚡ ChatApp hỗ trợ chia sẻ vị trí trực tiếp, gửi file 100MB, thả 7 cảm xúc Facebook và kho GIF GIPHY triệu view! Bạn muốn Aura chỉ mẹo nào trước nè? 🌟`;
+        const doc = rag.matchedFeatureDocs[0];
+        return (
+          `⚡ **Mẹo ChatApp cực xịn từ Aura:**\n\n` +
+          `• **${doc.title}**: ${doc.description}\n` +
+          `👉 **Cách dùng:** ${doc.usageTips} 🚀`
+        );
+      }
 
       default:
         return (

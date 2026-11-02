@@ -44,6 +44,16 @@ export class CreatePostDto {
   @IsOptional()
   @IsIn(POST_PRIVACIES as readonly string[])
   privacy?: PostPrivacy;
+
+  @ApiPropertyOptional({ description: 'ID của Trang Fanpage nếu bài viết thuộc Trang' })
+  @IsOptional()
+  @IsMongoId()
+  pageId?: string;
+
+  @ApiPropertyOptional({ description: 'ID của Nhóm nếu bài viết thuộc Nhóm' })
+  @IsOptional()
+  @IsMongoId()
+  groupId?: string;
 }
 
 export class UpdatePostDto {
@@ -81,6 +91,16 @@ export class SharePostDto {
   @IsOptional()
   @IsIn(POST_PRIVACIES as readonly string[])
   privacy?: PostPrivacy;
+
+  @ApiPropertyOptional({ description: 'ID của Trang Fanpage nếu bài viết thuộc Trang' })
+  @IsOptional()
+  @IsMongoId()
+  pageId?: string;
+
+  @ApiPropertyOptional({ description: 'ID của Nhóm nếu bài viết thuộc Nhóm' })
+  @IsOptional()
+  @IsMongoId()
+  groupId?: string;
 }
 
 export class CreateCommentDto {

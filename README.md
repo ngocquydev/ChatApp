@@ -170,6 +170,26 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Phản hồi luồng chữ theo thời gian thực (Streaming Chunks - "Nhắn từ từ"):** Chữ chạy ra từng token mượt mà theo hiệu ứng typewriter như Gemini/ChatGPT kèm con trỏ nhấp nháy phát sáng và tự động cuộn màn hình êm ái.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/meta-ai-aura-bot.md](docs/features/meta-ai-aura-bot.md)*
 
+### 12. Nhóm Trò Chuyện (Group Chat) & Cuộc Gọi Nhóm WebRTC Tối Ưu Băng Thông
+- **Nhóm trò chuyện không giới hạn:** Tạo nhóm nhanh với hộp thoại `CreateGroupDialog`, chọn bạn bè, tìm kiếm theo tên, trao quyền Quản trị viên nhóm (Admin), đổi tên và cập nhật ảnh đại diện nhóm.
+- **Quản lý nhóm toàn diện (`GroupInfoModal`):** Thêm thành viên, xóa thành viên, rời nhóm, chuyển giao quyền quản trị và ghim tin nhắn nhóm.
+- **Cuộc gọi thoại & video nhóm Mesh-Lite tối ưu băng thông (`GroupCallModal`):**
+  - **Tự động nhận diện người đang nói (VAD):** Web Audio API phân tích mức năng lượng micro trực tiếp, tự động phát sáng viền xanh quanh khung hình người đang nói (Active Speaker) kèm chống nhấp nháy (hysteresis).
+  - **Giới hạn băng thông thông minh:** Cố định độ phân giải video 360p @ 15fps mỗi luồng và nén audio Opus trần 32kbps, đảm bảo nhiều người tham gia cùng lúc mượt mà mà không lo nghẽn mạng hay quá tải CPU.
+  - **Bố cục lưới thích ứng (Dynamic Grid):** Tự động dàn trang từ 1 người (toàn màn hình), 2 người, 4 người (2x2) đến 9 người (3x3), kèm avatar dự phòng khi tắt camera.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/group-chat-call-pages-groups.md](docs/features/group-chat-call-pages-groups.md)*
+
+### 13. Trang Fanpage & Hội Nhóm Cộng Đồng (Fanpages & Community Groups with Feed)
+- **Trang Fanpage chính thức (`/pages`):**
+  - Khám phá các Trang nổi bật theo danh mục (Công nghệ, Giải trí, Ẩm thực, Doanh nghiệp...).
+  - Tạo trang mới với URL slug thân thiện tự động sinh.
+  - Hồ sơ trang (`/pages/[slug]`): Nút Theo dõi/Bỏ theo dõi với số lượng follower cập nhật tức thời.
+  - Tích hợp Bảng tin bài viết Fanpage (`PostFeed`): Quản trị viên đăng bài viết chính thức từ trang, người dùng theo dõi có thể tương tác, bình luận và thả cảm xúc.
+- **Hội nhóm cộng đồng (`/groups`):**
+  - Hỗ trợ chế độ Công khai (Public) và Riêng tư (Private).
+  - Thảo luận nội bộ nhóm (`GroupFeed`): Thành viên trong nhóm có thể đăng bài viết, chia sẻ ảnh và trao đổi ý kiến trong cộng đồng riêng.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/group-chat-call-pages-groups.md](docs/features/group-chat-call-pages-groups.md)*
+
 ---
 
 ## 🏗️ Kiến trúc hệ thống & Công nghệ

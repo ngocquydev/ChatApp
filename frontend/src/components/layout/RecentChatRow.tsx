@@ -62,8 +62,19 @@ export default function RecentChatRow({
   onOpenMenu,
 }: RecentChatRowProps) {
   const { tr } = useTranslation();
-  const other = conv.participants.find((p) => String(p._id || p.id) !== currentUserId) || conv.participants[0];
-  const isOtherAura = isAuraBot(other?._id || other?.id);
+  const isGroup = conv.type === "group";
+  const other = isGroup ? null : (conv.participants.find((p) => String(p._id || p.id) !== currentUserId) || conv.participants[0]);
+  const isOtherAura = !isGroup && isAuraBot(other?._id || other?.id, other?.name);
+  const displayName = isGroup
+    ? conv.name || tr("Nhóm chat", "Group chat")
+    : isOtherAura
+      ? "Aura AI"
+      : other?.name || tr("Người dùng", "User");
+  const avatarSrc = isGroup
+    ? conv.avatar
+    : isOtherAura
+      ? "/assets/avatars/aura-bot.svg"
+      : other?.avatar;
   const isSentByMe = String(conv.lastMessage?.senderId || "") === currentUserId;
   const preview = formatChatPreview(conv.lastMessage?.text, conv.lastMessage?.isDeleted);
   const timeStr = formatChatShortTime(conv.lastMessage?.createdAt || conv.updatedAt);
@@ -83,7 +94,7 @@ export default function RecentChatRow({
     >
       <ButtonBase
         component="div"
-        aria-label={tr(`Mở đoạn chat với ${other?.name || "Người dùng"}`, `Open chat with ${other?.name || "User"}`)}
+        aria-label={tr(`Mở đoạn chat với ${displayName}`, `Open chat with ${displayName}`)}
         onClick={() => onSelect(conv)}
         sx={{
           flex: 1,
@@ -97,15 +108,15 @@ export default function RecentChatRow({
         }}
       >
         <PresenceAvatar
-          name={isOtherAura ? "Aura AI" : other?.name}
-          src={isOtherAura ? "/assets/avatars/aura-bot.svg" : other?.avatar}
+          name={displayName}
+          src={avatarSrc || undefined}
           size={50}
-          online={isOtherAura || isOnline}
+          online={!isGroup && (isOtherAura || isOnline)}
         />
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <Typography variant="subtitle2" noWrap sx={{ fontWeight: isUnread ? 700 : 600, fontSize: "0.92rem" }}>
-              {isOtherAura ? "Aura AI" : other?.name || tr("Người dùng", "User")}
+              {displayName}
             </Typography>
             {isOtherAura && <VerifiedBadge size={14} />}
           </Box>

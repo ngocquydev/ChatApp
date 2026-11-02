@@ -45,6 +45,8 @@ import {
   Check,
   UserCheck,
   ShieldCheck,
+  Flag,
+  Users,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useFriendStore } from "../../store/useFriendStore";
@@ -192,6 +194,18 @@ function ResponsiveAppBar() {
       label: t("nav.explore"),
       icon: <Compass size={20} />,
       href: "/explore",
+    },
+    {
+      id: "pages",
+      label: tr("Trang", "Pages"),
+      icon: <Flag size={20} />,
+      href: "/pages",
+    },
+    {
+      id: "groups",
+      label: tr("Nhóm", "Groups"),
+      icon: <Users size={20} />,
+      href: "/groups",
     },
     {
       id: "friends",

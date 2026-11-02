@@ -5,6 +5,7 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   experimental: {
+    cpus: 1,
     agentUpgrade: "security",
     optimizePackageImports: [
       "@mui/material",
