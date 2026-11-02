@@ -9,6 +9,7 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Logger, Optional } from '@nestjs/common';
+import { AsyncLocalStorage } from 'async_hooks';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service.js';
@@ -28,6 +29,9 @@ interface AuthenticatedSocket extends Socket {
     };
   };
 }
+
+// Chụp lại context AsyncLocalStorage sạch ở cấp module để chạy các tác vụ AI nền tách biệt với trace của request cha
+const runInDetachedContext = AsyncLocalStorage.snapshot();
 
 @WebSocketGateway({
   cors: {
@@ -304,7 +308,18 @@ export class ChatGateway
   /**
    * Kích hoạt bot Aura AI trả lời nếu tin nhắn gửi trực tiếp tới Aura hoặc nhắc tới @aura
    */
-  async triggerAuraReply(params: {
+  triggerAuraReply(params: {
+    senderId: string;
+    receiverId: string;
+    text: string;
+    conversationId: string;
+  }): void {
+    runInDetachedContext(() => {
+      void this.executeAuraReply(params);
+    });
+  }
+
+  private async executeAuraReply(params: {
     senderId: string;
     receiverId: string;
     text: string;

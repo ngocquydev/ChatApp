@@ -60,6 +60,11 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule({
       appKey: 'YOUR_APP_KEY',
       appSecret: 'YOUR_APP_SECRET',
       serviceId: 'backend',
+      outgoing: {
+        http: {
+          ignore: (url: string) => url.includes('api.groq.com'),
+        },
+      },
     }),
 
     // 5. Các module tính năng khác
