@@ -187,7 +187,29 @@ function ResponsiveAppBar() {
     },
   ];
 
-  const pages: NavPage[] = [
+  const desktopTabs: NavPage[] = [
+    { id: "home", label: t("nav.home"), icon: <Home size={22} />, href: "/" },
+    {
+      id: "explore",
+      label: t("nav.explore"),
+      icon: <Compass size={22} />,
+      href: "/explore",
+    },
+    {
+      id: "groups",
+      label: tr("Nhóm", "Groups"),
+      icon: <Users size={22} />,
+      href: "/groups",
+    },
+    {
+      id: "pages",
+      label: tr("Trang", "Pages"),
+      icon: <Flag size={22} />,
+      href: "/pages",
+    },
+  ];
+
+  const drawerPages: NavPage[] = [
     { id: "home", label: t("nav.home"), icon: <Home size={20} />, href: "/" },
     {
       id: "explore",
@@ -196,16 +218,16 @@ function ResponsiveAppBar() {
       href: "/explore",
     },
     {
-      id: "pages",
-      label: tr("Trang", "Pages"),
-      icon: <Flag size={20} />,
-      href: "/pages",
-    },
-    {
       id: "groups",
       label: tr("Nhóm", "Groups"),
       icon: <Users size={20} />,
       href: "/groups",
+    },
+    {
+      id: "pages",
+      label: tr("Trang", "Pages"),
+      icon: <Flag size={20} />,
+      href: "/pages",
     },
     {
       id: "friends",
@@ -366,306 +388,62 @@ function ResponsiveAppBar() {
               </Popper>
             </Box>
 
-            {/* Menu điều hướng trên Desktop */}
+            {/* Menu điều hướng icon tabs Facebook ở giữa */}
             <Box
               sx={{
                 flexGrow: 1,
                 display: { xs: "none", md: "flex" },
                 alignItems: "center",
                 justifyContent: "center",
-                gap: { md: 0.5, lg: 1 },
+                gap: { md: 0.5, lg: 1.5 },
                 mx: { md: 1, lg: 2 },
+                height: "100%",
               }}
             >
-              {pages.map((page) => {
+              {desktopTabs.map((tab) => {
                 const isActive = Boolean(
-                  (page.href &&
-                    (page.href === "/" ? pathname === "/" : pathname?.startsWith(page.href))) ||
-                    (page.id === "friends" && isFriendOpen) ||
-                    (page.id === "chat" && isChatOpen)
+                  tab.href &&
+                    (tab.href === "/" ? pathname === "/" : pathname?.startsWith(tab.href))
                 );
                 return (
-                  <Box key={page.id} sx={{ position: "relative", display: "flex", alignItems: "center" }}>
-                    <Tooltip title={page.label} enterDelay={500}>
-                      <Button
-                        aria-label={page.label}
-                        aria-current={isActive ? "page" : undefined}
-                        onClick={(e) => {
-                          if (page.id === "chat") {
-                            handleOpenChat(e);
-                          } else if (page.id === "friends") {
-                            handleOpenFriend(e);
-                          } else if (page.href) {
-                            router.push(page.href);
-                          }
-                        }}
-                        sx={{
+                  <Tooltip key={tab.id} title={tab.label} enterDelay={300}>
+                    <ButtonBase
+                      aria-label={tab.label}
+                      aria-current={isActive ? "page" : undefined}
+                      onClick={() => {
+                        if (tab.href) router.push(tab.href);
+                      }}
+                      sx={{
+                        width: { md: 72, lg: 96, xl: 112 },
+                        height: 56,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: "10px",
+                        position: "relative",
+                        color: isActive ? "var(--mui-palette-brand-400)" : "rgba(255, 255, 255, 0.75)",
+                        transition: "all 0.15s ease",
+                        "&:hover": {
+                          bgcolor: "rgba(255, 255, 255, 0.12)",
                           color: "white",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 1,
-                          px: { md: 1.5, lg: 2 },
-                          py: 0.85,
-                          minHeight: 40,
-                          minWidth: "auto",
-                          whiteSpace: "nowrap",
-                          flexShrink: 0,
-                          borderRadius: "12px",
-                          fontWeight: isActive ? 700 : 500,
-                          bgcolor: isActive ? "rgba(255, 255, 255, 0.16)" : "transparent",
-                          transition: "all 0.15s ease",
-                          "&:hover": {
-                            bgcolor: isActive
-                              ? "rgba(255, 255, 255, 0.22)"
-                              : "rgba(255, 255, 255, 0.1)",
-                          },
-                        }}
-                      >
-                        {page.id === "chat" ? (
-                          <Badge
-                            color="error"
-                            variant="dot"
-                            invisible={
-                              !conversations.some(
-                                (c) =>
-                                  c.unreadCounts &&
-                                  Number(c.unreadCounts[String(user?.id || user?._id)] || 0) > 0
-                              )
-                            }
-                          >
-                            {page.icon}
-                          </Badge>
-                        ) : page.id === "friends" ? (
-                          <Badge
-                            color="error"
-                            badgeContent={receivedRequests.length}
-                            max={99}
-                            invisible={receivedRequests.length === 0}
-                          >
-                            {page.icon}
-                          </Badge>
-                        ) : (
-                          page.icon
-                        )}
-                        <Box
-                          component="span"
-                          sx={{
-                            display: { md: "none", lg: "inline" },
-                            fontSize: "0.875rem",
-                            whiteSpace: "nowrap",
-                            lineHeight: 1,
-                          }}
-                        >
-                          {page.label}
-                        </Box>
-                      </Button>
-                    </Tooltip>
-
-                  {/* Popover Lời mời kết bạn */}
-                  {page.id === "friends" && (
-                    <Popover
-                      open={isFriendOpen}
-                      anchorEl={friendAnchorEl}
-                      onClose={handleCloseFriend}
-                      disableScrollLock
-                      anchorOrigin={{
-                        vertical: "bottom",
-                        horizontal: "right",
-                      }}
-                      transformOrigin={{
-                        vertical: "top",
-                        horizontal: "right",
-                      }}
-                      slotProps={{
-                        paper: {
-                          sx: {
-                            width: { xs: 320, sm: 380 },
-                            maxHeight: 480,
-                            borderRadius: 2.5,
-                            boxShadow: "0px 12px 32px rgba(0, 0, 0, 0.18)",
-                            mt: 1,
-                            overflow: "hidden",
-                          },
                         },
+                        "&::after": isActive
+                          ? {
+                              content: '""',
+                              position: "absolute",
+                              bottom: 0,
+                              left: "8%",
+                              right: "8%",
+                              height: "3px",
+                              bgcolor: "var(--mui-palette-brand-400)",
+                              borderRadius: "3px 3px 0 0",
+                            }
+                          : undefined,
                       }}
                     >
-                      <Box
-                        sx={{
-                          p: 1.5,
-                          px: 2,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          borderBottom: "1px solid var(--mui-palette-neutral-200)",
-                          bgcolor: "var(--mui-palette-neutral-50)",
-                        }}
-                      >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.92rem" }}>
-                            {tr("Lời mời kết bạn", "Friend Requests")}
-                          </Typography>
-                          {receivedRequests.length > 0 && (
-                            <Chip
-                              label={receivedRequests.length}
-                              size="small"
-                              color="error"
-                              sx={{ height: 20, fontSize: "0.72rem", fontWeight: 700 }}
-                            />
-                          )}
-                        </Box>
-                        <ButtonBase
-                          onClick={() => {
-                            handleCloseFriend();
-                            router.push("/explore");
-                          }}
-                          sx={{
-                            color: "primary.main",
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                            borderRadius: 1,
-                            px: 0.5,
-                            "&:hover": { textDecoration: "underline" },
-                          }}
-                        >
-                          {tr("Xem tất cả", "See all")}
-                        </ButtonBase>
-                      </Box>
-
-                      <Box sx={{ overflowY: "auto", maxHeight: 390, p: 0.5 }}>
-                        {isLoadingRequests && receivedRequests.length === 0 ? (
-                          <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
-                            <CircularProgress size={24} />
-                          </Box>
-                        ) : receivedRequests.length === 0 ? (
-                          <Box sx={{ textAlign: "center", py: 5, px: 3 }}>
-                            <UserCheck size={40} color="var(--mui-palette-neutral-400)" style={{ marginBottom: 10 }} />
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-600)", mb: 0.5 }}>
-                              {tr("Không có lời mời kết bạn mới", "No new friend requests")}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", display: "block" }}>
-                              {tr("Khi có người gửi lời mời kết bạn, thông báo sẽ hiển thị tại đây.", "When someone sends you a friend request, it will appear here.")}
-                            </Typography>
-                          </Box>
-                        ) : (
-                          receivedRequests.map((req) => {
-                            const requester = req.requesterId;
-                            const timeAgo = req.createdAt
-                              ? new Date(req.createdAt).toLocaleDateString([], {
-                                  month: "numeric",
-                                  day: "numeric",
-                                })
-                              : "";
-
-                            return (
-                              <Box
-                                key={req._id}
-                                sx={{
-                                  p: 1.5,
-                                  borderRadius: "10px",
-                                  mb: 0.5,
-                                  display: "flex",
-                                  alignItems: "flex-start",
-                                  gap: 1.5,
-                                  transition: "all 0.15s ease",
-                                  "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
-                                }}
-                              >
-                                <Avatar
-                                  src={requester?.avatar || ""}
-                                  sx={{ width: 44, height: 44, bgcolor: "var(--mui-palette-brand-500)", fontWeight: 700, mt: 0.2 }}
-                                >
-                                  {(requester?.name || "U")[0].toUpperCase()}
-                                </Avatar>
-
-                                <Box sx={{ flex: 1, minWidth: 0 }}>
-                                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", mb: 0.3 }}>
-                                    <Typography
-                                      variant="subtitle2"
-                                      noWrap
-                                      sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.88rem" }}
-                                    >
-                                      {requester?.name || tr("Người dùng", "User")}
-                                    </Typography>
-                                    {timeAgo && (
-                                      <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", fontSize: "0.7rem", ml: 1 }}>
-                                        {timeAgo}
-                                      </Typography>
-                                    )}
-                                  </Box>
-
-                                  <Typography
-                                    variant="caption"
-                                    noWrap
-                                    sx={{ color: "var(--mui-palette-neutral-500)", display: "block", fontSize: "0.74rem", mb: 1 }}
-                                  >
-                                    {requester?.bio || tr("Đã gửi lời mời kết bạn", "Sent you a friend request")}
-                                  </Typography>
-
-                                  <Box sx={{ display: "flex", gap: 1 }}>
-                                    <Button
-                                      size="small"
-                                      variant="contained"
-                                      color="primary"
-                                      onClick={async () => {
-                                        await respondToRequest(req._id, "accept");
-                                      }}
-                                      startIcon={<Check size={13} />}
-                                      sx={{
-                                        textTransform: "none",
-                                        fontSize: "0.75rem",
-                                        fontWeight: 600,
-                                        py: 0.4,
-                                        px: 1.2,
-                                        borderRadius: "8px",
-                                        boxShadow: "none",
-                                      }}
-                                    >
-                                      {tr("Xác nhận", "Confirm")}
-                                    </Button>
-                                    <Button
-                                      size="small"
-                                      variant="outlined"
-                                      color="inherit"
-                                      onClick={async () => {
-                                        await respondToRequest(req._id, "reject");
-                                      }}
-                                      startIcon={<X size={13} />}
-                                      sx={{
-                                        textTransform: "none",
-                                        fontSize: "0.75rem",
-                                        py: 0.4,
-                                        px: 1,
-                                        borderRadius: "8px",
-                                        color: "var(--mui-palette-neutral-500)",
-                                        borderColor: "var(--mui-palette-neutral-300)",
-                                        "&:hover": {
-                                          bgcolor: "var(--mui-palette-tone-fef2f2)",
-                                          color: "var(--mui-palette-tone-ef4444)",
-                                          borderColor: "var(--mui-palette-tone-fca5a5)",
-                                        },
-                                      }}
-                                    >
-                                      {tr("Xóa", "Delete")}
-                                    </Button>
-                                  </Box>
-                                </Box>
-                              </Box>
-                            );
-                          })
-                        )}
-                      </Box>
-                    </Popover>
-                  )}
-
-                  {page.id === "chat" && (
-                    <RecentChatsPopover
-                      anchorEl={chatAnchorEl}
-                      currentUserId={String(user?.id || user?._id || "")}
-                      onClose={handleCloseChat}
-                    />
-                  )}
-                </Box>
+                      {tab.icon}
+                    </ButtonBase>
+                  </Tooltip>
                 );
               })}
             </Box>
@@ -710,6 +488,59 @@ function ResponsiveAppBar() {
                   <MessageSquare size={20} />
                 </Badge>
               </IconButton>
+            </Box>
+
+            {/* Nút Lời mời kết bạn trên Desktop */}
+            <Box sx={{ display: { xs: "none", md: "flex" }, mr: 0.5 }}>
+              <Tooltip title={tr("Lời mời kết bạn", "Friend Requests")}>
+                <IconButton
+                  color="inherit"
+                  onClick={handleOpenFriend}
+                  aria-label={tr("Lời mời kết bạn", "Friend Requests")}
+                  sx={{
+                    bgcolor: isFriendOpen ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.1)",
+                    "&:hover": { bgcolor: "rgba(255, 255, 255, 0.22)" },
+                  }}
+                >
+                  <Badge
+                    color="error"
+                    badgeContent={receivedRequests.length}
+                    max={99}
+                    invisible={receivedRequests.length === 0}
+                  >
+                    <UserPlus size={20} />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
+            </Box>
+
+            {/* Nút Messenger / Đoạn chat trên Desktop */}
+            <Box sx={{ display: { xs: "none", md: "flex" }, mr: 0.5 }}>
+              <Tooltip title={tr("Đoạn chat", "Chats")}>
+                <IconButton
+                  color="inherit"
+                  onClick={handleOpenChat}
+                  aria-label={tr("Đoạn chat", "Chats")}
+                  sx={{
+                    bgcolor: isChatOpen ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.1)",
+                    "&:hover": { bgcolor: "rgba(255, 255, 255, 0.22)" },
+                  }}
+                >
+                  <Badge
+                    color="error"
+                    variant="dot"
+                    invisible={
+                      !conversations.some(
+                        (c) =>
+                          c.unreadCounts &&
+                          Number(c.unreadCounts[String(user?.id || user?._id)] || 0) > 0
+                      )
+                    }
+                  >
+                    <MessageSquare size={20} />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
             </Box>
 
 
@@ -778,6 +609,207 @@ function ResponsiveAppBar() {
                   </MenuItem>
                 ))}
               </Menu>
+
+              {/* Popover Lời mời kết bạn */}
+              <Popover
+                open={isFriendOpen}
+                anchorEl={friendAnchorEl}
+                onClose={handleCloseFriend}
+                disableScrollLock
+                anchorOrigin={{
+                  vertical: "bottom",
+                  horizontal: "right",
+                }}
+                transformOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      width: { xs: 320, sm: 380 },
+                      maxHeight: 480,
+                      borderRadius: 2.5,
+                      boxShadow: "0px 12px 32px rgba(0, 0, 0, 0.18)",
+                      mt: 1,
+                      overflow: "hidden",
+                    },
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    p: 1.5,
+                    px: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderBottom: "1px solid var(--mui-palette-neutral-200)",
+                    bgcolor: "var(--mui-palette-neutral-50)",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.92rem" }}>
+                      {tr("Lời mời kết bạn", "Friend Requests")}
+                    </Typography>
+                    {receivedRequests.length > 0 && (
+                      <Chip
+                        label={receivedRequests.length}
+                        size="small"
+                        color="error"
+                        sx={{ height: 20, fontSize: "0.72rem", fontWeight: 700 }}
+                      />
+                    )}
+                  </Box>
+                  <ButtonBase
+                    onClick={() => {
+                      handleCloseFriend();
+                      router.push("/explore");
+                    }}
+                    sx={{
+                      color: "primary.main",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      borderRadius: 1,
+                      px: 0.5,
+                      "&:hover": { textDecoration: "underline" },
+                    }}
+                  >
+                    {tr("Xem tất cả", "See all")}
+                  </ButtonBase>
+                </Box>
+
+                <Box sx={{ overflowY: "auto", maxHeight: 390, p: 0.5 }}>
+                  {isLoadingRequests && receivedRequests.length === 0 ? (
+                    <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  ) : receivedRequests.length === 0 ? (
+                    <Box sx={{ textAlign: "center", py: 5, px: 3 }}>
+                      <UserCheck size={40} color="var(--mui-palette-neutral-400)" style={{ marginBottom: 10 }} />
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-600)", mb: 0.5 }}>
+                        {tr("Không có lời mời kết bạn mới", "No new friend requests")}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", display: "block" }}>
+                        {tr("Khi có người gửi lời mời kết bạn, thông báo sẽ hiển thị tại đây.", "When someone sends you a friend request, it will appear here.")}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    receivedRequests.map((req) => {
+                      const requester = req.requesterId;
+                      const timeAgo = req.createdAt
+                        ? new Date(req.createdAt).toLocaleDateString([], {
+                            month: "numeric",
+                            day: "numeric",
+                          })
+                        : "";
+
+                      return (
+                        <Box
+                          key={req._id}
+                          sx={{
+                            p: 1.5,
+                            borderRadius: "10px",
+                            mb: 0.5,
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 1.5,
+                            transition: "all 0.15s ease",
+                            "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
+                          }}
+                        >
+                          <Avatar
+                            src={requester?.avatar || ""}
+                            sx={{ width: 44, height: 44, bgcolor: "var(--mui-palette-brand-500)", fontWeight: 700, mt: 0.2 }}
+                          >
+                            {(requester?.name || "U")[0].toUpperCase()}
+                          </Avatar>
+
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", mb: 0.3 }}>
+                              <Typography
+                                variant="subtitle2"
+                                noWrap
+                                sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.88rem" }}
+                              >
+                                {requester?.name || tr("Người dùng", "User")}
+                              </Typography>
+                              {timeAgo && (
+                                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", fontSize: "0.7rem", ml: 1 }}>
+                                  {timeAgo}
+                                </Typography>
+                              )}
+                            </Box>
+
+                            <Typography
+                              variant="caption"
+                              noWrap
+                              sx={{ color: "var(--mui-palette-neutral-500)", display: "block", fontSize: "0.74rem", mb: 1 }}
+                            >
+                              {requester?.bio || tr("Đã gửi lời mời kết bạn", "Sent you a friend request")}
+                            </Typography>
+
+                            <Box sx={{ display: "flex", gap: 1 }}>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="primary"
+                                onClick={async () => {
+                                  await respondToRequest(req._id, "accept");
+                                }}
+                                startIcon={<Check size={13} />}
+                                sx={{
+                                  textTransform: "none",
+                                  fontSize: "0.75rem",
+                                  fontWeight: 600,
+                                  py: 0.4,
+                                  px: 1.2,
+                                  borderRadius: "8px",
+                                  boxShadow: "none",
+                                }}
+                              >
+                                {tr("Xác nhận", "Confirm")}
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="inherit"
+                                onClick={async () => {
+                                  await respondToRequest(req._id, "reject");
+                                }}
+                                startIcon={<X size={13} />}
+                                sx={{
+                                  textTransform: "none",
+                                  fontSize: "0.75rem",
+                                  py: 0.4,
+                                  px: 1,
+                                  borderRadius: "8px",
+                                  color: "var(--mui-palette-neutral-500)",
+                                  borderColor: "var(--mui-palette-neutral-300)",
+                                  "&:hover": {
+                                    bgcolor: "var(--mui-palette-tone-fef2f2)",
+                                    color: "var(--mui-palette-tone-ef4444)",
+                                    borderColor: "var(--mui-palette-tone-fca5a5)",
+                                  },
+                                }}
+                              >
+                                {tr("Xóa", "Delete")}
+                              </Button>
+                            </Box>
+                          </Box>
+                        </Box>
+                      );
+                    })
+                  )}
+                </Box>
+              </Popover>
+
+              {/* Popover Đoạn chat Messenger */}
+              <RecentChatsPopover
+                anchorEl={chatAnchorEl}
+                currentUserId={String(user?.id || user?._id || "")}
+                onClose={handleCloseChat}
+              />
             </Box>
           </Toolbar>
         </Container>
@@ -819,7 +851,7 @@ function ResponsiveAppBar() {
         </Box>
         <Divider />
         <List>
-          {pages.map((page) => {
+          {drawerPages.map((page) => {
             const isActive = Boolean(
               page.href &&
                 (page.href === "/" ? pathname === "/" : pathname?.startsWith(page.href))

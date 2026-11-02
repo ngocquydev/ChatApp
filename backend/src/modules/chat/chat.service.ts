@@ -85,7 +85,7 @@ export class ChatService {
     return this.conversationModel
       .find({
         participants: objId,
-        deletedByUsers: { $ne: objId },
+        deletedByUsers: { $nin: [objId] },
       })
       .populate('participants', 'name email avatar isBan isDeleted')
       .populate('adminIds', 'name avatar')
@@ -374,9 +374,14 @@ export class ChatService {
       );
     }
 
-    const isAuraChat = conversation.participants.some(
-      (p) => p.toString() === AURA_BOT_ID,
-    );
+    const participantIds = conversation.participants.map((p) => p.toString());
+    const isAuraChat =
+      participantIds.includes(AURA_BOT_ID) ||
+      (typeof this.usersService.findByIds === 'function'
+        ? (await this.usersService.findByIds(participantIds)).some(
+            (u) => u.role === 'bot' || u.name?.toLowerCase().includes('aura'),
+          )
+        : false);
 
     if (isAuraChat) {
       await Promise.all([

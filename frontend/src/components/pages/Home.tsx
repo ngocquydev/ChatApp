@@ -3,6 +3,7 @@
 import { Box } from "@mui/material";
 import Feed from "../section/Feed";
 import PersonCall from "../section/PersonCall";
+import LeftSidebar from "../layout/LeftSidebar";
 
 export default function Home() {
   return (
@@ -15,9 +16,11 @@ export default function Home() {
         pt: "64px",
       }}
     >
+      <LeftSidebar />
       <Box
         sx={{
           flex: 1,
+          ml: { md: "280px", lg: "320px", xl: "350px" },
           mr: { md: "340px", lg: "360px", xl: "380px" },
           display: "flex",
           justifyContent: "center",

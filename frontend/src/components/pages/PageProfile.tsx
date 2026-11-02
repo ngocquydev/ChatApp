@@ -71,7 +71,7 @@ export default function PageProfile({ slug }: { slug: string }) {
 
   if (isLoading) {
     return (
-      <Container maxWidth="md" sx={{ py: 3 }}>
+      <Container maxWidth="md" sx={{ py: 3, pt: "80px" }}>
         <Skeleton variant="rounded" height={200} sx={{ borderRadius: "20px", mb: 2 }} />
         <Skeleton variant="text" width={220} height={36} />
       </Container>
@@ -80,7 +80,7 @@ export default function PageProfile({ slug }: { slug: string }) {
 
   if (!data?.page) {
     return (
-      <Container maxWidth="md" sx={{ py: 6 }}>
+      <Container maxWidth="md" sx={{ py: 6, pt: "80px" }}>
         <EmptyState
           icon={<Flag size={48} />}
           title={tr("Không tìm thấy Trang", "Page not found")}
@@ -96,7 +96,7 @@ export default function PageProfile({ slug }: { slug: string }) {
   const { page, isAdmin } = data;
 
   return (
-    <Container maxWidth="md" sx={{ py: 3 }}>
+    <Container maxWidth="md" sx={{ py: 3, pt: "80px" }}>
       {/* Cover image & avatar card */}
       <Card
         sx={{

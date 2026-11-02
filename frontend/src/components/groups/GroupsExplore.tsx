@@ -21,6 +21,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { communityGroupsApi, CommunityGroupItem } from "@/services/communityGroupsApi";
 import CreateGroupDialog from "./CreateGroupDialog";
 import EmptyState from "@/components/common/EmptyState";
+import LeftSidebar from "@/components/layout/LeftSidebar";
 
 export default function GroupsExplore() {
   const { tr } = useTranslation();
@@ -56,7 +57,25 @@ export default function GroupsExplore() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100dvh",
+        bgcolor: "var(--mui-palette-neutral-100)",
+        pt: "64px",
+      }}
+    >
+      <LeftSidebar />
+      <Box
+        component="main"
+        sx={{
+          flex: 1,
+          ml: { md: "280px", lg: "320px", xl: "350px" },
+          p: { xs: 2, sm: 3 },
+          minWidth: 0,
+        }}
+      >
+        <Container maxWidth="lg" sx={{ py: { xs: 1, sm: 2 } }}>
       {/* Header bar */}
       <Box
         sx={{
@@ -287,6 +306,8 @@ export default function GroupsExplore() {
           setMyGroups((prev) => [newGroup, ...prev]);
         }}
       />
-    </Container>
+        </Container>
+      </Box>
+    </Box>
   );
 }

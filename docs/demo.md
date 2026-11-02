@@ -21,6 +21,7 @@
 13. [Trợ Lý Ảo Aura AI Phong Cách Meta AI (Direct Bot Chat, Tích Xanh & Đánh Giá 👍/👎)](#13-trợ-lý-ảo-aura-ai-phong-cách-meta-ai-direct-bot-chat-tích-xanh--đánh-giá-)
 14. [Nhóm Trò Chuyện & Gọi Thoại/Video Nhóm WebRTC Tối Ưu Băng Thông (Group Chat & Mesh-Lite Call)](#14-nhóm-trò-chuyện--gọi-thoạivideo-nhóm-webrtc-tối-ưu-băng-thông-group-chat--mesh-lite-call)
 15. [Trang Fanpage & Hội Nhóm Cộng Đồng (Fanpages & Community Groups with Feed)](#15-trang-fanpage--hội-nhóm-cộng-đồng-fanpages--community-groups-with-feed)
+16. [Bố Cục Cột Điều Hướng Trái Chuẩn Facebook & Tối Ưu Thanh Header (Facebook-Style Left Sidebar & Header)](#16-bố-cục-cột-điều-hướng-trái-chuẩn-facebook--tối-ưu-thanh-header-facebook-style-left-sidebar--header)
 
 ---
 
@@ -263,7 +264,23 @@ Mở rộng trải nghiệm mạng xã hội toàn diện với Trang Fanpage ch
 
 ---
 
+## 16. Bố Cục Cột Điều Hướng Trái Chuẩn Facebook & Tối Ưu Thanh Header (Facebook-Style Left Sidebar & Header)
+
+Tái thiết kế trải nghiệm điều hướng toàn diện theo chuẩn Facebook:
+- **Cột trái chuyên biệt (`LeftSidebar`):** Hiển thị hồ sơ cá nhân, lối tắt Meta/Aura AI, Bạn bè, Nhóm, Trang, Đoạn chat, Kỷ niệm, Đã lưu, Thước phim và danh sách **Lối tắt của bạn** (Nhóm và Trang đã tham gia).
+- **Thanh Header Facebook-style:** Trung tâm là icon tabs tinh gọn với gạch chân xanh chỉ báo tab active; bên phải là cụm nút tác vụ nhanh gồm Lời mời kết bạn (badge), Messenger (badge & popover), Thông báo, Ngôn ngữ, Sáng/Tối và Avatar.
+- **Không che khuất nội dung:** Khoảng đệm trên chuẩn giúp tiêu đề và nội dung trên mọi trang luôn hiển thị trọn vẹn, không bị AppBar cố định cắt ngang.
+
+![Giao diện Cột điều hướng trái chuẩn Facebook & Header tinh gọn](assets/screenshots/facebook-layout.png)
+
+![Trang Khám phá Hội nhóm với bố cục Facebook Sidebar](assets/screenshots/groups-facebook-layout.png)
+
+- 📖 *Xem chi tiết: [docs/features/facebook-left-sidebar-navigation.md](features/facebook-left-sidebar-navigation.md)*
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Cột điều hướng trái chuẩn Facebook & Tối ưu Header](features/facebook-left-sidebar-navigation.md)
 > - [Nhóm trò chuyện, Gọi nhóm WebRTC tối ưu, Fanpage & Hội nhóm](features/group-chat-call-pages-groups.md)
 > - [Trợ lý ảo Aura AI phong cách Meta AI (Direct Bot Chat & Reactions)](features/meta-ai-aura-bot.md)
 > - [Trợ Lý AI Llama 3.3 (Groq), Aura Bot & Gắn Thẻ Bạn Bè](features/groq-ai-summary-aura-mentions.md)

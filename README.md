@@ -47,6 +47,10 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 |:---:|:---:|
 | ![Aura AI Phong Cách Meta AI](docs/assets/screenshots/meta-ai-aura-bot.png) | ![Trung tâm Bảo mật](docs/assets/screenshots/waf-security-center.png) |
 
+| Cột Điều Hướng Trái Chuẩn Facebook & Tối Ưu Header | Trang Khám Phá Nhóm & Bố Cục Không Che Khuất |
+|:---:|:---:|
+| ![Cột Điều Hướng Trái](docs/assets/screenshots/facebook-layout.png) | ![Khám Phá Nhóm](docs/assets/screenshots/groups-facebook-layout.png) |
+
 > 🌟 **Xem chi tiết toàn bộ các màn hình, quy trình thao tác và phân tích trải nghiệm người dùng tại:**
 > 👉 **[Tài liệu Tổng hợp Hình ảnh Demo & Trải nghiệm thực tế (docs/demo.md)](docs/demo.md)**
 

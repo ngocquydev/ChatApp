@@ -84,7 +84,7 @@ export default function GroupFeed({ slug }: { slug: string }) {
 
   if (isLoading) {
     return (
-      <Container maxWidth="md" sx={{ py: 3 }}>
+      <Container maxWidth="md" sx={{ py: 3, pt: "80px" }}>
         <Skeleton variant="rounded" height={200} sx={{ borderRadius: "20px", mb: 2 }} />
         <Skeleton variant="text" width={220} height={36} />
       </Container>
@@ -93,7 +93,7 @@ export default function GroupFeed({ slug }: { slug: string }) {
 
   if (!data?.group) {
     return (
-      <Container maxWidth="md" sx={{ py: 6 }}>
+      <Container maxWidth="md" sx={{ py: 6, pt: "80px" }}>
         <EmptyState
           icon={<Users size={48} />}
           title={tr("Không tìm thấy Hội nhóm", "Group not found")}
@@ -109,7 +109,7 @@ export default function GroupFeed({ slug }: { slug: string }) {
   const { group, isAdmin } = data;
 
   return (
-    <Container maxWidth="md" sx={{ py: 3 }}>
+    <Container maxWidth="md" sx={{ py: 3, pt: "80px" }}>
       {/* Cover image & avatar card */}
       <Card
         sx={{
