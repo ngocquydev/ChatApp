@@ -62,12 +62,11 @@ export default function GroupsExplore() {
         display: "flex",
         minHeight: "100dvh",
         bgcolor: "var(--mui-palette-neutral-100)",
-        pt: "64px",
+        pt: { xs: "70px", md: "76px" },
       }}
     >
       <LeftSidebar />
       <Box
-        component="main"
         sx={{
           flex: 1,
           ml: { md: "280px", lg: "320px", xl: "350px" },
@@ -75,7 +74,7 @@ export default function GroupsExplore() {
           minWidth: 0,
         }}
       >
-        <Container maxWidth="lg" sx={{ py: { xs: 1, sm: 2 } }}>
+        <Container maxWidth="lg" sx={{ py: { xs: 1.5, sm: 2 } }}>
       {/* Header bar */}
       <Box
         sx={{
@@ -88,7 +87,7 @@ export default function GroupsExplore() {
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: "-0.02em" }}>
+          <Typography variant="h5" component="h1" sx={{ fontWeight: 800, letterSpacing: "-0.02em" }}>
             {tr("Khám phá Hội nhóm (Groups)", "Explore Community Groups")}
           </Typography>
           <Typography variant="body2" color="text.secondary">

@@ -5,6 +5,8 @@ export type NotificationType =
   | "friend_request"
   | "post_like"
   | "post_comment"
+  | "post_share"
+  | "mention"
   | "system";
 
 export interface NotificationActor {

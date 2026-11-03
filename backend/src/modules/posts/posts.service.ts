@@ -32,6 +32,7 @@ export interface SharedPostView {
   images: string[];
   privacy: PostPrivacy;
   createdAt?: Date;
+  shareCount?: number;
 }
 
 export interface PostView {
@@ -235,6 +236,7 @@ export class PostsService {
             images: original.images,
             privacy: original.privacy,
             createdAt: original.createdAt,
+            shareCount: original.shareCount ?? 0,
           };
         } else {
           sharedPost = { unavailable: true };
@@ -502,9 +504,20 @@ export class PostsService {
     }
     await this.postModel.updateOne({ _id: post._id }, { $set: { isDeleted: true } }).exec();
     if (post.sharedPostId) {
-      await this.postModel
-        .updateOne({ _id: post.sharedPostId, shareCount: { $gt: 0 } }, { $inc: { shareCount: -1 } })
+      // Chỉ giảm lượt chia sẻ khi tài khoản này không còn bài chia sẻ nào khác của bài gốc đó
+      const remainingCount = await this.postModel
+        .countDocuments({
+          sharedPostId: post.sharedPostId,
+          authorId: post.authorId,
+          _id: { $ne: post._id },
+          isDeleted: false,
+        })
         .exec();
+      if (remainingCount === 0) {
+        await this.postModel
+          .updateOne({ _id: post.sharedPostId, shareCount: { $gt: 0 } }, { $inc: { shareCount: -1 } })
+          .exec();
+      }
     }
     return { success: true, message: 'Đã xóa bài viết' };
   }
@@ -517,9 +530,20 @@ export class PostsService {
       target = await this.loadVisiblePost(target.sharedPostId.toString(), viewerId);
     }
     const isOwn = target.authorId.toString() === viewerId;
-    if (!isOwn && target.privacy !== 'public') {
-      throw new ForbiddenException('Bài viết này không cho phép chia sẻ lại');
+    // Cho phép chia sẻ bài viết ở chế độ Bạn bè (friends) và Công khai (public); cấm chia sẻ bài Chỉ mình tôi (only_me)
+    if (!isOwn && target.privacy === 'only_me') {
+      throw new ForbiddenException('Bài viết ở chế độ riêng tư không cho phép chia sẻ lại');
     }
+
+    // Kiểm tra xem tài khoản này đã từng chia sẻ bài gốc này hay chưa
+    const alreadyShared = await this.postModel
+      .exists({
+        sharedPostId: target._id,
+        authorId: new Types.ObjectId(viewerId),
+        isDeleted: false,
+      })
+      .exec();
+
     const created = await this.postModel.create({
       authorId: new Types.ObjectId(viewerId),
       content: (dto.content ?? '').trim(),
@@ -527,7 +551,32 @@ export class PostsService {
       privacy: dto.privacy ?? 'friends',
       sharedPostId: target._id,
     });
-    await this.postModel.updateOne({ _id: target._id }, { $inc: { shareCount: 1 } }).exec();
+
+    // Mỗi tài khoản chỉ đóng góp đúng 1 lượt chia sẻ; chia sẻ lại lần sau không cộng dồn thêm
+    if (!alreadyShared) {
+      await this.postModel.updateOne({ _id: target._id }, { $inc: { shareCount: 1 } }).exec();
+    }
+
+    // Gửi thông báo realtime cho tác giả bài viết gốc nếu không phải tự chia sẻ bài của mình
+    if (target.authorId.toString() !== viewerId && this.notificationsService) {
+      const viewer = await this.usersService.findById(viewerId);
+      const viewerName = viewer?.name || 'Ai đó';
+      void this.notificationsService
+        .createNotification({
+          recipientId: target.authorId.toString(),
+          actorId: viewerId,
+          type: 'post_share',
+          title: 'Bài viết của bạn được chia sẻ',
+          content: `${viewerName} đã chia sẻ bài viết của bạn lên dòng thời gian.`,
+          link: `/profile/${viewerId}`,
+          metadata: {
+            originalPostId: target._id.toString(),
+            sharedPostId: created._id.toString(),
+          },
+        })
+        .catch(() => {});
+    }
+
     return this.getPost(viewerId, created._id.toString());
   }
 
@@ -611,6 +660,33 @@ export class PostsService {
       .lean<{ likeCount: number; reactionsCount?: Record<string, number> }>()
       .exec();
 
+    // Gửi thông báo realtime cho tác giả bài viết khi có người thả cảm xúc
+    if (liked && post.authorId.toString() !== viewerId && this.notificationsService) {
+      const viewer = await this.usersService.findById(viewerId);
+      const viewerName = viewer?.name || 'Ai đó';
+      const reactionDescriptions: Record<string, string> = {
+        like: 'thích bài viết của bạn.',
+        love: 'thả tim bài viết của bạn.',
+        care: 'bày tỏ cảm xúc thương thương với bài viết của bạn.',
+        haha: 'thả haha vào bài viết của bạn.',
+        wow: 'bày tỏ ngạc nhiên về bài viết của bạn.',
+        sad: 'bày tỏ cảm xúc buồn về bài viết của bạn.',
+        angry: 'thả phẫn nộ vào bài viết của bạn.',
+      };
+      const desc = reactionDescriptions[reactionType] || 'thích bài viết của bạn.';
+      void this.notificationsService
+        .createNotification({
+          recipientId: post.authorId.toString(),
+          actorId: viewerId,
+          type: 'post_like',
+          title: 'Tương tác mới về bài viết',
+          content: `${viewerName} đã ${desc}`,
+          link: `/profile/${post.authorId.toString()}`,
+          metadata: { postId: post._id.toString(), reactionType },
+        })
+        .catch(() => {});
+    }
+
     return {
       success: true,
       liked,
@@ -674,13 +750,15 @@ export class PostsService {
     if (post.authorId.toString() !== viewerId && this.notificationsService) {
       const author = authors.get(viewerId);
       const authorName = author?.name || 'Ai đó';
+      const commentSnippet = content ? `"${content.slice(0, 80)}"` : 'bằng một tệp phương tiện';
       void this.notificationsService.createNotification({
         recipientId: post.authorId.toString(),
         actorId: viewerId,
         type: 'post_comment',
         title: 'Bình luận mới về bài viết',
-        content: `${authorName} đã bình luận: "${content.slice(0, 80)}"`,
+        content: `${authorName} đã bình luận về bài viết của bạn: ${commentSnippet}`,
         link: `/profile/${post.authorId.toString()}`,
+        metadata: { postId: post._id.toString(), commentId: created._id.toString() },
       }).catch(() => {});
     }
 

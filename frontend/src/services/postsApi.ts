@@ -16,6 +16,7 @@ export interface SharedPostView {
   images: string[];
   privacy: PostPrivacy;
   createdAt?: string;
+  shareCount?: number;
 }
 
 export type ReactionType = "like" | "love" | "care" | "haha" | "wow" | "sad" | "angry";
@@ -33,7 +34,6 @@ export interface PostView {
   likedByMe: boolean;
   myReaction?: ReactionType | null;
   reactionsCount?: Record<ReactionType, number>;
-  /** null = bài thường; { unavailable } = bài gốc đã xóa / không còn quyền xem */
   sharedPost: SharedPostView | { unavailable: true } | null;
   isSensitive?: boolean;
   moderationStatus?: "approved" | "flagged" | "rejected";
@@ -91,19 +91,16 @@ export const MAX_FILE_BYTES = 100 * 1024 * 1024; // 100MB
 export const POST_MAX_LENGTH = 5000;
 export const COMMENT_MAX_LENGTH = 1000;
 
-/** Kiểm tra xem URL tệp có phải là video hay không (Cloudinary video hoặc phần mở rộng video) */
 export function isVideoUrl(url?: string | null): boolean {
   if (!url) return false;
   return /\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i.test(url) || url.includes("/video/upload/");
 }
 
-/** Kiểm tra xem URL tệp có phải là âm thanh hay không */
 export function isAudioUrl(url?: string | null): boolean {
   if (!url) return false;
   return /\.(mp3|wav|ogg|m4a|aac|flac|wma)(\?.*)?$/i.test(url);
 }
 
-/** Kiểm tra xem URL tệp có phải là tài liệu / tệp tin khác hay không */
 export function isFileDocUrl(url?: string | null): boolean {
   if (!url) return false;
   if (isVideoUrl(url) || isAudioUrl(url)) return false;
@@ -111,7 +108,6 @@ export function isFileDocUrl(url?: string | null): boolean {
   return /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|zip|rar|7z|tar|gz|json|xml)(\?.*)?$/i.test(url);
 }
 
-/** Lấy tên file gốc hoặc tên hiển thị từ URL */
 export function getFileNameFromUrl(url?: string | null): string {
   if (!url) return "";
   try {
@@ -125,15 +121,12 @@ export function getFileNameFromUrl(url?: string | null): string {
   }
 }
 
-/** Định dạng kích thước tệp (bytes -> KB / MB) */
 export function formatFileSize(bytes?: number): string {
   if (!bytes || bytes <= 0) return "";
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
-
-/** Đường dẫn ảnh server trả về là tương đối (/uploads/...) → ghép với địa chỉ backend. */
 export function mediaUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path;
   const base = (api.defaults.baseURL ?? "").replace(/\/$/, "");
@@ -146,7 +139,6 @@ export function isSharedPostAvailable(
   return !!shared && !("unavailable" in shared);
 }
 
-/** Lấy thông báo lỗi tiếng Việt từ phản hồi của server, nếu có. */
 export function apiErrorMessage(err: unknown, fallback: string): string {
   if (axios.isAxiosError(err)) {
     if (!err.response) return "Không kết nối được máy chủ. Hãy kiểm tra mạng rồi thử lại.";
@@ -210,7 +202,7 @@ export async function fetchPublicProfile(userId: string): Promise<PublicProfile>
 export async function uploadPostImage(file: File): Promise<string> {
   const form = new FormData();
   form.append("file", file);
-  // Instance mặc định gửi JSON; với FormData phải đổi sang multipart (trình duyệt tự thêm boundary)
+  
   const { data } = await api.post("/posts/images", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });

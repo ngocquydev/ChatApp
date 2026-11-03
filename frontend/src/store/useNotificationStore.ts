@@ -15,6 +15,7 @@ interface NotificationState {
   isLoadingMore: boolean;
   hasMore: boolean;
   nextCursor: string | null;
+  activeNotice: NotificationItem | null;
 
   fetchNotifications: () => Promise<void>;
   loadMore: () => Promise<void>;
@@ -23,6 +24,7 @@ interface NotificationState {
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
   handleIncomingNotification: (notification: NotificationItem, unreadCount?: number) => void;
+  dismissNotice: () => void;
 }
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -32,6 +34,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   isLoadingMore: false,
   hasMore: false,
   nextCursor: null,
+  activeNotice: null,
 
   fetchNotifications: async () => {
     set({ isLoading: true });
@@ -147,7 +150,10 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       return {
         notifications: nextList,
         unreadCount: nextCount,
+        activeNotice: notification,
       };
     });
   },
+
+  dismissNotice: () => set({ activeNotice: null }),
 }));

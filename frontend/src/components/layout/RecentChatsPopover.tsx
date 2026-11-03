@@ -42,12 +42,16 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
     return conversations.filter((c) => {
       if (currentUserId && c.restrictedBy?.includes(currentUserId)) return false;
       const other = c.participants.find((p) => String(p._id || p.id) !== currentUserId) || c.participants[0];
+      const otherId = String(other?._id || other?.id || "");
+      if (isAuraBot(otherId, other?.name) && auraConv && c._id !== auraConv._id) {
+        return false;
+      }
       const isUnread = Number(c.unreadCounts?.[currentUserId] || 0) > 0 || manualUnreadIds.includes(c._id);
       if (filter === "unread" && !isUnread) return false;
       if (!q) return true;
       return (c.name || other?.name || "").toLowerCase().includes(q) || (c.lastMessage?.text || "").toLowerCase().includes(q);
     });
-  }, [conversations, currentUserId, manualUnreadIds, filter, query]);
+  }, [conversations, currentUserId, manualUnreadIds, filter, query, auraConv]);
 
   const handleOpenConv = async (conv: ConversationItem) => {
     const other = conv.participants.find((p) => String(p._id || p.id) !== currentUserId) || conv.participants[0];

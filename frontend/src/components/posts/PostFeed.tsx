@@ -10,6 +10,7 @@ import { usePagedList } from "@/hooks/usePagedList";
 import {
   apiErrorMessage,
   deletePost,
+  isSharedPostAvailable,
   toggleLike,
   type CursorPage,
   type PostView,
@@ -143,6 +144,13 @@ export default function PostFeed({
     try {
       await deletePost(toDelete._id);
       list.remove(toDelete._id);
+      if (toDelete.sharedPost && isSharedPostAvailable(toDelete.sharedPost)) {
+        const rootId = toDelete.sharedPost._id;
+        list.patch(rootId, (p) => ({
+          ...p,
+          shareCount: Math.max(0, p.shareCount - 1),
+        }));
+      }
       setToast({ message: "Đã xóa bài viết.", severity: "success" });
       onOwnPostsChanged?.();
     } catch (err) {
@@ -160,8 +168,23 @@ export default function PostFeed({
   };
 
   const handleShared = (original: PostView, created: PostView) => {
-    // Chia sẻ một bài chia sẻ → server tăng đếm của bài gốc, không phải của thẻ đang bấm
-    if (!original.sharedPost) list.patch(original._id, (p) => ({ ...p, shareCount: p.shareCount + 1 }));
+    // Xác định id bài viết gốc (nếu đang chia sẻ lại từ một bài đã chia sẻ)
+    const targetId =
+      original.sharedPost && isSharedPostAvailable(original.sharedPost)
+        ? original.sharedPost._id
+        : original._id;
+
+    // Lấy shareCount chính xác từ server trả về trong bài viết chia sẻ vừa tạo
+    const updatedShareCount =
+      created.sharedPost && isSharedPostAvailable(created.sharedPost)
+        ? created.sharedPost.shareCount
+        : undefined;
+
+    list.patch(targetId, (p) => ({
+      ...p,
+      shareCount: typeof updatedShareCount === "number" ? updatedShareCount : p.shareCount,
+    }));
+
     if (canCompose) list.prepend(created);
     setToShare(null);
     setToast({ message: "Đã chia sẻ lên dòng thời gian của bạn.", severity: "success" });

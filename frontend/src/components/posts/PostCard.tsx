@@ -38,7 +38,12 @@ function shareTarget(post: PostView) {
 export function canSharePost(post: PostView, currentUserId?: string): boolean {
   const target = shareTarget(post);
   if (!target) return false;
-  return target.authorId === currentUserId || target.privacy === "public";
+  // Cho phép chia sẻ lại bài viết của chính mình, bài viết công khai hoặc bài viết ở chế độ bạn bè
+  return (
+    target.authorId === currentUserId ||
+    target.privacy === "public" ||
+    target.privacy === "friends"
+  );
 }
 
 export default function PostCard({

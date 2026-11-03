@@ -18,6 +18,10 @@ const FriendNoticeToast = dynamic(() => import("@/components/common/FriendNotice
   ssr: false,
 });
 
+const NotificationToast = dynamic(() => import("@/components/common/NotificationToast"), {
+  ssr: false,
+});
+
 const CallModal = dynamic(() => import("@/components/chat/call/CallModal"), {
   ssr: false,
 });
@@ -74,6 +78,7 @@ export default function ClientShell({ children }: ClientShellProps) {
       </main>
       {showSocialWidgets && <FloatingChatDock />}
       {showSocialWidgets && <FriendNoticeToast />}
+      {showSocialWidgets && <NotificationToast />}
       {showSocialWidgets && <CallModal />}
       {showSocialWidgets && <GroupCallModal />}
       <WafChallengeDialog />

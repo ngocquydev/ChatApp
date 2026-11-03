@@ -10,6 +10,7 @@ const q = (result: unknown) => {
   const chain: Record<string, unknown> = {};
   for (const m of ['select', 'sort', 'limit', 'lean']) chain[m] = vi.fn(() => chain);
   chain.exec = vi.fn().mockResolvedValue(result);
+  chain.then = (resolve: (val: unknown) => unknown) => Promise.resolve(result).then(resolve);
   return chain;
 };
 
@@ -40,6 +41,8 @@ describe('PostsService', () => {
     findById: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     updateOne: ReturnType<typeof vi.fn>;
+    exists: ReturnType<typeof vi.fn>;
+    countDocuments: ReturnType<typeof vi.fn>;
   };
   let likeModel: {
     find: ReturnType<typeof vi.fn>;
@@ -63,6 +66,9 @@ describe('PostsService', () => {
     findById: ReturnType<typeof vi.fn>;
     findByIdAndUpdate: ReturnType<typeof vi.fn>;
   };
+  let notificationsService: {
+    createNotification: ReturnType<typeof vi.fn>;
+  };
 
   const me = oid().toString();
   const other = oid().toString();
@@ -74,6 +80,8 @@ describe('PostsService', () => {
       findById: vi.fn(),
       create: vi.fn(),
       updateOne: vi.fn(() => q({})),
+      exists: vi.fn(() => q(null)),
+      countDocuments: vi.fn(() => q(0)),
     };
     likeModel = { find: vi.fn(() => q([])), findOne: vi.fn(() => q(null)), deleteOne: vi.fn(), create: vi.fn() };
     commentModel = {
@@ -89,12 +97,17 @@ describe('PostsService', () => {
       findById: vi.fn().mockResolvedValue(null),
       findByIdAndUpdate: vi.fn().mockResolvedValue(null),
     };
+    notificationsService = {
+      createNotification: vi.fn().mockResolvedValue({}),
+    };
     service = new PostsService(
       postModel as unknown as never,
       likeModel as unknown as never,
       commentModel as unknown as never,
       friendshipModel as unknown as never,
       usersService as unknown as never,
+      undefined,
+      notificationsService as unknown as never,
     );
   });
 
@@ -135,6 +148,25 @@ describe('PostsService', () => {
       );
       expect(postModel.updateOne).toHaveBeenNthCalledWith(
         2,
+        { _id: original, shareCount: { $gt: 0 } },
+        { $inc: { shareCount: -1 } },
+      );
+    });
+
+    it('không giảm shareCount nếu tài khoản vẫn còn bài chia sẻ khác của bài gốc đó', async () => {
+      const original = oid();
+      const postId = oid();
+      postModel.findOne.mockReturnValue(
+        q({ _id: postId, authorId: new Types.ObjectId(me), sharedPostId: original }),
+      );
+      postModel.countDocuments.mockReturnValue(q(1)); // Vẫn còn 1 bài chia sẻ khác
+      await service.deletePost(me, postId.toString());
+      expect(postModel.updateOne).toHaveBeenCalledTimes(1);
+      expect(postModel.updateOne).toHaveBeenCalledWith(
+        { _id: postId },
+        { $set: { isDeleted: true } },
+      );
+      expect(postModel.updateOne).not.toHaveBeenCalledWith(
         { _id: original, shareCount: { $gt: 0 } },
         { $inc: { shareCount: -1 } },
       );
@@ -231,21 +263,118 @@ describe('PostsService', () => {
   });
 
   describe('sharePost', () => {
-    it('403 khi chia sẻ lại bài không công khai của người khác', async () => {
+    it('từ chối khi người khác chia sẻ bài viết chế độ only_me', async () => {
       postModel.findOne.mockReturnValue(
         q({
           _id: oid(),
+          authorId: new Types.ObjectId(other),
+          privacy: 'only_me',
+          sharedPostId: null,
+        }),
+      );
+      await expect(service.sharePost(me, oid().toString(), {})).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(postModel.create).not.toHaveBeenCalled();
+    });
+
+    it('cho phép bạn bè chia sẻ bài viết chế độ friends và cộng 1 lượt chia sẻ ở lần đầu', async () => {
+      const originalId = oid();
+      postModel.findOne.mockReturnValue(
+        q({
+          _id: originalId,
           authorId: new Types.ObjectId(other),
           privacy: 'friends',
           sharedPostId: null,
         }),
       );
-      // đang là bạn bè nên xem được, nhưng vẫn không được chia sẻ lại
       friendshipModel.exists.mockReturnValue(q({ _id: oid() }));
-      await expect(service.sharePost(me, oid().toString(), {})).rejects.toThrow(
-        ForbiddenException,
+      postModel.exists.mockReturnValue(q(null));
+      const newPostId = oid();
+      postModel.create.mockResolvedValue({
+        _id: newPostId,
+        authorId: new Types.ObjectId(me),
+        privacy: 'friends',
+        sharedPostId: originalId,
+      });
+
+      postModel.find.mockReturnValue(
+        q([
+          {
+            _id: newPostId,
+            authorId: new Types.ObjectId(me),
+            content: '',
+            images: [],
+            privacy: 'friends',
+            sharedPostId: originalId,
+            likeCount: 0,
+            commentCount: 0,
+            shareCount: 0,
+          },
+        ]),
       );
-      expect(postModel.create).not.toHaveBeenCalled();
+
+      await service.sharePost(me, originalId.toString(), {});
+      expect(postModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          authorId: new Types.ObjectId(me),
+          sharedPostId: originalId,
+        }),
+      );
+      expect(postModel.updateOne).toHaveBeenCalledWith(
+        { _id: originalId },
+        { $inc: { shareCount: 1 } },
+      );
+      expect(notificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipientId: other,
+          actorId: me,
+          type: 'post_share',
+        }),
+      );
+    });
+
+    it('không cộng lượt chia sẻ nếu cùng tài khoản chia sẻ lại bài viết đó lần nữa', async () => {
+      const originalId = oid();
+      postModel.findOne.mockReturnValue(
+        q({
+          _id: originalId,
+          authorId: new Types.ObjectId(other),
+          privacy: 'public',
+          sharedPostId: null,
+        }),
+      );
+      postModel.exists.mockReturnValue(q({ _id: oid() }));
+      const newPostId = oid();
+      postModel.create.mockResolvedValue({
+        _id: newPostId,
+        authorId: new Types.ObjectId(me),
+        privacy: 'friends',
+        sharedPostId: originalId,
+      });
+
+      postModel.find.mockReturnValue(
+        q([
+          {
+            _id: newPostId,
+            authorId: new Types.ObjectId(me),
+            content: '',
+            images: [],
+            privacy: 'friends',
+            sharedPostId: originalId,
+            likeCount: 0,
+            commentCount: 0,
+            shareCount: 0,
+          },
+        ]),
+      );
+
+      await service.sharePost(me, originalId.toString(), {});
+      expect(postModel.create).toHaveBeenCalled();
+      expect(postModel.updateOne).not.toHaveBeenCalledWith(
+        { _id: originalId },
+        { $inc: { shareCount: 1 } },
+      );
     });
   });
 
@@ -374,6 +503,13 @@ describe('PostsService', () => {
       expect(postModel.updateOne).toHaveBeenCalledWith(
         { _id: post._id },
         { $inc: { likeCount: 1, 'reactionsCount.like': 1 } },
+      );
+      expect(notificationsService.createNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          recipientId: other,
+          actorId: me,
+          type: 'post_like',
+        }),
       );
     });
 

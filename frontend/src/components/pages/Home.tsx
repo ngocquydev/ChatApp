@@ -13,7 +13,7 @@ export default function Home() {
         minHeight: "100dvh",
         width: "100%",
         bgcolor: "var(--mui-palette-neutral-100)",
-        pt: "64px",
+        pt: { xs: "70px", md: "76px" },
       }}
     >
       <LeftSidebar />

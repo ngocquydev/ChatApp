@@ -202,51 +202,68 @@ export default function NotificationBell() {
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
               {notifications.map((item) => (
-                <ButtonBase
+                <Box
                   key={item._id}
-                  onClick={() => handleClickItem(item)}
                   sx={{
                     width: "100%",
                     display: "flex",
                     alignItems: "center",
-                    gap: 1.5,
-                    p: 1.2,
                     borderRadius: "12px",
-                    textAlign: "left",
                     bgcolor: item.isRead ? "transparent" : "action.hover",
                     transition: "background-color 0.2s ease",
                     "&:hover": { bgcolor: "action.hover" },
                     position: "relative",
                   }}
                 >
-                  <PresenceAvatar
-                    name={item.actor.name}
-                    src={item.actor.avatar}
-                    size={40}
-                    hidePresence
-                  />
+                  <ButtonBase
+                    component="div"
+                    onClick={() => handleClickItem(item)}
+                    aria-label={item.title}
+                    sx={{
+                      flex: 1,
+                      minWidth: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      p: 1.2,
+                      pr: 5,
+                      borderRadius: "12px",
+                      textAlign: "left",
+                      justifyContent: "flex-start",
+                    }}
+                  >
+                    <PresenceAvatar
+                      name={item.actor.name}
+                      src={item.actor.avatar}
+                      size={40}
+                      hidePresence
+                    />
 
-                  <Box sx={{ flex: 1, minWidth: 0, pr: 3 }}>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontSize: "0.85rem",
-                        color: "text.primary",
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      <strong>{item.actor.name}</strong> {item.content}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ fontSize: "0.75rem", display: "block", mt: 0.3 }}
-                    >
-                      {formatRelativeTime(item.createdAt)}
-                    </Typography>
-                  </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontSize: "0.85rem",
+                          color: "text.primary",
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        <strong>{item.actor.name}</strong>{" "}
+                        {item.content.startsWith(item.actor.name)
+                          ? item.content.slice(item.actor.name.length).trim()
+                          : item.content}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ fontSize: "0.75rem", display: "block", mt: 0.3 }}
+                      >
+                        {formatRelativeTime(item.createdAt)}
+                      </Typography>
+                    </Box>
+                  </ButtonBase>
 
-                  {/* Nút xóa & Chấm xanh chưa đọc */}
+                  {/* Nút xóa & Chấm xanh chưa đọc nằm ngoài ButtonBase (không lồng button vào button) */}
                   <Box
                     sx={{
                       position: "absolute",
@@ -256,6 +273,7 @@ export default function NotificationBell() {
                       display: "flex",
                       alignItems: "center",
                       gap: 0.5,
+                      zIndex: 2,
                     }}
                   >
                     {!item.isRead && (
@@ -282,7 +300,7 @@ export default function NotificationBell() {
                       <Trash2 size={14} aria-hidden />
                     </IconButton>
                   </Box>
-                </ButtonBase>
+                </Box>
               ))}
 
               {hasMore && (

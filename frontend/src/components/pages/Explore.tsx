@@ -28,6 +28,7 @@ import { useChatBoxStore } from "@/store/useChatBoxStore";
 import { ChatUser, useChatStore } from "@/store/useChatStore";
 import { useFriendStore } from "@/store/useFriendStore";
 import { APP_BAR_HEIGHT, v } from "@/theme/tokens";
+import LeftSidebar from "@/components/layout/LeftSidebar";
 
 const EXPLORE_TAB_STORAGE_KEY = "chatapp:explore_tab";
 
@@ -163,8 +164,25 @@ export default function Explore() {
   );
 
   return (
-    <Box sx={{ minHeight: "100dvh", bgcolor: v.neutral[100], pt: `${APP_BAR_HEIGHT}px`, pb: 6 }}>
-      <Container maxWidth="lg" sx={{ pt: { xs: 2.5, sm: 3.5 } }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100dvh",
+        bgcolor: v.neutral[100],
+        pt: { xs: "70px", md: "76px" },
+      }}
+    >
+      <LeftSidebar />
+      <Box
+        sx={{
+          flex: 1,
+          ml: { md: "280px", lg: "320px", xl: "350px" },
+          p: { xs: 2, sm: 3 },
+          minWidth: 0,
+          pb: 6,
+        }}
+      >
+        <Container maxWidth="lg" sx={{ pt: { xs: 1, sm: 2 } }}>
         <Paper
           elevation={0}
           sx={{
@@ -318,6 +336,7 @@ export default function Explore() {
           </Box>
         )}
       </Container>
+      </Box>
 
       <Snackbar open={Boolean(toast)} autoHideDuration={4000} onClose={() => setToast(null)} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
         {toast ? (

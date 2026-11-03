@@ -4,6 +4,7 @@ import api from "../services/api";
 import { mqttChatClient } from "../services/mqttClient";
 import { useAuthStore } from "./useAuthStore";
 import { useFriendStore, type FriendRealtimePayload } from "./useFriendStore";
+import { useNotificationStore } from "./useNotificationStore";
 import { soundNotification } from "../utils/soundNotification";
 
 export interface ChatUser {
@@ -704,6 +705,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     socket.on("friend:accepted", (data?: FriendRealtimePayload) => {
       useFriendStore.getState().handleRealtimeEvent("accepted", data);
+    });
+
+    // Lắng nghe thông báo hệ thống & tương tác bài viết real-time (bình luận, thả icon, chia sẻ)
+    socket.on("notification:new", (data: { notification?: any; unreadCount?: number }) => {
+      if (data?.notification) {
+        useNotificationStore.getState().handleIncomingNotification(data.notification, data.unreadCount);
+        soundNotification.playIncomingSound(data.notification._id, data.notification.actor?.name);
+      }
     });
 
     socket.on(

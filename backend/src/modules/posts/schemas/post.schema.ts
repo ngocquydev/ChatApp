@@ -86,3 +86,5 @@ PostSchema.index({ authorId: 1, _id: -1 });
 PostSchema.index({ authorId: 1, isDeleted: 1, 'images.0': 1, _id: -1 });
 // Hàng đợi kiểm duyệt bài viết
 PostSchema.index({ moderationStatus: 1, createdAt: -1 });
+// Tối ưu truy vấn kiểm tra trùng lặp tài khoản chia sẻ bài viết
+PostSchema.index({ sharedPostId: 1, authorId: 1, isDeleted: 1 });
