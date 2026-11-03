@@ -210,7 +210,7 @@ export default function PostComposer({
             disabled={posting}
             slotProps={{
               input: { disableUnderline: true },
-              htmlInput: { maxLength: POST_MAX_LENGTH, "aria-label": "Nội dung bài viết" },
+              htmlInput: { maxLength: POST_MAX_LENGTH, "aria-label": t("feed.whatsOnYourMind") },
             }}
           />
           <MentionAutocomplete

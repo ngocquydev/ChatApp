@@ -156,7 +156,7 @@ function getLocalizedNotificationBody(item: NotificationItem, language: Supporte
 export default function NotificationBell() {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const { tr, language } = useTranslation();
+  const { t, tr, language } = useTranslation();
 
   const {
     notifications,
@@ -216,11 +216,11 @@ export default function NotificationBell() {
 
   return (
     <>
-      <Tooltip title={tr("Thông báo", "Notifications")}>
+      <Tooltip title={t("notifications.title")}>
         <IconButton
           color="inherit"
           onClick={handleOpen}
-          aria-label={tr("Thông báo hệ thống", "System notifications")}
+          aria-label={t("notifications.title")}
           aria-haspopup="true"
           aria-expanded={isOpen}
           sx={{
@@ -290,7 +290,7 @@ export default function NotificationBell() {
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: "0.95rem" }}>
-              {tr("Thông báo", "Notifications")}
+              {t("notifications.title")}
             </Typography>
             {unreadCount > 0 && (
               <Box
@@ -316,7 +316,7 @@ export default function NotificationBell() {
               onClick={() => void markAllAsRead()}
               sx={{ fontSize: "0.75rem", textTransform: "none", py: 0.2 }}
             >
-              {tr("Đã đọc tất cả", "Mark all as read")}
+              {t("notifications.markAllRead")}
             </Button>
           )}
         </Box>

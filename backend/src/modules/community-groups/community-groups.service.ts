@@ -188,6 +188,7 @@ export class CommunityGroupsService implements OnModuleInit {
       .populate('creatorId', 'name avatar')
       .populate('adminIds', 'name avatar')
       .populate('deputies.userId', 'name avatar')
+      .populate('members', 'name avatar email')
       .exec();
 
     if (!group) {
@@ -215,20 +216,35 @@ export class CommunityGroupsService implements OnModuleInit {
       group.adminIds = [viewerObjId as any];
       if (!group.members) group.members = [];
       if (!group.members.some((m) => toIdString(m) === viewerIdStr)) {
-        group.members.push(viewerObjId);
+        group.members.push(viewerObjId as any);
       }
     }
 
-    // Đảm bảo memberCount tối thiểu là số thành viên thực tế hoặc 1
-    const actualMemberCount = Math.max(
-      group.memberCount || 0,
-      group.members?.length || 0,
-      1,
-    );
-    group.memberCount = actualMemberCount;
+    const isSeedGroup = group.creatorId && toIdString(group.creatorId) === '000000000000000000000001';
+    const validMembers = (group.members as any[]).filter((m) => m && (m._id || m.name));
+    const validMemberIds = validMembers.map((m) => new Types.ObjectId(m._id ? m._id.toString() : m.toString()));
+
+    if (!isSeedGroup) {
+      // Đối với nhóm do người dùng tạo: số thành viên chính là số thành viên thực tế tồn tại trong CSDL
+      const count = Math.max(validMemberIds.length, 1);
+      if (group.memberCount !== count || (group as any).members?.length !== validMemberIds.length) {
+        await this.groupModel.updateOne(
+          { _id: group._id },
+          {
+            $set: {
+              members: validMemberIds.length > 0 ? validMemberIds : (viewerObjId ? [viewerObjId] : []),
+              memberCount: count,
+            },
+          },
+        ).exec();
+        group.memberCount = count;
+      }
+    } else {
+      group.memberCount = Math.max(group.memberCount || 0, 1);
+    }
 
     let isMember = viewerObjId
-      ? (group.members || []).some((m) => toIdString(m) === viewerIdStr)
+      ? validMemberIds.some((m) => toIdString(m) === viewerIdStr)
       : false;
     const isPending = viewerObjId
       ? (group.pendingMemberIds || []).some((p) => toIdString(p) === viewerIdStr) ||
@@ -246,7 +262,7 @@ export class CommunityGroupsService implements OnModuleInit {
         { $addToSet: { members: viewerObjId } },
       ).exec();
       if (!group.members) group.members = [];
-      group.members.push(viewerObjId);
+      group.members.push(viewerObjId as any);
       isMember = true;
     }
 
@@ -504,7 +520,8 @@ export class CommunityGroupsService implements OnModuleInit {
     const mutedCommentStrs = new Set((group.mutedCommentUserIds || []).map((m) => toIdString(m)));
     const bannedPostingStrs = new Set((group.bannedPostingUserIds || []).map((b) => toIdString(b)));
 
-    const membersList = (group.members as any[]).map((u) => {
+    const rawMembers = (group.members as any[]).filter((u) => u && (u._id || u.name));
+    const membersList = rawMembers.map((u) => {
       const uId = u._id ? u._id.toString() : u.toString();
       const isCreator = uId === creatorIdStr;
       const isAdmin = isCreator || adminIdStrs.has(uId);
@@ -521,9 +538,11 @@ export class CommunityGroupsService implements OnModuleInit {
       };
     });
 
+    const isSeedGroup = group.creatorId && toIdString(group.creatorId) === '000000000000000000000001';
+
     return {
       members: membersList,
-      memberCount: membersList.length,
+      memberCount: isSeedGroup ? (group.memberCount || membersList.length) : membersList.length,
       viewerId,
     };
   }

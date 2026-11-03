@@ -190,7 +190,6 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
       </Box>
     );
   }
-
   return (
     <Box sx={{ display: "flex", width: "100%", minHeight: "calc(100dvh - 56px)" }}>
       {/* Left Sidebar navigation */}
@@ -377,11 +376,7 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
               <Tab
                 icon={<Clock size={18} />}
                 iconPosition="start"
-                label={
-                  pendingCount > 0
-                    ? `${t("groups.tabRequests")} (${pendingCount})`
-                    : t("groups.tabRequests")
-                }
+                label={t("groups.tabRequests", { count: pendingCount })}
                 sx={{ fontWeight: 600 }}
               />
               {viewerPermissions.isAdmin && (

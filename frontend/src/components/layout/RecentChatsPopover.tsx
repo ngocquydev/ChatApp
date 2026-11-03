@@ -23,7 +23,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
   const { conversations, onlineUserIds, selectConversation, fetchConversations, deleteConversation } = useChatStore();
   const { openChat } = useChatBoxStore();
   const { isMuted, toggleMute } = useSoundStore();
-  const { tr } = useTranslation();
+  const { t, tr } = useTranslation();
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unread">("all");
@@ -84,25 +84,25 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
       <Box sx={{ px: 2, pt: 2, pb: 1.25 }}>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
           <Typography variant="h6" sx={{ fontWeight: 800, fontSize: "1.35rem", letterSpacing: "-0.02em" }}>
-            {tr("Đoạn chat", "Chats")}
+            {t("nav.chats")}
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <Tooltip title={tr("Tùy chọn đoạn chat", "Chat options")}>
+            <Tooltip title={tr({ vi: "Tùy chọn đoạn chat", en: "Chat options", "zh-CN": "聊天选项", "zh-TW": "聊天選項", ko: "채팅 옵션", th: "ตัวเลือกแชท" })}>
               <IconButton
                 size="small"
                 onClick={(e) => setHeaderMenuAnchor(e.currentTarget)}
-                aria-label={tr("Tùy chọn đoạn chat", "Chat options")}
+                aria-label={tr({ vi: "Tùy chọn đoạn chat", en: "Chat options", "zh-CN": "聊天选项", "zh-TW": "聊天選項", ko: "채팅 옵션", th: "ตัวเลือกแชท" })}
               >
                 <MoreHorizontal size={18} />
               </IconButton>
             </Tooltip>
-            <Tooltip title={tr("Xem tất cả trong phòng chat", "See all in Messenger")}>
-              <IconButton size="small" aria-label={tr("Xem tất cả trong phòng chat", "See all in Messenger")} onClick={() => { onClose(); router.push("/chat"); }}>
+            <Tooltip title={t("chat.seeAll")}>
+              <IconButton size="small" aria-label={t("chat.seeAll")} onClick={() => { onClose(); router.push("/chat"); }}>
                 <Maximize2 size={17} />
               </IconButton>
             </Tooltip>
-            <Tooltip title={tr("Tin nhắn mới", "New message")}>
-              <IconButton size="small" aria-label={tr("Tin nhắn mới", "New message")} onClick={() => { onClose(); router.push("/explore"); }}>
+            <Tooltip title={tr({ vi: "Tin nhắn mới", en: "New message", "zh-CN": "新消息", "zh-TW": "新訊息", ko: "새 메시지", th: "ข้อความใหม่" })}>
+              <IconButton size="small" aria-label={tr({ vi: "Tin nhắn mới", en: "New message", "zh-CN": "新消息", "zh-TW": "新訊息", ko: "새 메시지", th: "ข้อความใหม่" })} onClick={() => { onClose(); router.push("/explore"); }}>
                 <SquarePen size={17} />
               </IconButton>
             </Tooltip>
@@ -112,7 +112,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
         <TextField
           fullWidth
           size="small"
-          placeholder={tr("Tìm kiếm trên Messenger", "Search Messenger")}
+          placeholder={t("chat.searchPlaceholder")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           sx={{
@@ -125,7 +125,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
             },
           }}
           slotProps={{
-            htmlInput: { "aria-label": tr("Tìm kiếm trên Messenger", "Search Messenger") },
+            htmlInput: { "aria-label": t("chat.searchPlaceholder") },
             input: {
               startAdornment: (
                 <InputAdornment position="start">
@@ -144,7 +144,32 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
         />
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          {([{ id: "all", label: tr("Tất cả", "All") }, { id: "unread", label: tr("Chưa đọc", "Unread") }] as const).map((item) => {
+          {(
+            [
+              {
+                id: "all",
+                label: tr({
+                  vi: "Tất cả",
+                  en: "All",
+                  "zh-CN": "全部",
+                  "zh-TW": "全部",
+                  ko: "전체",
+                  th: "ทั้งหมด",
+                }),
+              },
+              {
+                id: "unread",
+                label: tr({
+                  vi: "Chưa đọc",
+                  en: "Unread",
+                  "zh-CN": "未读",
+                  "zh-TW": "未讀",
+                  ko: "읽지 않음",
+                  th: "ยังไม่ได้อ่าน",
+                }),
+              },
+            ] as const
+          ).map((item) => {
             const active = filter === item.id;
             return (
               <ButtonBase
@@ -255,7 +280,7 @@ export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }:
           onClick={() => { onClose(); router.push("/chat"); }}
           sx={{ color: "primary.main", fontWeight: 700, fontSize: "0.84rem", py: 0.5, px: 1.5, borderRadius: "8px" }}
         >
-          {tr("Xem tất cả trong Messenger", "See all in Messenger")}
+          {t("chat.seeAll")}
         </ButtonBase>
       </Box>
 
