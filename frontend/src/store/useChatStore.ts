@@ -715,6 +715,49 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     });
 
+    // Lắng nghe sự kiện bài viết thời gian thực (đăng bài mới, xóa bài, cập nhật, cảm xúc, bình luận, chia sẻ)
+    socket.on("post:new", (post: any) => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("chatapp:post_new", { detail: post }));
+      }
+    });
+
+    socket.on("post:deleted", (data: { postId: string }) => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("chatapp:post_deleted", { detail: data }));
+      }
+    });
+
+    socket.on("post:updated", (post: any) => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("chatapp:post_updated", { detail: post }));
+      }
+    });
+
+    socket.on("post:reaction", (data: any) => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("chatapp:post_reaction", { detail: data }));
+      }
+    });
+
+    socket.on("post:comment", (data: any) => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("chatapp:post_comment", { detail: data }));
+      }
+    });
+
+    socket.on("post:comment_deleted", (data: any) => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("chatapp:post_comment_deleted", { detail: data }));
+      }
+    });
+
+    socket.on("post:share_count_updated", (data: { postId: string; shareCount: number }) => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("chatapp:post_share_count_updated", { detail: data }));
+      }
+    });
+
     socket.on(
       "message:deleted",
       (data: { messageId: string; conversationId: string; deletedBy: string }) => {

@@ -70,6 +70,7 @@ export default function ProfileTimeline({ userId, isOwner, profile, currentUserI
       </Grid>
       <Grid size={{ xs: 12, md: 7 }}>
         <PostFeed
+          userId={userId}
           loadPage={(after) => fetchUserPosts(userId, { limit: PAGE_SIZE, after })}
           canCompose={isOwner}
           emptyTitle={tr("Chưa có bài viết nào", "No posts yet")}

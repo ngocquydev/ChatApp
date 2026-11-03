@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Alert, Box, Button, Skeleton, Snackbar, Typography } from "@mui/material";
 import { Newspaper } from "lucide-react";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
@@ -37,6 +37,7 @@ interface PostFeedProps {
   pageId?: string;
   groupId?: string;
   defaultPrivacy?: PostPrivacy;
+  userId?: string;
 }
 
 type Toast = { message: string; severity: "success" | "error" } | null;
@@ -69,6 +70,7 @@ export default function PostFeed({
   pageId,
   groupId,
   defaultPrivacy,
+  userId,
 }: PostFeedProps) {
   const { user } = useAuthStore();
   const { t } = useTranslation();
@@ -81,6 +83,112 @@ export default function PostFeed({
   const [toShare, setToShare] = useState<PostView | null>(null);
   const [toEdit, setToEdit] = useState<PostView | null>(null);
   const [engagersModal, setEngagersModal] = useState<{ postId: string; initialTab: EngagerTab } | null>(null);
+
+  // Lắng nghe các sự kiện socket thời gian thực (đăng bài mới, xóa bài, cập nhật, thả cảm xúc, bình luận, chia sẻ)
+  useEffect(() => {
+    const handlePostNew = (event: Event) => {
+      const post = (event as CustomEvent<PostView>).detail;
+      if (!post || !post._id) return;
+
+      // Lọc theo ngữ cảnh hiển thị
+      if (groupId) {
+        if (post.groupId !== groupId) return;
+      } else if (pageId) {
+        if (post.pageId !== pageId) return;
+      } else if (userId) {
+        if (post.author?._id !== userId) return;
+      } else {
+        // Bảng tin chung không hiển thị bài của nhóm riêng biệt
+        if (post.groupId) return;
+      }
+
+      // Đưa bài viết lên đầu danh sách ngay lập tức
+      list.prepend(post);
+    };
+
+    const handlePostDeleted = (event: Event) => {
+      const data = (event as CustomEvent<{ postId: string }>).detail;
+      if (data?.postId) {
+        list.remove(data.postId);
+      }
+    };
+
+    const handlePostUpdated = (event: Event) => {
+      const post = (event as CustomEvent<PostView>).detail;
+      if (post?._id) {
+        list.patch(post._id, (p) => ({
+          ...p,
+          content: post.content,
+          images: post.images,
+          privacy: post.privacy,
+          isSensitive: post.isSensitive,
+          moderationStatus: post.moderationStatus,
+          moderationReason: post.moderationReason,
+        }));
+      }
+    };
+
+    const handlePostReaction = (event: Event) => {
+      const data = (event as CustomEvent<{
+        postId: string;
+        likeCount: number;
+        reactionsCount?: Record<string, number>;
+        userId: string;
+        reactionType?: ReactionType | null;
+        liked: boolean;
+      }>).detail;
+      if (!data?.postId) return;
+
+      list.patch(data.postId, (p) => {
+        const isMe = currentUserId && data.userId === currentUserId;
+        return {
+          ...p,
+          likeCount: data.likeCount,
+          reactionsCount: data.reactionsCount as Record<ReactionType, number> | undefined,
+          ...(isMe ? { likedByMe: data.liked, myReaction: data.reactionType ?? null } : {}),
+        };
+      });
+    };
+
+    const handlePostComment = (event: Event) => {
+      const data = (event as CustomEvent<{ postId: string; commentCount: number }>).detail;
+      if (data?.postId && typeof data.commentCount === "number") {
+        list.patch(data.postId, (p) => ({ ...p, commentCount: data.commentCount }));
+      }
+    };
+
+    const handlePostCommentDeleted = (event: Event) => {
+      const data = (event as CustomEvent<{ postId: string; commentCount: number }>).detail;
+      if (data?.postId && typeof data.commentCount === "number") {
+        list.patch(data.postId, (p) => ({ ...p, commentCount: data.commentCount }));
+      }
+    };
+
+    const handleShareCountUpdated = (event: Event) => {
+      const data = (event as CustomEvent<{ postId: string; shareCount: number }>).detail;
+      if (data?.postId && typeof data.shareCount === "number") {
+        list.patch(data.postId, (p) => ({ ...p, shareCount: data.shareCount }));
+      }
+    };
+
+    window.addEventListener("chatapp:post_new", handlePostNew);
+    window.addEventListener("chatapp:post_deleted", handlePostDeleted);
+    window.addEventListener("chatapp:post_updated", handlePostUpdated);
+    window.addEventListener("chatapp:post_reaction", handlePostReaction);
+    window.addEventListener("chatapp:post_comment", handlePostComment);
+    window.addEventListener("chatapp:post_comment_deleted", handlePostCommentDeleted);
+    window.addEventListener("chatapp:post_share_count_updated", handleShareCountUpdated);
+
+    return () => {
+      window.removeEventListener("chatapp:post_new", handlePostNew);
+      window.removeEventListener("chatapp:post_deleted", handlePostDeleted);
+      window.removeEventListener("chatapp:post_updated", handlePostUpdated);
+      window.removeEventListener("chatapp:post_reaction", handlePostReaction);
+      window.removeEventListener("chatapp:post_comment", handlePostComment);
+      window.removeEventListener("chatapp:post_comment_deleted", handlePostCommentDeleted);
+      window.removeEventListener("chatapp:post_share_count_updated", handleShareCountUpdated);
+    };
+  }, [groupId, pageId, userId, currentUserId, list]);
 
   const sentinelRef = useInfiniteSentinel(
     list.loadMore,

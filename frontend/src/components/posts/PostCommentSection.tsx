@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Box, Button, Skeleton, Typography } from "@mui/material";
 import { Sparkles } from "lucide-react";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
@@ -50,6 +50,28 @@ export default function PostCommentSection({
   const [deleting, setDeleting] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+
+  // Lắng nghe sự kiện socket thời gian thực khi có bình luận mới hoặc xóa bình luận
+  useEffect(() => {
+    const handleComment = (e: Event) => {
+      const data = (e as CustomEvent<{ postId: string; comment: CommentView }>).detail;
+      if (data && data.postId === postId && data.comment) {
+        list.append(data.comment);
+      }
+    };
+    const handleCommentDeleted = (e: Event) => {
+      const data = (e as CustomEvent<{ postId: string; commentId: string }>).detail;
+      if (data && data.postId === postId && data.commentId) {
+        list.remove(data.commentId);
+      }
+    };
+    window.addEventListener("chatapp:post_comment", handleComment);
+    window.addEventListener("chatapp:post_comment_deleted", handleCommentDeleted);
+    return () => {
+      window.removeEventListener("chatapp:post_comment", handleComment);
+      window.removeEventListener("chatapp:post_comment_deleted", handleCommentDeleted);
+    };
+  }, [postId, list]);
 
   const handleSummarize = async () => {
     setLoadingSummary(true);

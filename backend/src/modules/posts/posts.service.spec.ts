@@ -666,6 +666,132 @@ describe('PostsService', () => {
       expect(photos[0].url).toBe('https://cloudinary.com/avatar.jpg');
     });
   });
+
+  describe('phát sự kiện thời gian thực (Realtime Socket)', () => {
+    it('phát post:new qua socket khi đăng bài viết công khai', async () => {
+      const serverEmit = vi.fn();
+      const chatGateway = { server: { emit: serverEmit, to: vi.fn(() => ({ emit: vi.fn() })) } };
+      const svc = new PostsService(
+        postModel as unknown as never,
+        likeModel as unknown as never,
+        commentModel as unknown as never,
+        friendshipModel as unknown as never,
+        usersService as unknown as never,
+        undefined,
+        notificationsService as unknown as never,
+        chatGateway as unknown as never,
+      );
+      const createdId = oid();
+      postModel.create.mockResolvedValue({ _id: createdId });
+      postModel.findOne.mockReturnValue(
+        q({
+          _id: createdId,
+          authorId: new Types.ObjectId(me),
+          content: 'Bài viết test realtime',
+          images: [],
+          privacy: 'public',
+          likeCount: 0,
+          commentCount: 0,
+          shareCount: 0,
+          isDeleted: false,
+        }),
+      );
+      usersService.findByIds.mockResolvedValue([{ _id: me, name: 'Tôi' }]);
+
+      const res = await svc.createPost(me, { content: 'Bài viết test realtime', privacy: 'public' });
+      expect(res._id).toBe(createdId.toString());
+      expect(serverEmit).toHaveBeenCalledWith('post:new', expect.objectContaining({ _id: createdId.toString() }));
+    });
+
+    it('phát post:deleted qua socket khi xóa bài viết', async () => {
+      const serverEmit = vi.fn();
+      const chatGateway = { server: { emit: serverEmit } };
+      const svc = new PostsService(
+        postModel as unknown as never,
+        likeModel as unknown as never,
+        commentModel as unknown as never,
+        friendshipModel as unknown as never,
+        usersService as unknown as never,
+        undefined,
+        notificationsService as unknown as never,
+        chatGateway as unknown as never,
+      );
+      const postId = oid();
+      postModel.findOne.mockReturnValue(
+        q({ _id: postId, authorId: new Types.ObjectId(me), sharedPostId: null }),
+      );
+      await svc.deletePost(me, postId.toString());
+      expect(serverEmit).toHaveBeenCalledWith('post:deleted', { postId: postId.toString() });
+    });
+
+    it('phát post:reaction qua socket khi người dùng thả icon', async () => {
+      const serverEmit = vi.fn();
+      const chatGateway = { server: { emit: serverEmit } };
+      const svc = new PostsService(
+        postModel as unknown as never,
+        likeModel as unknown as never,
+        commentModel as unknown as never,
+        friendshipModel as unknown as never,
+        usersService as unknown as never,
+        undefined,
+        notificationsService as unknown as never,
+        chatGateway as unknown as never,
+      );
+      const postId = oid();
+      postModel.findOne.mockReturnValue(
+        q({ _id: postId, authorId: new Types.ObjectId(me), privacy: 'public' }),
+      );
+      likeModel.findOne.mockReturnValue(q(null));
+      postModel.findById.mockReturnValue(q({ likeCount: 1, reactionsCount: { love: 1 } }));
+
+      await svc.toggleLike(other, postId.toString(), 'love');
+      expect(serverEmit).toHaveBeenCalledWith('post:reaction', expect.objectContaining({
+        postId: postId.toString(),
+        likeCount: 1,
+        reactionsCount: { love: 1 },
+        userId: other,
+        reactionType: 'love',
+        liked: true,
+      }));
+    });
+
+    it('phát post:comment qua socket khi người dùng thêm bình luận', async () => {
+      const serverEmit = vi.fn();
+      const chatGateway = { server: { emit: serverEmit } };
+      const svc = new PostsService(
+        postModel as unknown as never,
+        likeModel as unknown as never,
+        commentModel as unknown as never,
+        friendshipModel as unknown as never,
+        usersService as unknown as never,
+        undefined,
+        notificationsService as unknown as never,
+        chatGateway as unknown as never,
+      );
+      const postId = oid();
+      const commentId = oid();
+      postModel.findOne.mockReturnValue(
+        q({ _id: postId, authorId: new Types.ObjectId(me), privacy: 'public' }),
+      );
+      commentModel.create.mockResolvedValue({
+        _id: commentId,
+        postId,
+        authorId: new Types.ObjectId(other),
+        content: 'Bình luận test',
+        likeCount: 0,
+        createdAt: new Date(),
+      });
+      postModel.findById.mockReturnValue(q({ commentCount: 1 }));
+      usersService.findByIds.mockResolvedValue([{ _id: other, name: 'Người khác' }]);
+
+      await svc.addComment(other, postId.toString(), 'Bình luận test');
+      expect(serverEmit).toHaveBeenCalledWith('post:comment', expect.objectContaining({
+        postId: postId.toString(),
+        commentCount: 1,
+        comment: expect.objectContaining({ _id: commentId.toString(), content: 'Bình luận test' }),
+      }));
+    });
+  });
 });
 
 describe('tải ảnh lên', () => {

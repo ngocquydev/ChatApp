@@ -1,15 +1,18 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
   Optional,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { UsersService } from '../users/users.service.js';
 import { ModerationService } from '../moderation/moderation.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
+import { ChatGateway } from '../chat/chat.gateway.js';
 import { Friendship, FriendshipDocument } from '../friends/schemas/friendship.schema.js';
 import { Post, PostDocument } from './schemas/post.schema.js';
 import type { PostPrivacy } from './schemas/post.schema.js';
@@ -103,7 +106,45 @@ export class PostsService {
     private readonly usersService: UsersService,
     @Optional() private readonly moderationService?: ModerationService,
     @Optional() private readonly notificationsService?: NotificationsService,
+    @Optional()
+    @Inject(forwardRef(() => ChatGateway))
+    private readonly chatGateway?: ChatGateway,
   ) {}
+
+  /**
+   * Phát sự kiện realtime về bài viết tới các client phù hợp:
+   * - only_me: chỉ thiết bị của tác giả
+   * - friends: tác giả + bạn bè đang online
+   * - public: toàn bộ client
+   */
+  private emitRealtimePost(event: string, postView: PostView, authorId: string) {
+    try {
+      const server = this.chatGateway?.server;
+      if (!server) return;
+
+      if (postView.privacy === 'only_me') {
+        server.to(`user:${authorId}`).emit(event, postView);
+        return;
+      }
+
+      if (postView.privacy === 'friends') {
+        void this.getFriendIds(authorId)
+          .then((friendIds) => {
+            server.to(`user:${authorId}`).emit(event, postView);
+            for (const fid of friendIds) {
+              server.to(`user:${fid.toString()}`).emit(event, postView);
+            }
+          })
+          .catch(() => {});
+        return;
+      }
+
+      // Public post (hoặc post trong nhóm/trang): phát toàn hệ thống
+      server.emit(event, postView);
+    } catch {
+      // Nuốt lỗi socket nền để không chặn luồng HTTP
+    }
+  }
 
   // ───────────────────────── Quan hệ & quyền xem ─────────────────────────
 
@@ -456,7 +497,9 @@ export class PostsService {
         } as any)
         .catch(() => {});
     }
-    return this.getPost(authorId, created._id.toString());
+    const view = await this.getPost(authorId, created._id.toString());
+    this.emitRealtimePost('post:new', view, authorId);
+    return view;
   }
 
   async updatePost(viewerId: string, postId: string, dto: UpdatePostDto): Promise<PostView> {
@@ -490,7 +533,9 @@ export class PostsService {
       )
       .exec();
 
-    return this.getPost(viewerId, post._id.toString());
+    const view = await this.getPost(viewerId, post._id.toString());
+    this.emitRealtimePost('post:updated', view, viewerId);
+    return view;
   }
 
   async deletePost(viewerId: string, postId: string) {
@@ -503,6 +548,9 @@ export class PostsService {
       throw new ForbiddenException('Bạn không có quyền xóa bài viết này');
     }
     await this.postModel.updateOne({ _id: post._id }, { $set: { isDeleted: true } }).exec();
+    try {
+      this.chatGateway?.server?.emit('post:deleted', { postId: post._id.toString() });
+    } catch {}
     if (post.sharedPostId) {
       // Chỉ giảm lượt chia sẻ khi tài khoản này không còn bài chia sẻ nào khác của bài gốc đó
       const remainingCount = await this.postModel
@@ -517,6 +565,17 @@ export class PostsService {
         await this.postModel
           .updateOne({ _id: post.sharedPostId, shareCount: { $gt: 0 } }, { $inc: { shareCount: -1 } })
           .exec();
+        try {
+          const root = await this.postModel
+            .findById(post.sharedPostId)
+            .select('shareCount')
+            .lean<{ shareCount?: number }>()
+            .exec();
+          this.chatGateway?.server?.emit('post:share_count_updated', {
+            postId: post.sharedPostId.toString(),
+            shareCount: root?.shareCount ?? 0,
+          });
+        } catch {}
       }
     }
     return { success: true, message: 'Đã xóa bài viết' };
@@ -577,7 +636,22 @@ export class PostsService {
         .catch(() => {});
     }
 
-    return this.getPost(viewerId, created._id.toString());
+    const view = await this.getPost(viewerId, created._id.toString());
+    this.emitRealtimePost('post:new', view, viewerId);
+    if (!alreadyShared) {
+      try {
+        const freshTarget = await this.postModel
+          .findById(target._id)
+          .select('shareCount')
+          .lean<{ shareCount?: number }>()
+          .exec();
+        this.chatGateway?.server?.emit('post:share_count_updated', {
+          postId: target._id.toString(),
+          shareCount: freshTarget?.shareCount ?? 0,
+        });
+      } catch {}
+    }
+    return view;
   }
 
   // ───────────────────────── Thích ─────────────────────────
@@ -659,6 +733,18 @@ export class PostsService {
       .select('likeCount reactionsCount')
       .lean<{ likeCount: number; reactionsCount?: Record<string, number> }>()
       .exec();
+
+    // Phát socket realtime cập nhật số like / cảm xúc cho tất cả người xem
+    try {
+      this.chatGateway?.server?.emit('post:reaction', {
+        postId: post._id.toString(),
+        likeCount: fresh?.likeCount ?? 0,
+        reactionsCount: fresh?.reactionsCount ?? {},
+        userId: viewerId,
+        reactionType: myReaction,
+        liked,
+      });
+    } catch {}
 
     // Gửi thông báo realtime cho tác giả bài viết khi có người thả cảm xúc
     if (liked && post.authorId.toString() !== viewerId && this.notificationsService) {
@@ -782,7 +868,21 @@ export class PostsService {
       }
     }
 
-    return this.toCommentView(created, authors, viewerId);
+    const commentView = this.toCommentView(created, authors, viewerId);
+    try {
+      const updatedPost = await this.postModel
+        .findById(post._id)
+        .select('commentCount')
+        .lean<{ commentCount: number }>()
+        .exec();
+      this.chatGateway?.server?.emit('post:comment', {
+        postId: post._id.toString(),
+        commentCount: updatedPost?.commentCount ?? 0,
+        comment: commentView,
+      });
+    } catch {}
+
+    return commentView;
   }
 
   async deleteComment(viewerId: string, postId: string, commentId: string) {
@@ -800,6 +900,18 @@ export class PostsService {
       await this.postModel
         .updateOne({ _id: post._id, commentCount: { $gt: 0 } }, { $inc: { commentCount: -1 } })
         .exec();
+      try {
+        const updatedPost = await this.postModel
+          .findById(post._id)
+          .select('commentCount')
+          .lean<{ commentCount: number }>()
+          .exec();
+        this.chatGateway?.server?.emit('post:comment_deleted', {
+          postId: post._id.toString(),
+          commentCount: updatedPost?.commentCount ?? 0,
+          commentId,
+        });
+      } catch {}
     }
     return { success: true, message: 'Đã xóa bình luận' };
   }
