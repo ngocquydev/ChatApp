@@ -1,4 +1,21 @@
-export type SupportedLanguage = "vi" | "en";
+export type SupportedLanguage = "vi" | "en" | "zh-CN" | "zh-TW" | "ko" | "th";
+
+export interface LanguageOption {
+  code: SupportedLanguage;
+  label: string; // Native name
+  region: string; // Regional hint
+  flag: string; // Flag emoji
+  shortLabel: string; // Compact 2-letter badge
+}
+
+export const SUPPORTED_LANGUAGES: LanguageOption[] = [
+  { code: "vi", label: "Tiếng Việt", region: "Việt Nam", flag: "🇻🇳", shortLabel: "VI" },
+  { code: "en", label: "English", region: "International", flag: "🇺🇸", shortLabel: "EN" },
+  { code: "zh-CN", label: "简体中文", region: "中国 (Trung Quốc)", flag: "🇨🇳", shortLabel: "简" },
+  { code: "zh-TW", label: "繁體中文", region: "台灣 (Đài Loan)", flag: "🇹🇼", shortLabel: "繁" },
+  { code: "ko", label: "한국어", region: "대한민국 (Hàn Quốc)", flag: "🇰🇷", shortLabel: "KO" },
+  { code: "th", label: "ไทย", region: "ประเทศไทย (Thái Lan)", flag: "🇹🇭", shortLabel: "TH" },
+];
 
 export interface TranslationDictionary {
   common: {
@@ -21,6 +38,7 @@ export interface TranslationDictionary {
     online: string;
     offline: string;
     comingSoon: string;
+    selectLanguage: string;
   };
   nav: {
     home: string;
@@ -38,6 +56,8 @@ export interface TranslationDictionary {
     skipToContent: string;
     openSettings: string;
     searchPlaceholder: string;
+    groups: string;
+    pages: string;
   };
   feed: {
     title: string;
@@ -45,6 +65,7 @@ export interface TranslationDictionary {
     whatsOnYourMind: string;
     post: string;
     posting: string;
+    uploading: string;
     photosVideos: string;
     privacy: string;
     privacyPublic: string;
@@ -52,6 +73,8 @@ export interface TranslationDictionary {
     privacyOnlyMe: string;
     like: string;
     comment: string;
+    commentAs: string;
+    writeComment: string;
     commentsCount: string;
     sharesCount: string;
     shareToTimeline: string;
@@ -104,4 +127,3 @@ export interface TranslationDictionary {
     loggingIn: string;
   };
 }
-

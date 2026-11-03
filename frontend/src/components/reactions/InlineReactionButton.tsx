@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, MouseEvent } from "react";
 import { Box, ButtonBase, Typography, Popper } from "@mui/material";
 import { Smile } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
-import { REACTION_MAP, ReactionType } from "./reactionConstants";
+import { REACTION_MAP, ReactionType, getReactionLabel } from "./reactionConstants";
 import ReactionPicker from "./ReactionPicker";
 
 interface InlineReactionButtonProps {
@@ -80,12 +80,8 @@ export default function InlineReactionButton({
   };
 
   const label = activeDef
-    ? isEn
-      ? activeDef.labelEn
-      : activeDef.labelVi
-    : isEn
-      ? "Like"
-      : "Thích";
+    ? getReactionLabel(activeDef.type, language)
+    : getReactionLabel("like", language);
 
   const color = activeDef ? activeDef.color : "text.secondary";
 

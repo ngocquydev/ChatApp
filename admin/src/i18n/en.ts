@@ -21,6 +21,7 @@ export const en: TranslationDictionary = {
     online: "Online",
     offline: "Offline",
     comingSoon: "Feature coming soon",
+    selectLanguage: "Select language",
   },
   nav: {
     home: "Home",
@@ -38,6 +39,8 @@ export const en: TranslationDictionary = {
     skipToContent: "Skip to main content",
     openSettings: "Open settings",
     searchPlaceholder: "Search friends, colleagues…",
+    groups: "Groups",
+    pages: "Pages",
   },
   feed: {
     title: "News Feed",
@@ -45,6 +48,7 @@ export const en: TranslationDictionary = {
     whatsOnYourMind: "What's on your mind?",
     post: "Post",
     posting: "Posting…",
+    uploading: "Uploading…",
     photosVideos: "Photos/Videos",
     privacy: "Privacy",
     privacyPublic: "Public",
@@ -52,6 +56,8 @@ export const en: TranslationDictionary = {
     privacyOnlyMe: "Only me",
     like: "Like",
     comment: "Comment",
+    commentAs: "Comment as {name}…",
+    writeComment: "Write a comment…",
     commentsCount: "{count} comments",
     sharesCount: "{count} shares",
     shareToTimeline: "Share to feed",
@@ -104,4 +110,3 @@ export const en: TranslationDictionary = {
     loggingIn: "Logging in…",
   },
 };
-

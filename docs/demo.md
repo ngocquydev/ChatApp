@@ -23,6 +23,7 @@
 15. [Trang Fanpage & Hội Nhóm Cộng Đồng (Fanpages & Community Groups with Feed)](#15-trang-fanpage--hội-nhóm-cộng-đồng-fanpages--community-groups-with-feed)
 16. [Bố Cục Cột Điều Hướng Trái Chuẩn Facebook & Tối Ưu Thanh Header (Facebook-Style Left Sidebar & Header)](#16-bố-cục-cột-điều-hướng-trái-chuẩn-facebook--tối-ưu-thanh-header-facebook-style-left-sidebar--header)
 17. [Gắn Thẻ Bạn Bè Chuẩn Facebook & Tự Động Gợi Ý Mention (Facebook-Style Friend Tagging & Mention Link)](#17-gắn-thẻ-bạn-bè-chuẩn-facebook--tự-động-gợi-ý-mention-facebook-style-friend-tagging--mention-link)
+18. [Hệ Thống Đa Ngôn Ngữ Mở Rộng 6 Thứ Tiếng (VI, EN, 简体中文, 繁體中文, 한국어, ไทย)](#18-hệ-thống-đa-ngôn-ngữ-mở-rộng-6-thứ-tiếng-vi-en-简体中文-繁體中文-한국어-ไทย)
 
 ---
 
@@ -293,8 +294,31 @@ Hỗ trợ gắn thẻ bạn bè và trợ lý ảo trong bài viết, bài chia
 
 - 📖 *Xem chi tiết: [docs/features/facebook-mention-tagging.md](features/facebook-mention-tagging.md)*
 
+---
+
+## 18. Hệ Thống Đa Ngôn Ngữ Mở Rộng 6 Thứ Tiếng (VI, EN, 简体中文, 繁體中文, 한국어, ไทย)
+
+Hệ thống nâng cấp bộ chọn đa ngôn ngữ hiện đại trên cả ứng dụng người dùng và bảng quản trị, hỗ trợ 6 ngôn ngữ thông dụng:
+1. 🇻🇳 **Tiếng Việt (`vi`)**: Ngôn ngữ mặc định
+2. 🇺🇸 **English (`en`)**: Tiếng Anh quốc tế
+3. 🇨🇳 **简体中文 (`zh-CN`)**: Tiếng Trung giản thể (Trung Quốc)
+4. 🇹🇼 **繁體中文 (`zh-TW`)**: Tiếng Trung phồn thể (Đài Loan)
+5. 🇰🇷 **한국어 (`ko`)**: Tiếng Hàn
+6. 🇹🇭 **ไทย (`th`)**: Tiếng Thái Lan
+
+![Giao diện Đa ngôn ngữ](assets/screenshots/multilingual-support.png)
+
+### Điểm nổi bật:
+- **Tự động nhận diện ngôn ngữ trình duyệt:** Tự động phát hiện và chuyển đổi ngôn ngữ phù hợp dựa trên locale của trình duyệt khi người dùng lần đầu truy cập.
+- **Menu chọn trực quan:** Thiết kế popover menu mượt mà, hiển thị quốc kỳ, tên bản ngữ, khu vực và đánh dấu tích cho ngôn ngữ đang chọn.
+- **Bản địa hóa thời gian & cảm xúc:** Thời gian tương đối ("Vừa xong", "X phút trước", "Hôm qua") và nhãn cảm xúc bài viết (Like, Love, Care, Haha, Wow, Sad, Angry) được dịch chuẩn xác theo ngôn ngữ người dùng lựa chọn.
+
+- 📖 *Xem chi tiết: [docs/features/multilingual-support.md](features/multilingual-support.md)*
+
+
 
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Hệ thống Đa ngôn ngữ 6 thứ tiếng (VI, EN, ZH-CN, ZH-TW, KO, TH)](features/multilingual-support.md)
 > - [Cột điều hướng trái chuẩn Facebook & Tối ưu Header](features/facebook-left-sidebar-navigation.md)
 > - [Nhóm trò chuyện, Gọi nhóm WebRTC tối ưu, Fanpage & Hội nhóm](features/group-chat-call-pages-groups.md)
 > - [Trợ lý ảo Aura AI phong cách Meta AI (Direct Bot Chat & Reactions)](features/meta-ai-aura-bot.md)

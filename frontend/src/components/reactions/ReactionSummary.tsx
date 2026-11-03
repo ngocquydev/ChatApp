@@ -2,7 +2,7 @@
 
 import { Box, ButtonBase, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "@/i18n/useTranslation";
-import { REACTION_MAP, ReactionType } from "./reactionConstants";
+import { REACTION_MAP, ReactionType, getReactionLabel } from "./reactionConstants";
 
 interface ReactionSummaryProps {
   totalCount: number;
@@ -53,7 +53,7 @@ export default function ReactionSummary({
   const tooltipText = topReactions
     .map((r) => {
       const def = REACTION_MAP[r.type];
-      const label = def ? (isEn ? def.labelEn : def.labelVi) : r.type;
+      const label = def ? getReactionLabel(r.type, language) : r.type;
       return `${r.emoji} ${r.count} ${label}`;
     })
     .join(" · ");

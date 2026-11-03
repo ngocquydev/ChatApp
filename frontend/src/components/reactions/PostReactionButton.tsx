@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, MouseEvent } from "react";
 import { Box, Button } from "@mui/material";
 import { ThumbsUp } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
-import { REACTION_MAP, ReactionType } from "./reactionConstants";
+import { REACTION_MAP, ReactionType, getReactionLabel } from "./reactionConstants";
 import ReactionPicker from "./ReactionPicker";
 
 interface PostReactionButtonProps {
@@ -69,12 +69,8 @@ export default function PostReactionButton({
   };
 
   const currentLabel = activeDef
-    ? isEn
-      ? activeDef.labelEn
-      : activeDef.labelVi
-    : isEn
-      ? "Like"
-      : "Thích";
+    ? getReactionLabel(activeDef.type, language)
+    : getReactionLabel("like", language);
 
   const currentColor = activeDef ? activeDef.color : "text.secondary";
 

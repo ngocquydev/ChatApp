@@ -1,4 +1,5 @@
 import { ShieldCheck, Zap, Headphones, LucideIcon } from "lucide-react";
+import type { SupportedLanguage } from "@/i18n/types";
 
 export interface FeatureItem {
   icon: LucideIcon;
@@ -142,8 +143,8 @@ const loginEn: LoginData = {
   },
 };
 
-export function getLoginData(lang: "vi" | "en"): LoginData {
-  return lang === "en" ? loginEn : loginVi;
+export function getLoginData(lang: SupportedLanguage): LoginData {
+  return lang === "vi" ? loginVi : loginEn;
 }
 
 export default loginVi;

@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { vi } from "./vi";
 import { en } from "./en";
+import { zhCN } from "./zh-CN";
+import { zhTW } from "./zh-TW";
+import { ko } from "./ko";
+import { th } from "./th";
 import type { SupportedLanguage, TranslationDictionary } from "./types";
 
 interface LanguageState {
@@ -15,17 +19,41 @@ interface LanguageState {
 const dictionaries: Record<SupportedLanguage, TranslationDictionary> = {
   vi,
   en,
+  "zh-CN": zhCN,
+  "zh-TW": zhTW,
+  ko,
+  th,
 };
 
 const STORAGE_KEY = "chatapp_language";
+const ORDERED_LANGUAGES: SupportedLanguage[] = ["vi", "en", "zh-CN", "zh-TW", "ko", "th"];
 
 function getInitialLanguage(): SupportedLanguage {
   if (typeof window === "undefined") return "vi";
   try {
     const saved = localStorage.getItem(STORAGE_KEY) as SupportedLanguage | null;
-    if (saved === "vi" || saved === "en") return saved;
-    const browserLang = navigator.language.toLowerCase();
-    if (browserLang.startsWith("en")) return "en";
+    if (saved && ORDERED_LANGUAGES.includes(saved)) return saved;
+
+    const browserLang = (navigator.language || "").toLowerCase();
+    if (
+      browserLang.startsWith("zh-tw") ||
+      browserLang.startsWith("zh-hk") ||
+      browserLang.startsWith("zh-hant")
+    ) {
+      return "zh-TW";
+    }
+    if (browserLang.startsWith("zh")) {
+      return "zh-CN";
+    }
+    if (browserLang.startsWith("ko")) {
+      return "ko";
+    }
+    if (browserLang.startsWith("th")) {
+      return "th";
+    }
+    if (browserLang.startsWith("en")) {
+      return "en";
+    }
   } catch {
     // LocalStorage blocked
   }
@@ -59,7 +87,9 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
   },
 
   toggleLanguage: () => {
-    const next = get().language === "vi" ? "en" : "vi";
+    const current = get().language;
+    const currentIndex = ORDERED_LANGUAGES.indexOf(current);
+    const next = ORDERED_LANGUAGES[(currentIndex + 1) % ORDERED_LANGUAGES.length];
     get().setLanguage(next);
   },
 
@@ -79,7 +109,7 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
     const dict = dictionaries[currentLang] || dictionaries.vi;
     let template = resolveNestedKey(dict, key);
 
-    // Fallback to Vietnamese if key is missing in English
+    // Fallback to Vietnamese if key is missing in target language
     if (!template && currentLang !== "vi") {
       template = resolveNestedKey(dictionaries.vi, key);
     }
@@ -94,4 +124,3 @@ export const useLanguageStore = create<LanguageState>((set, get) => ({
     return template;
   },
 }));
-

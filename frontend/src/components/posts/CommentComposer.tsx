@@ -19,7 +19,7 @@ interface CommentComposerProps {
 }
 
 export default function CommentComposer({ sending, onSubmit, onError }: CommentComposerProps) {
-  const { tr } = useTranslation();
+  const { tr, t } = useTranslation();
   const { user } = useAuthStore();
   const userName = user?.name?.trim();
   const [text, setText] = useState("");
@@ -195,8 +195,8 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
           size="small"
           placeholder={
             userName
-              ? tr(`Bình luận dưới tên ${userName}…`, `Comment as ${userName}…`)
-              : tr("Viết bình luận…", "Write a comment…")
+              ? t("feed.commentAs", { name: userName })
+              : t("feed.writeComment")
           }
           value={text}
           onChange={(e) => {
@@ -214,8 +214,8 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
             htmlInput: {
               maxLength: COMMENT_MAX_LENGTH,
               "aria-label": userName
-                ? tr(`Bình luận dưới tên ${userName}`, `Comment as ${userName}`)
-                : tr("Viết bình luận", "Write a comment"),
+                ? t("feed.commentAs", { name: userName }).replace(/…$/, "")
+                : t("feed.writeComment").replace(/…$/, ""),
               style: {
                 wordBreak: "break-word",
                 overflowWrap: "anywhere",

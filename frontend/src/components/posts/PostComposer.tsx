@@ -61,7 +61,7 @@ export default function PostComposer({
   groupId,
 }: PostComposerProps) {
   const uid = useId();
-  const { t, isVietnamese } = useTranslation();
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const [privacy, setPrivacy] = useState<PostPrivacy>(defaultPrivacy);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -198,11 +198,7 @@ export default function PostComposer({
             minRows={2}
             maxRows={10}
             variant="standard"
-            placeholder={
-              isVietnamese
-                ? "Bạn đang nghĩ gì?"
-                : "What's on your mind?"
-            }
+            placeholder={t("feed.whatsOnYourMind")}
             value={text}
             onChange={(e) => {
               setText(e.target.value);
@@ -304,7 +300,7 @@ export default function PostComposer({
           onClick={() => void submit()}
           sx={{ borderRadius: "10px", px: 2.5, fontWeight: 700 }}
         >
-          {posting ? t("feed.posting") : uploading > 0 ? (isVietnamese ? "Đang tải lên…" : "Uploading…") : t("feed.post")}
+          {posting ? t("feed.posting") : uploading > 0 ? t("feed.uploading") : t("feed.post")}
         </Button>
       </Box>
     </Paper>

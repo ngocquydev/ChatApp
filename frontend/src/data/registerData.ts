@@ -1,4 +1,5 @@
 import { ShieldCheck, Zap, Headphones, LucideIcon } from "lucide-react";
+import type { SupportedLanguage } from "@/i18n/types";
 
 export interface FeatureItem {
   icon: LucideIcon;
@@ -193,8 +194,8 @@ const registerEn: RegisterData = {
   },
 };
 
-export function getRegisterData(lang: "vi" | "en"): RegisterData {
-  return lang === "en" ? registerEn : registerVi;
+export function getRegisterData(lang: SupportedLanguage): RegisterData {
+  return lang === "vi" ? registerVi : registerEn;
 }
 
 export default registerVi;

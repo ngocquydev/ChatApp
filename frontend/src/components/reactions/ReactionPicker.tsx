@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Box, ButtonBase, Typography } from "@mui/material";
 import { useTranslation } from "@/i18n/useTranslation";
-import { REACTIONS, REACTION_MAP, ReactionType } from "./reactionConstants";
+import { REACTIONS, REACTION_MAP, ReactionType, getReactionLabel } from "./reactionConstants";
 
 interface ReactionPickerProps {
   onSelect: (type: ReactionType) => void;
@@ -92,7 +92,7 @@ export default function ReactionPicker({
               display: "block",
             }}
           >
-            {isEn ? activeHoveredDef.labelEn : activeHoveredDef.labelVi}
+            {getReactionLabel(activeHoveredDef.type, language)}
           </Typography>
         </Box>
       )}
@@ -100,7 +100,7 @@ export default function ReactionPicker({
       {REACTIONS.map((r) => {
         const isSelected = currentReaction === r.type;
         const isHovered = hoveredType === r.type;
-        const label = isEn ? r.labelEn : r.labelVi;
+        const label = getReactionLabel(r.type, language);
 
         return (
           <ButtonBase

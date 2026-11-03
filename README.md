@@ -119,9 +119,10 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Độ tin cậy:** Bảo chứng bởi 17 test cases chuyên sâu (`moderation.service.spec.ts`).
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/moderation-trust.md](docs/features/moderation-trust.md)*
 
-### 5. Giao Diện Sáng/Tối & Hỗ Trợ Song Ngữ Toàn Diện (VI / EN)
+### 5. Giao Diện Sáng/Tối & Hệ Thống Đa Ngôn Ngữ Toàn Diện (6 Ngôn Ngữ)
 - **Dark / Light Mode:** Tự động theo hệ điều hành hoặc đổi 1 chạm trên thanh điều hướng. Sử dụng 100% Design Tokens tập trung (`src/theme/tokens.ts`), ESLint chặn mã màu hex trong component.
-- **Bản địa hóa 100% giao diện (i18n):** Chuyển đổi mượt mà giữa Tiếng Việt và Tiếng Anh qua Zustand Store, đồng bộ cả thanh điều hướng, bảng tin, tin nhắn, hộp thoại form và định dạng thời gian tự động (`formatTime.ts`).
+- **Bản địa hóa 100% giao diện (i18n):** Chuyển đổi mượt mà giữa **6 ngôn ngữ**: Tiếng Việt (🇻🇳 `vi`), English (🇺🇸 `en`), 简体中文 (🇨🇳 `zh-CN` - Trung Quốc), 繁體中文 (🇹🇼 `zh-TW` - Đài Loan), 한국어 (🇰🇷 `ko` - Hàn Quốc), ไทย (🇹🇭 `th` - Thái Lan). Tự động nhận diện ngôn ngữ trình duyệt, đồng bộ định dạng thời gian (`formatTime.ts`), nhãn cảm xúc bài viết (Facebook Reactions) và thông điệp hệ thống.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/multilingual-support.md](docs/features/multilingual-support.md)*
 
 ### 6. Xác Thực Bảo Mật, Trung Tâm Quản Trị WAF & Chống DDoS Đa Tầng
 - Cặp token an toàn: `AccessToken` (1 giờ) và `RefreshToken` (7 ngày) lưu trong HttpOnly Cookie chống XSS/CSRF.
@@ -266,7 +267,7 @@ chat/
         ├── app/                 # Next.js App Router (chat, profile, explore, auth...)
         ├── components/          # Design System, Chat, Feed, Posts, Layout
         ├── hooks/               # Custom React Hooks
-        ├── i18n/                # Bản địa hóa song ngữ Tiếng Việt / Tiếng Anh
+        ├── i18n/                # Bản địa hóa đa ngôn ngữ (VI, EN, ZH-CN, ZH-TW, KO, TH)
         ├── services/            # Axios API, Socket.IO & MQTT Client
         ├── store/               # Zustand Global Stores
         └── theme/               # Material UI Theme & Design Tokens

@@ -21,6 +21,7 @@ export const vi: TranslationDictionary = {
     online: "Đang hoạt động",
     offline: "Ngoại tuyến",
     comingSoon: "Tính năng sắp ra mắt",
+    selectLanguage: "Chọn ngôn ngữ",
   },
   nav: {
     home: "Trang chủ",
@@ -38,13 +39,16 @@ export const vi: TranslationDictionary = {
     skipToContent: "Bỏ qua điều hướng, tới nội dung chính",
     openSettings: "Mở cài đặt",
     searchPlaceholder: "Tìm bạn bè, đồng nghiệp…",
+    groups: "Nhóm",
+    pages: "Trang",
   },
   feed: {
     title: "Bảng tin",
     exploreFriends: "Khám phá bạn bè",
-    whatsOnYourMind: "Bạn đang nghĩ gì thế?",
+    whatsOnYourMind: "Bạn đang nghĩ gì?",
     post: "Đăng bài",
     posting: "Đang đăng…",
+    uploading: "Đang tải lên…",
     photosVideos: "Ảnh/Video",
     privacy: "Quyền riêng tư",
     privacyPublic: "Công khai",
@@ -52,6 +56,8 @@ export const vi: TranslationDictionary = {
     privacyOnlyMe: "Chỉ mình tôi",
     like: "Thích",
     comment: "Bình luận",
+    commentAs: "Bình luận dưới tên {name}…",
+    writeComment: "Viết bình luận…",
     commentsCount: "{count} bình luận",
     sharesCount: "{count} lượt chia sẻ",
     shareToTimeline: "Chia sẻ lên dòng thời gian",
@@ -104,4 +110,3 @@ export const vi: TranslationDictionary = {
     loggingIn: "Đang xử lý đăng nhập…",
   },
 };
-
