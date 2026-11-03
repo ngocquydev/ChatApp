@@ -49,7 +49,7 @@ export default function CreatePageDialog({
   onClose,
   onCreated,
 }: CreatePageDialogProps) {
-  const { tr } = useTranslation();
+  const { tr, t } = useTranslation();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [category, setCategory] = useState("Cộng đồng");
@@ -141,17 +141,14 @@ export default function CreatePageDialog({
             </Box>
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
-                {tr("Tạo Trang mới", "Create New Page")}
+                {t("pages.createModalTitle")}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                {tr(
-                  "Kết nối với người theo dõi và chia sẻ nội dung dưới tư cách Trang",
-                  "Connect with followers and share content as a Page"
-                )}
+                {t("pages.createModalDesc")}
               </Typography>
             </Box>
           </Box>
-          <IconButton onClick={onClose} size="small" aria-label={tr("Đóng", "Close")} sx={{ flexShrink: 0 }}>
+          <IconButton onClick={onClose} size="small" aria-label={t("common.close")} sx={{ flexShrink: 0 }}>
             <X size={18} />
           </IconButton>
         </DialogTitle>
@@ -182,18 +179,18 @@ export default function CreatePageDialog({
           )}
 
           <TextField
-            label={tr("Tên Trang", "Page Name")}
+            label={t("pages.pageName")}
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
             required
             fullWidth
             size="small"
             sx={{ mt: 0.5 }}
-            placeholder={tr("Ví dụ: Hội yêu Lập trình", "E.g. Developers Club")}
+            placeholder={t("pages.pageNamePlaceholder")}
           />
 
           <TextField
-            label={tr("Đường dẫn (slug)", "URL Slug")}
+            label={t("pages.slugLabel")}
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             required
@@ -204,7 +201,7 @@ export default function CreatePageDialog({
 
           <TextField
             select
-            label={tr("Danh mục", "Category")}
+            label={t("pages.categoryLabel")}
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             fullWidth
@@ -218,17 +215,14 @@ export default function CreatePageDialog({
           </TextField>
 
           <TextField
-            label={tr("Tiểu sử / Giới thiệu", "Bio / Description")}
+            label={t("pages.descLabel")}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             multiline
             rows={3}
             fullWidth
             size="small"
-            placeholder={tr(
-              "Giới thiệu ngắn gọn về Trang của bạn...",
-              "Brief introduction about your Page..."
-            )}
+            placeholder={t("pages.descPlaceholder")}
           />
 
           <TextField
@@ -243,7 +237,7 @@ export default function CreatePageDialog({
 
         <DialogActions sx={{ px: 3, pb: 2.5, pt: 1 }}>
           <Button onClick={onClose} color="inherit" sx={{ borderRadius: "10px" }}>
-            {tr("Hủy", "Cancel")}
+            {t("common.cancel")}
           </Button>
           <Button
             type="submit"
@@ -252,8 +246,8 @@ export default function CreatePageDialog({
             sx={{ borderRadius: "10px", px: 3, fontWeight: 700 }}
           >
             {isSubmitting
-              ? tr("Đang tạo...", "Creating...")
-              : tr("Tạo Trang", "Create Page")}
+              ? t("pages.creating")
+              : t("pages.submitCreate")}
           </Button>
         </DialogActions>
       </form>

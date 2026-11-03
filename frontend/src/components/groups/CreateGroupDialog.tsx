@@ -40,7 +40,7 @@ export default function CreateGroupDialog({
   onClose,
   onCreated,
 }: CreateGroupDialogProps) {
-  const { tr } = useTranslation();
+  const { tr, t } = useTranslation();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [privacy, setPrivacy] = useState<"public" | "private">("public");
@@ -135,17 +135,14 @@ export default function CreateGroupDialog({
             </Box>
             <Box sx={{ minWidth: 0 }}>
               <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
-                {tr("Tạo Hội nhóm mới", "Create New Community Group")}
+                {t("groups.createModalTitle")}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                {tr(
-                  "Xây dựng không gian giao lưu, chia sẻ bài viết cùng bạn bè và cộng đồng",
-                  "Build a space to connect, share posts with friends and community"
-                )}
+                {t("groups.createModalDesc")}
               </Typography>
             </Box>
           </Box>
-          <IconButton onClick={onClose} size="small" aria-label={tr("Đóng", "Close")} sx={{ flexShrink: 0 }}>
+          <IconButton onClick={onClose} size="small" aria-label={t("common.close")} sx={{ flexShrink: 0 }}>
             <X size={18} />
           </IconButton>
         </DialogTitle>
@@ -176,18 +173,18 @@ export default function CreateGroupDialog({
           )}
 
           <TextField
-            label={tr("Tên Hội nhóm", "Group Name")}
+            label={t("groups.groupName")}
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
             required
             fullWidth
             size="small"
             sx={{ mt: 0.5 }}
-            placeholder={tr("Ví dụ: Hội Thích Đọc Sách", "E.g. Book Lovers Club")}
+            placeholder={t("groups.groupNamePlaceholder")}
           />
 
           <TextField
-            label={tr("Đường dẫn (slug)", "URL Slug")}
+            label={t("groups.slugLabel")}
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             required
@@ -198,32 +195,29 @@ export default function CreateGroupDialog({
 
           <TextField
             select
-            label={tr("Quyền riêng tư", "Privacy")}
+            label={t("groups.privacyLabel")}
             value={privacy}
             onChange={(e) => setPrivacy(e.target.value as "public" | "private")}
             fullWidth
             size="small"
           >
             <MenuItem value="public">
-              {tr("Công khai (Bất kỳ ai cũng có thể xem bài viết)", "Public (Anyone can view posts)")}
+              {t("groups.privacyPublicDesc")}
             </MenuItem>
             <MenuItem value="private">
-              {tr("Riêng tư (Chỉ thành viên mới xem được bài viết)", "Private (Only members can view posts)")}
+              {t("groups.privacyPrivateDesc")}
             </MenuItem>
           </TextField>
 
           <TextField
-            label={tr("Mô tả hội nhóm", "Description")}
+            label={t("groups.descLabel")}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             multiline
             rows={3}
             fullWidth
             size="small"
-            placeholder={tr(
-              "Mục đích và quy tắc của nhóm...",
-              "Purpose and guidelines of the group..."
-            )}
+            placeholder={t("groups.descPlaceholder")}
           />
 
           <FormControlLabel
@@ -237,13 +231,10 @@ export default function CreateGroupDialog({
             label={
               <Box>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {tr("Yêu cầu phê duyệt thành viên", "Require member approval")}
+                  {t("groups.approvalLabel")}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {tr(
-                    "Quản trị viên phải đồng ý trước khi người mới tham gia nhóm",
-                    "Admins must approve before new people join the group"
-                  )}
+                  {t("groups.approvalDesc")}
                 </Typography>
               </Box>
             }
@@ -252,7 +243,7 @@ export default function CreateGroupDialog({
 
         <DialogActions sx={{ px: 3, pb: 2.5, pt: 1 }}>
           <Button onClick={onClose} color="inherit" sx={{ borderRadius: "10px" }}>
-            {tr("Hủy", "Cancel")}
+            {t("common.cancel")}
           </Button>
           <Button
             type="submit"
@@ -261,8 +252,8 @@ export default function CreateGroupDialog({
             sx={{ borderRadius: "10px", px: 3, fontWeight: 700 }}
           >
             {isSubmitting
-              ? tr("Đang tạo...", "Creating...")
-              : tr("Tạo Hội nhóm", "Create Group")}
+              ? t("groups.creating")
+              : t("groups.submitCreate")}
           </Button>
         </DialogActions>
       </form>

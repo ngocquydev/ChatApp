@@ -45,3 +45,8 @@ Hệ thống hỗ trợ đa ngôn ngữ mở rộng toàn diện trên toàn b�
 
 - **Đồng bộ Cảm xúc Bày tỏ (Facebook Reactions):**
   - Các cảm xúc Like, Love, Care, Haha, Wow, Sad, Angry được bản địa hóa chính xác theo đúng tên gọi chính thức của Facebook tại từng quốc gia.
+
+- **Bản địa hóa Toàn diện Hội nhóm (Groups), Trang (Pages), Menu Điều hướng (LeftSidebar & AppBar):**
+  - Mọi trường dữ liệu, tiêu đề modal, placeholder tìm kiếm, nút tạo mới và trạng thái rỗng đều được chuyển ngữ đầy đủ trên cả 6 ngôn ngữ.
+  - Thêm quy tắc bắt buộc trong `AGENTS.md` (Mục 2 - Điều 5) yêu cầu mọi cập nhật UI phải đồng bộ đầy đủ trên 6 ngôn ngữ (`vi`, `en`, `zh-CN`, `zh-TW`, `ko`, `th`).
+

@@ -20,7 +20,7 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import { fetchGroupPosts } from "@/services/postsApi";
 
 export default function GroupFeed({ slug }: { slug: string }) {
-  const { tr } = useTranslation();
+  const { tr, t } = useTranslation();
   const [data, setData] = useState<{
     group: CommunityGroupItem;
     isMember: boolean;
@@ -189,12 +189,12 @@ export default function GroupFeed({ slug }: { slug: string }) {
                     )}
                     <Typography variant="caption" color="text.secondary">
                       {group.privacy === "public"
-                        ? tr("Nhóm công khai", "Public group")
-                        : tr("Nhóm riêng tư", "Private group")}
+                        ? t("groups.publicGroup")
+                        : t("groups.privateGroup")}
                     </Typography>
                   </Box>
                   <Typography variant="body2" color="text.secondary">
-                    · {memberCount} {tr("thành viên", "members")}
+                    · {t("groups.membersCount", { count: memberCount })}
                   </Typography>
                 </Box>
               </Box>
@@ -203,7 +203,7 @@ export default function GroupFeed({ slug }: { slug: string }) {
             <Box sx={{ display: "flex", gap: 1, width: { xs: "100%", sm: "auto" } }}>
               {isAdmin && (
                 <Chip
-                  label={tr("Quản trị viên", "Admin")}
+                  label={t("groups.adminBadge")}
                   color="primary"
                   variant="outlined"
                   sx={{ fontWeight: 700 }}
@@ -226,10 +226,10 @@ export default function GroupFeed({ slug }: { slug: string }) {
                 }}
               >
                 {isMember
-                  ? tr("Rời nhóm", "Leave Group")
+                  ? t("groups.leaveGroup")
                   : isPending
-                    ? tr("Đã gửi yêu cầu", "Requested")
-                    : tr("Tham gia nhóm", "Join Group")}
+                    ? t("groups.requested")
+                    : t("groups.joinGroup")}
               </Button>
             </Box>
           </Box>
@@ -250,7 +250,7 @@ export default function GroupFeed({ slug }: { slug: string }) {
           <Box sx={{ textAlign: "center", py: 5, px: 2, bgcolor: "background.paper", borderRadius: "16px", border: "1px solid", borderColor: "divider" }}>
             <Lock size={36} color="var(--mui-palette-text-secondary)" style={{ marginBottom: 12 }} />
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-              {tr("Nhóm riêng tư", "Private Group")}
+              {t("groups.privateGroup")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {tr(
@@ -265,11 +265,8 @@ export default function GroupFeed({ slug }: { slug: string }) {
             canCompose={isMember}
             groupId={group._id}
             defaultPrivacy={group.privacy === "private" ? "friends" : "public"}
-            emptyTitle={tr("Chưa có bài viết nào", "No posts yet")}
-            emptyDescription={tr(
-              "Hội nhóm này chưa có bài viết nào. Hãy là người đầu tiên chia sẻ!",
-              "This group does not have any posts yet. Be the first to share!"
-            )}
+            emptyTitle={t("groups.noPostsYet")}
+            emptyDescription={t("groups.noPostsYetDesc")}
           />
         )}
       </Box>

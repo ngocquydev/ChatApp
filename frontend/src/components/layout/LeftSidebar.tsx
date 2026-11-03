@@ -272,7 +272,7 @@ export default function LeftSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuthStore();
-  const { tr } = useTranslation();
+  const { tr, t } = useTranslation();
   const [showMore, setShowMore] = useState(false);
   const [shortcuts, setShortcuts] = useState<NavShortcutItem[]>(DEFAULT_FALLBACK_SHORTCUTS);
 
@@ -379,7 +379,7 @@ export default function LeftSidebar() {
   const navItems: SidebarNavItem[] = [
     {
       id: "profile",
-      label: user?.name || tr("Trang cá nhân", "Profile"),
+      label: user?.name || t("sidebar.profile"),
       href: "/profile",
       customIcon: (
         <Avatar
@@ -415,7 +415,7 @@ export default function LeftSidebar() {
     },
     {
       id: "friends",
-      label: tr("Bạn bè", "Friends"),
+      label: t("sidebar.friends"),
       href: "/explore",
       customIcon: (
         <Box
@@ -436,7 +436,7 @@ export default function LeftSidebar() {
     },
     {
       id: "groups",
-      label: tr("Nhóm", "Groups"),
+      label: t("sidebar.groups"),
       href: "/groups",
       customIcon: (
         <Box
@@ -457,7 +457,7 @@ export default function LeftSidebar() {
     },
     {
       id: "memories",
-      label: tr("Kỷ niệm", "Memories"),
+      label: t("sidebar.memories"),
       href: "/profile",
       customIcon: (
         <Box
@@ -478,7 +478,7 @@ export default function LeftSidebar() {
     },
     {
       id: "saved",
-      label: tr("Đã lưu", "Saved"),
+      label: t("sidebar.saved"),
       href: "/profile",
       customIcon: (
         <Box
@@ -499,7 +499,7 @@ export default function LeftSidebar() {
     },
     {
       id: "reels",
-      label: tr("Thước phim", "Reels"),
+      label: t("sidebar.reels"),
       href: "/explore",
       customIcon: (
         <Box
@@ -545,7 +545,7 @@ export default function LeftSidebar() {
   const extendedItems: SidebarNavItem[] = [
     {
       id: "pages",
-      label: tr("Trang", "Pages"),
+      label: t("sidebar.pages"),
       href: "/pages",
       customIcon: (
         <Box
@@ -566,7 +566,7 @@ export default function LeftSidebar() {
     },
     {
       id: "chat",
-      label: tr("Đoạn chat", "Chats"),
+      label: t("sidebar.chats"),
       href: "/chat",
       customIcon: (
         <Box
@@ -587,7 +587,7 @@ export default function LeftSidebar() {
     },
     {
       id: "feeds",
-      label: tr("Bảng feed", "Feeds"),
+      label: t("sidebar.feeds"),
       href: "/",
       customIcon: (
         <Box
@@ -608,7 +608,7 @@ export default function LeftSidebar() {
     },
     {
       id: "events",
-      label: tr("Sự kiện", "Events"),
+      label: t("sidebar.events"),
       href: "/groups",
       customIcon: (
         <Box
@@ -634,7 +634,7 @@ export default function LeftSidebar() {
   return (
     <Box
       component="aside"
-      aria-label={tr("Điều hướng chính Facebook", "Main sidebar navigation")}
+      aria-label={t("sidebar.navAria")}
       sx={{
         width: { md: 280, lg: 320, xl: 350 },
         position: "fixed",
@@ -708,7 +708,7 @@ export default function LeftSidebar() {
         {/* Nút Xem thêm / Thu gọn */}
         <ButtonBase
           onClick={() => setShowMore((prev) => !prev)}
-          aria-label={showMore ? tr("Thu gọn", "See less") : tr("Xem thêm", "See more")}
+          aria-label={showMore ? t("sidebar.seeLess") : t("sidebar.seeMore")}
           sx={{
             width: "100%",
             display: "flex",
@@ -745,7 +745,7 @@ export default function LeftSidebar() {
               fontSize: "0.93rem",
             }}
           >
-            {showMore ? tr("Thu gọn", "See less") : tr("Xem thêm", "See more")}
+            {showMore ? t("sidebar.seeLess") : t("sidebar.seeMore")}
           </Typography>
         </ButtonBase>
       </Box>
@@ -766,7 +766,7 @@ export default function LeftSidebar() {
             letterSpacing: "0.01em",
           }}
         >
-          {tr("Lối tắt của bạn", "Your shortcuts")}
+          {t("sidebar.yourShortcuts")}
         </Typography>
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>

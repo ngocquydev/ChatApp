@@ -24,7 +24,7 @@ import EmptyState from "@/components/common/EmptyState";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 
 export default function GroupsExplore() {
-  const { tr } = useTranslation();
+  const { tr, t } = useTranslation();
   const [groups, setGroups] = useState<CommunityGroupItem[]>([]);
   const [myGroups, setMyGroups] = useState<CommunityGroupItem[]>([]);
   const [search, setSearch] = useState("");
@@ -88,13 +88,10 @@ export default function GroupsExplore() {
       >
         <Box>
           <Typography variant="h5" component="h1" sx={{ fontWeight: 800, letterSpacing: "-0.02em" }}>
-            {tr("Khám phá Hội nhóm (Groups)", "Explore Community Groups")}
+            {t("groups.title")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {tr(
-              "Tham gia các hội nhóm cùng sở thích để thảo luận, kết bạn và chia sẻ",
-              "Join community groups with shared interests to discuss, make friends and share"
-            )}
+            {t("groups.description")}
           </Typography>
         </Box>
 
@@ -104,7 +101,7 @@ export default function GroupsExplore() {
           onClick={() => setOpenCreateDialog(true)}
           sx={{ borderRadius: "12px", px: 2.5, fontWeight: 700 }}
         >
-          {tr("Tạo Nhóm mới", "Create Group")}
+          {t("groups.createGroup")}
         </Button>
       </Box>
 
@@ -115,7 +112,7 @@ export default function GroupsExplore() {
           size="small"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={tr("Tìm kiếm nhóm theo tên, chủ đề...", "Search groups by name, topic...")}
+          placeholder={t("groups.searchPlaceholder")}
           slotProps={{
             input: {
               startAdornment: (
@@ -138,7 +135,7 @@ export default function GroupsExplore() {
       {myGroups.length > 0 && !search && (
         <Box sx={{ mb: 4 }}>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-            {tr("Hội nhóm của bạn", "Your Groups")}
+            {t("groups.yourGroups")}
           </Typography>
           <Grid container spacing={2}>
             {myGroups.map((g) => (
@@ -174,7 +171,7 @@ export default function GroupsExplore() {
                       {g.name}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {g.memberCount} {tr("thành viên", "members")}
+                      {t("groups.membersCount", { count: g.memberCount })}
                     </Typography>
                   </Box>
                 </Card>
@@ -186,7 +183,7 @@ export default function GroupsExplore() {
 
       {/* Tất cả các nhóm */}
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-        {tr("Tất cả các Nhóm", "All Groups")}
+        {t("groups.allGroups")}
       </Typography>
 
       {isLoading ? (
@@ -200,11 +197,8 @@ export default function GroupsExplore() {
       ) : groups.length === 0 ? (
         <EmptyState
           icon={<Users size={48} />}
-          title={tr("Không tìm thấy hội nhóm nào", "No groups found")}
-          description={tr(
-            "Hãy thử tìm kiếm với từ khóa khác hoặc tạo một hội nhóm mới ngay hôm nay!",
-            "Try searching with another keyword or create a new group today!"
-          )}
+          title={t("groups.noGroupsFound")}
+          description={t("groups.noGroupsDesc")}
         />
       ) : (
         <Grid container spacing={2}>
@@ -251,8 +245,8 @@ export default function GroupsExplore() {
                         )}
                         <Typography variant="caption" color="text.secondary">
                           {g.privacy === "public"
-                            ? tr("Nhóm công khai", "Public group")
-                            : tr("Nhóm riêng tư", "Private group")}
+                            ? t("groups.publicGroup")
+                            : t("groups.privateGroup")}
                         </Typography>
                       </Box>
                     </Box>
@@ -277,7 +271,7 @@ export default function GroupsExplore() {
 
                   <Box sx={{ mt: "auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                      {g.memberCount} {tr("thành viên", "members")}
+                      {t("groups.membersCount", { count: g.memberCount })}
                     </Typography>
 
                     <Button
@@ -287,7 +281,7 @@ export default function GroupsExplore() {
                       size="small"
                       sx={{ borderRadius: "10px", fontWeight: 700 }}
                     >
-                      {tr("Xem Nhóm", "View Group")}
+                      {t("groups.viewGroup")}
                     </Button>
                   </Box>
                 </CardContent>

@@ -198,13 +198,13 @@ function ResponsiveAppBar() {
     },
     {
       id: "groups",
-      label: tr("Nhóm", "Groups"),
+      label: t("nav.groups"),
       icon: <Users size={22} />,
       href: "/groups",
     },
     {
       id: "pages",
-      label: tr("Trang", "Pages"),
+      label: t("nav.pages"),
       icon: <Flag size={22} />,
       href: "/pages",
     },
@@ -220,13 +220,13 @@ function ResponsiveAppBar() {
     },
     {
       id: "groups",
-      label: tr("Nhóm", "Groups"),
+      label: t("nav.groups"),
       icon: <Users size={20} />,
       href: "/groups",
     },
     {
       id: "pages",
-      label: tr("Trang", "Pages"),
+      label: t("nav.pages"),
       icon: <Flag size={20} />,
       href: "/pages",
     },
@@ -279,7 +279,7 @@ function ResponsiveAppBar() {
               <TextField
                 fullWidth
                 size="small"
-                placeholder={tr("Tìm bạn bè, đồng nghiệp…", "Search friends, colleagues…")}
+                placeholder={t("nav.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -457,7 +457,7 @@ function ResponsiveAppBar() {
                 color="inherit"
                 size="small"
                 onClick={handleOpenFriend}
-                aria-label={tr("Lời mời kết bạn", "Friend Requests")}
+                aria-label={t("nav.friendRequests")}
               >
                 <Badge
                   color="error"
@@ -473,7 +473,7 @@ function ResponsiveAppBar() {
                 color="inherit"
                 size="small"
                 onClick={handleOpenChat}
-                aria-label={tr("Tin nhắn", "Messages")}
+                aria-label={t("nav.chats")}
               >
                 <Badge
                   color="error"
@@ -493,11 +493,11 @@ function ResponsiveAppBar() {
 
             {/* Nút Lời mời kết bạn trên Desktop */}
             <Box sx={{ display: { xs: "none", md: "flex" }, mr: 0.5 }}>
-              <Tooltip title={tr("Lời mời kết bạn", "Friend Requests")}>
+              <Tooltip title={t("nav.friendRequests")}>
                 <IconButton
                   color="inherit"
                   onClick={handleOpenFriend}
-                  aria-label={tr("Lời mời kết bạn", "Friend Requests")}
+                  aria-label={t("nav.friendRequests")}
                   sx={{
                     bgcolor: isFriendOpen ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.1)",
                     "&:hover": { bgcolor: "rgba(255, 255, 255, 0.22)" },
@@ -517,11 +517,11 @@ function ResponsiveAppBar() {
 
             {/* Nút Messenger / Đoạn chat trên Desktop */}
             <Box sx={{ display: { xs: "none", md: "flex" }, mr: 0.5 }}>
-              <Tooltip title={tr("Đoạn chat", "Chats")}>
+              <Tooltip title={t("nav.chats")}>
                 <IconButton
                   color="inherit"
                   onClick={handleOpenChat}
-                  aria-label={tr("Đoạn chat", "Chats")}
+                  aria-label={t("nav.chats")}
                   sx={{
                     bgcolor: isChatOpen ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.1)",
                     "&:hover": { bgcolor: "rgba(255, 255, 255, 0.22)" },
@@ -651,7 +651,7 @@ function ResponsiveAppBar() {
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.92rem" }}>
-                      {tr("Lời mời kết bạn", "Friend Requests")}
+                      {t("nav.friendRequests")}
                     </Typography>
                     {receivedRequests.length > 0 && (
                       <Chip
@@ -689,10 +689,10 @@ function ResponsiveAppBar() {
                     <Box sx={{ textAlign: "center", py: 5, px: 3 }}>
                       <UserCheck size={40} color="var(--mui-palette-neutral-400)" style={{ marginBottom: 10 }} />
                       <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-600)", mb: 0.5 }}>
-                        {tr("Không có lời mời kết bạn mới", "No new friend requests")}
+                        {t("nav.noFriendRequests")}
                       </Typography>
                       <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", display: "block" }}>
-                        {tr("Khi có người gửi lời mời kết bạn, thông báo sẽ hiển thị tại đây.", "When someone sends you a friend request, it will appear here.")}
+                        {t("nav.noFriendRequestsDesc")}
                       </Typography>
                     </Box>
                   ) : (
@@ -940,7 +940,7 @@ function ResponsiveAppBar() {
               </ListItemIcon>
               <ListItemText
                 primary={user?.name || tr("Hồ sơ cá nhân", "Personal Profile")}
-                secondary={tr("Xem và chỉnh sửa hồ sơ", "View and edit profile")}
+                secondary={t("nav.viewEditProfile")}
               />
             </ListItemButton>
           </ListItem>
@@ -948,7 +948,7 @@ function ResponsiveAppBar() {
         <Divider />
         <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
           <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            {tr("Lối tắt của bạn", "Your shortcuts")}
+            {t("sidebar.yourShortcuts")}
           </Typography>
         </Box>
         <List dense>

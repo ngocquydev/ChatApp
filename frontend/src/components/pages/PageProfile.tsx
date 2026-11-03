@@ -22,7 +22,7 @@ import { fetchPagePosts } from "@/services/postsApi";
 import { v } from "@/theme/tokens";
 
 export default function PageProfile({ slug }: { slug: string }) {
-  const { tr } = useTranslation();
+  const { tr, t } = useTranslation();
   const [data, setData] = useState<{
     page: PageItem;
     isFollowing: boolean;
@@ -177,7 +177,7 @@ export default function PageProfile({ slug }: { slug: string }) {
                     sx={{ height: 22, fontSize: "0.72rem", fontWeight: 600 }}
                   />
                   <Typography variant="body2" color="text.secondary">
-                    {followerCount} {tr("người theo dõi", "followers")}
+                    {t("pages.followersCount", { count: followerCount })}
                   </Typography>
                 </Box>
               </Box>
@@ -186,7 +186,7 @@ export default function PageProfile({ slug }: { slug: string }) {
             <Box sx={{ display: "flex", gap: 1, width: { xs: "100%", sm: "auto" } }}>
               {isAdmin && (
                 <Chip
-                  label={tr("Quản trị viên", "Admin")}
+                  label={t("pages.adminBadge")}
                   color="primary"
                   variant="outlined"
                   sx={{ fontWeight: 700 }}
@@ -206,8 +206,8 @@ export default function PageProfile({ slug }: { slug: string }) {
                 }}
               >
                 {isFollowing
-                  ? tr("Đang theo dõi", "Following")
-                  : tr("Theo dõi", "Follow")}
+                  ? t("pages.unfollow")
+                  : t("pages.follow")}
               </Button>
             </Box>
           </Box>
@@ -229,11 +229,8 @@ export default function PageProfile({ slug }: { slug: string }) {
           canCompose={isAdmin}
           pageId={page._id}
           defaultPrivacy="public"
-          emptyTitle={tr("Chưa có bài viết nào", "No posts yet")}
-          emptyDescription={tr(
-            "Trang này chưa đăng bài viết nào.",
-            "This page has not posted anything yet."
-          )}
+          emptyTitle={t("pages.noPostsYet")}
+          emptyDescription={t("pages.noPostsYetDesc")}
         />
       </Box>
         </Container>

@@ -4,7 +4,7 @@
 
 ## 1. Dự án
 
-Ứng dụng chat realtime + mạng xã hội, hỗ trợ song ngữ Tiếng Việt & Tiếng Anh (VI/EN), tích hợp hệ thống kiểm duyệt nội dung độc hại & chống bot thông minh.
+Ứng dụng chat realtime + mạng xã hội, hỗ trợ 6 ngôn ngữ (Tiếng Việt, English, 简体中文, 繁體中文, 한국어, ไทย), tích hợp hệ thống kiểm duyệt nội dung độc hại & chống bot thông minh.
 
 | Thành phần | Công nghệ | Chạy |
 |---|---|---|
@@ -28,8 +28,19 @@ Trước khi push: `scripts/check.ps1`. Với frontend tối thiểu: `npm run t
      - **Tự động cập nhật `README.md`:** Bổ sung mục tính năng tương ứng, tóm tắt cách dùng và nhúng ảnh demo trực quan vào `README.md`.
      - **Tự động cập nhật thư mục `docs/`:** Tạo hoặc cập nhật file chi tiết trong `docs/features/<ten-tinh-nang>.md` và cập nhật file `docs/demo.md` kèm hình ảnh demo đầy đủ.
    - Tuyệt đối không để tính năng mới xong mà tài liệu và ảnh demo bị bỏ quên.
-5. **TỰ ĐỘNG KIỂM TRA & PUSH GIT:** Khi xong việc, AI **bắt buộc tự động** chạy toàn bộ Quality Gates (§5), tạo commit chuẩn và chạy `git push origin main`. **Tuyệt đối không dừng lại hỏi người dùng có muốn push hay không.**
-6. **QUY TẮC COMMIT GIT (BẮT BUỘC 100% TIẾNG ANH):**
+5. **QUY TẮC ĐA NGÔN NGỮ (BẮT BUỘC 100% CẬP NHẬT ĐỦ CẢ 6 NGÔN NGỮ):**
+   - Hệ thống hỗ trợ chính thức 6 ngôn ngữ:
+     1. `vi`: **Tiếng Việt** (mặc định)
+     2. `en`: **English**
+     3. `zh-CN`: **Tiếng Trung Giản thể (Trung Quốc / 简体中文)**
+     4. `zh-TW`: **Tiếng Trung Phồn thể (Đài Loan / 繁體中文)**
+     5. `ko`: **Tiếng Hàn (한국어)**
+     6. `th`: **Tiếng Thái Lan (ไทย)**
+   - Khi tạo mới, sửa đổi hoặc thêm bất kỳ nội dung UI, tiêu đề trang, nhãn nút, placeholder, thông báo, modal hay trường dữ liệu nào, AI **BẮT BUỘC PHẢI CẬP NHẬT ĐỒNG THỜI VÀ ĐẦY ĐỦ TRÊN CẢ 6 NGÔN NGỮ** trong các tệp từ điển (`types.ts`, `vi.ts`, `en.ts`, `zh-CN.ts`, `zh-TW.ts`, `ko.ts`, `th.ts`) ở cả `frontend/` và `admin/`.
+   - **CẤM TUYỆT ĐỐI** chỉ cập nhật 1 hoặc 2 ngôn ngữ rồi bỏ quên các ngôn ngữ còn lại.
+   - **CẤM TUYỆT ĐỐI** hardcode văn bản tĩnh vào trong component JSX/TSX. Mọi văn bản hiển thị phải đi qua `t("namespace.key")` hoặc đối tượng đa ngôn ngữ đầy đủ.
+6. **TỰ ĐỘNG KIỂM TRA & PUSH GIT:** Khi xong việc, AI **bắt buộc tự động** chạy toàn bộ Quality Gates (§5), tạo commit chuẩn và chạy `git push origin main`. **Tuyệt đối không dừng lại hỏi người dùng có muốn push hay không.**
+7. **QUY TẮC COMMIT GIT (BẮT BUỘC 100% TIẾNG ANH):**
    - Mọi commit message (cả tiêu đề và nội dung) **bắt buộc 100% viết bằng tiếng Anh** (`English only`). **CẤM TUYỆT ĐỐI** viết message commit bằng tiếng Việt hoặc bất kỳ ngôn ngữ nào khác.
    - Tuân theo chuẩn **Conventional Commits**:
      `<type>(<scope>): <short imperative description in English>`
@@ -40,8 +51,8 @@ Trước khi push: `scripts/check.ps1`. Với frontend tối thiểu: `npm run t
        - `docs(readme): document moderation engine and commit guidelines`
        - `test(moderation): add unit tests for isolation forest anomaly detection`
      - Các loại type được phép: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `chore`, `style`, `ci`.
-7. Nếu gặp lỗi khi kiểm tra hoặc push: tự động đọc log, sửa dứt điểm và chạy lại cho đến khi push thành công. Không hạ chuẩn để qua cổng: cấm `@ts-ignore`, `eslint-disable`, xóa/skip test, `any` tràn lan (`constraint-driven-development`).
-8. Sau khi đã push thành công lên `origin/main` mới báo cáo kết quả kèm bằng chứng cụ thể.
+8. Nếu gặp lỗi khi kiểm tra hoặc push: tự động đọc log, sửa dứt điểm và chạy lại cho đến khi push thành công. Không hạ chuẩn để qua cổng: cấm `@ts-ignore`, `eslint-disable`, xóa/skip test, `any` tràn lan (`constraint-driven-development`).
+9. Sau khi đã push thành công lên `origin/main` mới báo cáo kết quả kèm bằng chứng cụ thể.
 
 ## 3. Chọn skill theo loại việc
 

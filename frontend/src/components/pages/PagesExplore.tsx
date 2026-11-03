@@ -24,7 +24,7 @@ import VerifiedBadge from "@/components/common/VerifiedBadge";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 
 export default function PagesExplore() {
-  const { tr } = useTranslation();
+  const { tr, t } = useTranslation();
   const [pages, setPages] = useState<PageItem[]>([]);
   const [myPages, setMyPages] = useState<PageItem[]>([]);
   const [search, setSearch] = useState("");
@@ -88,13 +88,10 @@ export default function PagesExplore() {
       >
         <Box>
           <Typography variant="h5" component="h1" sx={{ fontWeight: 800, letterSpacing: "-0.02em" }}>
-            {tr("Khám phá Trang (Fanpages)", "Explore Pages")}
+            {t("pages.title")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {tr(
-              "Theo dõi các trang yêu thích để cập nhật tin tức và bài viết mới",
-              "Follow your favorite pages to stay updated with news and posts"
-            )}
+            {t("pages.description")}
           </Typography>
         </Box>
 
@@ -104,7 +101,7 @@ export default function PagesExplore() {
           onClick={() => setOpenCreateDialog(true)}
           sx={{ borderRadius: "12px", px: 2.5, fontWeight: 700 }}
         >
-          {tr("Tạo Trang mới", "Create Page")}
+          {t("pages.createPage")}
         </Button>
       </Box>
 
@@ -115,7 +112,7 @@ export default function PagesExplore() {
           size="small"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={tr("Tìm kiếm trang theo tên, danh mục...", "Search pages by name, category...")}
+          placeholder={t("pages.searchPlaceholder")}
           slotProps={{
             input: {
               startAdornment: (
@@ -138,7 +135,7 @@ export default function PagesExplore() {
       {myPages.length > 0 && !search && (
         <Box sx={{ mb: 4 }}>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-            {tr("Trang bạn quản lý", "Pages you manage")}
+            {t("pages.managedPages")}
           </Typography>
           <Grid container spacing={2}>
             {myPages.map((p) => (
@@ -177,7 +174,7 @@ export default function PagesExplore() {
                       {p.isVerified && <VerifiedBadge size={14} />}
                     </Box>
                     <Typography variant="caption" color="text.secondary">
-                      {p.followerCount} {tr("người theo dõi", "followers")}
+                      {t("pages.followersCount", { count: p.followerCount })}
                     </Typography>
                   </Box>
                 </Card>
@@ -189,7 +186,7 @@ export default function PagesExplore() {
 
       {/* Danh sách trang khám phá */}
       <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-        {tr("Tất cả các Trang", "All Pages")}
+        {t("pages.allPages")}
       </Typography>
 
       {isLoading ? (
@@ -203,11 +200,8 @@ export default function PagesExplore() {
       ) : pages.length === 0 ? (
         <EmptyState
           icon={<Flag size={48} />}
-          title={tr("Không tìm thấy trang nào", "No pages found")}
-          description={tr(
-            "Hãy thử tìm kiếm với từ khóa khác hoặc là người đầu tiên tạo trang mới!",
-            "Try searching with another keyword or be the first to create a new page!"
-          )}
+          title={t("pages.noPagesFound")}
+          description={t("pages.noPagesDesc")}
         />
       ) : (
         <Grid container spacing={2}>
@@ -276,7 +270,7 @@ export default function PagesExplore() {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                       <Users size={14} color="var(--mui-palette-text-secondary)" />
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                        {p.followerCount} {tr("người theo dõi", "followers")}
+                        {t("pages.followersCount", { count: p.followerCount })}
                       </Typography>
                     </Box>
 
@@ -287,7 +281,7 @@ export default function PagesExplore() {
                       size="small"
                       sx={{ borderRadius: "10px", fontWeight: 700 }}
                     >
-                      {tr("Xem Trang", "View Page")}
+                      {t("pages.viewPage")}
                     </Button>
                   </Box>
                 </CardContent>
