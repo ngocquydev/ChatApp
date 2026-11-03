@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, MouseEvent } from "react";
 import { Box, CircularProgress, IconButton, Popover, TextField, Tooltip } from "@mui/material";
 import { Image as ImageIcon, SendHorizontal, Smile, X } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useAuthStore } from "@/store/useAuthStore";
 import { COMMENT_MAX_LENGTH, MAX_IMAGE_BYTES } from "@/services/postsApi";
 import AppGiphyPicker from "@/components/common/AppGiphyPicker";
 import AppEmojiPicker from "@/components/common/AppEmojiPicker";
@@ -19,6 +20,8 @@ interface CommentComposerProps {
 
 export default function CommentComposer({ sending, onSubmit, onError }: CommentComposerProps) {
   const { tr } = useTranslation();
+  const { user } = useAuthStore();
+  const userName = user?.name?.trim();
   const [text, setText] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
@@ -190,7 +193,11 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
           inputRef={inputRef}
           maxRows={4}
           size="small"
-          placeholder={tr("Viết bình luận… (Gõ @ để tag bạn bè hoặc @aura)", "Write a comment… (Type @ to mention friends or @aura)")}
+          placeholder={
+            userName
+              ? tr(`Bình luận dưới tên ${userName}…`, `Comment as ${userName}…`)
+              : tr("Viết bình luận…", "Write a comment…")
+          }
           value={text}
           onChange={(e) => {
             setText(e.target.value);
@@ -206,7 +213,9 @@ export default function CommentComposer({ sending, onSubmit, onError }: CommentC
           slotProps={{
             htmlInput: {
               maxLength: COMMENT_MAX_LENGTH,
-              "aria-label": tr("Viết bình luận", "Write a comment"),
+              "aria-label": userName
+                ? tr(`Bình luận dưới tên ${userName}`, `Comment as ${userName}`)
+                : tr("Viết bình luận", "Write a comment"),
               style: {
                 wordBreak: "break-word",
                 overflowWrap: "anywhere",

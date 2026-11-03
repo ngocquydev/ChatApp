@@ -199,9 +199,9 @@ export default function PostComposer({
             maxRows={10}
             variant="standard"
             placeholder={
-              userName
-                ? (isVietnamese ? `${userName} ơi, bạn đang nghĩ gì thế? (Gõ @ để tag bạn bè)` : `${userName}, what's on your mind? (Type @ to mention)`)
-                : (isVietnamese ? "Bạn đang nghĩ gì thế? (Gõ @ để tag bạn bè)" : "What's on your mind? (Type @ to mention)")
+              isVietnamese
+                ? "Bạn đang nghĩ gì?"
+                : "What's on your mind?"
             }
             value={text}
             onChange={(e) => {
