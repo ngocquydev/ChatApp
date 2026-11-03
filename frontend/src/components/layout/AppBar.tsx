@@ -58,6 +58,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import NotificationBell from "../notifications/NotificationBell";
 import RecentChatsPopover from "./RecentChatsPopover";
 import UserSearchResults, { SEARCH_PREVIEW_COUNT } from "./UserSearchResults";
+import { DEFAULT_FALLBACK_SHORTCUTS } from "./LeftSidebar";
 
 /** Số kết quả mỗi trang khi "Xem tất cả" / cuộn vô hạn */
 const SEARCH_PAGE_SIZE = 20;
@@ -943,6 +944,49 @@ function ResponsiveAppBar() {
               />
             </ListItemButton>
           </ListItem>
+        </List>
+        <Divider />
+        <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            {tr("Lối tắt của bạn", "Your shortcuts")}
+          </Typography>
+        </Box>
+        <List dense>
+          {DEFAULT_FALLBACK_SHORTCUTS.map((sc) => (
+            <ListItem key={sc.id} disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  handleDrawerToggle();
+                  router.push(sc.href);
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 42 }}>
+                  {sc.badge || (
+                    <Avatar
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "6px",
+                        bgcolor: "primary.main",
+                        fontSize: "0.75rem",
+                      }}
+                    >
+                      {sc.name[0]}
+                    </Avatar>
+                  )}
+                </ListItemIcon>
+                <ListItemText
+                  primary={sc.name}
+                  slotProps={{
+                    primary: {
+                      noWrap: true,
+                      sx: { fontSize: "0.85rem", fontWeight: 600 },
+                    },
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
         </List>
       </Drawer>
     </>

@@ -169,7 +169,7 @@ export default function Explore() {
         display: "flex",
         minHeight: "100dvh",
         bgcolor: v.neutral[100],
-        pt: { xs: "70px", md: "76px" },
+        pt: { xs: "78px", sm: "84px", md: "88px" },
       }}
     >
       <LeftSidebar />

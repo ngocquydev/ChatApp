@@ -8,13 +8,14 @@ Tính năng cập nhật cấu trúc điều hướng toàn diện cho ChatApp t
   - Bạn bè (`/explore`), Nhóm (`/groups`).
   - Kỷ niệm (`/profile`), Đã lưu (`/profile`), Thước phim (`/explore`), Marketplace (`/explore`).
   - Danh mục mở rộng (`Xem thêm / Thu gọn`): Trang (`/pages`), Đoạn chat (`/chat`), Bảng feed (`/`), Sự kiện (`/groups`).
-  - **Lối tắt của bạn:** Tự động lấy danh sách Hội nhóm đã tham gia, Fanpage đang theo dõi và các nhóm cộng đồng nổi bật trong hệ thống (ASP.NET Core Việt Nam, AI Việt Nam, Grab Việt Nam VN, Cộng đồng CNTT, HUIT Confessions, Thiết kế Website) với avatar đại diện bo góc 8px, liên kết trực tiếp.
+  - **Lối tắt của bạn:** Tự động lấy danh sách Hội nhóm đã tham gia, Fanpage đang theo dõi và các nhóm cộng đồng nổi bật trong hệ thống khớp 100% với giao diện Facebook (ASP.NET Core Việt Nam, AI Việt Nam, Grab Việt Nam VN, Phốt Tinder - Review Tinder, HUIT Confessions - Tiệm Trà Đá Sinh Viên, Cộng đồng CNTT cho người mới bắt đầu, Cứu trợ Chó - Mèo lạc tìm chủ Hà Nội, Thiết Kế Website Theo Yêu Cầu, Sinh viên HUIT) với avatar đại diện bo góc 8px, logo badge sắc nét, hỗ trợ xuống dòng thông minh tối đa 2 dòng, liên kết trực tiếp.
+  - Tích hợp cả danh mục "Lối tắt của bạn" vào Mobile Drawer menu trên thiết bị di động.
   - Thông tin bản quyền, điều khoản dịch vụ và chính sách bảo mật.
 - **Thanh Header Facebook-style gọn gàng:**
   - **Khu vực trung tâm:** Chuyển đổi thành các tab biểu tượng (Trang chủ, Khám phá, Nhóm, Trang) với chỉ báo gạch chân xanh dương khi active, hoàn toàn không bị tràn nút chữ.
   - **Khu vực bên phải:** Bố trí nút Lời mời kết bạn (kèm số lượng badge), nút Messenger / Đoạn chat (kèm popover danh sách trò chuyện gần đây), Chuông thông báo, Đổi ngôn ngữ (VI/EN), Chế độ sáng/tối và Menu tài khoản người dùng.
 - **Khắc phục triệt để lỗi che nội dung & layout đồng bộ:**
-  - Đặt khoảng đệm trên `pt: "64px"` / `pt: "76px"` chuẩn cho tất cả các trang (`/groups`, `/pages`, `/groups/[slug]`, `/pages/[slug]`, `/`) để tiêu đề và ảnh bìa không bao giờ bị AppBar cố định che khuất.
+  - Đặt khoảng đệm trên `pt: { xs: "78px", sm: "84px", md: "88px" }` chuẩn cho tất cả các trang (`/groups`, `/pages`, `/groups/[slug]`, `/pages/[slug]`, `/explore`, `/`) để tiêu đề, banner tìm kiếm và nội dung không bao giờ bị AppBar cố định che khuất trên mọi kích thước màn hình.
   - Đưa `LeftSidebar` vào cả trang chi tiết nhóm (`GroupFeed`) và chi tiết trang (`PageProfile`) để trải nghiệm người dùng luôn liền mạch, không bị mất cột điều hướng khi click vào các lối tắt.
 - **Đồng bộ hóa dữ liệu ban đầu (Seed Data):**
   - Tự động khởi tạo dữ liệu mẫu phong phú cho Hội nhóm và Fanpage ngay khi hệ thống khởi động để trang `/groups`, `/pages` và danh sách "Lối tắt của bạn" luôn có dữ liệu sống động, không bị trống trải.

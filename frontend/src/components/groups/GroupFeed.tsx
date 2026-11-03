@@ -115,7 +115,7 @@ export default function GroupFeed({ slug }: { slug: string }) {
         display: "flex",
         minHeight: "100dvh",
         bgcolor: "var(--mui-palette-neutral-100)",
-        pt: { xs: "70px", md: "76px" },
+        pt: { xs: "78px", sm: "84px", md: "88px" },
       }}
     >
       <LeftSidebar />
