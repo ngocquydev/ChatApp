@@ -455,25 +455,28 @@ export class FriendsService {
    * số bạn bè và vài bạn bè gần đây (cho cột "Bạn bè" ở trang hồ sơ).
    */
   async getPublicProfile(viewerId: string, targetId: string) {
-    if (!Types.ObjectId.isValid(targetId)) {
-      throw new BadRequestException('Mã người dùng không hợp lệ');
-    }
     if (targetId === AURA_BOT_ID) {
       throw new NotFoundException(
         'Aura AI là trợ lý ảo thông minh, không có trang cá nhân.',
       );
     }
-    const target = await this.usersService.findById(targetId);
+    let target = null;
+    if (Types.ObjectId.isValid(targetId)) {
+      target = await this.usersService.findById(targetId);
+    }
+    if (!target) {
+      target = await this.usersService.findByName(decodeURIComponent(targetId));
+    }
     if (
       !target ||
       target.isDeleted ||
       target.isBan ||
-      (target.role === 'admin' && viewerId !== targetId)
+      (target.role === 'admin' && viewerId !== target._id.toString())
     ) {
       throw new NotFoundException('Người dùng không tồn tại');
     }
 
-    const targetObjId = new Types.ObjectId(targetId);
+    const targetObjId = new Types.ObjectId(target._id.toString());
     const viewerObjId = new Types.ObjectId(viewerId);
     const acceptedFilter = {
       status: 'accepted' as const,

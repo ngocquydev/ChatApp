@@ -32,7 +32,7 @@ import {
 } from './dto/posts.dto.js';
 import { savePostImage } from './post-image.util.js';
 
-const POST_MEDIA_MAX_BYTES = 100 * 1024 * 1024; // 100MB (ảnh/video)
+const POST_MEDIA_MAX_BYTES = 100 * 1024 * 1024;
 
 @ApiTags('Posts')
 @ApiBearerAuth()

@@ -25,3 +25,4 @@ Tính năng gắn thẻ (tag/mention) bạn bè trong bài viết và bình lu�
 - `frontend/src/components/posts/PostCard.tsx`: Render nội dung bài viết qua `MentionText`.
 - `frontend/src/components/posts/SharedPostEmbed.tsx`: Render bài viết chia sẻ qua `MentionText`.
 - `backend/src/modules/posts/posts.service.ts`: Gửi thông báo loại `mention` khi tạo bài viết hoặc thêm bình luận có nhắc tên người dùng.
+

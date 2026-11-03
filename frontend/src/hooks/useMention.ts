@@ -50,7 +50,7 @@ export function useMention(
       const lastAtIndex = textBeforeCursor.lastIndexOf("@");
       if (lastAtIndex !== -1) {
         const prefix = textBeforeCursor.slice(0, lastAtIndex);
-        const tagText = candidate.isBot ? `@aura ` : `@[${candidate.name}](${candidate.id}) `;
+        const tagText = candidate.isBot ? `@aura ` : `@${candidate.name} `;
         const newFullText = `${prefix}${tagText}${textAfterCursor}`;
         setText(newFullText);
         setMentionOpen(false);

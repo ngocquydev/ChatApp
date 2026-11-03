@@ -462,6 +462,64 @@ export class PostsService {
 
   // ───────────────────────── Tạo / xóa / chia sẻ ─────────────────────────
 
+  /**
+   * Trích xuất danh sách ID người dùng được nhắc tên (@[Name](userId), @[Name], hoặc @Name)
+   */
+  private async extractMentionedUserIds(content: string, authorId: string): Promise<string[]> {
+    if (!content) return [];
+    const userIds = new Set<string>();
+
+    // 1. Tag có kèm ID: @[Name](userId)
+    const idMatches = Array.from(content.matchAll(/@\[([^\]]+)\]\(([a-f0-9]{24})\)/gi));
+    for (const m of idMatches) {
+      if (m[2] && m[2] !== authorId) userIds.add(m[2]);
+    }
+
+    // 2. Tag trong ngoặc không có ID: @[Name]
+    const bracketMatches = Array.from(content.matchAll(/@\[([^\]]+)\](?!\()/gi));
+    // 3. Tag thông thường: @Tên
+    const plainMatches = Array.from(
+      content.matchAll(/@([a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]+(?:\s[a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]+)?)/gi),
+    );
+
+    const nameCandidates = new Set<string>();
+    for (const m of bracketMatches) {
+      if (m[1]?.trim()) nameCandidates.add(m[1].trim());
+    }
+    for (const m of plainMatches) {
+      const n = m[1]?.trim();
+      if (n && n.toLowerCase() !== 'aura') nameCandidates.add(n);
+    }
+
+    if (nameCandidates.size > 0) {
+      // Ưu tiên tìm trong danh sách bạn bè của tác giả
+      const friendIds = await this.getFriendIds(authorId).catch(() => [] as Types.ObjectId[]);
+      const friends = friendIds.length
+        ? await this.usersService.findByIds(friendIds.map((f) => f.toString()))
+        : [];
+      const friendMap = new Map<string, string>();
+      for (const f of friends) {
+        if (f.name) friendMap.set(f.name.toLowerCase().trim(), f._id.toString());
+      }
+
+      for (const name of nameCandidates) {
+        const lower = name.toLowerCase();
+        if (friendMap.has(lower)) {
+          const fid = friendMap.get(lower)!;
+          if (fid !== authorId) userIds.add(fid);
+        } else {
+          // Thử tìm trong toàn bộ hệ thống
+          const found = await this.usersService.findByName(name).catch(() => null);
+          if (found && found._id.toString() !== authorId) {
+            userIds.add(found._id.toString());
+          }
+        }
+      }
+    }
+
+    return Array.from(userIds);
+  }
+
   async createPost(authorId: string, dto: CreatePostDto): Promise<PostView> {
     const content = (dto.content ?? '').trim();
     const images = dto.images ?? [];
@@ -501,27 +559,24 @@ export class PostsService {
         .catch(() => {});
     }
 
-    // Gửi thông báo cho người dùng được nhắc đến trong bài viết (@[Name](userId))
+    // Gửi thông báo cho người dùng được nhắc đến trong bài viết
     if (content && this.notificationsService) {
       try {
         const author = await this.usersService.findById(authorId);
         const authorName = author?.name || 'Ai đó';
-        const mentionIdMatches = Array.from(content.matchAll(/@\[([^\]]+)\]\(([a-f0-9]{24})\)/gi));
-        for (const match of mentionIdMatches) {
-          const taggedUserId = match[2];
-          if (taggedUserId && taggedUserId !== authorId) {
-            void this.notificationsService.createNotification({
-              recipientId: taggedUserId,
-              actorId: authorId,
-              type: 'mention',
-              title: 'Bạn được nhắc đến trong một bài viết',
-              content: `${authorName} đã nhắc đến bạn trong một bài viết: "${content.slice(0, 80)}"`,
-              link: `/profile/${authorId}`,
-              metadata: {
-                postId: created._id.toString(),
-              },
-            }).catch(() => {});
-          }
+        const taggedUserIds = await this.extractMentionedUserIds(content, authorId);
+        for (const taggedUserId of taggedUserIds) {
+          void this.notificationsService.createNotification({
+            recipientId: taggedUserId,
+            actorId: authorId,
+            type: 'mention',
+            title: 'Bạn được nhắc đến trong một bài viết',
+            content: `${authorName} đã nhắc đến bạn trong một bài viết: "${content.slice(0, 80)}"`,
+            link: `/profile/${authorId}`,
+            metadata: {
+              postId: created._id.toString(),
+            },
+          }).catch(() => {});
         }
       } catch (err) {
         this.logger.warn(`Lỗi khi gửi thông báo nhắc tên bài viết: ${(err as Error)?.message}`);
@@ -880,14 +935,13 @@ export class PostsService {
       }).catch(() => {});
     }
 
-    // Gửi thông báo cho người dùng được nhắc đến (@[Name](userId))
+    // Gửi thông báo cho người dùng được nhắc đến
     if (content && this.notificationsService) {
       const author = authors.get(viewerId);
       const authorName = author?.name || 'Ai đó';
-      const mentionIdMatches = Array.from(content.matchAll(/@\[([^\]]+)\]\(([a-f0-9]{24})\)/gi));
-      for (const match of mentionIdMatches) {
-        const taggedUserId = match[2];
-        if (taggedUserId && taggedUserId !== viewerId && taggedUserId !== post.authorId.toString()) {
+      const taggedUserIds = await this.extractMentionedUserIds(content, viewerId);
+      for (const taggedUserId of taggedUserIds) {
+        if (taggedUserId !== post.authorId.toString()) {
           void this.notificationsService.createNotification({
             recipientId: taggedUserId,
             actorId: viewerId,

@@ -1,10 +1,11 @@
 "use client";
 
-import React, { ReactNode } from "react";
+import React, { ReactNode, useMemo } from "react";
 import NextLink from "next/link";
 import { Box, Tooltip } from "@mui/material";
 import { Sparkles } from "lucide-react";
 import { useChatBoxStore } from "@/store/useChatBoxStore";
+import { useFriendStore } from "@/store/useFriendStore";
 import { AURA_BOT_USER, AURA_BOT_ID, isAuraBot } from "@/constants/auraBot";
 
 interface MentionTextProps {
@@ -17,16 +18,50 @@ interface MentionTextProps {
  * và kết nối nhanh với Aura AI (@aura)
  */
 export function MentionText({ text, onMentionClick }: MentionTextProps) {
-  if (!text) return null;
+  const friends = useFriendStore((state) => state.friends);
 
-  // Regex phát hiện @[Name](userId), @aura, và @Name thông thường
-  const pattern = /(@\[([^\]]+)\]\(([^)]+)\)|@aura\b|@([a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]+(?:\s[a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]+)?))/gi;
+  // Tạo map tên bạn bè -> ID để giải quyết link trang cá nhân ngay cả khi không có ID trong text
+  const friendMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of friends) {
+      if (f.friend?.name && f.friend?._id) {
+        map.set(f.friend.name.toLowerCase().trim(), f.friend._id);
+      }
+    }
+    return map;
+  }, [friends]);
+
+  // Regex phát hiện các định dạng mention:
+  // 1. @[Name](userId) - chuẩn cũ có ID
+  // 2. @[Name] - có ngoặc vuông không có ID
+  // 3. @aura - trợ lý ảo
+  // 4. @Tên bạn bè thực tế (bao gồm tên nhiều từ như @Anh hài lúa)
+  // 5. @Tên thông thường 1-2 từ
+  const pattern = useMemo(() => {
+    const sortedFriendNames = friends
+      .map((f) => f.friend?.name?.trim())
+      .filter((n): n is string => Boolean(n && n.length > 0))
+      .sort((a, b) => b.length - a.length)
+      .map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+
+    const friendNamesRegex = sortedFriendNames.length > 0 ? `@(${sortedFriendNames.join("|")})|` : "";
+
+    return new RegExp(
+      `(@\\[([^\\]]+)\\]\\(([^)]+)\\)|@\\[([^\\]]+)\\]|@aura\\b|${friendNamesRegex}@([a-zA-Z0-9_\\u00C0-\\u024F\\u1EA0-\\u1EF9]+(?:\\s[a-zA-Z0-9_\\u00C0-\\u024F\\u1EA0-\\u1EF9]+)?))`,
+      "gi"
+    );
+  }, [friends]);
+
+  if (!text) return null;
 
   const elements: ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = pattern.exec(text)) !== null) {
+  // Tạo thể hiện regex mới cho mỗi lần render để tránh lỗi mutable state trong hook
+  const regex = new RegExp(pattern.source, pattern.flags);
+
+  while ((match = regex.exec(text)) !== null) {
     const matchIndex = match.index;
     const fullMatch = match[0];
 
@@ -71,7 +106,7 @@ export function MentionText({ text, onMentionClick }: MentionTextProps) {
         </Tooltip>
       );
     }
-    // 2. Tag có định dạng chuẩn: @[Name](userId) -> Link xanh vào trang bạn bè chuẩn Facebook
+    // 2. Tag có định dạng chuẩn kèm ID: @[Name](userId)
     else if (match[2] && match[3]) {
       const name = match[2];
       const userId = match[3];
@@ -131,29 +166,68 @@ export function MentionText({ text, onMentionClick }: MentionTextProps) {
         );
       }
     }
-    // 3. Tag thông thường: @Tên
-    else {
-      const rawName = fullMatch.slice(1);
+    // 3. Tag trong ngoặc không có ID: @[Name]
+    else if (match[4]) {
+      const rawName = match[4].trim();
+      const displayName = rawName.startsWith("@") ? rawName : `@${rawName}`;
+      const targetId = friendMap.get(rawName.toLowerCase()) || encodeURIComponent(rawName);
+
       elements.push(
         <Box
-          key={`raw-${matchIndex}`}
-          component="span"
+          key={`bracket-${matchIndex}`}
+          component={NextLink}
+          href={`/profile/${targetId}`}
+          onClick={(e: React.MouseEvent) => {
+            e.stopPropagation();
+            onMentionClick?.(rawName, targetId);
+          }}
           sx={{
             display: "inline",
             color: "primary.main",
             fontWeight: 600,
             textDecoration: "none",
-            cursor: onMentionClick ? "pointer" : "default",
-            "&:hover": onMentionClick ? { textDecoration: "underline", color: "primary.dark" } : undefined,
-          }}
-          onClick={(e: React.MouseEvent) => {
-            if (onMentionClick) {
-              e.stopPropagation();
-              onMentionClick(rawName);
-            }
+            cursor: "pointer",
+            transition: "color 0.15s ease",
+            "&:hover": {
+              textDecoration: "underline",
+              color: "primary.dark",
+            },
           }}
         >
-          {fullMatch}
+          {displayName}
+        </Box>
+      );
+    }
+    // 4. Tag thông thường: @Tên bạn bè hoặc @Tên
+    else {
+      // Tên có thể nằm ở match[5] (tên bạn bè) hoặc match[6] (tên thông thường)
+      const rawName = (match[5] || match[6] || fullMatch.slice(1)).trim();
+      const displayName = `@${rawName.replace(/^@/, "")}`;
+      const targetId = friendMap.get(rawName.toLowerCase()) || encodeURIComponent(rawName);
+
+      elements.push(
+        <Box
+          key={`plain-${matchIndex}`}
+          component={NextLink}
+          href={`/profile/${targetId}`}
+          onClick={(e: React.MouseEvent) => {
+            e.stopPropagation();
+            onMentionClick?.(rawName, targetId);
+          }}
+          sx={{
+            display: "inline",
+            color: "primary.main",
+            fontWeight: 600,
+            textDecoration: "none",
+            cursor: "pointer",
+            transition: "color 0.15s ease",
+            "&:hover": {
+              textDecoration: "underline",
+              color: "primary.dark",
+            },
+          }}
+        >
+          {displayName}
         </Box>
       );
     }
@@ -170,4 +244,3 @@ export function MentionText({ text, onMentionClick }: MentionTextProps) {
 }
 
 export default MentionText;
-

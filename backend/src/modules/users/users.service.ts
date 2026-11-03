@@ -280,6 +280,27 @@ export class UsersService implements OnModuleInit {
     const user = await this.userModel.findOne({ email }).exec();
     return user;
   }
+  async findByName(name: string) {
+    if (!name?.trim()) return null;
+    const clean = name.trim().replace(/^@/, '');
+    const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const exact = await this.userModel
+      .findOne({
+        name: { $regex: new RegExp(`^${escaped}$`, 'i') },
+        isDeleted: false,
+      })
+      .select('-password')
+      .exec();
+    if (exact) return exact;
+
+    return await this.userModel
+      .findOne({
+        name: { $regex: escaped, $options: 'i' },
+        isDeleted: false,
+      })
+      .select('-password')
+      .exec();
+  }
   async findById(id: string) {
     if (id === AURA_BOT_ID || id?.toString() === AURA_BOT_ID) {
       return AURA_BOT_USER as unknown as UserRepository;
