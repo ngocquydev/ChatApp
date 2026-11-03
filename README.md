@@ -216,8 +216,13 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
     - Quản trị viên có thể bật yêu cầu trả lời câu hỏi khi xin gia nhập nhóm kèm nội dung câu hỏi tùy chỉnh (ví dụ: *"Tại sao bạn muốn tham gia nhóm này?"*).
     - Thành viên khi bấm tham gia sẽ mở Modal trả lời lý do/câu hỏi trước khi gửi yêu cầu.
     - Quản trị viên và Phó nhóm có thể xem danh sách yêu cầu chờ duyệt, đọc câu trả lời lý do của từng người và Chấp nhận hoặc Từ chối thành viên.
+  - **Báo cáo bình luận thông minh & Điều hướng tiếp nhận (Smart Comment Reporting):**
+    - Cho phép thành viên báo cáo các bình luận vi phạm tiêu chuẩn cộng đồng.
+    - Trong hội nhóm, người dùng có thể lựa chọn gửi tới **Ban Quản trị Nhóm (`group_admin`)** hoặc **Admin Hệ thống (`web_admin`)**.
+    - Ban Quản trị Nhóm có thể trực tiếp xử lý báo cáo: Bỏ qua (`dismiss`), Xóa bình luận (`delete_comment`), Khóa quyền bình luận (`mute_user`), Chặn đăng bài (`banned_posting`), hoặc Đuổi khỏi nhóm (`banned_user`).
+    - Ban Quản trị Web có thể theo dõi và giải quyết báo cáo trên toàn hệ thống thông qua Admin Portal.
   - ![Quản lý Hội nhóm & Phân quyền](docs/assets/screenshots/group-management-roles.png)
-- 📖 *Xem đặc tả chi tiết tại: [docs/features/group-roles-permissions.md](docs/features/group-roles-permissions.md)*
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/group-roles-permissions.md](docs/features/group-roles-permissions.md) & [docs/features/comment-reporting-moderation.md](docs/features/comment-reporting-moderation.md)*
 
 ---
 
@@ -369,6 +374,8 @@ Toàn bộ tài liệu chi tiết, sơ đồ thiết kế kiến trúc và hư�
 | 💬 **Nhắn tin Realtime** | Giao thức nhị phân MQTT/Protobuf mã hóa TLS/WSS chống bắt gói tin, Hộp chat nổi Messenger, 5 chủ đề, chế độ hạn chế | [Xem tài liệu](docs/features/chat-realtime.md) |
 | 🤝 **Gợi ý bạn bè** | Thuật toán đồ thị Neo4j (2-Hops & Degree Centrality), đồng bộ realtime, Redis Cache | [Xem tài liệu](docs/features/friend-recommendation.md) |
 | 📰 **Bảng tin & Profile** | Đăng bài 4 ảnh magic-byte, phân quyền riêng tư, timeline cá nhân, học vấn (trường học) & tình trạng mối quan hệ | [Xem tài liệu](docs/features/social-feed-profile.md) |
+| 👥 **Hội Nhóm & Phân Quyền BQT** | Quản lý thành viên, bổ nhiệm Phó nhóm, phân quyền chi tiết (xóa thành viên, khóa cmt, chặn bài), câu hỏi xét duyệt & Báo cáo bình luận thông minh | [Xem tài liệu](docs/features/group-roles-permissions.md) |
+| 🚩 **Báo Cáo Bình Luận & Kiểm Duyệt** | Báo cáo bình luận, điều hướng thông minh tới BQT Nhóm hoặc Admin Web, xử lý vi phạm & chế tài thành viên | [Xem tài liệu](docs/features/comment-reporting-moderation.md) |
 | 🛡️ **Kiểm duyệt AI** | NLP Classifier, Vision Scanner, Anomaly Detection (Isolation Forest, Autoencoder) | [Xem tài liệu](docs/features/moderation-trust.md) |
 | 🛡️ **Trung tâm Bảo mật WAF** | Bảng điều khiển `/admin/security`, WAF-as-Code CLI (`npm run cf:waf`), Turnstile Clearance, Auto-Ban tầng biên | [Xem tài liệu](docs/features/waf.md) |
 | 👑 **Cổng Quản Trị Độc Lập** | Kiến trúc tách biệt Admin React SPA (Cổng 5174), bảo mật phân quyền Role Admin, Dashboard & Giám sát hệ thống | [Xem tài liệu](docs/features/admin-portal.md) |

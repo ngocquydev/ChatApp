@@ -22,6 +22,7 @@ import {
   ToggleMuteCommentsDto,
   ToggleBlockPostingDto,
 } from './dto/community-group.dto.js';
+import { ResolveCommentReportDto } from '../posts/dto/report-comment.dto.js';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -237,5 +238,32 @@ export class CommunityGroupsController {
   ) {
     const userId = this.extractUserId(req);
     return this.groupsService.updateGroup(groupId, userId, dto);
+  }
+
+  @Get(':id/comment-reports')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Lấy danh sách báo cáo bình luận trong nhóm (Dành cho BQT nhóm)' })
+  async getGroupCommentReports(
+    @Param('id') groupId: string,
+    @Request() req: AuthenticatedRequest,
+    @Query('status') status?: string,
+  ) {
+    const userId = this.extractUserId(req);
+    return this.groupsService.getGroupCommentReports(groupId, userId, status);
+  }
+
+  @Post(':id/comment-reports/:reportId/resolve')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Quản trị viên / phó nhóm xử lý báo cáo bình luận' })
+  async resolveGroupCommentReport(
+    @Param('id') groupId: string,
+    @Param('reportId') reportId: string,
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: ResolveCommentReportDto,
+  ) {
+    const userId = this.extractUserId(req);
+    return this.groupsService.resolveGroupCommentReport(groupId, reportId, userId, dto);
   }
 }

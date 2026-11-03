@@ -263,6 +263,7 @@ export default function PostCard({
           <PostCommentSection
             postId={post._id}
             postAuthorId={post.author._id}
+            groupId={post.groupId}
             currentUserId={currentUserId}
             onCountChange={(delta) => onCommentCountChange(post._id, delta)}
           />

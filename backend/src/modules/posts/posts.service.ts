@@ -19,8 +19,10 @@ import { Post, PostDocument } from './schemas/post.schema.js';
 import type { PostPrivacy } from './schemas/post.schema.js';
 import { PostLike, PostLikeDocument, type ReactionType } from './schemas/post-like.schema.js';
 import { PostComment, PostCommentDocument } from './schemas/post-comment.schema.js';
+import { CommentReport, CommentReportDocument } from './schemas/comment-report.schema.js';
 import { CommunityGroup, CommunityGroupDocument } from '../community-groups/schemas/community-group.schema.js';
 import type { CreatePostDto, SharePostDto, UpdatePostDto } from './dto/posts.dto.js';
+import type { CreateCommentReportDto } from './dto/report-comment.dto.js';
 
 export type ViewerRelation = 'self' | 'friends' | 'none';
 
@@ -116,6 +118,9 @@ export class PostsService {
     @Optional()
     @InjectModel(CommunityGroup.name)
     private readonly groupModel?: Model<CommunityGroupDocument>,
+    @Optional()
+    @InjectModel(CommentReport.name)
+    private readonly reportModel?: Model<CommentReportDocument>,
   ) {}
 
   /**
@@ -1007,8 +1012,22 @@ export class PostsService {
       .lean<PostComment & { _id: Types.ObjectId }>()
       .exec();
     if (!comment) throw new NotFoundException('Bình luận không tồn tại');
+
+    let isGroupAdmin = false;
+    if (post.groupId && this.groupModel) {
+      const group = await this.groupModel.findById(post.groupId).select('creatorId adminIds deputies').lean().exec();
+      if (group) {
+        const creatorId = group.creatorId?.toString();
+        const adminIds = (group.adminIds || []).map((a: any) => a.toString());
+        const deputies = (group.deputies || []).filter((d: any) => d.canRemoveMembers).map((d: any) => d.userId?.toString());
+        isGroupAdmin = viewerId === creatorId || adminIds.includes(viewerId) || deputies.includes(viewerId);
+      }
+    }
+
     const canDelete =
-      comment.authorId.toString() === viewerId || post.authorId.toString() === viewerId;
+      comment.authorId.toString() === viewerId ||
+      post.authorId.toString() === viewerId ||
+      isGroupAdmin;
     if (!canDelete) throw new ForbiddenException('Bạn không có quyền xóa bình luận này');
     const result = await this.commentModel.deleteOne({ _id: comment._id }).exec();
     if (result.deletedCount === 1) {
@@ -1029,6 +1048,73 @@ export class PostsService {
       } catch {}
     }
     return { success: true, message: 'Đã xóa bình luận' };
+  }
+
+  /**
+   * Báo cáo bình luận vi phạm (gửi tới Ban quản trị nhóm hoặc Admin Web)
+   */
+  async reportComment(
+    reporterId: string,
+    commentId: string,
+    dto: CreateCommentReportDto,
+  ): Promise<{ success: boolean; message: string }> {
+    const commentObjId = toObjectId(commentId, 'Mã bình luận không hợp lệ');
+    const reporterObjId = toObjectId(reporterId, 'Mã người dùng không hợp lệ');
+
+    const comment = await this.commentModel.findById(commentObjId).exec();
+    if (!comment) {
+      throw new NotFoundException('Bình luận không tồn tại hoặc đã bị xóa');
+    }
+
+    if (comment.authorId.toString() === reporterId) {
+      throw new BadRequestException('Bạn không thể tự báo cáo bình luận của chính mình');
+    }
+
+    const post = await this.postModel.findById(comment.postId).exec();
+    if (!post || post.isDeleted) {
+      throw new NotFoundException('Bài viết chứa bình luận không tồn tại');
+    }
+
+    // Nếu bài viết thuộc nhóm, cho phép chọn group_admin hoặc web_admin
+    // Nếu bài viết không thuộc nhóm, target bắt buộc là web_admin
+    const hasGroup = Boolean(post.groupId);
+    const target = hasGroup ? dto.target : 'web_admin';
+
+    if (this.reportModel) {
+      const existing = await this.reportModel
+        .findOne({
+          commentId: commentObjId,
+          reporterId: reporterObjId,
+          status: 'pending',
+        })
+        .exec();
+
+      if (existing) {
+        throw new BadRequestException('Bạn đã gửi báo cáo cho bình luận này và đang chờ xử lý');
+      }
+
+      await this.reportModel.create({
+        commentId: commentObjId,
+        postId: post._id,
+        reporterId: reporterObjId,
+        commentAuthorId: comment.authorId,
+        commentContent: comment.content || (comment.mediaUrl ? '[Đính kèm file]' : ''),
+        groupId: post.groupId || null,
+        target,
+        reason: dto.reason.trim(),
+        details: dto.details?.trim() || '',
+        status: 'pending',
+        actionTaken: 'none',
+      });
+    }
+
+    return {
+      success: true,
+      message:
+        target === 'group_admin'
+          ? 'Đã gửi báo cáo bình luận tới Ban quản trị hội nhóm'
+          : 'Đã gửi báo cáo bình luận tới Ban quản trị hệ thống',
+    };
   }
 
   /** Bật/tắt thích hoặc thả cảm xúc cho bình luận. */

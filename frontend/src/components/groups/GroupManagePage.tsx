@@ -26,6 +26,7 @@ import {
   CheckCircle2,
   Clock,
   Crown,
+  Flag,
   Globe,
   Lock,
   Save,
@@ -44,6 +45,7 @@ import {
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import GroupMembersTab from "./GroupMembersTab";
 import GroupRequestsTab from "./GroupRequestsTab";
+import GroupReportsTab from "./GroupReportsTab";
 
 interface GroupManagePageProps {
   slug: string;
@@ -65,6 +67,7 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
   const [memberCount, setMemberCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [deputiesCount, setDeputiesCount] = useState(0);
+  const [reportsCount, setReportsCount] = useState(0);
 
   // Settings form state
   const [editName, setEditName] = useState("");
@@ -379,6 +382,12 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
                 label={t("groups.tabRequests", { count: pendingCount })}
                 sx={{ fontWeight: 600 }}
               />
+              <Tab
+                icon={<Flag size={18} />}
+                iconPosition="start"
+                label={`${t("reports.tabReports")}${reportsCount > 0 ? ` (${reportsCount})` : ""}`}
+                sx={{ fontWeight: 600 }}
+              />
               {viewerPermissions.isAdmin && (
                 <Tab
                   icon={<Settings size={18} />}
@@ -408,8 +417,16 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
             />
           )}
 
-          {/* Tab 2: Group Settings (Admin Only) */}
-          {currentTab === 2 && viewerPermissions.isAdmin && (
+          {/* Tab 2: Reported Comments */}
+          {currentTab === 2 && (
+            <GroupReportsTab
+              groupId={group._id}
+              onReportCountChange={(newCount) => setReportsCount(newCount)}
+            />
+          )}
+
+          {/* Tab 3: Group Settings (Admin Only) */}
+          {currentTab === 3 && viewerPermissions.isAdmin && (
             <Card variant="outlined" sx={{ borderRadius: "16px", p: { xs: 2.5, sm: 4 } }}>
               <Typography variant="h6" sx={{ fontWeight: 800 }} gutterBottom>
                 {t("groups.groupSettings")}

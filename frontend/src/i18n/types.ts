@@ -271,4 +271,37 @@ export interface TranslationDictionary {
     dontHaveAccount: string;
     loggingIn: string;
   };
+  reports: {
+    reportComment: string;
+    reportCommentDesc: string;
+    chooseDestination: string;
+    reportToGroupAdmin: string;
+    reportToGroupAdminDesc: string;
+    reportToWebAdmin: string;
+    reportToWebAdminDesc: string;
+    reasonTitle: string;
+    reasonSpam: string;
+    reasonHarassment: string;
+    reasonHateSpeech: string;
+    reasonInappropriate: string;
+    reasonOther: string;
+    detailsPlaceholder: string;
+    sendReport: string;
+    sendingReport: string;
+    reportSuccess: string;
+    tabReports: string;
+    noReports: string;
+    noReportsDesc: string;
+    dismiss: string;
+    deleteComment: string;
+    muteUser: string;
+    blockPosting: string;
+    removeMember: string;
+    reportedBy: string;
+    targetGroupAdmin: string;
+    targetWebAdmin: string;
+    statusPending: string;
+    statusResolved: string;
+    statusDismissed: string;
+  };
 }

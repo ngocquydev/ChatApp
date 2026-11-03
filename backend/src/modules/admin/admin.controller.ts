@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -102,5 +103,25 @@ export class AdminController {
   @ApiOperation({ summary: 'Xem trạng thái sức khỏe chi tiết máy chủ và dịch vụ liên kết' })
   getSystemHealth() {
     return this.adminService.getSystemHealth();
+  }
+
+  @Get('comment-reports')
+  @ApiOperation({ summary: 'Lấy danh sách báo cáo bình luận dành cho Quản trị viên hệ thống' })
+  getCommentReports(
+    @Query('target') target?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.adminService.getCommentReports(target, status);
+  }
+
+  @Post('comment-reports/:id/resolve')
+  @ApiOperation({ summary: 'Web Admin xử lý báo cáo bình luận' })
+  resolveCommentReport(
+    @Param('id') reportId: string,
+    @Req() req: any,
+    @Body() dto: { action: 'dismiss' | 'delete_comment' | 'banned_user'; note?: string },
+  ) {
+    const adminId = req.user?.id || req.user?._id || req.user?.sub;
+    return this.adminService.resolveCommentReport(reportId, String(adminId), dto);
   }
 }

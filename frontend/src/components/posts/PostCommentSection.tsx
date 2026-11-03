@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Alert, Box, Button, Skeleton, Typography } from "@mui/material";
+import { Alert, Box, Button, Skeleton, Snackbar, Typography } from "@mui/material";
 import { Sparkles } from "lucide-react";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { summarizeComments } from "@/services/groqApi";
 import AiCommentSummaryBox from "./AiCommentSummaryBox";
+import ReportCommentDialog from "./ReportCommentDialog";
 import { usePagedList } from "@/hooks/usePagedList";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
@@ -26,6 +27,7 @@ const COMMENT_PAGE_SIZE = 5;
 interface PostCommentSectionProps {
   postId: string;
   postAuthorId: string;
+  groupId?: string | null;
   currentUserId?: string;
   /** Báo cho thẻ bài viết cập nhật bộ đếm bình luận (+1 / −1) */
   onCountChange: (delta: number) => void;
@@ -35,6 +37,7 @@ interface PostCommentSectionProps {
 export default function PostCommentSection({
   postId,
   postAuthorId,
+  groupId,
   currentUserId,
   onCountChange,
 }: PostCommentSectionProps) {
@@ -47,6 +50,8 @@ export default function PostCommentSection({
   const [sending, setSending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<CommentView | null>(null);
+  const [toReport, setToReport] = useState<CommentView | null>(null);
+  const [reportToast, setReportToast] = useState<{ message: string; severity: "success" | "error" } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
@@ -247,6 +252,7 @@ export default function PostCommentSection({
                     currentUserId={currentUserId}
                     canDelete={c.author._id === currentUserId || postAuthorId === currentUserId}
                     onDelete={setToDelete}
+                    onReport={setToReport}
                     onToggleReaction={handleToggleCommentReaction}
                   />
                 ))}
@@ -298,6 +304,30 @@ export default function PostCommentSection({
         onConfirm={() => void confirmDelete()}
         onClose={() => setToDelete(null)}
       />
+
+      <ReportCommentDialog
+        open={!!toReport}
+        comment={toReport}
+        groupId={groupId}
+        onClose={() => setToReport(null)}
+        onSuccess={(msg) => setReportToast({ message: msg, severity: "success" })}
+        onError={(msg) => setReportToast({ message: msg, severity: "error" })}
+      />
+
+      <Snackbar
+        open={!!reportToast}
+        autoHideDuration={4000}
+        onClose={() => setReportToast(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity={reportToast?.severity || "info"}
+          onClose={() => setReportToast(null)}
+          sx={{ width: "100%" }}
+        >
+          {reportToast?.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

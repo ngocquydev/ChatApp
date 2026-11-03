@@ -340,3 +340,17 @@ export async function fetchPostCommenters(postId: string): Promise<PostAuthor[]>
   const { data } = await api.get(`/posts/${postId}/commenters`);
   return data.users ?? [];
 }
+
+export interface ReportCommentPayload {
+  target: "group_admin" | "web_admin";
+  reason: string;
+  details?: string;
+}
+
+export async function reportComment(
+  commentId: string,
+  payload: ReportCommentPayload,
+): Promise<{ success: boolean; message: string }> {
+  const { data } = await api.post(`/posts/comments/${commentId}/report`, payload);
+  return data;
+}

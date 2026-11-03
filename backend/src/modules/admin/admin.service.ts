@@ -11,6 +11,7 @@ import { Model, Types } from 'mongoose';
 import { User, UserRepository } from '../users/entities/user.entity.js';
 import { Post, PostDocument } from '../posts/schemas/post.schema.js';
 import { PostComment, PostCommentDocument } from '../posts/schemas/post-comment.schema.js';
+import { CommentReport, CommentReportDocument } from '../posts/schemas/comment-report.schema.js';
 import { ModerationService } from '../moderation/moderation.service.js';
 import { WafConfigService } from '../waf/waf-config.service.js';
 import { EdgeBanService } from '../waf/edge-ban.service.js';
@@ -33,6 +34,9 @@ export class AdminService {
     private readonly edgeBanService: EdgeBanService,
     @Optional() private readonly redisService?: RedisService,
     @Optional() private readonly neo4jService?: Neo4jService,
+    @Optional()
+    @InjectModel(CommentReport.name)
+    private readonly reportModel?: Model<CommentReportDocument>,
   ) {}
 
   async getStats() {
@@ -471,5 +475,113 @@ export class AdminService {
         },
       },
     };
+  }
+
+  /**
+   * Lấy danh sách báo cáo bình luận dành cho Quản trị viên hệ thống (Web Admin)
+   */
+  async getCommentReports(target?: string, status?: string) {
+    if (!this.reportModel) return [];
+
+    const query: any = {};
+    if (target && target !== 'all') {
+      query.target = target;
+    }
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    const reports = await this.reportModel
+      .find(query)
+      .populate('reporterId', 'name avatar email')
+      .populate('commentAuthorId', 'name avatar email')
+      .populate('groupId', 'name slug')
+      .populate('resolvedBy', 'name avatar')
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    return reports;
+  }
+
+  /**
+   * Web Admin xử lý báo cáo bình luận
+   */
+  async resolveCommentReport(
+    reportId: string,
+    adminId: string,
+    dto: { action: 'dismiss' | 'delete_comment' | 'banned_user'; note?: string },
+  ) {
+    if (!Types.ObjectId.isValid(reportId)) {
+      throw new BadRequestException('Mã báo cáo không hợp lệ');
+    }
+
+    if (!this.reportModel) {
+      throw new BadRequestException('Mô hình báo cáo chưa được cấu hình');
+    }
+
+    const report = await this.reportModel.findById(reportId).exec();
+    if (!report) {
+      throw new NotFoundException('Báo cáo không tồn tại');
+    }
+
+    const adminObjId = new Types.ObjectId(adminId);
+
+    if (dto.action === 'dismiss') {
+      report.status = 'dismissed';
+      report.actionTaken = 'dismissed';
+      report.resolvedBy = adminObjId;
+      report.resolvedAt = new Date();
+      report.resolutionNote = dto.note || 'Bỏ qua báo cáo';
+      await report.save();
+      return { success: true, message: 'Đã bỏ qua báo cáo', report };
+    }
+
+    if (dto.action === 'delete_comment') {
+      const comment = await this.commentModel.findById(report.commentId).exec();
+      if (comment) {
+        await this.commentModel.deleteOne({ _id: comment._id }).exec();
+        await this.postModel
+          .updateOne({ _id: comment.postId, commentCount: { $gt: 0 } }, { $inc: { commentCount: -1 } })
+          .exec();
+      }
+
+      report.status = 'resolved';
+      report.actionTaken = 'deleted_comment';
+      report.resolvedBy = adminObjId;
+      report.resolvedAt = new Date();
+      report.resolutionNote = dto.note || 'Đã xóa bình luận vi phạm';
+      await report.save();
+
+      return { success: true, message: 'Đã xóa bình luận vi phạm', report };
+    }
+
+    if (dto.action === 'banned_user') {
+      const comment = await this.commentModel.findById(report.commentId).exec();
+      if (comment) {
+        await this.commentModel.deleteOne({ _id: comment._id }).exec();
+        await this.postModel
+          .updateOne({ _id: comment.postId, commentCount: { $gt: 0 } }, { $inc: { commentCount: -1 } })
+          .exec();
+      }
+
+      if (report.commentAuthorId) {
+        await this.userModel.updateOne(
+          { _id: report.commentAuthorId },
+          { $set: { isBan: true } },
+        ).exec();
+      }
+
+      report.status = 'resolved';
+      report.actionTaken = 'banned_user';
+      report.resolvedBy = adminObjId;
+      report.resolvedAt = new Date();
+      report.resolutionNote = dto.note || 'Đã xóa bình luận và khóa tài khoản vi phạm';
+      await report.save();
+
+      return { success: true, message: 'Đã xóa bình luận và khóa tài khoản vi phạm', report };
+    }
+
+    throw new BadRequestException('Hành động xử lý không hợp lệ');
   }
 }

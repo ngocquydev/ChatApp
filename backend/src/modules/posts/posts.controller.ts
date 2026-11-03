@@ -30,6 +30,7 @@ import {
   SharePostDto,
   UpdatePostDto,
 } from './dto/posts.dto.js';
+import { CreateCommentReportDto } from './dto/report-comment.dto.js';
 import { savePostImage } from './post-image.util.js';
 
 const POST_MEDIA_MAX_BYTES = 100 * 1024 * 1024;
@@ -266,5 +267,15 @@ export class PostsController {
     @Param('commentId') commentId: string,
   ) {
     return this.postsService.deleteComment(this.extractUserId(req), postId, commentId);
+  }
+
+  @Post('comments/:commentId/report')
+  @ApiOperation({ summary: 'Báo cáo bình luận vi phạm tới BQT nhóm hoặc Admin Web' })
+  reportComment(
+    @Req() req: AuthenticatedRequest,
+    @Param('commentId') commentId: string,
+    @Body() dto: CreateCommentReportDto,
+  ) {
+    return this.postsService.reportComment(this.extractUserId(req), commentId, dto);
   }
 }

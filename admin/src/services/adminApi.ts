@@ -289,4 +289,57 @@ export const adminApi = {
     );
     return res.data;
   },
+
+  async getCommentReports(params?: {
+    target?: 'group_admin' | 'web_admin';
+    status?: string;
+  }): Promise<AdminCommentReport[]> {
+    const res = await api.get<AdminCommentReport[]>('/admin/comment-reports', { params });
+    return res.data;
+  },
+
+  async resolveCommentReport(
+    reportId: string,
+    data: {
+      action: 'dismiss' | 'delete_comment' | 'mute_user' | 'banned_posting' | 'banned_user';
+      note?: string;
+    },
+  ): Promise<{ success: boolean; message: string }> {
+    const res = await api.post<{ success: boolean; message: string }>(
+      `/admin/comment-reports/${reportId}/resolve`,
+      data,
+    );
+    return res.data;
+  },
 };
+
+export interface AdminCommentReport {
+  _id: string;
+  commentId: string;
+  postId: string;
+  commentContent: string;
+  groupId?: string;
+  target: 'group_admin' | 'web_admin';
+  reason: string;
+  details?: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+  actionTaken: string;
+  resolutionNote?: string;
+  reporterId?: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
+  commentAuthorId?: {
+    _id: string;
+    name: string;
+    avatar?: string;
+    email?: string;
+  };
+  resolvedBy?: {
+    _id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}

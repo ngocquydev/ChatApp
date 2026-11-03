@@ -347,7 +347,30 @@ Hệ thống nâng cấp cơ chế quản trị Hội nhóm Cộng đồng (`/gr
 
 ---
 
+### 23. Báo Cáo Bình Luận & Kiểm Duyệt Hội Nhóm (Smart Comment Reporting)
+
+- **Cơ chế Điều hướng Báo cáo Thông minh (Smart Report Routing):**
+  - **Trong Hội nhóm:** Người dùng có thể chủ động chọn gửi báo cáo tới **Ban Quản trị Nhóm (`group_admin`)** hoặc **Admin Hệ thống (`web_admin`)**.
+  - **Ngoài Hội nhóm:** Báo cáo được tự động gửi thẳng tới Ban Quản trị Web.
+- **Quy trình Xử lý Báo cáo Toàn diện cho BQT Nhóm (`/groups/[slug]/manage` - Tab Báo cáo):**
+  - Xem nội dung bình luận bị báo cáo, người báo cáo, tác giả bình luận và lý do vi phạm.
+  - Các công cụ xử lý mạnh mẽ:
+    - ❌ **Xóa bình luận vi phạm (`delete_comment`)**
+    - 🔇 **Khóa quyền bình luận của tác giả (`mute_user`)**
+    - 🚫 **Chặn quyền đăng bài của tác giả (`banned_posting`)**
+    - 👢 **Xóa thành viên khỏi nhóm (`banned_user`)**
+    - 👁️ **Bỏ qua báo cáo (`dismiss`)**
+  - Hỗ trợ nhập ghi chú lý do xử lý để lưu vết kiểm duyệt (Audit Log).
+- **Cổng Quản trị Viên Web (`Admin Portal` -> `AI Moderation` -> Tab Báo cáo bình luận):**
+  - Web Admin có thể lọc theo nơi nhận và trạng thái, xử lý bình luận vi phạm trên toàn nền tảng.
+- **Hỗ trợ 100% đầy đủ cả 6 ngôn ngữ:** Tiếng Việt, English, 简体中文, 繁體中文, 한국어, ไทย.
+
+- 📖 *Xem chi tiết: [docs/features/comment-reporting-moderation.md](features/comment-reporting-moderation.md)*
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Báo Cáo Bình Luận & Kiểm Duyệt Hội Nhóm (Smart Comment Reporting)](features/comment-reporting-moderation.md)
 > - [Phân quyền Quản trị viên, Phó nhóm & Câu hỏi Xét duyệt](features/group-roles-permissions.md)
 > - [Hệ thống Đa ngôn ngữ 6 thứ tiếng (VI, EN, ZH-CN, ZH-TW, KO, TH)](features/multilingual-support.md)
 > - [Cột điều hướng trái chuẩn Facebook & Tối ưu Header](features/facebook-left-sidebar-navigation.md)

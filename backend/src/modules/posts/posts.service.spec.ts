@@ -53,6 +53,7 @@ describe('PostsService', () => {
   let commentModel: {
     find: ReturnType<typeof vi.fn>;
     findOne: ReturnType<typeof vi.fn>;
+    findById: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     deleteOne: ReturnType<typeof vi.fn>;
     aggregate: ReturnType<typeof vi.fn>;
@@ -87,6 +88,7 @@ describe('PostsService', () => {
     commentModel = {
       find: vi.fn(),
       findOne: vi.fn(),
+      findById: vi.fn(),
       create: vi.fn(),
       deleteOne: vi.fn(),
       aggregate: vi.fn().mockResolvedValue([]),
@@ -664,6 +666,66 @@ describe('PostsService', () => {
       const photos = await service.getUserPhotos(me, other, 9);
       expect(photos).toHaveLength(1);
       expect(photos[0].url).toBe('https://cloudinary.com/avatar.jpg');
+    });
+  });
+
+  describe('reportComment', () => {
+    it('từ chối nếu bình luận không tồn tại', async () => {
+      commentModel.findById.mockReturnValue(q(null));
+      await expect(
+        service.reportComment(me, oid().toString(), { target: 'web_admin', reason: 'spam' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('từ chối nếu người dùng tự báo cáo bình luận của chính mình', async () => {
+      commentModel.findById.mockReturnValue(
+        q({ _id: oid(), authorId: new Types.ObjectId(me), content: 'mine' }),
+      );
+      await expect(
+        service.reportComment(me, oid().toString(), { target: 'web_admin', reason: 'spam' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('báo cáo thành công cho BQT nhóm khi bài viết thuộc nhóm', async () => {
+      const commentId = oid();
+      const authorId = oid();
+      const groupId = oid();
+      commentModel.findById.mockReturnValue(
+        q({ _id: commentId, postId: oid(), authorId, content: 'bad comment' }),
+      );
+      postModel.findById.mockReturnValue(
+        q({ _id: oid(), groupId, isDeleted: false }),
+      );
+      const mockReportModel = {
+        findOne: vi.fn().mockReturnValue(q(null)),
+        create: vi.fn().mockResolvedValue({ _id: oid() }),
+      };
+      const svc = new PostsService(
+        postModel as unknown as never,
+        likeModel as unknown as never,
+        commentModel as unknown as never,
+        friendshipModel as unknown as never,
+        usersService as unknown as never,
+        undefined,
+        notificationsService as unknown as never,
+        undefined,
+        undefined,
+        mockReportModel as unknown as never,
+      );
+
+      const res = await svc.reportComment(me, commentId.toString(), {
+        target: 'group_admin',
+        reason: 'harassment',
+        details: 'vi phạm nội quy nhóm',
+      });
+      expect(res.success).toBe(true);
+      expect(mockReportModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          target: 'group_admin',
+          reason: 'harassment',
+          details: 'vi phạm nội quy nhóm',
+        }),
+      );
     });
   });
 

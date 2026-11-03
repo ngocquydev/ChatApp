@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Box, ButtonBase, IconButton, Tooltip, Typography } from "@mui/material";
-import { Trash2 } from "lucide-react";
+import { Trash2, Flag } from "lucide-react";
 import ImageLightbox from "@/components/posts/ImageLightbox";
 import { useTranslation } from "@/i18n/useTranslation";
 import { isVideoUrl, mediaUrl, type CommentView, type ReactionType } from "@/services/postsApi";
@@ -17,6 +17,7 @@ interface CommentItemProps {
   currentUserId?: string;
   canDelete: boolean;
   onDelete: (comment: CommentView) => void;
+  onReport?: (comment: CommentView) => void;
   onToggleReaction?: (comment: CommentView, type?: ReactionType) => void;
 }
 
@@ -25,10 +26,16 @@ export default function CommentItem({
   currentUserId,
   canDelete,
   onDelete,
+  onReport,
   onToggleReaction,
 }: CommentItemProps) {
-  const { tr } = useTranslation();
+  const { t, tr } = useTranslation();
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const isAuthor = Boolean(
+    currentUserId &&
+      (comment.author._id === currentUserId || (comment.author as any).id === currentUserId)
+  );
+  const canReport = Boolean(currentUserId && !isAuthor && onReport);
   const hasMedia = Boolean(comment.mediaUrl);
   const isVideo = hasMedia && (comment.mediaType === "video" || isVideoUrl(comment.mediaUrl));
   const fullMediaUrl = comment.mediaUrl ? mediaUrl(comment.mediaUrl) : "";
@@ -134,16 +141,33 @@ export default function CommentItem({
         </Box>
       </Box>
 
-      {canDelete && (
-        <IconButton
-          size="small"
-          aria-label={tr(`Xóa bình luận của ${comment.author.name}`, `Delete comment by ${comment.author.name}`)}
-          onClick={() => onDelete(comment)}
-          sx={{ mt: 0.5, color: "text.secondary", "&:hover": { color: "error.main" } }}
-        >
-          <Trash2 size={16} aria-hidden />
-        </IconButton>
-      )}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}>
+        {canReport && (
+          <Tooltip title={t("reports.reportComment")}>
+            <IconButton
+              size="small"
+              aria-label={t("reports.reportComment")}
+              onClick={() => onReport?.(comment)}
+              sx={{ color: "text.secondary", "&:hover": { color: "error.main" } }}
+            >
+              <Flag size={15} aria-hidden />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {canDelete && (
+          <Tooltip title={tr("Xóa bình luận", "Delete comment")}>
+            <IconButton
+              size="small"
+              aria-label={tr(`Xóa bình luận của ${comment.author.name}`, `Delete comment by ${comment.author.name}`)}
+              onClick={() => onDelete(comment)}
+              sx={{ color: "text.secondary", "&:hover": { color: "error.main" } }}
+            >
+              <Trash2 size={16} aria-hidden />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
 
       {lightbox && (
         <ImageLightbox

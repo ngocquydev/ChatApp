@@ -204,6 +204,63 @@ export const communityGroupsApi = {
     const res = await api.patch(`/community-groups/${groupId}`, data);
     return res.data;
   },
+
+  getCommentReports: async (
+    groupId: string,
+    status?: string
+  ): Promise<GroupCommentReportItem[]> => {
+    const res = await api.get<GroupCommentReportItem[]>(
+      `/community-groups/${groupId}/comment-reports`,
+      { params: { status } }
+    );
+    return res.data;
+  },
+
+  resolveCommentReport: async (
+    groupId: string,
+    reportId: string,
+    data: {
+      action: "dismiss" | "delete_comment" | "mute_user" | "banned_posting" | "banned_user";
+      note?: string;
+    }
+  ): Promise<{ success: boolean; message: string }> => {
+    const res = await api.post(
+      `/community-groups/${groupId}/comment-reports/${reportId}/resolve`,
+      data
+    );
+    return res.data;
+  },
 };
+
+export interface GroupCommentReportItem {
+  _id: string;
+  commentId: string;
+  postId: string;
+  commentContent: string;
+  groupId: string;
+  target: "group_admin" | "web_admin";
+  reason: string;
+  details?: string;
+  status: "pending" | "resolved" | "dismissed";
+  actionTaken: string;
+  resolutionNote?: string;
+  reporterId?: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
+  commentAuthorId?: {
+    _id: string;
+    name: string;
+    avatar?: string;
+    email?: string;
+  };
+  resolvedBy?: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
+  createdAt: string;
+}
 
 

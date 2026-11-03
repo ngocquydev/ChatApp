@@ -10,9 +10,11 @@ import {
 import {
   ShieldAlert,
   Brain,
+  Flag,
 } from "lucide-react";
 import ModerationQueueTab from "./ModerationQueueTab";
 import ModerationPlaygroundTab from "./ModerationPlaygroundTab";
+import ReportedCommentsTab from "./ReportedCommentsTab";
 import { useTranslation } from "@/i18n/useTranslation";
 
 export default function ModerationView() {
@@ -53,11 +55,19 @@ export default function ModerationView() {
             label={isEn ? "AI Playground & Models" : "Thử nghiệm mô hình AI"}
             sx={{ fontWeight: 700, textTransform: "none", minHeight: 48 }}
           />
+          <Tab
+            icon={<Flag size={18} />}
+            iconPosition="start"
+            label={isEn ? "Reported Comments" : "Báo cáo bình luận"}
+            sx={{ fontWeight: 700, textTransform: "none", minHeight: 48 }}
+          />
         </Tabs>
       </Box>
 
       {/* Nội dung Tab */}
-      {currentTab === 0 ? <ModerationQueueTab /> : <ModerationPlaygroundTab />}
+      {currentTab === 0 && <ModerationQueueTab />}
+      {currentTab === 1 && <ModerationPlaygroundTab />}
+      {currentTab === 2 && <ReportedCommentsTab />}
     </Box>
   );
 }

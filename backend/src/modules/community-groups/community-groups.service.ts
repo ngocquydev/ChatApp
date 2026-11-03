@@ -5,10 +5,15 @@ import {
   ConflictException,
   ForbiddenException,
   BadRequestException,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CommunityGroup, CommunityGroupDocument } from './schemas/community-group.schema.js';
+import { CommentReport, CommentReportDocument } from '../posts/schemas/comment-report.schema.js';
+import { PostComment, PostCommentDocument } from '../posts/schemas/post-comment.schema.js';
+import { Post, PostDocument } from '../posts/schemas/post.schema.js';
+import { ResolveCommentReportDto } from '../posts/dto/report-comment.dto.js';
 import {
   CreateCommunityGroupDto,
   UpdateCommunityGroupDto,
@@ -39,6 +44,15 @@ export class CommunityGroupsService implements OnModuleInit {
   constructor(
     @InjectModel(CommunityGroup.name)
     private readonly groupModel: Model<CommunityGroupDocument>,
+    @Optional()
+    @InjectModel(CommentReport.name)
+    private readonly reportModel?: Model<CommentReportDocument>,
+    @Optional()
+    @InjectModel(PostComment.name)
+    private readonly commentModel?: Model<PostCommentDocument>,
+    @Optional()
+    @InjectModel(Post.name)
+    private readonly postModel?: Model<PostDocument>,
   ) {}
 
   async onModuleInit() {
@@ -838,5 +852,181 @@ export class CommunityGroupsService implements OnModuleInit {
     await group.save();
 
     return group;
+  }
+
+  /**
+   * Lấy danh sách báo cáo bình luận trong nhóm dành cho BQT nhóm
+   */
+  async getGroupCommentReports(groupId: string, viewerId: string, status?: string) {
+    if (!Types.ObjectId.isValid(groupId)) {
+      throw new BadRequestException('Mã nhóm không hợp lệ');
+    }
+
+    const group = await this.groupModel.findById(groupId).exec();
+    if (!group || group.isDeleted) {
+      throw new NotFoundException('Hội nhóm không tồn tại');
+    }
+
+    const isCreator = toIdString(group.creatorId) === viewerId;
+    const isAdmin = isCreator || (group.adminIds || []).some((a) => toIdString(a) === viewerId);
+    const isDeputy = (group.deputies || []).some((d) => toIdString(d.userId) === viewerId);
+
+    if (!isAdmin && !isDeputy) {
+      throw new ForbiddenException('Chỉ quản trị viên hoặc phó nhóm mới có quyền xem báo cáo');
+    }
+
+    if (!this.reportModel) return [];
+
+    const query: any = {
+      groupId: new Types.ObjectId(groupId),
+      target: 'group_admin',
+    };
+
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    const reports = await this.reportModel
+      .find(query)
+      .populate('reporterId', 'name avatar')
+      .populate('commentAuthorId', 'name avatar email')
+      .populate('resolvedBy', 'name avatar')
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    return reports;
+  }
+
+  /**
+   * Quản trị viên / phó nhóm xử lý báo cáo bình luận trong nhóm
+   */
+  async resolveGroupCommentReport(
+    groupId: string,
+    reportId: string,
+    viewerId: string,
+    dto: ResolveCommentReportDto,
+  ) {
+    if (!Types.ObjectId.isValid(groupId) || !Types.ObjectId.isValid(reportId)) {
+      throw new BadRequestException('Mã không hợp lệ');
+    }
+
+    const group = await this.groupModel.findById(groupId).exec();
+    if (!group || group.isDeleted) {
+      throw new NotFoundException('Hội nhóm không tồn tại');
+    }
+
+    const isCreator = toIdString(group.creatorId) === viewerId;
+    const isAdmin = isCreator || (group.adminIds || []).some((a) => toIdString(a) === viewerId);
+    const deputy = (group.deputies || []).find((d) => toIdString(d.userId) === viewerId);
+    const isDeputy = Boolean(deputy);
+
+    if (!isAdmin && !isDeputy) {
+      throw new ForbiddenException('Chỉ quản trị viên hoặc phó nhóm mới có quyền xử lý báo cáo');
+    }
+
+    if (isDeputy && !isAdmin) {
+      if (dto.action === 'mute_user' && !deputy?.canMuteComments) {
+        throw new ForbiddenException('Bạn không có quyền khóa bình luận thành viên');
+      }
+      if (dto.action === 'banned_posting' && !deputy?.canBlockPosting) {
+        throw new ForbiddenException('Bạn không có quyền khóa đăng bài thành viên');
+      }
+      if (dto.action === 'banned_user' && !deputy?.canRemoveMembers) {
+        throw new ForbiddenException('Bạn không có quyền xóa thành viên khỏi nhóm');
+      }
+    }
+
+    if (!this.reportModel) {
+      throw new BadRequestException('Mô hình báo cáo chưa được cấu hình');
+    }
+
+    const report = await this.reportModel.findById(reportId).exec();
+    if (!report || toIdString(report.groupId) !== groupId) {
+      throw new NotFoundException('Báo cáo không tồn tại trong nhóm này');
+    }
+
+    const viewerObjId = new Types.ObjectId(viewerId);
+
+    if (dto.action === 'dismiss') {
+      report.status = 'dismissed';
+      report.actionTaken = 'dismissed';
+      report.resolvedBy = viewerObjId;
+      report.resolvedAt = new Date();
+      report.resolutionNote = dto.note || 'Bỏ qua báo cáo';
+      await report.save();
+      return { success: true, message: 'Đã bỏ qua báo cáo', report };
+    }
+
+    if (['delete_comment', 'mute_user', 'banned_posting', 'banned_user'].includes(dto.action)) {
+      if (this.commentModel) {
+        const comment = await this.commentModel.findById(report.commentId).exec();
+        if (comment) {
+          await this.commentModel.deleteOne({ _id: comment._id }).exec();
+          if (this.postModel) {
+            await this.postModel
+              .updateOne({ _id: comment.postId, commentCount: { $gt: 0 } }, { $inc: { commentCount: -1 } })
+              .exec();
+          }
+        }
+      }
+
+      if (dto.action === 'mute_user' && report.commentAuthorId) {
+        const authorObjId = new Types.ObjectId(report.commentAuthorId.toString());
+        if (!group.mutedCommentUserIds) group.mutedCommentUserIds = [];
+        if (!group.mutedCommentUserIds.some((id) => toIdString(id) === authorObjId.toString())) {
+          group.mutedCommentUserIds.push(authorObjId);
+          await group.save();
+        }
+      }
+
+      if (dto.action === 'banned_posting' && report.commentAuthorId) {
+        const authorObjId = new Types.ObjectId(report.commentAuthorId.toString());
+        if (!group.bannedPostingUserIds) group.bannedPostingUserIds = [];
+        if (!group.bannedPostingUserIds.some((id) => toIdString(id) === authorObjId.toString())) {
+          group.bannedPostingUserIds.push(authorObjId);
+          await group.save();
+        }
+      }
+
+      if (dto.action === 'banned_user' && report.commentAuthorId) {
+        const authorStr = report.commentAuthorId.toString();
+        group.members = (group.members || []).filter((m) => toIdString(m) !== authorStr);
+        group.adminIds = (group.adminIds || []).filter((a) => toIdString(a) !== authorStr);
+        group.moderatorIds = (group.moderatorIds || []).filter((m) => toIdString(m) !== authorStr);
+        group.deputies = (group.deputies || []).filter((d) => toIdString(d.userId) !== authorStr);
+        group.memberCount = Math.max((group.members || []).length, 1);
+        await group.save();
+      }
+
+      const actionMap: Record<string, any> = {
+        delete_comment: 'deleted_comment',
+        mute_user: 'muted_user',
+        banned_posting: 'banned_posting',
+        banned_user: 'banned_user',
+      };
+
+      report.status = 'resolved';
+      report.actionTaken = actionMap[dto.action] || 'none';
+      report.resolvedBy = viewerObjId;
+      report.resolvedAt = new Date();
+      report.resolutionNote = dto.note || 'Đã xử lý vi phạm';
+      await report.save();
+
+      return {
+        success: true,
+        message:
+          dto.action === 'delete_comment'
+            ? 'Đã xóa bình luận vi phạm'
+            : dto.action === 'mute_user'
+              ? 'Đã xóa bình luận và khóa quyền bình luận của người dùng'
+              : dto.action === 'banned_posting'
+                ? 'Đã xóa bình luận và chặn người dùng đăng bài trong nhóm'
+                : 'Đã xóa bình luận và loại người dùng khỏi nhóm',
+        report,
+      };
+    }
+
+    throw new BadRequestException('Hành động không hợp lệ');
   }
 }
