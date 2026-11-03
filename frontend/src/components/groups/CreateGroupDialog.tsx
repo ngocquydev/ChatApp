@@ -46,6 +46,8 @@ export default function CreateGroupDialog({
   const [privacy, setPrivacy] = useState<"public" | "private">("public");
   const [description, setDescription] = useState("");
   const [requireApproval, setRequireApproval] = useState(false);
+  const [requireJoinReason, setRequireJoinReason] = useState(false);
+  const [joinQuestion, setJoinQuestion] = useState("");
   const [avatar, setAvatar] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +69,9 @@ export default function CreateGroupDialog({
         slug: slug.trim(),
         privacy,
         description: description.trim(),
-        requireApproval,
+        requireApproval: requireApproval || requireJoinReason,
+        requireJoinReason,
+        joinQuestion: joinQuestion.trim() || undefined,
         avatar: avatar.trim() || undefined,
       });
       onCreated(group);
@@ -77,6 +81,8 @@ export default function CreateGroupDialog({
       setDescription("");
       setAvatar("");
       setRequireApproval(false);
+      setRequireJoinReason(false);
+      setJoinQuestion("");
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data
@@ -239,6 +245,41 @@ export default function CreateGroupDialog({
               </Box>
             }
           />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={requireJoinReason}
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  setRequireJoinReason(val);
+                  if (val) setRequireApproval(true);
+                }}
+                color="primary"
+              />
+            }
+            label={
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {t("groups.joinQuestionLabel")}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {t("groups.joinQuestionDesc")}
+                </Typography>
+              </Box>
+            }
+          />
+
+          {requireJoinReason && (
+            <TextField
+              label={t("groups.joinQuestionInputLabel")}
+              value={joinQuestion}
+              onChange={(e) => setJoinQuestion(e.target.value)}
+              fullWidth
+              size="small"
+              placeholder={t("groups.joinQuestionPlaceholder")}
+            />
+          )}
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 2.5, pt: 1 }}>

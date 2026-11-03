@@ -8,6 +8,7 @@ import { Friendship, FriendshipSchema } from '../friends/schemas/friendship.sche
 import { Post, PostSchema } from './schemas/post.schema.js';
 import { PostLike, PostLikeSchema } from './schemas/post-like.schema.js';
 import { PostComment, PostCommentSchema } from './schemas/post-comment.schema.js';
+import { CommunityGroup, CommunityGroupSchema } from '../community-groups/schemas/community-group.schema.js';
 import { PostsController } from './posts.controller.js';
 import { PostsService } from './posts.service.js';
 
@@ -18,6 +19,7 @@ import { PostsService } from './posts.service.js';
       { name: PostLike.name, schema: PostLikeSchema },
       { name: PostComment.name, schema: PostCommentSchema },
       { name: Friendship.name, schema: FriendshipSchema },
+      { name: CommunityGroup.name, schema: CommunityGroupSchema },
     ]),
     UsersModule,
     ModerationModule,

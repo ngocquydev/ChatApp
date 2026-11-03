@@ -199,7 +199,19 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Hội nhóm cộng đồng (`/groups`):**
   - Hỗ trợ chế độ Công khai (Public) và Riêng tư (Private).
   - Thảo luận nội bộ nhóm (`GroupFeed`): Thành viên trong nhóm có thể đăng bài viết, chia sẻ ảnh và trao đổi ý kiến trong cộng đồng riêng.
-- 📖 *Xem đặc tả chi tiết tại: [docs/features/group-chat-call-pages-groups.md](docs/features/group-chat-call-pages-groups.md)*
+  - **Quản lý vai trò & Phân quyền Phó nhóm (Deputy Management):**
+    - Người tạo nhóm tự động giữ vai trò Quản trị viên (Admin/Creator).
+    - Quản trị viên có thể bổ nhiệm thành viên làm **Phó nhóm (Deputy)** và cấp các quyền hạn quản trị chi tiết:
+      - ❌ **Xóa thành viên khỏi nhóm (`canRemoveMembers`)**
+      - 🔇 **Khóa quyền bình luận (`canMuteComments`)**
+      - 🚫 **Khóa quyền đăng bài (`canBlockPosting`)**
+    - Kiểm soát an toàn chặt chẽ ở cả backend (`CommunityGroupsService`, `PostsService`) và giao diện frontend.
+  - **Câu hỏi xét duyệt tham gia nhóm (Join Question Requirement):**
+    - Quản trị viên có thể bật yêu cầu trả lời câu hỏi khi xin gia nhập nhóm kèm nội dung câu hỏi tùy chỉnh (ví dụ: *"Tại sao bạn muốn tham gia nhóm này?"*).
+    - Thành viên khi bấm tham gia sẽ mở Modal trả lời lý do/câu hỏi trước khi gửi yêu cầu.
+    - Quản trị viên và Phó nhóm có thể xem danh sách yêu cầu chờ duyệt, đọc câu trả lời lý do của từng người và Chấp nhận hoặc Từ chối thành viên.
+  - ![Quản lý Hội nhóm & Phân quyền](docs/assets/screenshots/group-management-roles.png)
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/group-roles-permissions.md](docs/features/group-roles-permissions.md)*
 
 ---
 

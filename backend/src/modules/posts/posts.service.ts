@@ -19,6 +19,7 @@ import { Post, PostDocument } from './schemas/post.schema.js';
 import type { PostPrivacy } from './schemas/post.schema.js';
 import { PostLike, PostLikeDocument, type ReactionType } from './schemas/post-like.schema.js';
 import { PostComment, PostCommentDocument } from './schemas/post-comment.schema.js';
+import { CommunityGroup, CommunityGroupDocument } from '../community-groups/schemas/community-group.schema.js';
 import type { CreatePostDto, SharePostDto, UpdatePostDto } from './dto/posts.dto.js';
 
 export type ViewerRelation = 'self' | 'friends' | 'none';
@@ -112,6 +113,9 @@ export class PostsService {
     @Optional()
     @Inject(forwardRef(() => ChatGateway))
     private readonly chatGateway?: ChatGateway,
+    @Optional()
+    @InjectModel(CommunityGroup.name)
+    private readonly groupModel?: Model<CommunityGroupDocument>,
   ) {}
 
   /**
@@ -528,6 +532,19 @@ export class PostsService {
     }
     let isSensitive = false;
     let moderationStatus: 'approved' | 'flagged' | 'rejected' = 'approved';
+    if (dto.groupId && this.groupModel) {
+      const group = await this.groupModel.findById(dto.groupId).exec();
+      if (!group || group.isDeleted) {
+        throw new NotFoundException('Hội nhóm không tồn tại');
+      }
+      if (group.bannedPostingUserIds?.some((b) => b.toString() === authorId)) {
+        throw new ForbiddenException('Bạn đã bị quản trị viên khóa quyền đăng bài trong nhóm này');
+      }
+      const isMember = group.members?.some((m) => m.toString() === authorId);
+      if (group.privacy === 'private' && !isMember) {
+        throw new ForbiddenException('Bạn phải là thành viên để đăng bài trong nhóm này');
+      }
+    }
     let toxicityScore = 0;
     let moderationReason = '';
     if (this.moderationService && content) {
@@ -907,6 +924,14 @@ export class PostsService {
     if (!content && !cleanMedia) throw new BadRequestException('Bình luận không được để trống');
     const post = await this.loadVisiblePost(postId, viewerId);
     const isVideo = cleanMedia ? (mediaType === 'video' || /\.(mp4|webm|mov|mkv|avi)(\?.*)?$/i.test(cleanMedia) || cleanMedia.includes('/video/upload/')) : false;
+    if (post.groupId && this.groupModel) {
+      const group = await this.groupModel.findById(post.groupId).exec();
+      if (group) {
+        if (group.mutedCommentUserIds?.some((m) => m.toString() === viewerId)) {
+          throw new ForbiddenException('Bạn đã bị quản trị viên khóa quyền bình luận trong nhóm này');
+        }
+      }
+    }
     const resolvedType: 'image' | 'video' | undefined = cleanMedia ? (isVideo ? 'video' : 'image') : undefined;
 
     const created = await this.commentModel.create({

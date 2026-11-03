@@ -41,6 +41,15 @@ export class CreateCommunityGroupDto {
   @IsOptional()
   @IsBoolean()
   requireApproval?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  requireJoinReason?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 300)
+  joinQuestion?: string;
 }
 
 export class UpdateCommunityGroupDto {
@@ -69,5 +78,49 @@ export class UpdateCommunityGroupDto {
   @IsOptional()
   @IsBoolean()
   requireApproval?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  requireJoinReason?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 300)
+  joinQuestion?: string;
+}
+
+export class JoinGroupDto {
+  @IsOptional()
+  @IsString()
+  @Length(0, 500)
+  reason?: string;
+}
+
+export class SetDeputyDto {
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
+
+  @IsOptional()
+  @IsBoolean()
+  canRemoveMembers?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  canMuteComments?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  canBlockPosting?: boolean;
+}
+
+export class ToggleMuteCommentsDto {
+  @IsBoolean()
+  muted: boolean;
+}
+
+export class ToggleBlockPostingDto {
+  @IsBoolean()
+  blocked: boolean;
 }
 

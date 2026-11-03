@@ -103,5 +103,125 @@ describe('CommunityGroupsService', () => {
     expect(res.status).toBe('pending');
     expect(mockGroup.pendingMemberIds.length).toBe(1);
   });
+
+  it('should require join reason when requireJoinReason is true', async () => {
+    const groupId = new Types.ObjectId().toString();
+    const userId = new Types.ObjectId().toString();
+
+    const mockGroup = {
+      _id: new Types.ObjectId(groupId),
+      members: [],
+      pendingMemberIds: [],
+      pendingRequests: [] as any[],
+      requireJoinReason: true,
+      isDeleted: false,
+      save: vi.fn().mockResolvedValue(true),
+    };
+
+    mockGroupModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockGroup),
+    });
+
+    await expect(service.joinGroup(groupId, userId)).rejects.toThrow();
+
+    const res = await service.joinGroup(groupId, userId, { reason: 'Tôi muốn học hỏi kinh nghiệm' });
+    expect(res.status).toBe('pending');
+    expect(mockGroup.pendingRequests.length).toBe(1);
+    expect(mockGroup.pendingRequests[0].reason).toBe('Tôi muốn học hỏi kinh nghiệm');
+  });
+
+  it('should appoint deputy with granular permissions', async () => {
+    const creatorId = new Types.ObjectId().toString();
+    const groupId = new Types.ObjectId().toString();
+    const targetUserId = new Types.ObjectId().toString();
+
+    const mockGroup = {
+      _id: new Types.ObjectId(groupId),
+      creatorId: new Types.ObjectId(creatorId),
+      adminIds: [new Types.ObjectId(creatorId)],
+      members: [new Types.ObjectId(creatorId), new Types.ObjectId(targetUserId)],
+      deputies: [] as any[],
+      moderatorIds: [],
+      isDeleted: false,
+      save: vi.fn().mockResolvedValue(true),
+    };
+
+    mockGroupModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockGroup),
+    });
+
+    const result = await service.setDeputy(creatorId, groupId, {
+      userId: targetUserId,
+      canRemoveMembers: true,
+      canMuteComments: true,
+      canBlockPosting: false,
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockGroup.deputies.length).toBe(1);
+    expect(mockGroup.deputies[0].canBlockPosting).toBe(false);
+    expect(mockGroup.deputies[0].canRemoveMembers).toBe(true);
+  });
+
+  it('should allow deputy with canRemoveMembers to remove regular member', async () => {
+    const creatorId = new Types.ObjectId().toString();
+    const deputyId = new Types.ObjectId().toString();
+    const targetUserId = new Types.ObjectId().toString();
+    const groupId = new Types.ObjectId().toString();
+
+    const mockGroup = {
+      _id: new Types.ObjectId(groupId),
+      creatorId: new Types.ObjectId(creatorId),
+      adminIds: [new Types.ObjectId(creatorId)],
+      deputies: [
+        {
+          userId: new Types.ObjectId(deputyId),
+          canRemoveMembers: true,
+          canMuteComments: true,
+          canBlockPosting: true,
+        },
+      ],
+      members: [
+        new Types.ObjectId(creatorId),
+        new Types.ObjectId(deputyId),
+        new Types.ObjectId(targetUserId),
+      ],
+      memberCount: 3,
+      isDeleted: false,
+      save: vi.fn().mockResolvedValue(true),
+    };
+
+    mockGroupModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockGroup),
+    });
+
+    const res = await service.removeMember(deputyId, groupId, targetUserId);
+    expect(res.memberCount).toBe(2);
+    expect(mockGroup.members.some((m: any) => m.toString() === targetUserId)).toBe(false);
+  });
+
+  it('should toggle mute comments for regular member', async () => {
+    const creatorId = new Types.ObjectId().toString();
+    const targetUserId = new Types.ObjectId().toString();
+    const groupId = new Types.ObjectId().toString();
+
+    const mockGroup = {
+      _id: new Types.ObjectId(groupId),
+      creatorId: new Types.ObjectId(creatorId),
+      adminIds: [new Types.ObjectId(creatorId)],
+      members: [new Types.ObjectId(creatorId), new Types.ObjectId(targetUserId)],
+      mutedCommentUserIds: [],
+      isDeleted: false,
+      save: vi.fn().mockResolvedValue(true),
+    };
+
+    mockGroupModel.findById.mockReturnValue({
+      exec: vi.fn().mockResolvedValue(mockGroup),
+    });
+
+    const res = await service.toggleMuteComments(creatorId, groupId, targetUserId, true);
+    expect(res.muted).toBe(true);
+    expect(mockGroup.mutedCommentUserIds.length).toBe(1);
+  });
 });
 

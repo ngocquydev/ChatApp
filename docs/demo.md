@@ -24,6 +24,7 @@
 16. [Bố Cục Cột Điều Hướng Trái Chuẩn Facebook & Tối Ưu Thanh Header (Facebook-Style Left Sidebar & Header)](#16-bố-cục-cột-điều-hướng-trái-chuẩn-facebook--tối-ưu-thanh-header-facebook-style-left-sidebar--header)
 17. [Gắn Thẻ Bạn Bè Chuẩn Facebook & Tự Động Gợi Ý Mention (Facebook-Style Friend Tagging & Mention Link)](#17-gắn-thẻ-bạn-bè-chuẩn-facebook--tự-động-gợi-ý-mention-facebook-style-friend-tagging--mention-link)
 18. [Hệ Thống Đa Ngôn Ngữ Mở Rộng 6 Thứ Tiếng (VI, EN, 简体中文, 繁體中文, 한국어, ไทย)](#18-hệ-thống-đa-ngôn-ngữ-mở-rộng-6-thứ-tiếng-vi-en-简体中文-繁體中文-한국어-ไทย)
+19. [Phân Quyền Quản Trị Viên, Phó Nhóm & Câu Hỏi Xét Duyệt Tham Gia Nhóm](#19-phân-quyền-quản-trị-viên-phó-nhóm--câu-hỏi-xét-duyệt-tham-gia-nhóm)
 
 ---
 
@@ -315,9 +316,29 @@ Hệ thống nâng cấp bộ chọn đa ngôn ngữ hiện đại trên cả �
 
 - 📖 *Xem chi tiết: [docs/features/multilingual-support.md](features/multilingual-support.md)*
 
+---
 
+## 19. Phân Quyền Quản Trị Viên, Phó Nhóm & Câu Hỏi Xét Duyệt Tham Gia Nhóm
+
+Hệ thống nâng cấp cơ chế quản trị Hội nhóm Cộng đồng (`/groups`) toàn diện theo chuẩn mạng xã hội hiện đại:
+- **Phân cấp vai trò rõ ràng:** Quản trị viên (Admin / Creator), Phó nhóm (Deputy / Moderator) và Thành viên (Member).
+- **Phân quyền chi tiết cho Phó nhóm (Granular Deputy Permissions):**
+  - ❌ **Xóa thành viên vi phạm (`canRemoveMembers`)**
+  - 🔇 **Khóa quyền bình luận (`canMuteComments`)**
+  - 🚫 **Khóa quyền đăng bài (`canBlockPosting`)**
+- **Cơ chế câu hỏi xét duyệt khi xin vào nhóm (Join Question / Reason):**
+  - Quản trị viên có thể bật yêu cầu trả lời câu hỏi và soạn câu hỏi xét duyệt tùy ý.
+  - Người dùng bấm tham gia nhóm sẽ mở Modal trả lời lý do.
+  - Quản trị viên và Phó nhóm có thể xem danh sách chờ duyệt kèm câu trả lời của từng người để phê duyệt hoặc từ chối.
+
+![Quản lý Hội nhóm & Phân quyền](assets/screenshots/group-management-roles.png)
+
+- 📖 *Xem chi tiết: [docs/features/group-roles-permissions.md](features/group-roles-permissions.md)*
+
+---
 
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Phân quyền Quản trị viên, Phó nhóm & Câu hỏi Xét duyệt](features/group-roles-permissions.md)
 > - [Hệ thống Đa ngôn ngữ 6 thứ tiếng (VI, EN, ZH-CN, ZH-TW, KO, TH)](features/multilingual-support.md)
 > - [Cột điều hướng trái chuẩn Facebook & Tối ưu Header](features/facebook-left-sidebar-navigation.md)
 > - [Nhóm trò chuyện, Gọi nhóm WebRTC tối ưu, Fanpage & Hội nhóm](features/group-chat-call-pages-groups.md)

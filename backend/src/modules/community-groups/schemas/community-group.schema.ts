@@ -32,6 +32,52 @@ export class CommunityGroup {
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
   moderatorIds: Types.ObjectId[];
 
+  @Prop({
+    type: [
+      {
+        userId: { type: Types.ObjectId, ref: 'User', required: true },
+        canRemoveMembers: { type: Boolean, default: true },
+        canMuteComments: { type: Boolean, default: true },
+        canBlockPosting: { type: Boolean, default: true },
+      },
+    ],
+    default: [],
+  })
+  deputies: Array<{
+    userId: Types.ObjectId;
+    canRemoveMembers: boolean;
+    canMuteComments: boolean;
+    canBlockPosting: boolean;
+  }>;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  bannedPostingUserIds: Types.ObjectId[];
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
+  mutedCommentUserIds: Types.ObjectId[];
+
+  @Prop({ type: Boolean, default: false })
+  requireJoinReason: boolean;
+
+  @Prop({ type: String, default: 'Tại sao bạn muốn tham gia nhóm này?' })
+  joinQuestion: string;
+
+  @Prop({
+    type: [
+      {
+        userId: { type: Types.ObjectId, ref: 'User', required: true },
+        reason: { type: String, default: '' },
+        requestedAt: { type: Date, default: () => new Date() },
+      },
+    ],
+    default: [],
+  })
+  pendingRequests: Array<{
+    userId: Types.ObjectId;
+    reason: string;
+    requestedAt: Date;
+  }>;
+
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
   members: Types.ObjectId[];
 
