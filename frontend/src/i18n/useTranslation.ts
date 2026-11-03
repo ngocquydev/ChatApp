@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useLanguageStore } from "./useLanguageStore";
 import type { SupportedLanguage } from "./types";
 import { SUPPORTED_LANGUAGES } from "./types";
+import { getAutoTranslation } from "./autoTranslations";
 
 export type MultiLangMap = Partial<Record<SupportedLanguage, string>> & { vi: string; en: string };
 
@@ -18,7 +19,13 @@ export function useTranslation() {
       if (typeof viOrMap === "object" && viOrMap !== null) {
         return viOrMap[language] || viOrMap.en || viOrMap.vi;
       }
-      return language === "vi" ? viOrMap : (enText ?? viOrMap);
+      if (language === "vi") return viOrMap;
+      if (language === "en") return enText ?? viOrMap;
+
+      const auto = getAutoTranslation(viOrMap, enText, language);
+      if (auto) return auto;
+
+      return enText ?? viOrMap;
     },
     [language]
   );

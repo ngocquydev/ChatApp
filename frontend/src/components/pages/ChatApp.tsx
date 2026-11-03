@@ -149,7 +149,7 @@ export default function ChatApp() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
             <Chip
               size="small"
-              label={`${onlineUserIds.length} online`}
+              label={`${onlineUserIds.length} ${tr("trực tuyến", "online")}`}
               icon={<Circle size={8} color={colors.online} fill={colors.online} />}
               sx={{ bgcolor: v.tone("f0fdf4"), color: v.tone("166534"), fontSize: "0.72rem" }}
             />

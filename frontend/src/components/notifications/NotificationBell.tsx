@@ -18,15 +18,145 @@ import { Bell, BellOff, CheckCheck, Trash2 } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import EmptyState from "@/components/common/EmptyState";
 import { useTranslation } from "@/i18n/useTranslation";
+import type { SupportedLanguage } from "@/i18n/types";
 import { useNotificationStore } from "@/store/useNotificationStore";
 import { usePostModalStore } from "@/store/usePostModalStore";
 import { formatRelativeTime } from "@/utils/formatTime";
 import type { NotificationItem } from "@/services/notificationsApi";
 
+function getLocalizedNotificationBody(item: NotificationItem, language: SupportedLanguage): string {
+  const reactionType = (item.metadata?.reactionType as string) || "like";
+
+  if (item.type === "post_like") {
+    const map: Record<SupportedLanguage, Record<string, string>> = {
+      vi: {
+        like: "đã thích bài viết của bạn.",
+        love: "đã thả tim bài viết của bạn.",
+        care: "đã bày tỏ cảm xúc thương thương với bài viết của bạn.",
+        haha: "đã thả haha vào bài viết của bạn.",
+        wow: "đã bày tỏ ngạc nhiên về bài viết của bạn.",
+        sad: "đã bày tỏ cảm xúc buồn về bài viết của bạn.",
+        angry: "đã thả phẫn nộ vào bài viết của bạn.",
+      },
+      en: {
+        like: "liked your post.",
+        love: "loved your post.",
+        care: "cared about your post.",
+        haha: "laughed at your post.",
+        wow: "was amazed by your post.",
+        sad: "was saddened by your post.",
+        angry: "reacted with anger to your post.",
+      },
+      "zh-CN": {
+        like: "赞了你的帖子。",
+        love: "对你的帖子表达了喜爱。",
+        care: "对你的帖子表示关心。",
+        haha: "对你的帖子表示哈哈。",
+        wow: "对你的帖子表示惊讶。",
+        sad: "对你的帖子感到难过。",
+        angry: "对你的帖子感到愤怒。",
+      },
+      "zh-TW": {
+        like: "說你的貼文讚。",
+        love: "對你的貼文表示大愛。",
+        care: "對你的貼文表示加油。",
+        haha: "對你的貼文表示哈。",
+        wow: "對你的貼文表示哇。",
+        sad: "對你的貼文感到難過。",
+        angry: "對你的貼文表示怒。",
+      },
+      ko: {
+        like: "회원님의 게시물을 좋아합니다.",
+        love: "회원님의 게시물을 최고로 꼽았습니다.",
+        care: "회원님의 게시물에 따뜻함을 전했습니다.",
+        haha: "회원님의 게시물에 웃음을 남겼습니다.",
+        wow: "회원님의 게시물에 놀라움을 표현했습니다.",
+        sad: "회원님의 게시물에 슬퍼했습니다.",
+        angry: "회원님의 게시물에 화가 났습니다.",
+      },
+      th: {
+        like: "ถูกใจโพสต์ของคุณ",
+        love: "รักโพสต์ของคุณ",
+        care: "ห่วงใยโพสต์ของคุณ",
+        haha: "ขำโพสต์ของคุณ",
+        wow: "ว้าวกับโพสต์ของคุณ",
+        sad: "เศร้ากับโพสต์ของคุณ",
+        angry: "โกรธโพสต์ของคุณ",
+      },
+    };
+    return map[language]?.[reactionType] || map[language]?.like || map.vi.like;
+  }
+
+  if (item.type === "post_comment") {
+    const map: Record<SupportedLanguage, string> = {
+      vi: "đã bình luận về bài viết của bạn.",
+      en: "commented on your post.",
+      "zh-CN": "评论了你的帖子。",
+      "zh-TW": "在你的貼文留言。",
+      ko: "회원님의 게시물에 댓글을 남겼습니다.",
+      th: "แสดงความคิดเห็นบนโพสต์ของคุณ",
+    };
+    return map[language] || map.vi;
+  }
+
+  if (item.type === "post_share") {
+    const map: Record<SupportedLanguage, string> = {
+      vi: "đã chia sẻ bài viết của bạn.",
+      en: "shared your post.",
+      "zh-CN": "分享了你的帖子。",
+      "zh-TW": "分享了你的貼文。",
+      ko: "회원님의 게시물을 공유했습니다.",
+      th: "แชร์โพสต์ของคุณ",
+    };
+    return map[language] || map.vi;
+  }
+
+  if (item.type === "friend_request") {
+    const map: Record<SupportedLanguage, string> = {
+      vi: "đã gửi cho bạn một lời mời kết bạn.",
+      en: "sent you a friend request.",
+      "zh-CN": "向你发送了好友请求。",
+      "zh-TW": "向你傳送了交友邀請。",
+      ko: "회원님에게 친구 요청을 보냈습니다.",
+      th: "ส่งคำขอเป็นเพื่อนถึงคุณ",
+    };
+    return map[language] || map.vi;
+  }
+
+  if (item.type === "friend_accepted") {
+    const map: Record<SupportedLanguage, string> = {
+      vi: "đã chấp nhận lời mời kết bạn của bạn.",
+      en: "accepted your friend request.",
+      "zh-CN": "接受了你的好友请求。",
+      "zh-TW": "接受了你的交友邀請。",
+      ko: "회원님의 친구 요청을 수락했습니다.",
+      th: "ยอมรับคำขอเป็นเพื่อนของคุณแล้ว",
+    };
+    return map[language] || map.vi;
+  }
+
+  if (item.type === "mention") {
+    const map: Record<SupportedLanguage, string> = {
+      vi: "đã nhắc đến bạn trong một bài viết.",
+      en: "mentioned you in a post.",
+      "zh-CN": "在帖子中提及了你。",
+      "zh-TW": "在一則貼文中提及了你。",
+      ko: "게시물에서 회원님을 언급했습니다.",
+      th: "ได้กล่าวถึงคุณในโพสต์",
+    };
+    return map[language] || map.vi;
+  }
+
+  if (item.content.startsWith(item.actor.name)) {
+    return item.content.slice(item.actor.name.length).trim();
+  }
+  return item.content;
+}
+
 export default function NotificationBell() {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const { tr } = useTranslation();
+  const { tr, language } = useTranslation();
 
   const {
     notifications,
@@ -262,9 +392,7 @@ export default function NotificationBell() {
                         }}
                       >
                         <strong>{item.actor.name}</strong>{" "}
-                        {item.content.startsWith(item.actor.name)
-                          ? item.content.slice(item.actor.name.length).trim()
-                          : item.content}
+                        {getLocalizedNotificationBody(item, language)}
                       </Typography>
                       <Typography
                         variant="caption"
