@@ -629,6 +629,7 @@ export class PostsService {
           content: `${viewerName} đã chia sẻ bài viết của bạn lên dòng thời gian.`,
           link: `/profile/${viewerId}`,
           metadata: {
+            postId: target._id.toString(),
             originalPostId: target._id.toString(),
             sharedPostId: created._id.toString(),
           },
@@ -863,6 +864,10 @@ export class PostsService {
             title: 'Bạn được nhắc đến trong một bình luận',
             content: `${authorName} đã nhắc đến bạn: "${content.slice(0, 80)}"`,
             link: `/profile/${post.authorId.toString()}`,
+            metadata: {
+              postId: post._id.toString(),
+              commentId: created._id.toString(),
+            },
           }).catch(() => {});
         }
       }

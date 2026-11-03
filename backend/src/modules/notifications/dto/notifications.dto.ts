@@ -37,6 +37,7 @@ export interface NotificationView {
   title: string;
   content: string;
   link?: string;
+  metadata?: Record<string, unknown>;
   isRead: boolean;
   actor: NotificationActorView;
   createdAt?: Date;

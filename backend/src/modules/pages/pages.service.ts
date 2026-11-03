@@ -1,5 +1,6 @@
 import {
   Injectable,
+  OnModuleInit,
   NotFoundException,
   ConflictException,
   ForbiddenException,
@@ -11,11 +12,59 @@ import { Page, PageDocument } from './schemas/page.schema.js';
 import { CreatePageDto, UpdatePageDto } from './dto/page.dto.js';
 
 @Injectable()
-export class PagesService {
+export class PagesService implements OnModuleInit {
   constructor(
     @InjectModel(Page.name)
     private readonly pageModel: Model<PageDocument>,
   ) {}
+
+  async onModuleInit() {
+    try {
+      const count = await this.pageModel.countDocuments({ isDeleted: false }).exec();
+      if (count === 0) {
+        const seedPages = [
+          {
+            name: 'ChatApp Official',
+            slug: 'chatapp-official',
+            bio: 'Kênh tin tức và thông báo tính năng chính thức của mạng xã hội ChatApp.',
+            category: 'Công nghệ',
+            followerCount: 15400,
+            isVerified: true,
+          },
+          {
+            name: 'Aura AI Studio',
+            slug: 'aura-ai-studio',
+            bio: 'Phòng thí nghiệm sáng tạo nội dung số và mô hình trợ lý ảo thế hệ mới.',
+            category: 'Trí tuệ nhân tạo',
+            followerCount: 8900,
+            isVerified: true,
+          },
+          {
+            name: 'Thiết Kế Website Theo Yêu Cầu !',
+            slug: 'thiet-ke-web-pro',
+            bio: 'Dịch vụ thiết kế giao diện Figma, lập trình Next.js và giải pháp số chuyên nghiệp.',
+            category: 'Dịch vụ',
+            followerCount: 3200,
+            isVerified: false,
+          },
+        ];
+
+        const systemId = new Types.ObjectId('000000000000000000000001');
+        for (const p of seedPages) {
+          await this.pageModel.create({
+            ...p,
+            creatorId: systemId,
+            adminIds: [systemId],
+            moderatorIds: [],
+            followers: [systemId],
+            isDeleted: false,
+          });
+        }
+      }
+    } catch {
+      // Bỏ qua lỗi seed nếu đã tồn tại
+    }
+  }
 
   /**
    * Tạo trang Fanpage mới

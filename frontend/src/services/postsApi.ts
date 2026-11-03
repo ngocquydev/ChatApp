@@ -247,6 +247,11 @@ export async function createPost(input: {
   return data.post;
 }
 
+export async function fetchPost(postId: string): Promise<PostView> {
+  const { data } = await api.get(`/posts/${postId}`);
+  return data.post;
+}
+
 export async function deletePost(postId: string): Promise<void> {
   await api.delete(`/posts/${postId}`);
 }

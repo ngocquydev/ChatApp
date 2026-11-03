@@ -21,6 +21,8 @@ import {
   ChevronDown as ChevronDownIcon,
   ChevronUp as ChevronUpIcon,
   Layers,
+  Store,
+  Calendar,
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
@@ -47,41 +49,140 @@ interface SidebarNavItem {
   customIcon: React.ReactNode;
 }
 
+const DEFAULT_FALLBACK_SHORTCUTS: NavShortcutItem[] = [
+  {
+    id: "sc-aspnet",
+    name: "ASP.NET Core Việt Nam",
+    href: "/groups/asp-net-core-vn",
+    type: "group",
+  },
+  {
+    id: "sc-ai-vn",
+    name: "AI Việt Nam | Trợ lý AI, ứng dụng AI vào công việc",
+    href: "/groups/ai-viet-nam",
+    type: "group",
+  },
+  {
+    id: "sc-grab",
+    name: "Grab Việt Nam VN",
+    href: "/groups/grab-viet-nam",
+    type: "group",
+  },
+  {
+    id: "sc-it-for-all",
+    name: "Cộng đồng CNTT cho người mới bắt đầu - IT For Beginners",
+    href: "/groups/cong-dong-cntt",
+    type: "group",
+  },
+  {
+    id: "sc-huit-confess",
+    name: "HUIT Confessions - Tiệm Trà Đá Sinh Viên",
+    href: "/groups/sinh-vien-huit",
+    type: "group",
+  },
+  {
+    id: "sc-web-dev",
+    name: "Thiết Kế Website Theo Yêu Cầu !",
+    href: "/pages/thiet-ke-web-pro",
+    type: "page",
+  },
+  {
+    id: "sc-fullstack",
+    name: "Hội Lập trình viên Fullstack Việt Nam",
+    href: "/groups/fullstack-vn",
+    type: "group",
+  },
+];
+
 export default function LeftSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuthStore();
   const { tr } = useTranslation();
   const [showMore, setShowMore] = useState(false);
-  const [shortcuts, setShortcuts] = useState<NavShortcutItem[]>([]);
+  const [shortcuts, setShortcuts] = useState<NavShortcutItem[]>(DEFAULT_FALLBACK_SHORTCUTS);
 
   useEffect(() => {
     let isMounted = true;
     Promise.all([
       communityGroupsApi.getMyGroups().catch(() => [] as CommunityGroupItem[]),
       pagesApi.getMyPages().catch(() => [] as PageItem[]),
-    ]).then(([groups, pages]) => {
+      communityGroupsApi.exploreGroups().catch(() => [] as CommunityGroupItem[]),
+      pagesApi.explorePages().catch(() => [] as PageItem[]),
+    ]).then(([myGroups, myPages, allGroups, allPages]) => {
       if (!isMounted) return;
       const list: NavShortcutItem[] = [];
-      for (const g of groups.slice(0, 5)) {
-        list.push({
-          id: `group-${g._id}`,
-          name: g.name,
-          avatar: g.avatar,
-          href: `/groups/${g.slug}`,
-          type: "group",
-        });
+      const seenSlugs = new Set<string>();
+
+      // 1. Ưu tiên các nhóm của người dùng
+      for (const g of myGroups) {
+        if (!seenSlugs.has(g.slug)) {
+          seenSlugs.add(g.slug);
+          list.push({
+            id: `group-${g._id}`,
+            name: g.name,
+            avatar: g.avatar,
+            href: `/groups/${g.slug}`,
+            type: "group",
+          });
+        }
       }
-      for (const p of pages.slice(0, 5)) {
-        list.push({
-          id: `page-${p._id}`,
-          name: p.name,
-          avatar: p.avatar,
-          href: `/pages/${p.slug}`,
-          type: "page",
-        });
+
+      // 2. Ưu tiên các trang do người dùng quản lý
+      for (const p of myPages) {
+        if (!seenSlugs.has(p.slug)) {
+          seenSlugs.add(p.slug);
+          list.push({
+            id: `page-${p._id}`,
+            name: p.name,
+            avatar: p.avatar,
+            href: `/pages/${p.slug}`,
+            type: "page",
+          });
+        }
       }
-      setShortcuts(list);
+
+      // 3. Nếu chưa đủ 9 lối tắt, nạp từ nhóm & trang hệ thống
+      for (const g of allGroups) {
+        if (list.length >= 9) break;
+        if (!seenSlugs.has(g.slug)) {
+          seenSlugs.add(g.slug);
+          list.push({
+            id: `group-${g._id}`,
+            name: g.name,
+            avatar: g.avatar,
+            href: `/groups/${g.slug}`,
+            type: "group",
+          });
+        }
+      }
+
+      for (const p of allPages) {
+        if (list.length >= 9) break;
+        if (!seenSlugs.has(p.slug)) {
+          seenSlugs.add(p.slug);
+          list.push({
+            id: `page-${p._id}`,
+            name: p.name,
+            avatar: p.avatar,
+            href: `/pages/${p.slug}`,
+            type: "page",
+          });
+        }
+      }
+
+      // 4. Nếu vẫn còn trống, gộp các lối tắt mẫu Facebook
+      for (const fb of DEFAULT_FALLBACK_SHORTCUTS) {
+        if (list.length >= 9) break;
+        if (!seenSlugs.has(fb.id)) {
+          seenSlugs.add(fb.id);
+          list.push(fb);
+        }
+      }
+
+      if (list.length > 0) {
+        setShortcuts(list);
+      }
     });
 
     return () => {
@@ -100,6 +201,7 @@ export default function LeftSidebar() {
     }
   };
 
+  // 8 mục chính Facebook (chuẩn theo Image 1)
   const navItems: SidebarNavItem[] = [
     {
       id: "profile",
@@ -180,6 +282,94 @@ export default function LeftSidebar() {
       ),
     },
     {
+      id: "memories",
+      label: tr("Kỷ niệm", "Memories"),
+      href: "/profile",
+      customIcon: (
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            bgcolor: v.tone("06b6d4"),
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: v.white,
+          }}
+        >
+          <Clock size={18} />
+        </Box>
+      ),
+    },
+    {
+      id: "saved",
+      label: tr("Đã lưu", "Saved"),
+      href: "/profile",
+      customIcon: (
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            bgcolor: v.tone("c026d3"),
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: v.white,
+          }}
+        >
+          <Bookmark size={18} />
+        </Box>
+      ),
+    },
+    {
+      id: "reels",
+      label: tr("Thước phim", "Reels"),
+      href: "/explore",
+      customIcon: (
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            bgcolor: v.tone("e11d48"),
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: v.white,
+          }}
+        >
+          <Video size={18} />
+        </Box>
+      ),
+    },
+    {
+      id: "marketplace",
+      label: "Marketplace",
+      href: "/explore",
+      customIcon: (
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            bgcolor: v.tone("0284c7"),
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: v.white,
+          }}
+        >
+          <Store size={18} />
+        </Box>
+      ),
+    },
+  ];
+
+  // Các mục mở rộng khi bấm "Xem thêm"
+  const extendedItems: SidebarNavItem[] = [
+    {
       id: "pages",
       label: tr("Trang", "Pages"),
       href: "/pages",
@@ -221,54 +411,9 @@ export default function LeftSidebar() {
         </Box>
       ),
     },
-  ];
-
-  const extendedItems: SidebarNavItem[] = [
     {
-      id: "memories",
-      label: tr("Kỷ niệm", "Memories"),
-      href: "/profile",
-      customIcon: (
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            bgcolor: v.tone("0284c7"),
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: v.white,
-          }}
-        >
-          <Clock size={18} />
-        </Box>
-      ),
-    },
-    {
-      id: "saved",
-      label: tr("Đã lưu", "Saved"),
-      href: "/profile",
-      customIcon: (
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            bgcolor: v.tone("c026d3"),
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: v.white,
-          }}
-        >
-          <Bookmark size={18} />
-        </Box>
-      ),
-    },
-    {
-      id: "reels",
-      label: tr("Thước phim", "Reels"),
+      id: "feeds",
+      label: tr("Bảng feed", "Feeds"),
       href: "/",
       customIcon: (
         <Box
@@ -276,14 +421,35 @@ export default function LeftSidebar() {
             width: 36,
             height: 36,
             borderRadius: "50%",
-            bgcolor: v.tone("e11d48"),
+            bgcolor: v.tone("d97706"),
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             color: v.white,
           }}
         >
-          <Video size={18} />
+          <Layers size={18} />
+        </Box>
+      ),
+    },
+    {
+      id: "events",
+      label: tr("Sự kiện", "Events"),
+      href: "/groups",
+      customIcon: (
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            bgcolor: v.tone("059669"),
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: v.white,
+          }}
+        >
+          <Calendar size={18} />
         </Box>
       ),
     },
@@ -413,7 +579,7 @@ export default function LeftSidebar() {
       {/* Đường phân cách */}
       <Divider sx={{ my: 1.5 }} />
 
-      {/* Mục Lối tắt của bạn */}
+      {/* Mục Lối tắt của bạn (chuẩn theo Image 3) */}
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Typography
           variant="subtitle2"
@@ -429,11 +595,12 @@ export default function LeftSidebar() {
           {tr("Lối tắt của bạn", "Your shortcuts")}
         </Typography>
 
-        {shortcuts.length === 0 ? (
-          <Box sx={{ px: 1.5, py: 1 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+          {shortcuts.map((sc) => (
             <ButtonBase
+              key={sc.id}
               component={NextLink}
-              href="/groups"
+              href={sc.href}
               sx={{
                 width: "100%",
                 display: "flex",
@@ -446,78 +613,34 @@ export default function LeftSidebar() {
                 "&:hover": { bgcolor: "action.hover" },
               }}
             >
-              <Box
+              <Avatar
+                src={sc.avatar || ""}
+                variant="rounded"
                 sx={{
                   width: 36,
                   height: 36,
                   borderRadius: "8px",
-                  bgcolor: "action.hover",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "text.secondary",
+                  bgcolor: sc.type === "group" ? "primary.main" : v.tone("ea580c"),
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
                 }}
               >
-                <Layers size={18} />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.88rem" }} noWrap>
-                  {tr("Khám phá nhóm & trang", "Explore groups & pages")}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {tr("Tham gia để thêm lối tắt", "Join to add shortcuts")}
-                </Typography>
-              </Box>
-            </ButtonBase>
-          </Box>
-        ) : (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-            {shortcuts.map((sc) => (
-              <ButtonBase
-                key={sc.id}
-                component={NextLink}
-                href={sc.href}
+                {sc.name[0]?.toUpperCase() || "S"}
+              </Avatar>
+              <Typography
+                variant="body2"
+                noWrap
                 sx={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  px: 1.5,
-                  py: 1,
-                  borderRadius: "10px",
-                  textAlign: "left",
-                  "&:hover": { bgcolor: "action.hover" },
+                  fontWeight: 600,
+                  fontSize: "0.88rem",
+                  flex: 1,
                 }}
               >
-                <Avatar
-                  src={sc.avatar || ""}
-                  variant="rounded"
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: "8px",
-                    bgcolor: sc.type === "group" ? "primary.main" : v.tone("ea580c"),
-                    fontSize: "0.85rem",
-                    fontWeight: 700,
-                  }}
-                >
-                  {sc.name[0]?.toUpperCase() || "S"}
-                </Avatar>
-                <Typography
-                  variant="body2"
-                  noWrap
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: "0.88rem",
-                    flex: 1,
-                  }}
-                >
-                  {sc.name}
-                </Typography>
-              </ButtonBase>
-            ))}
-          </Box>
-        )}
+                {sc.name}
+              </Typography>
+            </ButtonBase>
+          ))}
+        </Box>
       </Box>
 
       {/* Footer bản quyền */}

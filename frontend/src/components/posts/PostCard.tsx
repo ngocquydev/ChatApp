@@ -24,6 +24,7 @@ interface PostCardProps {
   onRequestShare: (post: PostView) => void;
   onCommentCountChange: (postId: string, delta: number) => void;
   onOpenEngagers?: (postId: string, tab: "likes" | "commenters") => void;
+  defaultShowComments?: boolean;
 }
 
 /** Bài gốc mà thao tác chia sẻ sẽ trỏ tới (bài chia sẻ → bài gốc của nó). */
@@ -56,8 +57,9 @@ export default function PostCard({
   onRequestShare,
   onCommentCountChange,
   onOpenEngagers,
+  defaultShowComments = false,
 }: PostCardProps) {
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(defaultShowComments);
   const [expanded, setExpanded] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const { t } = useTranslation();

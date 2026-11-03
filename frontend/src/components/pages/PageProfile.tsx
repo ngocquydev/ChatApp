@@ -17,6 +17,7 @@ import { pagesApi, PageItem } from "@/services/pagesApi";
 import VerifiedBadge from "@/components/common/VerifiedBadge";
 import EmptyState from "@/components/common/EmptyState";
 import PostFeed from "@/components/posts/PostFeed";
+import LeftSidebar from "@/components/layout/LeftSidebar";
 import { fetchPagePosts } from "@/services/postsApi";
 import { v } from "@/theme/tokens";
 
@@ -96,7 +97,24 @@ export default function PageProfile({ slug }: { slug: string }) {
   const { page, isAdmin } = data;
 
   return (
-    <Container maxWidth="md" sx={{ py: 3, pt: "80px" }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100dvh",
+        bgcolor: "var(--mui-palette-neutral-100)",
+        pt: { xs: "70px", md: "76px" },
+      }}
+    >
+      <LeftSidebar />
+      <Box
+        sx={{
+          flex: 1,
+          ml: { md: "280px", lg: "320px", xl: "350px" },
+          p: { xs: 2, sm: 3 },
+          minWidth: 0,
+        }}
+      >
+        <Container maxWidth="md" sx={{ py: 1 }}>
       {/* Cover image & avatar card */}
       <Card
         sx={{
@@ -218,6 +236,8 @@ export default function PageProfile({ slug }: { slug: string }) {
           )}
         />
       </Box>
-    </Container>
+        </Container>
+      </Box>
+    </Box>
   );
 }

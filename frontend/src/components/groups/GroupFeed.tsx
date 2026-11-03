@@ -16,6 +16,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { communityGroupsApi, CommunityGroupItem } from "@/services/communityGroupsApi";
 import EmptyState from "@/components/common/EmptyState";
 import PostFeed from "@/components/posts/PostFeed";
+import LeftSidebar from "@/components/layout/LeftSidebar";
 import { fetchGroupPosts } from "@/services/postsApi";
 
 export default function GroupFeed({ slug }: { slug: string }) {
@@ -109,7 +110,24 @@ export default function GroupFeed({ slug }: { slug: string }) {
   const { group, isAdmin } = data;
 
   return (
-    <Container maxWidth="md" sx={{ py: 3, pt: "80px" }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100dvh",
+        bgcolor: "var(--mui-palette-neutral-100)",
+        pt: { xs: "70px", md: "76px" },
+      }}
+    >
+      <LeftSidebar />
+      <Box
+        sx={{
+          flex: 1,
+          ml: { md: "280px", lg: "320px", xl: "350px" },
+          p: { xs: 2, sm: 3 },
+          minWidth: 0,
+        }}
+      >
+        <Container maxWidth="md" sx={{ py: 1 }}>
       {/* Cover image & avatar card */}
       <Card
         sx={{
@@ -255,6 +273,8 @@ export default function GroupFeed({ slug }: { slug: string }) {
           />
         )}
       </Box>
-    </Container>
+        </Container>
+      </Box>
+    </Box>
   );
 }

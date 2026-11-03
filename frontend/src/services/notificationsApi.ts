@@ -21,6 +21,7 @@ export interface NotificationItem {
   title: string;
   content: string;
   link?: string;
+  metadata?: Record<string, any>;
   isRead: boolean;
   actor: NotificationActor;
   createdAt: string;

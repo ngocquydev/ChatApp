@@ -1,25 +1,49 @@
 "use client";
 
-import NextLink from "next/link";
+import { useRouter } from "next/navigation";
 import { Alert, Button, Snackbar } from "@mui/material";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import { useNotificationStore } from "@/store/useNotificationStore";
+import { usePostModalStore } from "@/store/usePostModalStore";
 import { useTranslation } from "@/i18n/useTranslation";
 
 /**
  * Toast thông báo tương tác realtime (thả cảm xúc, bình luận, chia sẻ bài viết)
- * Nằm ở góc dưới cùng bên trái, tự động ẩn sau 5 giây.
+ * Nằm ở góc dưới cùng bên trái, tự động ẩn sau 6 giây.
  */
 export default function NotificationToast() {
+  const router = useRouter();
   const activeNotice = useNotificationStore((s) => s.activeNotice);
   const dismissNotice = useNotificationStore((s) => s.dismissNotice);
   const { tr } = useTranslation();
+
+  const handleOpenNotice = () => {
+    if (!activeNotice) return;
+    const targetPostId =
+      (activeNotice.metadata?.postId as string | undefined) ||
+      (activeNotice.metadata?.originalPostId as string | undefined) ||
+      (activeNotice.metadata?.sharedPostId as string | undefined);
+
+    dismissNotice();
+    if (targetPostId) {
+      usePostModalStore.getState().openPostModal(targetPostId);
+    } else if (activeNotice.link) {
+      router.push(activeNotice.link);
+    }
+  };
 
   const contentSnippet = activeNotice
     ? activeNotice.content.startsWith(activeNotice.actor.name)
       ? activeNotice.content.slice(activeNotice.actor.name.length).trim()
       : activeNotice.content
     : "";
+
+  const hasTarget = Boolean(
+    activeNotice?.metadata?.postId ||
+    activeNotice?.metadata?.originalPostId ||
+    activeNotice?.metadata?.sharedPostId ||
+    activeNotice?.link
+  );
 
   return (
     <Snackbar
@@ -44,19 +68,18 @@ export default function NotificationToast() {
           }
           onClose={dismissNotice}
           action={
-            activeNotice.link ? (
+            hasTarget ? (
               <Button
-                component={NextLink}
-                href={activeNotice.link}
                 color="inherit"
                 size="small"
-                onClick={dismissNotice}
+                onClick={handleOpenNotice}
                 sx={{ fontWeight: 700, whiteSpace: "nowrap", ml: 1 }}
               >
                 {tr("Xem", "View")}
               </Button>
             ) : undefined
           }
+          onClick={handleOpenNotice}
           sx={{
             width: "100%",
             maxWidth: 420,
@@ -65,6 +88,7 @@ export default function NotificationToast() {
             borderRadius: "14px",
             bgcolor: "var(--mui-palette-neutral-900)",
             color: "white",
+            cursor: hasTarget ? "pointer" : "default",
             "& .MuiAlert-icon": { color: "var(--mui-palette-brand-400)" },
           }}
         >

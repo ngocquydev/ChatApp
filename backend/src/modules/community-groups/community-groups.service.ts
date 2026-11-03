@@ -1,5 +1,6 @@
 import {
   Injectable,
+  OnModuleInit,
   NotFoundException,
   ConflictException,
   ForbiddenException,
@@ -11,11 +12,93 @@ import { CommunityGroup, CommunityGroupDocument } from './schemas/community-grou
 import { CreateCommunityGroupDto, UpdateCommunityGroupDto } from './dto/community-group.dto.js';
 
 @Injectable()
-export class CommunityGroupsService {
+export class CommunityGroupsService implements OnModuleInit {
   constructor(
     @InjectModel(CommunityGroup.name)
     private readonly groupModel: Model<CommunityGroupDocument>,
   ) {}
+
+  async onModuleInit() {
+    try {
+      const count = await this.groupModel.countDocuments({ isDeleted: false }).exec();
+      if (count === 0) {
+        const seedGroups = [
+          {
+            name: 'ASP.NET Core Việt Nam',
+            slug: 'asp-net-core-vn',
+            description: 'Cộng đồng giao lưu, chia sẻ kinh nghiệm phát triển phần mềm ASP.NET Core & C# tại Việt Nam.',
+            privacy: 'public',
+            memberCount: 1240,
+            requireApproval: false,
+          },
+          {
+            name: 'AI Việt Nam | Trợ lý AI, ứng dụng AI vào công việc',
+            slug: 'ai-viet-nam',
+            description: 'Hội thảo luận mô hình ngôn ngữ lớn (LLM), Prompt Engineering và tự động hóa với AI.',
+            privacy: 'public',
+            memberCount: 3580,
+            requireApproval: false,
+          },
+          {
+            name: 'Cộng đồng CNTT cho người mới bắt đầu - IT For Beginners',
+            slug: 'cong-dong-cntt',
+            description: 'Nơi giải đáp thắc mắc lập trình, định hướng nghề nghiệp CNTT từ cơ bản đến nâng cao.',
+            privacy: 'public',
+            memberCount: 5200,
+            requireApproval: false,
+          },
+          {
+            name: 'Hội Lập trình viên Fullstack Việt Nam',
+            slug: 'fullstack-vn',
+            description: 'Chia sẻ kiến thức React, Next.js, Node.js, NestJS, Docker và Cloud Architecture.',
+            privacy: 'public',
+            memberCount: 2890,
+            requireApproval: false,
+          },
+          {
+            name: 'Grab Việt Nam VN',
+            slug: 'grab-viet-nam',
+            description: 'Diễn đàn kết nối tài xế và khách hàng công nghệ.',
+            privacy: 'public',
+            memberCount: 4120,
+            requireApproval: false,
+          },
+          {
+            name: 'Thiết Kế Website Theo Yêu Cầu !',
+            slug: 'thiet-ke-website',
+            description: 'Cộng đồng Frontend, UI/UX Designer và Freelancer lập trình web.',
+            privacy: 'public',
+            memberCount: 1850,
+            requireApproval: false,
+          },
+          {
+            name: 'Sinh viên HUIT',
+            slug: 'sinh-vien-huit',
+            description: 'Hội sinh viên năng động, học tập và kết nối hoạt động ngoại khóa.',
+            privacy: 'public',
+            memberCount: 6700,
+            requireApproval: false,
+          },
+        ] as const;
+
+        const systemId = new Types.ObjectId('000000000000000000000001');
+        for (const g of seedGroups) {
+          await this.groupModel.create({
+            ...g,
+            creatorId: systemId,
+            adminIds: [systemId],
+            moderatorIds: [],
+            members: [systemId],
+            pendingMemberIds: [],
+            rules: [],
+            isDeleted: false,
+          });
+        }
+      }
+    } catch {
+      // Bỏ qua lỗi seed nếu đã tồn tại
+    }
+  }
 
   /**
    * Tạo hội nhóm mới

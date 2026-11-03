@@ -19,6 +19,7 @@ import PresenceAvatar from "@/components/common/PresenceAvatar";
 import EmptyState from "@/components/common/EmptyState";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useNotificationStore } from "@/store/useNotificationStore";
+import { usePostModalStore } from "@/store/usePostModalStore";
 import { formatRelativeTime } from "@/utils/formatTime";
 import type { NotificationItem } from "@/services/notificationsApi";
 
@@ -59,6 +60,18 @@ export default function NotificationBell() {
       void markAsRead(item._id);
     }
     handleClose();
+
+    // Nếu thông báo liên quan đến bài viết (bình luận, thả icon, chia sẻ, tag tên):
+    const targetPostId =
+      (item.metadata?.postId as string | undefined) ||
+      (item.metadata?.originalPostId as string | undefined) ||
+      (item.metadata?.sharedPostId as string | undefined);
+
+    if (targetPostId) {
+      usePostModalStore.getState().openPostModal(targetPostId);
+      return;
+    }
+
     if (item.link) {
       router.push(item.link);
     }
