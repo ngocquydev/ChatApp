@@ -11,3 +11,4 @@ export const usePostModalStore = create<PostModalState>((set) => ({
   openPostModal: (postId: string) => set({ postId }),
   closePostModal: () => set({ postId: null }),
 }));
+

@@ -22,6 +22,7 @@
 14. [Nhóm Trò Chuyện & Gọi Thoại/Video Nhóm WebRTC Tối Ưu Băng Thông (Group Chat & Mesh-Lite Call)](#14-nhóm-trò-chuyện--gọi-thoạivideo-nhóm-webrtc-tối-ưu-băng-thông-group-chat--mesh-lite-call)
 15. [Trang Fanpage & Hội Nhóm Cộng Đồng (Fanpages & Community Groups with Feed)](#15-trang-fanpage--hội-nhóm-cộng-đồng-fanpages--community-groups-with-feed)
 16. [Bố Cục Cột Điều Hướng Trái Chuẩn Facebook & Tối Ưu Thanh Header (Facebook-Style Left Sidebar & Header)](#16-bố-cục-cột-điều-hướng-trái-chuẩn-facebook--tối-ưu-thanh-header-facebook-style-left-sidebar--header)
+17. [Gắn Thẻ Bạn Bè Chuẩn Facebook & Tự Động Gợi Ý Mention (Facebook-Style Friend Tagging & Mention Link)](#17-gắn-thẻ-bạn-bè-chuẩn-facebook--tự-động-gợi-ý-mention-facebook-style-friend-tagging--mention-link)
 
 ---
 
@@ -278,6 +279,20 @@ Tái thiết kế trải nghiệm điều hướng toàn diện theo chuẩn Fac
 - 📖 *Xem chi tiết: [docs/features/facebook-left-sidebar-navigation.md](features/facebook-left-sidebar-navigation.md)*
 
 ---
+
+
+---
+
+## 17. Gắn Thẻ Bạn Bè Chuẩn Facebook & Tự Động Gợi Ý Mention (Facebook-Style Friend Tagging & Mention Link)
+
+Hỗ trợ gắn thẻ bạn bè và trợ lý ảo trong bài viết, bài chia sẻ và bình luận chuẩn trải nghiệm mạng xã hội Facebook:
+- **Tên bạn bè hiển thị màu xanh Facebook in đậm:** Chuỗi cú pháp gắn thẻ `@[Tên bạn bè](userId)` tự động hiển thị dưới dạng chữ màu xanh `primary.main`, in đậm nổi bật (`fontWeight: 600`) và gạch chân khi rê chuột.
+- **Dẫn thẳng vào Trang cá nhân:** Nhấp trực tiếp vào tên bạn bè sẽ chuyển hướng ngay đến trang cá nhân của người đó (`/profile/[id]`).
+- **Gợi ý tự động thông minh (Autocomplete):** Khi gõ ký tự `@` trong ô đăng bài (`PostComposer`), ô sửa bài (`EditPostDialog`) hoặc ô viết bình luận (`CommentComposer`), danh sách bạn bè và Aura AI sẽ tự động xuất hiện để người dùng chọn nhanh bằng phím mũi tên hoặc nhấp chuột.
+- **Thông báo Realtime tức thì:** Khi một người dùng được gắn thẻ trong bài viết hoặc bình luận, hệ thống thông báo Socket.IO sẽ lập tức gửi chuông báo cho người đó.
+
+- 📖 *Xem chi tiết: [docs/features/facebook-mention-tagging.md](features/facebook-mention-tagging.md)*
+
 
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
 > - [Cột điều hướng trái chuẩn Facebook & Tối ưu Header](features/facebook-left-sidebar-navigation.md)

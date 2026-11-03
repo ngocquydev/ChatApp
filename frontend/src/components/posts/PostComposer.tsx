@@ -4,6 +4,8 @@ import { ChangeEvent, useEffect, useId, useRef, useState } from "react";
 import { Alert, Box, Button, CircularProgress, Divider, IconButton, Paper, TextField, Typography } from "@mui/material";
 import { ImagePlus, X } from "lucide-react";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
+import MentionAutocomplete, { MentionAutocompleteHandle } from "@/components/common/MentionAutocomplete";
+import useMention from "@/hooks/useMention";
 import {
   apiErrorMessage,
   createPost,
@@ -67,6 +69,10 @@ export default function PostComposer({
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const previewsRef = useRef<string[]>([]);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const mentionRef = useRef<MentionAutocompleteHandle | null>(null);
+  const { mentionOpen, mentionQuery, mentionAnchorEl, checkMention, insertMention, closeMention } =
+    useMention(text, setText, inputRef);
 
   useEffect(() => {
     // Khôi phục quyền riêng tư người dùng đã chọn trước đó
@@ -186,6 +192,7 @@ export default function PostComposer({
           }}
         >
           <TextField
+            inputRef={inputRef}
             fullWidth
             multiline
             minRows={2}
@@ -193,16 +200,30 @@ export default function PostComposer({
             variant="standard"
             placeholder={
               userName
-                ? (isVietnamese ? `${userName} ơi, bạn đang nghĩ gì thế?` : `${userName}, what's on your mind?`)
-                : t("feed.whatsOnYourMind")
+                ? (isVietnamese ? `${userName} ơi, bạn đang nghĩ gì thế? (Gõ @ để tag bạn bè)` : `${userName}, what's on your mind? (Type @ to mention)`)
+                : (isVietnamese ? "Bạn đang nghĩ gì thế? (Gõ @ để tag bạn bè)" : "What's on your mind? (Type @ to mention)")
             }
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              checkMention(e.target.value, e.target.selectionStart ?? undefined);
+            }}
+            onKeyDown={(e) => {
+              if (mentionRef.current?.handleKeyDown(e)) return;
+            }}
             disabled={posting}
             slotProps={{
               input: { disableUnderline: true },
               htmlInput: { maxLength: POST_MAX_LENGTH, "aria-label": "Nội dung bài viết" },
             }}
+          />
+          <MentionAutocomplete
+            ref={mentionRef}
+            open={mentionOpen}
+            anchorEl={mentionAnchorEl}
+            query={mentionQuery}
+            onSelect={insertMention}
+            onClose={closeMention}
           />
         </Box>
       </Box>

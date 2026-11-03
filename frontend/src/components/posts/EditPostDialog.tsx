@@ -32,6 +32,8 @@ import {
 import { useTranslation } from "@/i18n/useTranslation";
 import PostAuthorHeader from "./PostAuthorHeader";
 import PrivacyPicker from "./PrivacyPicker";
+import MentionAutocomplete, { MentionAutocompleteHandle } from "@/components/common/MentionAutocomplete";
+import useMention from "@/hooks/useMention";
 
 interface EditPostDialogProps {
   post: PostView | null;
@@ -72,6 +74,10 @@ export default function EditPostDialog({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const blobUrlsRef = useRef<string[]>([]);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const mentionRef = useRef<MentionAutocompleteHandle | null>(null);
+  const { mentionOpen, mentionQuery, mentionAnchorEl, checkMention, insertMention, closeMention } =
+    useMention(text, setText, inputRef);
 
   useEffect(() => {
     const urls = blobUrlsRef.current;
@@ -174,13 +180,20 @@ export default function EditPostDialog({
       </DialogTitle>
       <DialogContent>
         <TextField
+          inputRef={inputRef}
           fullWidth
           multiline
           minRows={3}
           maxRows={10}
-          placeholder={tr("Nội dung bài viết…", "Post content…")}
+          placeholder={tr("Nội dung bài viết… (Gõ @ để tag bạn bè hoặc @aura)", "Post content… (Type @ to mention friends or @aura)")}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => {
+            setText(e.target.value);
+            checkMention(e.target.value, e.target.selectionStart ?? undefined);
+          }}
+          onKeyDown={(e) => {
+            if (mentionRef.current?.handleKeyDown(e)) return;
+          }}
           disabled={saving}
           slotProps={{
             htmlInput: {
@@ -188,6 +201,14 @@ export default function EditPostDialog({
               "aria-label": tr("Chỉnh sửa nội dung bài viết", "Edit post content"),
             },
           }}
+        />
+        <MentionAutocomplete
+          ref={mentionRef}
+          open={mentionOpen}
+          anchorEl={mentionAnchorEl}
+          query={mentionQuery}
+          onSelect={insertMention}
+          onClose={closeMention}
         />
 
         {text.length > POST_MAX_LENGTH * 0.9 && (

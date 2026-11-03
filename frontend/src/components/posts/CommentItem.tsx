@@ -9,6 +9,7 @@ import { isVideoUrl, mediaUrl, type CommentView, type ReactionType } from "@/ser
 import { formatFullDateTime, formatRelativeTime } from "@/utils/formatTime";
 import InlineReactionButton from "@/components/reactions/InlineReactionButton";
 import ReactionSummary from "@/components/reactions/ReactionSummary";
+import MentionText from "@/components/common/MentionText";
 import PostAuthorHeader from "./PostAuthorHeader";
 
 interface CommentItemProps {
@@ -41,7 +42,7 @@ export default function CommentItem({
 
           {comment.content && (
             <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere", lineHeight: 1.45 }}>
-              {comment.content}
+              <MentionText text={comment.content} />
             </Typography>
           )}
 

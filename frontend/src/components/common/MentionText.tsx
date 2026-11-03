@@ -1,8 +1,11 @@
 "use client";
 
 import React, { ReactNode } from "react";
+import NextLink from "next/link";
 import { Box, Tooltip } from "@mui/material";
-import { Bot, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { useChatBoxStore } from "@/store/useChatBoxStore";
+import { AURA_BOT_USER, AURA_BOT_ID, isAuraBot } from "@/constants/auraBot";
 
 interface MentionTextProps {
   text: string;
@@ -10,13 +13,14 @@ interface MentionTextProps {
 }
 
 /**
- * Hiển thị văn bản có tô màu nổi bật các thẻ nhắc đến (@aura và @bạn_bè)
+ * Hiển thị văn bản có tô màu xanh link đến trang bạn bè chuẩn Facebook (@bạn_bè)
+ * và kết nối nhanh với Aura AI (@aura)
  */
 export function MentionText({ text, onMentionClick }: MentionTextProps) {
   if (!text) return null;
 
   // Regex phát hiện @[Name](userId), @aura, và @Name thông thường
-  const pattern = /(@\[([^\]]+)\]\(([a-f0-9]{24})\)|@aura\b|@([a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]+(?:\s[a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]+)?))/gi;
+  const pattern = /(@\[([^\]]+)\]\(([^)]+)\)|@aura\b|@([a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]+(?:\s[a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]+)?))/gi;
 
   const elements: ReactNode[] = [];
   let lastIndex = 0;
@@ -55,7 +59,11 @@ export function MentionText({ text, onMentionClick }: MentionTextProps) {
               boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
               "&:hover": { opacity: 0.9 },
             }}
-            onClick={() => onMentionClick?.("Aura AI", "666666666666666666666666")}
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              useChatBoxStore.getState().openChat(AURA_BOT_USER);
+              onMentionClick?.("Aura AI", AURA_BOT_ID);
+            }}
           >
             <Sparkles size={11} style={{ flexShrink: 0 }} />
             <span>@aura</span>
@@ -63,31 +71,65 @@ export function MentionText({ text, onMentionClick }: MentionTextProps) {
         </Tooltip>
       );
     }
-    // 2. Tag có định dạng chuẩn: @[Name](userId)
+    // 2. Tag có định dạng chuẩn: @[Name](userId) -> Link xanh vào trang bạn bè chuẩn Facebook
     else if (match[2] && match[3]) {
       const name = match[2];
       const userId = match[3];
-      elements.push(
-        <Box
-          key={`tag-${userId}-${matchIndex}`}
-          component="span"
-          sx={{
-            display: "inline",
-            color: "primary.main",
-            fontWeight: 700,
-            bgcolor: "action.hover",
-            px: 0.45,
-            py: 0.1,
-            borderRadius: "4px",
-            mx: 0.15,
-            cursor: onMentionClick ? "pointer" : "default",
-            "&:hover": onMentionClick ? { textDecoration: "underline" } : undefined,
-          }}
-          onClick={() => onMentionClick?.(name, userId)}
-        >
-          @{name}
-        </Box>
-      );
+      const displayName = name.startsWith("@") ? name : `@${name}`;
+
+      if (isAuraBot(userId, name)) {
+        elements.push(
+          <Tooltip key={`aura-${userId}-${matchIndex}`} title="Trợ lý ảo Aura AI" arrow>
+            <Box
+              component="span"
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.3,
+                color: "primary.main",
+                fontWeight: 600,
+                cursor: "pointer",
+                textDecoration: "none",
+                "&:hover": { textDecoration: "underline", color: "primary.dark" },
+              }}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                useChatBoxStore.getState().openChat(AURA_BOT_USER);
+                onMentionClick?.("Aura AI", AURA_BOT_ID);
+              }}
+            >
+              <Sparkles size={12} style={{ flexShrink: 0 }} />
+              <span>{displayName}</span>
+            </Box>
+          </Tooltip>
+        );
+      } else {
+        elements.push(
+          <Box
+            key={`tag-${userId}-${matchIndex}`}
+            component={NextLink}
+            href={`/profile/${userId}`}
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              onMentionClick?.(name, userId);
+            }}
+            sx={{
+              display: "inline",
+              color: "primary.main",
+              fontWeight: 600,
+              textDecoration: "none",
+              cursor: "pointer",
+              transition: "color 0.15s ease",
+              "&:hover": {
+                textDecoration: "underline",
+                color: "primary.dark",
+              },
+            }}
+          >
+            {displayName}
+          </Box>
+        );
+      }
     }
     // 3. Tag thông thường: @Tên
     else {
@@ -99,16 +141,17 @@ export function MentionText({ text, onMentionClick }: MentionTextProps) {
           sx={{
             display: "inline",
             color: "primary.main",
-            fontWeight: 700,
-            bgcolor: "action.hover",
-            px: 0.45,
-            py: 0.1,
-            borderRadius: "4px",
-            mx: 0.15,
+            fontWeight: 600,
+            textDecoration: "none",
             cursor: onMentionClick ? "pointer" : "default",
-            "&:hover": onMentionClick ? { textDecoration: "underline" } : undefined,
+            "&:hover": onMentionClick ? { textDecoration: "underline", color: "primary.dark" } : undefined,
           }}
-          onClick={() => onMentionClick?.(rawName)}
+          onClick={(e: React.MouseEvent) => {
+            if (onMentionClick) {
+              e.stopPropagation();
+              onMentionClick(rawName);
+            }
+          }}
         >
           {fullMatch}
         </Box>

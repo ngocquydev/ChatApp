@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   Optional,
   forwardRef,
@@ -96,6 +97,8 @@ const toObjectId = (id: string, message = 'Mã không hợp lệ') => {
 
 @Injectable()
 export class PostsService {
+  private readonly logger = new Logger(PostsService.name);
+
   constructor(
     @InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
     @InjectModel(PostLike.name) private readonly likeModel: Model<PostLikeDocument>,
@@ -497,6 +500,34 @@ export class PostsService {
         } as any)
         .catch(() => {});
     }
+
+    // Gửi thông báo cho người dùng được nhắc đến trong bài viết (@[Name](userId))
+    if (content && this.notificationsService) {
+      try {
+        const author = await this.usersService.findById(authorId);
+        const authorName = author?.name || 'Ai đó';
+        const mentionIdMatches = Array.from(content.matchAll(/@\[([^\]]+)\]\(([a-f0-9]{24})\)/gi));
+        for (const match of mentionIdMatches) {
+          const taggedUserId = match[2];
+          if (taggedUserId && taggedUserId !== authorId) {
+            void this.notificationsService.createNotification({
+              recipientId: taggedUserId,
+              actorId: authorId,
+              type: 'mention',
+              title: 'Bạn được nhắc đến trong một bài viết',
+              content: `${authorName} đã nhắc đến bạn trong một bài viết: "${content.slice(0, 80)}"`,
+              link: `/profile/${authorId}`,
+              metadata: {
+                postId: created._id.toString(),
+              },
+            }).catch(() => {});
+          }
+        }
+      } catch (err) {
+        this.logger.warn(`Lỗi khi gửi thông báo nhắc tên bài viết: ${(err as Error)?.message}`);
+      }
+    }
+
     const view = await this.getPost(authorId, created._id.toString());
     this.emitRealtimePost('post:new', view, authorId);
     return view;

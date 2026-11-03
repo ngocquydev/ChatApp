@@ -6,6 +6,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import { isSharedPostAvailable, type PostView } from "@/services/postsApi";
 import PostAuthorHeader from "./PostAuthorHeader";
 import PostImages from "./PostImages";
+import MentionText from "@/components/common/MentionText";
 
 interface SharedPostEmbedProps {
   shared: PostView["sharedPost"];
@@ -78,7 +79,7 @@ export default function SharedPostEmbed({ shared, currentUserId }: SharedPostEmb
               lineHeight: 1.55,
             }}
           >
-            {shared.content}
+            <MentionText text={shared.content} />
           </Typography>
         )}
       </Box>

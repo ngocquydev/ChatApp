@@ -11,6 +11,7 @@ import PostAuthorHeader from "./PostAuthorHeader";
 import PostCommentSection from "./PostCommentSection";
 import PostImages from "./PostImages";
 import SharedPostEmbed from "./SharedPostEmbed";
+import MentionText from "@/components/common/MentionText";
 
 const CONTENT_PREVIEW_CHARS = 420;
 
@@ -134,7 +135,7 @@ export default function PostCard({
 
         {post.content && (
           <Typography variant="body1" sx={{ mt: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-            {text}
+            <MentionText text={text} />
             {long && (
               <Button size="small" onClick={() => setExpanded((v) => !v)} sx={{ ml: 0.5, p: 0, minWidth: 0, fontWeight: 700 }}>
                 {expanded ? t("common.seeLess") : t("common.seeMore")}

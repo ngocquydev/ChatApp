@@ -93,6 +93,12 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Đồng bộ Tức Thời & Fallback Đa Lớp:** Tự động đồng bộ nút `User` và quan hệ hai chiều `[:FRIEND]` khi chấp nhận kết bạn; lưu cache tốc độ cao 60s trên Redis; tự động kích hoạt truy vấn MongoDB 2dsphere địa lý & active users nếu cơ sở dữ liệu đồ thị bảo trì.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/friend-recommendation.md](docs/features/friend-recommendation.md)*
 
+### 4. Gắn Thẻ Bạn Bè Chuẩn Facebook & Tự Động Gợi Ý Mention (Tagging & Mentions)
+- **Tên bạn bè nổi bật màu xanh Facebook:** Định dạng `@[Tên bạn bè](userId)` tự động chuyển đổi thành tên in đậm màu xanh Facebook (`primary.main`), rê chuột có gạch chân, nhấp trực tiếp dẫn thẳng đến trang cá nhân `/profile/[id]`.
+- **Gợi ý thông minh khi gõ `@`:** Tự động hiển thị danh sách bạn bè và trợ lý ảo Aura AI trong ô Soạn bài viết (`PostComposer`), Chỉnh sửa bài viết (`EditPostDialog`) và Viết bình luận (`CommentComposer`).
+- **Thông báo Realtime tức thì:** Gửi thông báo đẩy đến người được gắn thẻ ngay khi bài viết hoặc bình luận được xuất bản.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/facebook-mention-tagging.md](docs/features/facebook-mention-tagging.md)*
+
 ### 3. Bảng Tin Mạng Xã Hội & Hồ Sơ Cá Nhân (Feed & Profile Timeline)
 - **Bảng tin 100% dữ liệu thực:** Cuộn vô hạn với phân trang con trỏ (Cursor-based pagination: `limit`, `after`), loại bỏ hoàn toàn hiện tượng chớp giật layout (Zero-Layout-Shift).
 - **Khung tạo bài viết đa phương tiện:** Hỗ trợ tối đa 4 ảnh chất lượng cao kèm kiểm tra chữ ký Magic-byte chống tệp thực thi độc hại.
