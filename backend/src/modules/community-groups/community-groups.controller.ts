@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard.js';
 import { CommunityGroupsService } from './community-groups.service.js';
 import {
   CreateCommunityGroupDto,
@@ -23,10 +24,12 @@ import {
 } from './dto/community-group.dto.js';
 
 interface AuthenticatedRequest extends Request {
-  user: {
-    sub: string;
-    email: string;
-    role: string;
+  user?: {
+    sub?: string;
+    _id?: string;
+    id?: string;
+    email?: string;
+    role?: string;
   };
 }
 
@@ -35,12 +38,21 @@ interface AuthenticatedRequest extends Request {
 export class CommunityGroupsController {
   constructor(private readonly groupsService: CommunityGroupsService) {}
 
+  private extractUserId(req?: AuthenticatedRequest): string {
+    const userId =
+      req?.user?._id?.toString() ||
+      req?.user?.id?.toString() ||
+      req?.user?.sub;
+    return userId ? String(userId) : '';
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Tạo hội nhóm mới' })
   async createGroup(@Request() req: AuthenticatedRequest, @Body() dto: CreateCommunityGroupDto) {
-    return this.groupsService.createGroup(req.user.sub, dto);
+    const userId = this.extractUserId(req);
+    return this.groupsService.createGroup(userId, dto);
   }
 
   @Get('my')
@@ -48,7 +60,8 @@ export class CommunityGroupsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Lấy danh sách các hội nhóm của tôi' })
   async getMyGroups(@Request() req: AuthenticatedRequest) {
-    return this.groupsService.getMyGroups(req.user.sub);
+    const userId = this.extractUserId(req);
+    return this.groupsService.getMyGroups(userId);
   }
 
   @Get('explore')
@@ -62,12 +75,13 @@ export class CommunityGroupsController {
   }
 
   @Get(':slug')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Lấy thông tin chi tiết một nhóm theo slug' })
   async getGroupBySlug(
     @Param('slug') slug: string,
     @Request() req?: AuthenticatedRequest,
   ) {
-    const viewerId = req?.user?.sub;
+    const viewerId = this.extractUserId(req);
     return this.groupsService.getGroupBySlug(slug, viewerId);
   }
 
@@ -80,7 +94,8 @@ export class CommunityGroupsController {
     @Request() req: AuthenticatedRequest,
     @Body() dto?: JoinGroupDto,
   ) {
-    return this.groupsService.joinGroup(groupId, req.user.sub, dto);
+    const userId = this.extractUserId(req);
+    return this.groupsService.joinGroup(groupId, userId, dto);
   }
 
   @Post(':id/leave')
@@ -91,16 +106,19 @@ export class CommunityGroupsController {
     @Param('id') groupId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.groupsService.leaveGroup(groupId, req.user.sub);
+    const userId = this.extractUserId(req);
+    return this.groupsService.leaveGroup(groupId, userId);
   }
 
   @Get(':id/members')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Lấy danh sách thành viên nhóm kèm vai trò và quyền hạn' })
   async getGroupMembers(
     @Param('id') groupId: string,
     @Request() req?: AuthenticatedRequest,
   ) {
-    return this.groupsService.getGroupMembers(groupId, req?.user?.sub);
+    const viewerId = this.extractUserId(req);
+    return this.groupsService.getGroupMembers(groupId, viewerId);
   }
 
   @Get(':id/pending-requests')
@@ -111,7 +129,8 @@ export class CommunityGroupsController {
     @Param('id') groupId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.groupsService.getPendingRequests(req.user.sub, groupId);
+    const userId = this.extractUserId(req);
+    return this.groupsService.getPendingRequests(userId, groupId);
   }
 
   @Post(':id/members/:userId/approve')
@@ -123,7 +142,8 @@ export class CommunityGroupsController {
     @Param('userId') targetUserId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.groupsService.approveMember(req.user.sub, groupId, targetUserId);
+    const userId = this.extractUserId(req);
+    return this.groupsService.approveMember(userId, groupId, targetUserId);
   }
 
   @Post(':id/members/:userId/reject')
@@ -135,7 +155,8 @@ export class CommunityGroupsController {
     @Param('userId') targetUserId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.groupsService.rejectMember(req.user.sub, groupId, targetUserId);
+    const userId = this.extractUserId(req);
+    return this.groupsService.rejectMember(userId, groupId, targetUserId);
   }
 
   @Delete(':id/members/:userId')
@@ -147,7 +168,8 @@ export class CommunityGroupsController {
     @Param('userId') targetUserId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.groupsService.removeMember(req.user.sub, groupId, targetUserId);
+    const userId = this.extractUserId(req);
+    return this.groupsService.removeMember(userId, groupId, targetUserId);
   }
 
   @Post(':id/deputies')
@@ -159,7 +181,8 @@ export class CommunityGroupsController {
     @Request() req: AuthenticatedRequest,
     @Body() dto: SetDeputyDto,
   ) {
-    return this.groupsService.setDeputy(req.user.sub, groupId, dto);
+    const userId = this.extractUserId(req);
+    return this.groupsService.setDeputy(userId, groupId, dto);
   }
 
   @Delete(':id/deputies/:userId')
@@ -171,7 +194,8 @@ export class CommunityGroupsController {
     @Param('userId') targetUserId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.groupsService.removeDeputy(req.user.sub, groupId, targetUserId);
+    const userId = this.extractUserId(req);
+    return this.groupsService.removeDeputy(userId, groupId, targetUserId);
   }
 
   @Post(':id/members/:userId/mute-comments')
@@ -184,7 +208,8 @@ export class CommunityGroupsController {
     @Request() req: AuthenticatedRequest,
     @Body() dto: ToggleMuteCommentsDto,
   ) {
-    return this.groupsService.toggleMuteComments(req.user.sub, groupId, targetUserId, dto.muted);
+    const userId = this.extractUserId(req);
+    return this.groupsService.toggleMuteComments(userId, groupId, targetUserId, dto.muted);
   }
 
   @Post(':id/members/:userId/block-posting')
@@ -197,7 +222,8 @@ export class CommunityGroupsController {
     @Request() req: AuthenticatedRequest,
     @Body() dto: ToggleBlockPostingDto,
   ) {
-    return this.groupsService.toggleBlockPosting(req.user.sub, groupId, targetUserId, dto.blocked);
+    const userId = this.extractUserId(req);
+    return this.groupsService.toggleBlockPosting(userId, groupId, targetUserId, dto.blocked);
   }
 
   @Patch(':id')
@@ -209,7 +235,7 @@ export class CommunityGroupsController {
     @Request() req: AuthenticatedRequest,
     @Body() dto: UpdateCommunityGroupDto,
   ) {
-    return this.groupsService.updateGroup(groupId, req.user.sub, dto);
+    const userId = this.extractUserId(req);
+    return this.groupsService.updateGroup(groupId, userId, dto);
   }
 }
-

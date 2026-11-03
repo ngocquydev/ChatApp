@@ -187,6 +187,23 @@ export const communityGroupsApi = {
     const res = await api.post(`/community-groups/${groupId}/members/${userId}/block-posting`, { blocked });
     return res.data;
   },
+
+  updateGroup: async (
+    groupId: string,
+    data: {
+      name?: string;
+      description?: string;
+      privacy?: "public" | "private";
+      avatar?: string;
+      coverImage?: string;
+      requireApproval?: boolean;
+      requireJoinReason?: boolean;
+      joinQuestion?: string;
+    }
+  ): Promise<CommunityGroupItem> => {
+    const res = await api.patch(`/community-groups/${groupId}`, data);
+    return res.data;
+  },
 };
 
 

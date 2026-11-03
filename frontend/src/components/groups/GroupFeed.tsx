@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Alert,
   Avatar,
@@ -15,7 +16,7 @@ import {
   Tabs,
   Typography,
 } from "@mui/material";
-import { Check, FileText, Globe, Lock, LogOut, MessageSquareOff, Plus, Shield, ShieldAlert, UserCheck, Users } from "lucide-react";
+import { Check, Crown, FileText, Globe, Lock, LogOut, MessageSquareOff, Plus, Settings, Shield, ShieldAlert, UserCheck, Users } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   communityGroupsApi,
@@ -32,6 +33,7 @@ import JoinQuestionDialog from "./JoinQuestionDialog";
 
 export default function GroupFeed({ slug }: { slug: string }) {
   const { tr, t } = useTranslation();
+  const router = useRouter();
   const [data, setData] = useState<{
     group: CommunityGroupItem;
     isMember: boolean;
@@ -263,12 +265,13 @@ export default function GroupFeed({ slug }: { slug: string }) {
                   </Box>
                 </Box>
 
-                <Box sx={{ display: "flex", gap: 1, width: { xs: "100%", sm: "auto" }, flexWrap: "wrap" }}>
+                <Box sx={{ display: "flex", gap: 1, width: { xs: "100%", sm: "auto" }, flexWrap: "wrap", alignItems: "center" }}>
                   {isAdmin && (
                     <Chip
+                      icon={<Crown size={14} />}
                       label={t("groups.adminBadge")}
                       color="primary"
-                      variant="outlined"
+                      variant="filled"
                       sx={{ fontWeight: 700 }}
                     />
                   )}
@@ -276,33 +279,51 @@ export default function GroupFeed({ slug }: { slug: string }) {
                     <Chip
                       icon={<Shield size={14} />}
                       label={t("groups.deputyBadge")}
-                      color="secondary"
-                      variant="outlined"
+                      color="info"
+                      variant="filled"
                       sx={{ fontWeight: 700 }}
                     />
                   )}
 
-                  <Button
-                    variant={isMember ? "outlined" : "contained"}
-                    color={isMember ? "inherit" : "primary"}
-                    startIcon={
-                      isMember ? <LogOut size={16} /> : isPending ? <Check size={16} /> : <Plus size={16} />
-                    }
-                    onClick={handleJoinClick}
-                    disabled={isActionPending || isPending}
-                    sx={{
-                      borderRadius: "12px",
-                      px: 2.5,
-                      fontWeight: 700,
-                      flex: { xs: 1, sm: "initial" },
-                    }}
-                  >
-                    {isMember
-                      ? t("groups.leaveGroup")
-                      : isPending
-                        ? t("groups.requested")
-                        : t("groups.joinGroup")}
-                  </Button>
+                  {(isAdmin || isDeputy) && (
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      startIcon={<Settings size={16} />}
+                      onClick={() => router.push(`/groups/${slug}/manage`)}
+                      sx={{
+                        borderRadius: "12px",
+                        px: 2,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {t("groups.manageGroup")}
+                    </Button>
+                  )}
+
+                  {!isAdmin && (
+                    <Button
+                      variant={isMember ? "outlined" : "contained"}
+                      color={isMember ? "inherit" : "primary"}
+                      startIcon={
+                        isMember ? <LogOut size={16} /> : isPending ? <Check size={16} /> : <Plus size={16} />
+                      }
+                      onClick={handleJoinClick}
+                      disabled={isActionPending || isPending}
+                      sx={{
+                        borderRadius: "12px",
+                        px: 2.5,
+                        fontWeight: 700,
+                        flex: { xs: 1, sm: "initial" },
+                      }}
+                    >
+                      {isMember
+                        ? t("groups.leaveGroup")
+                        : isPending
+                          ? t("groups.requested")
+                          : t("groups.joinGroup")}
+                    </Button>
+                  )}
                 </Box>
               </Box>
 

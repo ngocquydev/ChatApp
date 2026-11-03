@@ -199,8 +199,14 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Hội nhóm cộng đồng (`/groups`):**
   - Hỗ trợ chế độ Công khai (Public) và Riêng tư (Private).
   - Thảo luận nội bộ nhóm (`GroupFeed`): Thành viên trong nhóm có thể đăng bài viết, chia sẻ ảnh và trao đổi ý kiến trong cộng đồng riêng.
-  - **Quản lý vai trò & Phân quyền Phó nhóm (Deputy Management):**
-    - Người tạo nhóm tự động giữ vai trò Quản trị viên (Admin/Creator).
+  - **Quản lý vai trò, Tự động nhận diện Quản trị viên & Trang Quản trị Nhóm (`/groups/[slug]/manage`):**
+    - Người tạo nhóm tự động giữ vai trò Quản trị viên (Admin/Creator) và Thành viên chính thức (không cần ấn tham gia).
+    - Huy hiệu `👑 Quản trị viên` nổi bật kèm nút `⚙️ Quản lý nhóm` dẫn đến trang quản trị chuyên dụng `/groups/[slug]/manage`.
+    - **Trang Quản trị Nhóm Chuyên biệt (`/groups/[slug]/manage`):**
+      - Thẻ định danh & Thống kê tổng quan: Tổng thành viên, Yêu cầu chờ duyệt, Số lượng phó nhóm, Quyền riêng tư.
+      - Tab Quản lý Thành viên & Phân quyền: tìm kiếm, lọc theo vai trò, bổ nhiệm Phó nhóm, phân quyền chi tiết, khóa bình luận, cấm đăng bài, xóa thành viên.
+      - Tab Xét duyệt Yêu cầu: đọc câu trả lời câu hỏi tham gia của từng người và phê duyệt/từ chối.
+      - Tab Cài đặt Nhóm: cập nhật tên, mô tả, quyền riêng tư, quy định phê duyệt và câu hỏi gia nhập.
     - Quản trị viên có thể bổ nhiệm thành viên làm **Phó nhóm (Deputy)** và cấp các quyền hạn quản trị chi tiết:
       - ❌ **Xóa thành viên khỏi nhóm (`canRemoveMembers`)**
       - 🔇 **Khóa quyền bình luận (`canMuteComments`)**

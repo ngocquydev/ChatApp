@@ -27,6 +27,13 @@ export interface GroupViewerPermissions {
   isMutedComments: boolean;
 }
 
+function toIdString(val: any): string {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (val._id) return val._id.toString();
+  return val.toString();
+}
+
 @Injectable()
 export class CommunityGroupsService implements OnModuleInit {
   constructor(
@@ -126,6 +133,10 @@ export class CommunityGroupsService implements OnModuleInit {
    * Tạo hội nhóm mới
    */
   async createGroup(creatorId: string, dto: CreateCommunityGroupDto): Promise<CommunityGroupDocument> {
+    if (!creatorId || !Types.ObjectId.isValid(creatorId)) {
+      throw new BadRequestException('ID người tạo nhóm không hợp lệ hoặc phiên đăng nhập đã hết hạn');
+    }
+
     const slug = dto.slug.trim().toLowerCase();
     const existing = await this.groupModel.findOne({ slug }).exec();
     if (existing) {
@@ -183,21 +194,64 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Không tìm thấy hội nhóm');
     }
 
-    const viewerObjId = viewerId ? new Types.ObjectId(viewerId) : null;
-    const isMember = viewerObjId
-      ? (group.members || []).some((m) => m.toString() === viewerId)
+    const viewerObjId = viewerId && Types.ObjectId.isValid(viewerId) ? new Types.ObjectId(viewerId) : null;
+    const viewerIdStr = viewerId ? String(viewerId) : '';
+
+    // Tự động khôi phục nhóm mồ côi (do bug undefined creatorId trước đây) cho người dùng hiện tại
+    const currentCreatorIdStr = toIdString(group.creatorId);
+    if ((!currentCreatorIdStr || currentCreatorIdStr === 'undefined') && viewerObjId) {
+      await this.groupModel.updateOne(
+        { _id: group._id },
+        {
+          $set: {
+            creatorId: viewerObjId,
+            adminIds: [viewerObjId],
+            memberCount: Math.max(group.memberCount || 1, 1),
+          },
+          $addToSet: { members: viewerObjId },
+        },
+      ).exec();
+      group.creatorId = viewerObjId as any;
+      group.adminIds = [viewerObjId as any];
+      if (!group.members) group.members = [];
+      if (!group.members.some((m) => toIdString(m) === viewerIdStr)) {
+        group.members.push(viewerObjId);
+      }
+    }
+
+    // Đảm bảo memberCount tối thiểu là số thành viên thực tế hoặc 1
+    const actualMemberCount = Math.max(
+      group.memberCount || 0,
+      group.members?.length || 0,
+      1,
+    );
+    group.memberCount = actualMemberCount;
+
+    let isMember = viewerObjId
+      ? (group.members || []).some((m) => toIdString(m) === viewerIdStr)
       : false;
     const isPending = viewerObjId
-      ? (group.pendingMemberIds || []).some((p) => p.toString() === viewerId) ||
-        (group.pendingRequests || []).some((r) => r.userId.toString() === viewerId)
+      ? (group.pendingMemberIds || []).some((p) => toIdString(p) === viewerIdStr) ||
+        (group.pendingRequests || []).some((r) => toIdString(r.userId) === viewerIdStr)
       : false;
-    const isCreator = viewerObjId ? group.creatorId.toString() === viewerId : false;
+    const isCreator = viewerObjId ? toIdString(group.creatorId) === viewerIdStr : false;
     const isAdmin = viewerObjId
-      ? isCreator || (group.adminIds || []).some((a) => a.toString() === viewerId)
+      ? isCreator || (group.adminIds || []).some((a) => toIdString(a) === viewerIdStr)
       : false;
 
+    // Nếu là Admin/Creator nhưng chưa có trong mảng members, tự động thêm vào
+    if (isAdmin && viewerObjId && !isMember) {
+      await this.groupModel.updateOne(
+        { _id: group._id },
+        { $addToSet: { members: viewerObjId } },
+      ).exec();
+      if (!group.members) group.members = [];
+      group.members.push(viewerObjId);
+      isMember = true;
+    }
+
     const deputy = viewerObjId
-      ? (group.deputies || []).find((d) => d.userId.toString() === viewerId)
+      ? (group.deputies || []).find((d) => toIdString(d.userId) === viewerIdStr)
       : undefined;
     const isDeputy = Boolean(deputy);
 
@@ -206,10 +260,10 @@ export class CommunityGroupsService implements OnModuleInit {
     const canBlockPosting = isAdmin || Boolean(deputy?.canBlockPosting);
 
     const isBannedPosting = viewerObjId
-      ? (group.bannedPostingUserIds || []).some((b) => b.toString() === viewerId)
+      ? (group.bannedPostingUserIds || []).some((b) => toIdString(b) === viewerIdStr)
       : false;
     const isMutedComments = viewerObjId
-      ? (group.mutedCommentUserIds || []).some((m) => m.toString() === viewerId)
+      ? (group.mutedCommentUserIds || []).some((m) => toIdString(m) === viewerIdStr)
       : false;
 
     const viewerPermissions: GroupViewerPermissions = {
@@ -249,7 +303,7 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Hội nhóm không tồn tại');
     }
 
-    const isMember = (group.members || []).some((m) => m.toString() === userId);
+    const isMember = (group.members || []).some((m) => toIdString(m) === userId);
     if (isMember) {
       return { status: 'joined', memberCount: group.memberCount };
     }
@@ -266,7 +320,7 @@ export class CommunityGroupsService implements OnModuleInit {
       if (!group.pendingRequests) group.pendingRequests = [];
       if (!group.pendingMemberIds) group.pendingMemberIds = [];
 
-      const existingReqIndex = group.pendingRequests.findIndex((r) => r.userId.toString() === userId);
+      const existingReqIndex = group.pendingRequests.findIndex((r) => toIdString(r.userId) === userId);
       if (existingReqIndex >= 0) {
         group.pendingRequests[existingReqIndex].reason = reason;
         group.pendingRequests[existingReqIndex].requestedAt = new Date();
@@ -278,7 +332,7 @@ export class CommunityGroupsService implements OnModuleInit {
         });
       }
 
-      if (!group.pendingMemberIds.some((p) => p.toString() === userId)) {
+      if (!group.pendingMemberIds.some((p) => toIdString(p) === userId)) {
         group.pendingMemberIds.push(objUserId);
       }
 
@@ -310,14 +364,14 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Hội nhóm không tồn tại');
     }
 
-    if (group.creatorId.toString() === userId) {
+    if (toIdString(group.creatorId) === userId) {
       throw new ForbiddenException('Người tạo nhóm không thể tự rời nhóm');
     }
 
-    group.members = (group.members || []).filter((m) => m.toString() !== userId);
-    group.adminIds = (group.adminIds || []).filter((a) => a.toString() !== userId);
-    group.moderatorIds = (group.moderatorIds || []).filter((m) => m.toString() !== userId);
-    group.deputies = (group.deputies || []).filter((d) => d.userId.toString() !== userId);
+    group.members = (group.members || []).filter((m) => toIdString(m) !== userId);
+    group.adminIds = (group.adminIds || []).filter((a) => toIdString(a) !== userId);
+    group.moderatorIds = (group.moderatorIds || []).filter((m) => toIdString(m) !== userId);
+    group.deputies = (group.deputies || []).filter((d) => toIdString(d.userId) !== userId);
     group.memberCount = group.members.length;
     await group.save();
 
@@ -337,9 +391,9 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Hội nhóm không tồn tại');
     }
 
-    const isCreator = group.creatorId.toString() === requesterId;
-    const isAdmin = isCreator || (group.adminIds || []).some((a) => a.toString() === requesterId);
-    const isDeputy = (group.deputies || []).some((d) => d.userId.toString() === requesterId);
+    const isCreator = toIdString(group.creatorId) === requesterId;
+    const isAdmin = isCreator || (group.adminIds || []).some((a) => toIdString(a) === requesterId);
+    const isDeputy = (group.deputies || []).some((d) => toIdString(d.userId) === requesterId);
 
     if (!isAdmin && !isDeputy) {
       throw new ForbiddenException('Chỉ quản trị viên hoặc phó nhóm mới có quyền xem danh sách chờ');
@@ -365,24 +419,24 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Hội nhóm không tồn tại');
     }
 
-    const isCreator = group.creatorId.toString() === requesterId;
-    const isAdmin = isCreator || (group.adminIds || []).some((a) => a.toString() === requesterId);
-    const isDeputy = (group.deputies || []).some((d) => d.userId.toString() === requesterId);
+    const isCreator = toIdString(group.creatorId) === requesterId;
+    const isAdmin = isCreator || (group.adminIds || []).some((a) => toIdString(a) === requesterId);
+    const isDeputy = (group.deputies || []).some((d) => toIdString(d.userId) === requesterId);
 
     if (!isAdmin && !isDeputy) {
       throw new ForbiddenException('Chỉ quản trị viên hoặc phó nhóm mới có quyền duyệt thành viên');
     }
 
     group.pendingMemberIds = (group.pendingMemberIds || []).filter(
-      (p) => p.toString() !== targetUserId,
+      (p) => toIdString(p) !== targetUserId,
     );
     group.pendingRequests = (group.pendingRequests || []).filter(
-      (r) => r.userId.toString() !== targetUserId,
+      (r) => toIdString(r.userId) !== targetUserId,
     );
 
     const objTarget = new Types.ObjectId(targetUserId);
     if (!group.members) group.members = [];
-    if (!group.members.some((m) => m.toString() === targetUserId)) {
+    if (!group.members.some((m) => toIdString(m) === targetUserId)) {
       group.members.push(objTarget);
     }
 
@@ -405,19 +459,19 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Hội nhóm không tồn tại');
     }
 
-    const isCreator = group.creatorId.toString() === requesterId;
-    const isAdmin = isCreator || (group.adminIds || []).some((a) => a.toString() === requesterId);
-    const isDeputy = (group.deputies || []).some((d) => d.userId.toString() === requesterId);
+    const isCreator = toIdString(group.creatorId) === requesterId;
+    const isAdmin = isCreator || (group.adminIds || []).some((a) => toIdString(a) === requesterId);
+    const isDeputy = (group.deputies || []).some((d) => toIdString(d.userId) === requesterId);
 
     if (!isAdmin && !isDeputy) {
       throw new ForbiddenException('Chỉ quản trị viên hoặc phó nhóm mới có quyền từ chối thành viên');
     }
 
     group.pendingMemberIds = (group.pendingMemberIds || []).filter(
-      (p) => p.toString() !== targetUserId,
+      (p) => toIdString(p) !== targetUserId,
     );
     group.pendingRequests = (group.pendingRequests || []).filter(
-      (r) => r.userId.toString() !== targetUserId,
+      (r) => toIdString(r.userId) !== targetUserId,
     );
 
     await group.save();
@@ -437,18 +491,18 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Hội nhóm không tồn tại');
     }
 
-    const creatorIdStr = group.creatorId.toString();
-    const adminIdStrs = new Set((group.adminIds || []).map((a) => a.toString()));
+    const creatorIdStr = toIdString(group.creatorId);
+    const adminIdStrs = new Set((group.adminIds || []).map((a) => toIdString(a)));
     const deputyMap = new Map<string, { canRemoveMembers: boolean; canMuteComments: boolean; canBlockPosting: boolean }>();
     for (const d of group.deputies || []) {
-      deputyMap.set(d.userId.toString(), {
+      deputyMap.set(toIdString(d.userId), {
         canRemoveMembers: Boolean(d.canRemoveMembers),
         canMuteComments: Boolean(d.canMuteComments),
         canBlockPosting: Boolean(d.canBlockPosting),
       });
     }
-    const mutedCommentStrs = new Set((group.mutedCommentUserIds || []).map((m) => m.toString()));
-    const bannedPostingStrs = new Set((group.bannedPostingUserIds || []).map((b) => b.toString()));
+    const mutedCommentStrs = new Set((group.mutedCommentUserIds || []).map((m) => toIdString(m)));
+    const bannedPostingStrs = new Set((group.bannedPostingUserIds || []).map((b) => toIdString(b)));
 
     const membersList = (group.members as any[]).map((u) => {
       const uId = u._id ? u._id.toString() : u.toString();
@@ -487,18 +541,18 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Hội nhóm không tồn tại');
     }
 
-    const isCreator = group.creatorId.toString() === adminId;
-    const isAdmin = isCreator || (group.adminIds || []).some((a) => a.toString() === adminId);
+    const isCreator = toIdString(group.creatorId) === adminId;
+    const isAdmin = isCreator || (group.adminIds || []).some((a) => toIdString(a) === adminId);
     if (!isAdmin) {
       throw new ForbiddenException('Chỉ quản trị viên mới có quyền bổ nhiệm hoặc chỉnh sửa quyền phó nhóm');
     }
 
     const targetUserId = dto.userId;
-    if (targetUserId === group.creatorId.toString() || (group.adminIds || []).some((a) => a.toString() === targetUserId)) {
+    if (targetUserId === toIdString(group.creatorId) || (group.adminIds || []).some((a) => toIdString(a) === targetUserId)) {
       throw new BadRequestException('Quản trị viên đã có toàn quyền, không thể bổ nhiệm làm phó nhóm');
     }
 
-    const isMember = (group.members || []).some((m) => m.toString() === targetUserId);
+    const isMember = (group.members || []).some((m) => toIdString(m) === targetUserId);
     if (!isMember) {
       throw new BadRequestException('Người dùng phải là thành viên của nhóm trước khi được bổ nhiệm');
     }
@@ -507,7 +561,7 @@ export class CommunityGroupsService implements OnModuleInit {
     if (!group.deputies) group.deputies = [];
     if (!group.moderatorIds) group.moderatorIds = [];
 
-    const existingIndex = group.deputies.findIndex((d) => d.userId.toString() === targetUserId);
+    const existingIndex = group.deputies.findIndex((d) => toIdString(d.userId) === targetUserId);
     const newDeputy = {
       userId: objTargetId,
       canRemoveMembers: dto.canRemoveMembers ?? true,
@@ -521,7 +575,7 @@ export class CommunityGroupsService implements OnModuleInit {
       group.deputies.push(newDeputy);
     }
 
-    if (!group.moderatorIds.some((m) => m.toString() === targetUserId)) {
+    if (!group.moderatorIds.some((m) => toIdString(m) === targetUserId)) {
       group.moderatorIds.push(objTargetId);
     }
 
@@ -542,14 +596,14 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Hội nhóm không tồn tại');
     }
 
-    const isCreator = group.creatorId.toString() === adminId;
-    const isAdmin = isCreator || (group.adminIds || []).some((a) => a.toString() === adminId);
+    const isCreator = toIdString(group.creatorId) === adminId;
+    const isAdmin = isCreator || (group.adminIds || []).some((a) => toIdString(a) === adminId);
     if (!isAdmin) {
       throw new ForbiddenException('Chỉ quản trị viên mới có quyền thu hồi vai trò phó nhóm');
     }
 
-    group.deputies = (group.deputies || []).filter((d) => d.userId.toString() !== targetUserId);
-    group.moderatorIds = (group.moderatorIds || []).filter((m) => m.toString() !== targetUserId);
+    group.deputies = (group.deputies || []).filter((d) => toIdString(d.userId) !== targetUserId);
+    group.moderatorIds = (group.moderatorIds || []).filter((m) => toIdString(m) !== targetUserId);
 
     await group.save();
     return { success: true };
@@ -568,16 +622,16 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Hội nhóm không tồn tại');
     }
 
-    if (targetUserId === group.creatorId.toString()) {
+    if (targetUserId === toIdString(group.creatorId)) {
       throw new ForbiddenException('Không thể xóa người sáng lập nhóm');
     }
 
-    const isCreator = group.creatorId.toString() === requesterId;
-    const isAdmin = isCreator || (group.adminIds || []).some((a) => a.toString() === requesterId);
-    const deputy = (group.deputies || []).find((d) => d.userId.toString() === requesterId);
+    const isCreator = toIdString(group.creatorId) === requesterId;
+    const isAdmin = isCreator || (group.adminIds || []).some((a) => toIdString(a) === requesterId);
+    const deputy = (group.deputies || []).find((d) => toIdString(d.userId) === requesterId);
 
-    const isTargetAdmin = (group.adminIds || []).some((a) => a.toString() === targetUserId);
-    const isTargetDeputy = (group.deputies || []).some((d) => d.userId.toString() === targetUserId);
+    const isTargetAdmin = (group.adminIds || []).some((a) => toIdString(a) === targetUserId);
+    const isTargetDeputy = (group.deputies || []).some((d) => toIdString(d.userId) === targetUserId);
 
     if (isTargetAdmin && !isCreator) {
       throw new ForbiddenException('Chỉ người sáng lập mới có thể xóa quản trị viên');
@@ -593,12 +647,12 @@ export class CommunityGroupsService implements OnModuleInit {
       }
     }
 
-    group.members = (group.members || []).filter((m) => m.toString() !== targetUserId);
-    group.adminIds = (group.adminIds || []).filter((a) => a.toString() !== targetUserId);
-    group.moderatorIds = (group.moderatorIds || []).filter((m) => m.toString() !== targetUserId);
-    group.deputies = (group.deputies || []).filter((d) => d.userId.toString() !== targetUserId);
-    group.bannedPostingUserIds = (group.bannedPostingUserIds || []).filter((b) => b.toString() !== targetUserId);
-    group.mutedCommentUserIds = (group.mutedCommentUserIds || []).filter((m) => m.toString() !== targetUserId);
+    group.members = (group.members || []).filter((m) => toIdString(m) !== targetUserId);
+    group.adminIds = (group.adminIds || []).filter((a) => toIdString(a) !== targetUserId);
+    group.moderatorIds = (group.moderatorIds || []).filter((m) => toIdString(m) !== targetUserId);
+    group.deputies = (group.deputies || []).filter((d) => toIdString(d.userId) !== targetUserId);
+    group.bannedPostingUserIds = (group.bannedPostingUserIds || []).filter((b) => toIdString(b) !== targetUserId);
+    group.mutedCommentUserIds = (group.mutedCommentUserIds || []).filter((m) => toIdString(m) !== targetUserId);
 
     group.memberCount = group.members.length;
     await group.save();
@@ -620,13 +674,13 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Hội nhóm không tồn tại');
     }
 
-    if (targetUserId === group.creatorId.toString() || (group.adminIds || []).some((a) => a.toString() === targetUserId)) {
+    if (targetUserId === toIdString(group.creatorId) || (group.adminIds || []).some((a) => toIdString(a) === targetUserId)) {
       throw new ForbiddenException('Không thể khóa bình luận của quản trị viên');
     }
 
-    const isCreator = group.creatorId.toString() === requesterId;
-    const isAdmin = isCreator || (group.adminIds || []).some((a) => a.toString() === requesterId);
-    const deputy = (group.deputies || []).find((d) => d.userId.toString() === requesterId);
+    const isCreator = toIdString(group.creatorId) === requesterId;
+    const isAdmin = isCreator || (group.adminIds || []).some((a) => toIdString(a) === requesterId);
+    const deputy = (group.deputies || []).find((d) => toIdString(d.userId) === requesterId);
 
     if (!isAdmin) {
       if (!deputy || !deputy.canMuteComments) {
@@ -637,11 +691,11 @@ export class CommunityGroupsService implements OnModuleInit {
     if (!group.mutedCommentUserIds) group.mutedCommentUserIds = [];
 
     if (muted) {
-      if (!group.mutedCommentUserIds.some((m) => m.toString() === targetUserId)) {
+      if (!group.mutedCommentUserIds.some((m) => toIdString(m) === targetUserId)) {
         group.mutedCommentUserIds.push(new Types.ObjectId(targetUserId));
       }
     } else {
-      group.mutedCommentUserIds = group.mutedCommentUserIds.filter((m) => m.toString() !== targetUserId);
+      group.mutedCommentUserIds = group.mutedCommentUserIds.filter((m) => toIdString(m) !== targetUserId);
     }
 
     await group.save();
@@ -662,13 +716,13 @@ export class CommunityGroupsService implements OnModuleInit {
       throw new NotFoundException('Hội nhóm không tồn tại');
     }
 
-    if (targetUserId === group.creatorId.toString() || (group.adminIds || []).some((a) => a.toString() === targetUserId)) {
+    if (targetUserId === toIdString(group.creatorId) || (group.adminIds || []).some((a) => toIdString(a) === targetUserId)) {
       throw new ForbiddenException('Không thể cấm đăng bài của quản trị viên');
     }
 
-    const isCreator = group.creatorId.toString() === requesterId;
-    const isAdmin = isCreator || (group.adminIds || []).some((a) => a.toString() === requesterId);
-    const deputy = (group.deputies || []).find((d) => d.userId.toString() === requesterId);
+    const isCreator = toIdString(group.creatorId) === requesterId;
+    const isAdmin = isCreator || (group.adminIds || []).some((a) => toIdString(a) === requesterId);
+    const deputy = (group.deputies || []).find((d) => toIdString(d.userId) === requesterId);
 
     if (!isAdmin) {
       if (!deputy || !deputy.canBlockPosting) {
@@ -679,11 +733,11 @@ export class CommunityGroupsService implements OnModuleInit {
     if (!group.bannedPostingUserIds) group.bannedPostingUserIds = [];
 
     if (blocked) {
-      if (!group.bannedPostingUserIds.some((b) => b.toString() === targetUserId)) {
+      if (!group.bannedPostingUserIds.some((b) => toIdString(b) === targetUserId)) {
         group.bannedPostingUserIds.push(new Types.ObjectId(targetUserId));
       }
     } else {
-      group.bannedPostingUserIds = group.bannedPostingUserIds.filter((b) => b.toString() !== targetUserId);
+      group.bannedPostingUserIds = group.bannedPostingUserIds.filter((b) => toIdString(b) !== targetUserId);
     }
 
     await group.save();
@@ -745,8 +799,8 @@ export class CommunityGroupsService implements OnModuleInit {
     }
 
     const isAdmin =
-      group.creatorId.toString() === userId ||
-      (group.adminIds || []).some((a) => a.toString() === userId);
+      toIdString(group.creatorId) === userId ||
+      (group.adminIds || []).some((a) => toIdString(a) === userId);
 
     if (!isAdmin) {
       throw new ForbiddenException('Bạn không có quyền chỉnh sửa nhóm này');
@@ -767,4 +821,3 @@ export class CommunityGroupsService implements OnModuleInit {
     return group;
   }
 }
-

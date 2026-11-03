@@ -156,6 +156,25 @@ export interface TranslationDictionary {
     rejectRequest: string;
     requestAnswerLabel: string;
     requestTimeLabel: string;
+    manageGroup: string;
+    backToGroup: string;
+    groupOverview: string;
+    groupSettings: string;
+    saveSettings: string;
+    savingSettings: string;
+    saveSettingsSuccess: string;
+    saveSettingsError: string;
+    noPermissionManage: string;
+    filterAll: string;
+    filterAdmins: string;
+    filterRestricted: string;
+    searchMembersPlaceholder: string;
+    totalMembers: string;
+    pendingRequests: string;
+    deputiesCount: string;
+    joinedBadge: string;
+    settingsGeneral: string;
+    settingsApproval: string;
   };
   pages: {
     title: string;

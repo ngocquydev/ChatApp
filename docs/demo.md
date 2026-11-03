@@ -318,11 +318,18 @@ Hệ thống nâng cấp bộ chọn đa ngôn ngữ hiện đại trên cả �
 
 ---
 
-## 19. Phân Quyền Quản Trị Viên, Phó Nhóm & Câu Hỏi Xét Duyệt Tham Gia Nhóm
+## 19. Phân Quyền Quản Trị Viên, Phó Nhóm, Trang Quản Trị Nhóm & Câu Hỏi Xét Duyệt Tham Gia
 
 Hệ thống nâng cấp cơ chế quản trị Hội nhóm Cộng đồng (`/groups`) toàn diện theo chuẩn mạng xã hội hiện đại:
-- **Phân cấp vai trò rõ ràng:** Quản trị viên (Admin / Creator), Phó nhóm (Deputy / Moderator) và Thành viên (Member).
-- **Phân quyền chi tiết cho Phó nhóm (Granular Deputy Permissions):**
+- **Tự động nhận diện Người tạo là Quản trị viên & Thành viên chính thức:**
+  - Người tạo nhóm tự động là Quản trị viên và Thành viên ngay khi tạo nhóm (không hiển thị nút tham gia hay bắt qua xét duyệt).
+  - Tự động hiển thị huy hiệu `👑 Quản trị viên` và nút `⚙️ Quản lý nhóm` dẫn đến trang quản trị chuyên biệt.
+- **Trang Quản trị Nhóm Chuyên biệt (`/groups/[slug]/manage`):**
+  - **Thống kê tổng quan:** Tổng thành viên, Yêu cầu chờ duyệt, Số phó nhóm, Quyền riêng tư.
+  - **Tab Thành viên & Phân quyền:** Tìm kiếm, lọc theo vai trò (Tất cả, Quản trị viên & Phó nhóm, Bị hạn chế), bổ nhiệm/hạ quyền phó nhóm, phân quyền chi tiết, khóa quyền bình luận, cấm đăng bài, xóa thành viên.
+  - **Tab Xét duyệt Yêu cầu:** Đọc lý do/câu trả lời câu hỏi tham gia của từng người và Phê duyệt / Từ chối.
+  - **Tab Cài đặt Nhóm (Quản trị viên):** Cập nhật tên nhóm, mô tả, quyền riêng tư, quy định phê duyệt và câu hỏi gia nhập.
+- **Phân cấp vai trò & Phân quyền chi tiết cho Phó nhóm (Granular Deputy Permissions):**
   - ❌ **Xóa thành viên vi phạm (`canRemoveMembers`)**
   - 🔇 **Khóa quyền bình luận (`canMuteComments`)**
   - 🚫 **Khóa quyền đăng bài (`canBlockPosting`)**
@@ -330,8 +337,11 @@ Hệ thống nâng cấp cơ chế quản trị Hội nhóm Cộng đồng (`/gr
   - Quản trị viên có thể bật yêu cầu trả lời câu hỏi và soạn câu hỏi xét duyệt tùy ý.
   - Người dùng bấm tham gia nhóm sẽ mở Modal trả lời lý do.
   - Quản trị viên và Phó nhóm có thể xem danh sách chờ duyệt kèm câu trả lời của từng người để phê duyệt hoặc từ chối.
+- **Hỗ trợ đầy đủ 6 ngôn ngữ:** Tiếng Việt, English, 简体中文, 繁體中文, 한국어, ไทย.
 
-![Quản lý Hội nhóm & Phân quyền](assets/screenshots/group-management-roles.png)
+![Chi tiết Hội nhóm & Nhận diện Quản trị viên](assets/screenshots/group-detail-roles-permissions.png)
+
+![Trang Quản trị Nhóm Chuyên dụng & Phân quyền](assets/screenshots/group-management-roles.png)
 
 - 📖 *Xem chi tiết: [docs/features/group-roles-permissions.md](features/group-roles-permissions.md)*
 

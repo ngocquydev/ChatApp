@@ -15,6 +15,7 @@ type Payload = {
 
 type SafeUserResponse = {
   _id: Types.ObjectId | string;
+  sub?: string;
   name: string;
   email: string;
   phone?: string;
@@ -37,6 +38,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         let token = null;
         if (req && req.cookies) {
           token = req.cookies['accessToken'];
+        }
+        if (!token && req && req.headers && req.headers.authorization) {
+          const parts = req.headers.authorization.split(' ');
+          if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+            token = parts[1];
+          }
         }
         return token;
       },
@@ -66,6 +73,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       ...result,
       _id: result._id.toString(),
+      sub: result._id.toString(),
       // Role hiệu lực đọc từ DB + ADMIN_EMAILS ở mỗi request (không tin role trong JWT)
       role: resolveEffectiveRole(result),
     } as SafeUserResponse;
