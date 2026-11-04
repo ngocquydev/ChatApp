@@ -24,16 +24,25 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     const uri = this.configService.get<string>('NEO4J_URI') || 'bolt://localhost:7687';
-    const user = this.configService.get<string>('NEO4J_USER') || 'neo4j';
+    const user =
+      this.configService.get<string>('NEO4J_USERNAME') ||
+      this.configService.get<string>('NEO4J_USER') ||
+      'neo4j';
     const password = this.configService.get<string>('NEO4J_PASSWORD') || 'password123';
 
     try {
-      this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password), {
-        encrypted: 'ENCRYPTION_OFF',
+      const isSecure = uri.startsWith('neo4j+s://') || uri.startsWith('bolt+s://');
+      const driverConfig: Parameters<typeof neo4j.driver>[2] = {
         maxConnectionLifetime: 3 * 60 * 60 * 1000,
         maxConnectionPoolSize: 50,
-        connectionAcquisitionTimeout: 2000,
-      });
+        connectionAcquisitionTimeout: 10000,
+      };
+
+      if (!isSecure && (uri.startsWith('bolt://') || uri.startsWith('neo4j://'))) {
+        driverConfig.encrypted = 'ENCRYPTION_OFF';
+      }
+
+      this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password), driverConfig);
 
       await this.driver.verifyConnectivity();
       this.connected = true;
@@ -77,7 +86,8 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     if (!this.driver) {
       throw new Error('Neo4j driver chưa được khởi tạo');
     }
-    return this.driver.session();
+    const database = this.configService.get<string>('NEO4J_DATABASE');
+    return database ? this.driver.session({ database }) : this.driver.session();
   }
 
   /**
