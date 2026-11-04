@@ -1,4 +1,15 @@
 import 'dotenv/config';
+import dns from 'dns';
+
+// Tự động phân giải DNS SRV (Google / Cloudflare DNS) cho MongoDB Atlas trên các môi trường mạng hoặc Windows
+if (process.env.MONGODB_URI?.includes('mongodb+srv://')) {
+  try {
+    dns.setServers(['8.8.8.8', '1.1.1.1']);
+  } catch {
+    // Bỏ qua nếu môi trường không cho phép thay đổi DNS servers
+  }
+}
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';

@@ -48,9 +48,21 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule({
     // 2. Kết nối MongoDB sử dụng Mongoose (đọc qua ConfigService)
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const uri = configService.get<string>('MONGODB_URI');
+        if (uri?.includes('mongodb+srv://')) {
+          try {
+            const dns = await import('dns');
+            dns.setServers(['8.8.8.8', '1.1.1.1']);
+          } catch {
+            // Giữ nguyên thiết lập DNS hệ thống
+          }
+        }
+        return {
+          uri,
+          dbName: configService.get<string>('MONGODB_DB_NAME') || 'chatapp',
+        };
+      },
       inject: [ConfigService],
     }),
 
