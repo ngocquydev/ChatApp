@@ -33,7 +33,7 @@ export class WafClearanceService {
     res.cookie(WAF_CLEARANCE_COOKIE, signClearance(ip, this.secret), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/',
       maxAge: CLEARANCE_TTL_SECONDS * 1000,
     });

@@ -44,10 +44,11 @@ export class AuthService {
     token: string,
     maxAgeMs: number,
   ) {
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie(name, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       maxAge: maxAgeMs,
     });
   }

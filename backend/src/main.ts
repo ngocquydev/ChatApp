@@ -55,6 +55,7 @@ async function bootstrap() {
     'http://127.0.0.1:5174',
     'http://127.0.0.1:5175',
     'http://127.0.0.1:3001',
+    /^https:\/\/.*\.vercel\.app$/,
   ];
   if (process.env.FRONTEND_URL) {
     allowedOrigins.push(process.env.FRONTEND_URL);

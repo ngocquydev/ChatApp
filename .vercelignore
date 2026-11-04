@@ -1,0 +1,24 @@
+# Exclude backend, admin, and non-frontend folders from Vercel frontend deployment
+backend
+admin
+docs
+scripts
+backups
+.gemini
+*.archive.gz
+*.log
+
+# Exclude build output and dependencies
+.next
+frontend/.next
+dist
+frontend/dist
+out
+frontend/out
+node_modules
+frontend/node_modules
+backend/node_modules
+admin/node_modules
+.turbo
+frontend/.turbo
+*.tsbuildinfo

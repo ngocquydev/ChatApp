@@ -10,3 +10,6 @@ logs/
 *.log
 *.tsbuildinfo
 .aider-desk/
+
+.vercel
+.env*
