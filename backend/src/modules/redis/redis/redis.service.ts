@@ -20,6 +20,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
+    const redisUrl =
+      this.configService?.get<string>('REDIS_URL') ||
+      process.env.REDIS_URL;
+
     const host =
       this.configService?.get<string>('REDIS_HOST') ||
       process.env.REDIS_HOST ||
@@ -34,27 +38,41 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       process.env.REDIS_PASSWORD ||
       undefined;
 
-    this.client = new Redis({
-      host,
-      port,
-      password,
-      lazyConnect: false,
-      enableOfflineQueue: false, // Fail-fast: không xếp hàng lệnh vô hạn khi mất kết nối
-      maxRetriesPerRequest: 1, // Giới hạn số lần thử lại tránh nghẽn luồng xử lý
-      connectTimeout: 5000,
-      retryStrategy: (times) => Math.min(times * 200, 3000),
-    });
+    if (redisUrl) {
+      this.client = new Redis(redisUrl, {
+        lazyConnect: false,
+        enableOfflineQueue: false, // Fail-fast: không xếp hàng lệnh vô hạn khi mất kết nối
+        maxRetriesPerRequest: 1, // Giới hạn số lần thử lại tránh nghẽn luồng xử lý
+        connectTimeout: 10000,
+        retryStrategy: (times) => Math.min(times * 200, 3000),
+      });
+    } else {
+      this.client = new Redis({
+        host,
+        port,
+        password,
+        lazyConnect: false,
+        enableOfflineQueue: false, // Fail-fast: không xếp hàng lệnh vô hạn khi mất kết nối
+        maxRetriesPerRequest: 1, // Giới hạn số lần thử lại tránh nghẽn luồng xử lý
+        connectTimeout: 5000,
+        retryStrategy: (times) => Math.min(times * 200, 3000),
+      });
+    }
+
+    const displayTarget = redisUrl
+      ? redisUrl.replace(/:[^:@]+@/, ':***@')
+      : `${host}:${port}`;
 
     this.client.on('error', (err) => {
       this.logger.warn(`Lỗi kết nối Redis: ${err.message}`);
     });
 
     this.client.on('connect', () => {
-      this.logger.log(`Đã thiết lập kết nối tới Redis tại ${host}:${port}`);
+      this.logger.log(`Đã thiết lập kết nối tới Redis tại ${displayTarget}`);
     });
 
     this.client.on('ready', () => {
-      this.logger.log(`Redis sẵn sàng phục vụ yêu cầu tại ${host}:${port}`);
+      this.logger.log(`Redis sẵn sàng phục vụ yêu cầu tại ${displayTarget}`);
     });
 
     this.client.on('close', () => {
