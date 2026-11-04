@@ -469,6 +469,15 @@ export class CommunityGroupsService implements OnModuleInit {
       };
     });
 
+    // Đồng bộ số lượng thành viên thực tế vào cơ sở dữ liệu nếu có sự chênh lệch
+    const actualMemberCount = Math.max(membersList.length, 1);
+    if (group.memberCount !== actualMemberCount) {
+      await this.groupModel.updateOne(
+        { _id: group._id },
+        { $set: { memberCount: actualMemberCount } },
+      ).exec();
+    }
+
     return {
       members: membersList,
       memberCount: membersList.length,
@@ -697,13 +706,21 @@ export class CommunityGroupsService implements OnModuleInit {
    */
   async getMyGroups(userId: string): Promise<CommunityGroupDocument[]> {
     const objUserId = new Types.ObjectId(userId);
-    return this.groupModel
+    const groups = await this.groupModel
       .find({
         $or: [{ creatorId: objUserId }, { members: objUserId }],
         isDeleted: false,
       })
       .sort({ updatedAt: -1 })
       .exec();
+
+    // Đồng bộ số lượng thành viên thực tế (tránh hiển thị số lượng ảo)
+    for (const g of groups) {
+      if (Array.isArray(g.members) && g.members.length > 0) {
+        g.memberCount = g.members.length;
+      }
+    }
+    return groups;
   }
 
   /**
@@ -721,12 +738,20 @@ export class CommunityGroupsService implements OnModuleInit {
       ];
     }
 
-    return this.groupModel
+    const groups = await this.groupModel
       .find(query)
       .sort({ memberCount: -1, createdAt: -1 })
       .skip(offset)
       .limit(limit)
       .exec();
+
+    // Đồng bộ số lượng thành viên thực tế (tránh hiển thị số lượng ảo)
+    for (const g of groups) {
+      if (Array.isArray(g.members) && g.members.length > 0) {
+        g.memberCount = g.members.length;
+      }
+    }
+    return groups;
   }
 
   /**

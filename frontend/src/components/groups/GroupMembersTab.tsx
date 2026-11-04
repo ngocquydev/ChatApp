@@ -63,12 +63,15 @@ export default function GroupMembersTab({
       setIsLoading(true);
       const res = await communityGroupsApi.getMembers(groupId);
       setMembers(res.members);
+      if (onMemberCountChange && typeof res.memberCount === "number") {
+        onMemberCountChange(res.memberCount);
+      }
     } catch (e) {
       console.error("Lỗi lấy danh sách thành viên:", e);
     } finally {
       setIsLoading(false);
     }
-  }, [groupId]);
+  }, [groupId, onMemberCountChange]);
 
   useEffect(() => {
     void fetchMembers();
