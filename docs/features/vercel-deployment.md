@@ -51,3 +51,4 @@ Do Frontend chạy trên tên miền `*.vercel.app` và Backend chạy trên `on
 2. **SameSite Cookie Policy (`auth.service.ts`, `auth.controller.ts`, `waf-clearance.service.ts`)**:
    - Ở môi trường `production`, thiết lập `sameSite: 'none'` kết hợp `secure: true`.
    - Giúp trình duyệt lưu và gửi kèm cookie `accessToken`, `refreshToken`, `waf_clearance` an toàn qua các truy vấn Fetch/XHR cross-origin.
+

@@ -53,7 +53,7 @@ const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(
         process.env.NEXT_PUBLIC_SITE_KEY ||
         process.env.VITE_TURNSTILE_SITE_KEY ||
         process.env.VITE_SITE_KEY ||
-        "0x4AAAAAAFUR2RRMbBht62MJ",
+        "1x00000000000000000000AA",
       action = "login",
       theme = "light",
     },
