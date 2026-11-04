@@ -1,9 +1,29 @@
+const cspHeader = `
+  connect-src 'self' data: blob: https: wss: ws: https://*.challenges.cloudflare.com https://challenges.cloudflare.com https://*.cloudflarecaptcha.com;
+  frame-src 'self' https://challenges.cloudflare.com https://*.challenges.cloudflare.com https://*.firebaseapp.com;
+`.replace(/\s{2,}/g, ' ').trim();
+
+const securityHeaders = [
+  {
+    key: 'Content-Security-Policy',
+    value: cspHeader,
+  },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   agentRules: false,
   compress: true,
   poweredByHeader: false,
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: securityHeaders,
+      },
+    ];
+  },
   experimental: {
     cpus: 1,
     agentUpgrade: "security",
