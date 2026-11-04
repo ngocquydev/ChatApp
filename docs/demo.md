@@ -370,7 +370,26 @@ Hệ thống nâng cấp cơ chế quản trị Hội nhóm Cộng đồng (`/gr
 
 ---
 
+### 24. Triển Khai Frontend Lên Vercel Production (Next.js 16 App Router)
+
+- **Trực tiếp trên môi trường đám mây Vercel:**
+  - Production URL: [https://frontend-blush-seven-zqmn2u56h0.vercel.app](https://frontend-blush-seven-zqmn2u56h0.vercel.app)
+  - Deployment URL: [https://frontend-qtdg9ap9b-siam-dc97.vercel.app](https://frontend-qtdg9ap9b-siam-dc97.vercel.app)
+  - Kết nối Backend trực tiếp trên Render: [https://chatapp-86ki.onrender.com](https://chatapp-86ki.onrender.com)
+- **Kiến trúc & Tối ưu hóa:**
+  - Node.js 24 LTS, Next.js 16 App Router, Turbopack tối ưu hóa tốc độ biên dịch.
+  - Tối ưu hóa gói upload với `.vercelignore` giảm kích thước từ 351MB xuống còn 8.9MB.
+  - Cấu hình đầy đủ 11 biến môi trường trên Vercel.
+  - CORS và SameSite=None cho cross-origin cookies giữa Vercel Frontend và Render Backend.
+
+![Vercel Production Deployment](assets/screenshots/vercel-deployment.png)
+
+- 📖 *Xem chi tiết: [docs/features/vercel-deployment.md](features/vercel-deployment.md)*
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Triển Khai Frontend Lên Vercel Production](features/vercel-deployment.md)
 > - [Báo Cáo Bình Luận & Kiểm Duyệt Hội Nhóm (Smart Comment Reporting)](features/comment-reporting-moderation.md)
 > - [Phân quyền Quản trị viên, Phó nhóm & Câu hỏi Xét duyệt](features/group-roles-permissions.md)
 > - [Hệ thống Đa ngôn ngữ 6 thứ tiếng (VI, EN, ZH-CN, ZH-TW, KO, TH)](features/multilingual-support.md)

@@ -17,7 +17,20 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 
 ---
 
+## 🌐 Live Production Deployments
+
+- **Frontend (Vercel)**: [https://frontend-blush-seven-zqmn2u56h0.vercel.app](https://frontend-blush-seven-zqmn2u56h0.vercel.app)
+- **Deployment URL**: [https://frontend-qtdg9ap9b-siam-dc97.vercel.app](https://frontend-qtdg9ap9b-siam-dc97.vercel.app)
+- **Backend API (Render)**: [https://chatapp-86ki.onrender.com](https://chatapp-86ki.onrender.com)
+- **Swagger API Docs**: [https://chatapp-86ki.onrender.com/api/docs](https://chatapp-86ki.onrender.com/api/docs)
+
+---
+
 ## 📸 Hình ảnh Demo Giao diện Thực tế
+
+| Triển khai Frontend Vercel Production | Hộp chat nổi đa nhiệm Messenger |
+|:---:|:---:|
+| ![Vercel Production Deployment](docs/assets/screenshots/vercel-deployment.png) | ![Hộp chat nổi đa nhiệm](docs/assets/screenshots/messenger-floating-chat.png) |
 
 | Bảng tin & Gợi ý kết bạn thông minh | Hộp chat nổi đa nhiệm Messenger |
 |:---:|:---:|
