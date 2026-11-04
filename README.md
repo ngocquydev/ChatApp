@@ -206,7 +206,8 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
       - Thẻ định danh & Thống kê tổng quan: Tổng thành viên, Yêu cầu chờ duyệt, Số lượng phó nhóm, Quyền riêng tư.
       - Tab Quản lý Thành viên & Phân quyền: tìm kiếm, lọc theo vai trò, bổ nhiệm Phó nhóm, phân quyền chi tiết, khóa bình luận, cấm đăng bài, xóa thành viên.
       - Tab Xét duyệt Yêu cầu: đọc câu trả lời câu hỏi tham gia của từng người và phê duyệt/từ chối.
-      - Tab Cài đặt Nhóm: cập nhật tên, mô tả, quyền riêng tư, quy định phê duyệt và câu hỏi gia nhập.
+      - Tab Báo cáo Vi phạm: theo dõi và xử lý danh sách bình luận bị báo cáo trong nhóm với số lượng động chính xác (đã sửa lỗi `{count}`).
+      - Tab Cài đặt Nhóm: cập nhật tên, mô tả, quyền riêng tư, quy định phê duyệt, câu hỏi gia nhập và **Vùng nguy hiểm (Danger Zone)** cho phép Quản trị viên xóa vĩnh viễn/xóa mềm hội nhóm cùng toàn bộ bài viết trong nhóm kèm hộp thoại xác nhận.
     - Quản trị viên có thể bổ nhiệm thành viên làm **Phó nhóm (Deputy)** và cấp các quyền hạn quản trị chi tiết:
       - ❌ **Xóa thành viên khỏi nhóm (`canRemoveMembers`)**
       - 🔇 **Khóa quyền bình luận (`canMuteComments`)**

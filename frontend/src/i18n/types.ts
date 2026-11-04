@@ -175,6 +175,13 @@ export interface TranslationDictionary {
     joinedBadge: string;
     settingsGeneral: string;
     settingsApproval: string;
+    dangerZone: string;
+    deleteGroup: string;
+    deleteGroupDesc: string;
+    deleteGroupConfirmTitle: string;
+    deleteGroupConfirmDesc: string;
+    deleteGroupSuccess: string;
+    deleteGroupError: string;
   };
   pages: {
     title: string;

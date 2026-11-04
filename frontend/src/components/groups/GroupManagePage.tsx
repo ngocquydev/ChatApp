@@ -22,6 +22,7 @@ import {
   Typography,
 } from "@mui/material";
 import {
+  AlertTriangle,
   ArrowLeft,
   CheckCircle2,
   Clock,
@@ -34,6 +35,7 @@ import {
   Shield,
   ShieldAlert,
   ShieldCheck,
+  Trash2,
   Users,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -42,6 +44,7 @@ import {
   CommunityGroupItem,
   GroupViewerPermissions,
 } from "@/services/communityGroupsApi";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import GroupMembersTab from "./GroupMembersTab";
 import GroupRequestsTab from "./GroupRequestsTab";
@@ -79,6 +82,27 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  // Delete group state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeletingGroup, setIsDeletingGroup] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteGroup = async () => {
+    if (!group) return;
+    try {
+      setIsDeletingGroup(true);
+      setDeleteError(null);
+      await communityGroupsApi.deleteGroup(group._id);
+      router.push("/groups");
+    } catch (err: unknown) {
+      console.error("Lỗi khi xóa hội nhóm:", err);
+      setDeleteError(t("groups.deleteGroupError"));
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeletingGroup(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -427,7 +451,8 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
 
           {/* Tab 3: Group Settings (Admin Only) */}
           {currentTab === 3 && viewerPermissions.isAdmin && (
-            <Card variant="outlined" sx={{ borderRadius: "16px", p: { xs: 2.5, sm: 4 } }}>
+            <>
+              <Card variant="outlined" sx={{ borderRadius: "16px", p: { xs: 2.5, sm: 4 } }}>
               <Typography variant="h6" sx={{ fontWeight: 800 }} gutterBottom>
                 {t("groups.groupSettings")}
               </Typography>
@@ -594,7 +619,57 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
                 </Box>
               </Box>
             </Card>
-          )}
+
+            {/* Danger Zone: Delete Group */}
+            <Card
+              variant="outlined"
+              sx={{
+                borderRadius: "16px",
+                p: { xs: 2.5, sm: 4 },
+                mt: 3,
+                borderColor: "error.main",
+                bgcolor: "background.paper",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+                <AlertTriangle size={22} color="var(--mui-palette-error-main)" />
+                <Typography variant="h6" sx={{ fontWeight: 800 }} color="error.main">
+                  {t("groups.dangerZone")}
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+                {t("groups.deleteGroupDesc")}
+              </Typography>
+
+              {deleteError && (
+                <Alert severity="error" sx={{ mb: 2.5 }} onClose={() => setDeleteError(null)}>
+                  {deleteError}
+                </Alert>
+              )}
+
+              <Button
+                variant="contained"
+                color="error"
+                startIcon={<Trash2 size={18} />}
+                onClick={() => setShowDeleteConfirm(true)}
+                sx={{ fontWeight: 700, borderRadius: "10px", px: 2.5, py: 1 }}
+              >
+                {t("groups.deleteGroup")}
+              </Button>
+            </Card>
+
+            <ConfirmDialog
+              open={showDeleteConfirm}
+              title={t("groups.deleteGroupConfirmTitle")}
+              description={t("groups.deleteGroupConfirmDesc")}
+              confirmLabel={t("groups.deleteGroup")}
+              cancelLabel={t("common.cancel")}
+              pending={isDeletingGroup}
+              onConfirm={() => void handleDeleteGroup()}
+              onClose={() => setShowDeleteConfirm(false)}
+            />
+          </>
+        )}
         </Box>
       </Box>
     </Box>

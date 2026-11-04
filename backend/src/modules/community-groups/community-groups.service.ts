@@ -143,6 +143,8 @@ export class CommunityGroupsService implements OnModuleInit {
     }
   }
 
+ 
+
   /**
    * Tạo hội nhóm mới
    */
@@ -852,6 +854,44 @@ export class CommunityGroupsService implements OnModuleInit {
     await group.save();
 
     return group;
+  }
+
+  /**
+   * Xóa hội nhóm (Dành cho Quản trị viên nhóm)
+   */
+  async deleteGroup(
+    groupId: string,
+    userId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    if (!Types.ObjectId.isValid(groupId)) {
+      throw new BadRequestException('Mã nhóm không hợp lệ');
+    }
+
+    const group = await this.groupModel.findById(groupId).exec();
+    if (!group || group.isDeleted) {
+      throw new NotFoundException('Hội nhóm không tồn tại');
+    }
+
+    const isAdmin =
+      toIdString(group.creatorId) === userId ||
+      (group.adminIds || []).some((a) => toIdString(a) === userId);
+
+    if (!isAdmin) {
+      throw new ForbiddenException('Chỉ quản trị viên mới có quyền xóa hội nhóm này');
+    }
+
+    group.isDeleted = true;
+    group.updatedAt = new Date();
+    await group.save();
+
+    if (this.postModel) {
+      await this.postModel.updateMany({ groupId: group._id }, { $set: { isDeleted: true } }).exec();
+    }
+
+    return {
+      success: true,
+      message: 'Đã xóa hội nhóm thành công',
+    };
   }
 
   /**

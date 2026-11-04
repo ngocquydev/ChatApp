@@ -223,5 +223,77 @@ describe('CommunityGroupsService', () => {
     expect(res.muted).toBe(true);
     expect(mockGroup.mutedCommentUserIds.length).toBe(1);
   });
+
+  describe('deleteGroup', () => {
+    it('từ chối nếu nhóm không tồn tại hoặc đã bị xóa', async () => {
+      mockGroupModel.findById.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        service.deleteGroup(new Types.ObjectId().toString(), new Types.ObjectId().toString()),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('từ chối nếu người thực hiện không phải là quản trị viên nhóm', async () => {
+      const creatorId = new Types.ObjectId().toString();
+      const nonAdminId = new Types.ObjectId().toString();
+      const groupId = new Types.ObjectId().toString();
+
+      const mockGroup = {
+        _id: new Types.ObjectId(groupId),
+        creatorId: new Types.ObjectId(creatorId),
+        adminIds: [new Types.ObjectId(creatorId)],
+        isDeleted: false,
+      };
+
+      mockGroupModel.findById.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockGroup),
+      });
+
+      await expect(
+        service.deleteGroup(groupId, nonAdminId),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('xóa nhóm thành công nếu người thực hiện là quản trị viên', async () => {
+      const creatorId = new Types.ObjectId().toString();
+      const groupId = new Types.ObjectId().toString();
+
+      const mockGroup = {
+        _id: new Types.ObjectId(groupId),
+        creatorId: new Types.ObjectId(creatorId),
+        adminIds: [new Types.ObjectId(creatorId)],
+        isDeleted: false,
+        save: vi.fn().mockResolvedValue(true),
+      };
+
+      mockGroupModel.findById.mockReturnValue({
+        exec: vi.fn().mockResolvedValue(mockGroup),
+      });
+
+      const mockPostModel = {
+        updateMany: vi.fn().mockReturnValue({
+          exec: vi.fn().mockResolvedValue({ modifiedCount: 3 }),
+        }),
+      };
+
+      const svc = new CommunityGroupsService(
+        mockGroupModel,
+        undefined,
+        undefined,
+        mockPostModel as any,
+      );
+
+      const res = await svc.deleteGroup(groupId, creatorId);
+      expect(res.success).toBe(true);
+      expect(mockGroup.isDeleted).toBe(true);
+      expect(mockGroup.save).toHaveBeenCalled();
+      expect(mockPostModel.updateMany).toHaveBeenCalledWith(
+        { groupId: mockGroup._id },
+        { $set: { isDeleted: true } },
+      );
+    });
+  });
 });
 

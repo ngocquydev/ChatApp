@@ -240,6 +240,18 @@ export class CommunityGroupsController {
     return this.groupsService.updateGroup(groupId, userId, dto);
   }
 
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xóa hội nhóm (Dành cho Quản trị viên nhóm)' })
+  async deleteGroup(
+    @Param('id') groupId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    const userId = this.extractUserId(req);
+    return this.groupsService.deleteGroup(groupId, userId);
+  }
+
   @Get(':id/comment-reports')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

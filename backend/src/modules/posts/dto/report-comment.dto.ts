@@ -53,3 +53,4 @@ export class ResolveCommentReportDto {
   @MaxLength(500, { message: 'Ghi chú xử lý không quá 500 ký tự' })
   note?: string;
 }
+

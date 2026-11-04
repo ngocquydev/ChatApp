@@ -205,6 +205,13 @@ export const communityGroupsApi = {
     return res.data;
   },
 
+  deleteGroup: async (
+    groupId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const res = await api.delete(`/community-groups/${groupId}`);
+    return res.data;
+  },
+
   getCommentReports: async (
     groupId: string,
     status?: string

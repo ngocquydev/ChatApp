@@ -74,3 +74,4 @@ export class CommentReport {
 export const CommentReportSchema = SchemaFactory.createForClass(CommentReport);
 CommentReportSchema.index({ groupId: 1, target: 1, status: 1, createdAt: -1 });
 CommentReportSchema.index({ commentId: 1, reporterId: 1 });
+

@@ -20,7 +20,8 @@ Hệ thống Hội nhóm Cộng đồng (Community Groups) trên ChatApp đượ
    - **Thẻ định danh & Thống kê tổng quan:** Tổng thành viên, Yêu cầu chờ duyệt, Số lượng phó nhóm, Trạng thái quyền riêng tư.
    - **Tab Thành viên & Phân quyền:** Danh sách thành viên, lọc theo vai trò (Tất cả, Quản trị viên & Phó nhóm, Bị hạn chế), bổ nhiệm phó nhóm, phân quyền chi tiết, khóa bình luận, cấm đăng bài, xóa thành viên.
    - **Tab Xét duyệt Yêu cầu:** Hiển thị câu hỏi và câu trả lời của từng người dùng xin tham gia, nút Duyệt / Từ chối.
-   - **Tab Cài đặt Nhóm (Quản trị viên):** Chỉnh sửa tên, giới thiệu, quyền riêng tư, quy định phê duyệt và câu hỏi gia nhập nhóm.
+   - **Tab Cài đặt Nhóm (Quản trị viên):** Chỉnh sửa tên, giới thiệu, quyền riêng tư, quy định phê duyệt và câu hỏi gia nhập nhóm; tích hợp **Vùng nguy hiểm (Danger Zone)** cho phép Quản trị viên xóa toàn bộ nhóm và các bài viết liên quan kèm hộp thoại xác nhận an toàn (`ConfirmDialog`).
+   - **Tab Báo cáo Vi phạm (Quản trị viên / Phó nhóm):** Hiển thị danh sách các bình luận bị báo cáo trong nhóm với số lượng động chính xác (đã sửa dứt điểm lỗi hiển thị chuỗi `{count}`).
 
 4. **Câu hỏi xét duyệt tham gia nhóm (Join Question / Reason Requirement):**
    - Quản trị viên có thể bật hoặc tắt yêu cầu trả lời câu hỏi khi người dùng xin tham gia nhóm.
@@ -76,6 +77,7 @@ export class CommunityGroup {
 | `POST` | `/community-groups` | Đã đăng nhập | Tạo nhóm mới (người tạo tự động là Quản trị viên và Thành viên) |
 | `GET` | `/community-groups/:slug` | Tùy chọn (Optional Auth) | Lấy chi tiết nhóm, tự động nhận diện quyền Admin/Deputy/Member |
 | `PATCH` | `/community-groups/:id` | Admin | Cập nhật thông tin và cài đặt nhóm |
+| `DELETE` | `/community-groups/:id` | Admin | Xóa mềm nhóm cộng đồng và toàn bộ bài viết trong nhóm |
 | `POST` | `/community-groups/:id/join` | Đã đăng nhập | Gửi yêu cầu hoặc tham gia nhóm (kèm `reason` nếu có câu hỏi) |
 | `GET` | `/community-groups/:id/members` | Tùy chọn (Optional Auth) | Lấy danh sách thành viên, vai trò và trạng thái khóa |
 | `GET` | `/community-groups/:id/pending-requests` | Admin / Phó nhóm | Xem danh sách yêu cầu chờ duyệt kèm câu trả lời |

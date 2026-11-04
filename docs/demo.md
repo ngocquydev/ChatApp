@@ -328,7 +328,8 @@ Hệ thống nâng cấp cơ chế quản trị Hội nhóm Cộng đồng (`/gr
   - **Thống kê tổng quan:** Tổng thành viên, Yêu cầu chờ duyệt, Số phó nhóm, Quyền riêng tư.
   - **Tab Thành viên & Phân quyền:** Tìm kiếm, lọc theo vai trò (Tất cả, Quản trị viên & Phó nhóm, Bị hạn chế), bổ nhiệm/hạ quyền phó nhóm, phân quyền chi tiết, khóa quyền bình luận, cấm đăng bài, xóa thành viên.
   - **Tab Xét duyệt Yêu cầu:** Đọc lý do/câu trả lời câu hỏi tham gia của từng người và Phê duyệt / Từ chối.
-  - **Tab Cài đặt Nhóm (Quản trị viên):** Cập nhật tên nhóm, mô tả, quyền riêng tư, quy định phê duyệt và câu hỏi gia nhập.
+  - **Tab Cài đặt Nhóm (Quản trị viên):** Cập nhật tên nhóm, mô tả, quyền riêng tư, quy định phê duyệt, câu hỏi gia nhập và **Vùng nguy hiểm (Danger Zone)** cho phép Quản trị viên xóa vĩnh viễn/xóa mềm hội nhóm cùng toàn bộ bài viết trong nhóm kèm hộp thoại xác nhận an toàn (`ConfirmDialog`).
+  - **Tab Báo cáo Vi phạm:** Quản lý và xử lý báo cáo vi phạm nội bộ nhóm với số lượng đếm động chính xác theo thời gian thực (đã sửa dứt điểm lỗi hiển thị `{count}`).
 - **Phân cấp vai trò & Phân quyền chi tiết cho Phó nhóm (Granular Deputy Permissions):**
   - ❌ **Xóa thành viên vi phạm (`canRemoveMembers`)**
   - 🔇 **Khóa quyền bình luận (`canMuteComments`)**

@@ -16,13 +16,14 @@ import {
   Tabs,
   Typography,
 } from "@mui/material";
-import { Check, Crown, FileText, Globe, Lock, LogOut, MessageSquareOff, Plus, Settings, Shield, ShieldAlert, UserCheck, Users } from "lucide-react";
+import { Check, Crown, FileText, Globe, Lock, LogOut, MessageSquareOff, Plus, Settings, Shield, ShieldAlert, Trash2, UserCheck, Users } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   communityGroupsApi,
   CommunityGroupItem,
   GroupViewerPermissions,
 } from "@/services/communityGroupsApi";
+import ConfirmDialog from "@/components/common/ConfirmDialog";
 import EmptyState from "@/components/common/EmptyState";
 import PostFeed from "@/components/posts/PostFeed";
 import LeftSidebar from "@/components/layout/LeftSidebar";
@@ -55,6 +56,24 @@ export default function GroupFeed({ slug }: { slug: string }) {
   // Join Question Modal
   const [joinQuestionOpen, setJoinQuestionOpen] = useState(false);
   const [isSubmittingJoin, setIsSubmittingJoin] = useState(false);
+
+  // Delete Group State
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isDeletingGroup, setIsDeletingGroup] = useState(false);
+
+  const handleDeleteGroup = async () => {
+    if (!data?.group) return;
+    try {
+      setIsDeletingGroup(true);
+      await communityGroupsApi.deleteGroup(data.group._id);
+      router.push("/groups");
+    } catch (err: unknown) {
+      console.error("Lỗi khi xóa hội nhóm:", err);
+      setDeleteConfirmOpen(false);
+    } finally {
+      setIsDeletingGroup(false);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -301,6 +320,22 @@ export default function GroupFeed({ slug }: { slug: string }) {
                     </Button>
                   )}
 
+                  {isAdmin && (
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      startIcon={<Trash2 size={16} />}
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      sx={{
+                        borderRadius: "12px",
+                        px: 2,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {t("groups.deleteGroup")}
+                    </Button>
+                  )}
+
                   {!isAdmin && (
                     <Button
                       variant={isMember ? "outlined" : "contained"}
@@ -465,6 +500,18 @@ export default function GroupFeed({ slug }: { slug: string }) {
             isSubmitting={isSubmittingJoin}
             onClose={() => setJoinQuestionOpen(false)}
             onSubmit={handleSubmitJoinReason}
+          />
+
+          {/* Delete Group Confirm Dialog */}
+          <ConfirmDialog
+            open={deleteConfirmOpen}
+            title={t("groups.deleteGroupConfirmTitle")}
+            description={t("groups.deleteGroupConfirmDesc")}
+            confirmLabel={t("groups.deleteGroup")}
+            cancelLabel={t("common.cancel")}
+            pending={isDeletingGroup}
+            onConfirm={() => void handleDeleteGroup()}
+            onClose={() => setDeleteConfirmOpen(false)}
           />
         </Container>
       </Box>
