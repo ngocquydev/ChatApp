@@ -124,6 +124,5 @@ export class Conversation {
 }
 
 export const ConversationSchema = SchemaFactory.createForClass(Conversation);
-ConversationSchema.index({ participants: 1 });
-ConversationSchema.index({ deletedByUsers: 1 });
-ConversationSchema.index({ updatedAt: -1 });
+// Compound index tối ưu cho getUserConversations: tìm theo thành viên và sắp xếp theo updatedAt mới nhất mà không tốn in-memory sort
+ConversationSchema.index({ participants: 1, updatedAt: -1 });

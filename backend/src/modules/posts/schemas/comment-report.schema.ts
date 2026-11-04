@@ -15,7 +15,7 @@ export type ReportActionTaken =
 
 @Schema({ timestamps: true })
 export class CommentReport {
-  @Prop({ type: Types.ObjectId, ref: 'PostComment', required: true, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'PostComment', required: true })
   commentId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Post', required: true, index: true })
@@ -31,11 +31,11 @@ export class CommentReport {
   commentContent: string;
 
   /** Hội nhóm sở hữu bài viết (nếu bình luận nằm trong bài viết thuộc nhóm) */
-  @Prop({ type: Types.ObjectId, ref: 'CommunityGroup', default: null, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'CommunityGroup', default: null })
   groupId?: Types.ObjectId | null;
 
   /** Đối tượng nhận báo cáo: quản trị viên nhóm hay quản trị viên hệ thống (web admin) */
-  @Prop({ type: String, enum: ['group_admin', 'web_admin'], required: true, index: true })
+  @Prop({ type: String, enum: ['group_admin', 'web_admin'], required: true })
   target: ReportTarget;
 
   /** Lý do báo cáo: spam, harassment, hate_speech, inappropriate, other */
@@ -47,7 +47,7 @@ export class CommentReport {
   details: string;
 
   /** Trạng thái xử lý báo cáo */
-  @Prop({ type: String, enum: ['pending', 'resolved', 'dismissed'], default: 'pending', index: true })
+  @Prop({ type: String, enum: ['pending', 'resolved', 'dismissed'], default: 'pending' })
   status: ReportStatus;
 
   /** Người đã xử lý báo cáo (Quản trị viên nhóm hoặc Admin Web) */
@@ -73,5 +73,6 @@ export class CommentReport {
 
 export const CommentReportSchema = SchemaFactory.createForClass(CommentReport);
 CommentReportSchema.index({ groupId: 1, target: 1, status: 1, createdAt: -1 });
+CommentReportSchema.index({ target: 1, status: 1, createdAt: -1 });
 CommentReportSchema.index({ commentId: 1, reporterId: 1 });
 

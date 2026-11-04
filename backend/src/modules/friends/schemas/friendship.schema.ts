@@ -11,7 +11,6 @@ export class Friendship {
     type: Types.ObjectId,
     ref: 'User',
     required: true,
-    index: true,
   })
   requesterId: Types.ObjectId;
 
@@ -19,7 +18,6 @@ export class Friendship {
     type: Types.ObjectId,
     ref: 'User',
     required: true,
-    index: true,
   })
   recipientId: Types.ObjectId;
 
@@ -27,7 +25,6 @@ export class Friendship {
     type: String,
     enum: ['pending', 'accepted', 'rejected'],
     default: 'pending',
-    index: true,
   })
   status: FriendshipStatus;
 

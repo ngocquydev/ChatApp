@@ -12,11 +12,11 @@ export class Post {
   authorId: Types.ObjectId;
 
   /** Đăng dưới tư cách Trang (Fanpage) */
-  @Prop({ type: Types.ObjectId, ref: 'Page', default: null, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'Page', default: null })
   pageId?: Types.ObjectId | null;
 
   /** Đăng trong Hội nhóm (Community Group) */
-  @Prop({ type: Types.ObjectId, ref: 'CommunityGroup', default: null, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'CommunityGroup', default: null })
   groupId?: Types.ObjectId | null;
 
   @Prop({ type: String, default: '', maxlength: 5000 })
@@ -86,5 +86,9 @@ PostSchema.index({ authorId: 1, _id: -1 });
 PostSchema.index({ authorId: 1, isDeleted: 1, 'images.0': 1, _id: -1 });
 // Hàng đợi kiểm duyệt bài viết
 PostSchema.index({ moderationStatus: 1, createdAt: -1 });
+// Dòng thời gian bài viết trong hội nhóm
+PostSchema.index({ groupId: 1, isDeleted: 1, _id: -1 });
+// Dòng thời gian bài viết trên trang
+PostSchema.index({ pageId: 1, isDeleted: 1, _id: -1 });
 // Tối ưu truy vấn kiểm tra trùng lặp tài khoản chia sẻ bài viết
 PostSchema.index({ sharedPostId: 1, authorId: 1, isDeleted: 1 });

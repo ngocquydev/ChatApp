@@ -34,7 +34,6 @@ export class Message {
     type: Types.ObjectId,
     ref: 'Conversation',
     required: true,
-    index: true,
   })
   conversationId: Types.ObjectId;
 
@@ -42,7 +41,6 @@ export class Message {
     type: Types.ObjectId,
     ref: 'User',
     required: true,
-    index: true,
   })
   senderId: Types.ObjectId;
 
@@ -51,7 +49,6 @@ export class Message {
     ref: 'User',
     required: false,
     default: null,
-    index: true,
   })
   receiverId?: Types.ObjectId | null;
 

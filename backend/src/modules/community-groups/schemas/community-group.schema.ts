@@ -23,7 +23,7 @@ export class CommunityGroup {
   @Prop({ type: String, default: null })
   coverImage?: string | null;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   creatorId: Types.ObjectId;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'User' }], default: [] })
