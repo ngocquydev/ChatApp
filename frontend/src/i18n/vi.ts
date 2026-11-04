@@ -263,6 +263,7 @@ export const vi: TranslationDictionary = {
   },
   reports: {
     reportComment: "Báo cáo bình luận",
+    cannotReportOwnComment: "Bạn không thể tự báo cáo bình luận của chính mình",
     reportCommentDesc: "Giúp chúng tôi giữ môi trường cộng đồng văn minh và an toàn.",
     chooseDestination: "Gửi báo cáo tới",
     reportToGroupAdmin: "Quản trị viên nhóm",

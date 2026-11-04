@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Alert,
   Avatar,
+  Badge,
   Box,
   Button,
   Card,
@@ -116,6 +117,14 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
         setMemberCount(res.group.memberCount);
         setPendingCount(res.group.pendingMemberIds?.length || 0);
         setDeputiesCount(res.group.deputies?.length || 0);
+
+        // Fetch pending comment reports count for tab badge
+        communityGroupsApi
+          .getCommentReports(res.group._id, "pending")
+          .then((reps) => {
+            if (isMounted) setReportsCount(reps?.length || 0);
+          })
+          .catch(() => {});
 
         // Prepopulate settings form
         setEditName(res.group.name);
@@ -409,7 +418,12 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
               <Tab
                 icon={<Flag size={18} />}
                 iconPosition="start"
-                label={`${t("reports.tabReports")}${reportsCount > 0 ? ` (${reportsCount})` : ""}`}
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <span>{t("reports.tabReports")}</span>
+                    {reportsCount > 0 && <Badge badgeContent={reportsCount} color="error" />}
+                  </Box>
+                }
                 sx={{ fontWeight: 600 }}
               />
               {viewerPermissions.isAdmin && (

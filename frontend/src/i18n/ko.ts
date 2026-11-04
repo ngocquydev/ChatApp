@@ -263,6 +263,7 @@ export const ko: TranslationDictionary = {
   },
   reports: {
     reportComment: "댓글 신고",
+    cannotReportOwnComment: "자신의 댓글은 신고할 수 없습니다",
     reportCommentDesc: "커뮤니티를 안전하고 존중하는 환경으로 유지하도록 도와주세요.",
     chooseDestination: "신고 대상 선택",
     reportToGroupAdmin: "그룹 관리자",

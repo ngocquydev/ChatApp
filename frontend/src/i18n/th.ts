@@ -263,6 +263,7 @@ export const th: TranslationDictionary = {
   },
   reports: {
     reportComment: "รายงานความคิดเห็น",
+    cannotReportOwnComment: "คุณไม่สามารถรายงานความคิดเห็นของตนเองได้",
     reportCommentDesc: "ช่วยเรารักษาชุมชนให้ปลอดภัยและสร้างสรรค์",
     chooseDestination: "ส่งรายงานไปยัง",
     reportToGroupAdmin: "ผู้ดูแลกลุ่ม",

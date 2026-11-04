@@ -280,6 +280,7 @@ export interface TranslationDictionary {
   };
   reports: {
     reportComment: string;
+    cannotReportOwnComment: string;
     reportCommentDesc: string;
     chooseDestination: string;
     reportToGroupAdmin: string;

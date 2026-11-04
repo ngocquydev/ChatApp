@@ -5,6 +5,7 @@ import { Box, ButtonBase, IconButton, Tooltip, Typography } from "@mui/material"
 import { Trash2, Flag } from "lucide-react";
 import ImageLightbox from "@/components/posts/ImageLightbox";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useAuthStore } from "@/store/useAuthStore";
 import { isVideoUrl, mediaUrl, type CommentView, type ReactionType } from "@/services/postsApi";
 import { formatFullDateTime, formatRelativeTime } from "@/utils/formatTime";
 import InlineReactionButton from "@/components/reactions/InlineReactionButton";
@@ -23,19 +24,20 @@ interface CommentItemProps {
 
 export default function CommentItem({
   comment,
-  currentUserId,
+  currentUserId: propCurrentUserId,
   canDelete,
   onDelete,
   onReport,
   onToggleReaction,
 }: CommentItemProps) {
+  const { user } = useAuthStore();
+  const currentUserId = propCurrentUserId || (user?._id || user?.id)?.toString();
   const { t, tr } = useTranslation();
   const [lightbox, setLightbox] = useState<string | null>(null);
   const isAuthor = Boolean(
     currentUserId &&
       (comment.author._id === currentUserId || (comment.author as any).id === currentUserId)
   );
-  const canReport = Boolean(currentUserId && !isAuthor && onReport);
   const hasMedia = Boolean(comment.mediaUrl);
   const isVideo = hasMedia && (comment.mediaType === "video" || isVideoUrl(comment.mediaUrl));
   const fullMediaUrl = comment.mediaUrl ? mediaUrl(comment.mediaUrl) : "";
@@ -142,16 +144,29 @@ export default function CommentItem({
       </Box>
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}>
-        {canReport && (
-          <Tooltip title={t("reports.reportComment")}>
-            <IconButton
-              size="small"
-              aria-label={t("reports.reportComment")}
-              onClick={() => onReport?.(comment)}
-              sx={{ color: "text.secondary", "&:hover": { color: "error.main" } }}
-            >
-              <Flag size={15} aria-hidden />
-            </IconButton>
+        {onReport && (
+          <Tooltip
+            title={
+              isAuthor
+                ? t("reports.cannotReportOwnComment")
+                : t("reports.reportComment")
+            }
+          >
+            <span>
+              <IconButton
+                size="small"
+                disabled={isAuthor}
+                aria-label={isAuthor ? t("reports.cannotReportOwnComment") : t("reports.reportComment")}
+                onClick={() => onReport?.(comment)}
+                sx={{
+                  color: isAuthor ? "text.disabled" : "text.secondary",
+                  opacity: isAuthor ? 0.35 : 1,
+                  "&:hover": { color: isAuthor ? "text.disabled" : "error.main" },
+                }}
+              >
+                <Flag size={15} aria-hidden />
+              </IconButton>
+            </span>
           </Tooltip>
         )}
 

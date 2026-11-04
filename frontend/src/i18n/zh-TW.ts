@@ -263,6 +263,7 @@ export const zhTW: TranslationDictionary = {
   },
   reports: {
     reportComment: "檢舉留言",
+    cannotReportOwnComment: "無法檢舉自己的留言",
     reportCommentDesc: "協助我們維護健康安全的社群環境。",
     chooseDestination: "發送檢舉至",
     reportToGroupAdmin: "社團管理員",

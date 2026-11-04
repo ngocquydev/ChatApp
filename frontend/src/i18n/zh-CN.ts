@@ -263,6 +263,7 @@ export const zhCN: TranslationDictionary = {
   },
   reports: {
     reportComment: "举报评论",
+    cannotReportOwnComment: "无法举报自己的评论",
     reportCommentDesc: "帮助我们维护健康安全的社区环境。",
     chooseDestination: "发送举报至",
     reportToGroupAdmin: "群组管理员",

@@ -16,7 +16,7 @@ import {
   Tabs,
   Typography,
 } from "@mui/material";
-import { Check, Crown, FileText, Globe, Lock, LogOut, MessageSquareOff, Plus, Settings, Shield, ShieldAlert, Trash2, UserCheck, Users } from "lucide-react";
+import { Check, Crown, FileText, Flag, Globe, Lock, LogOut, MessageSquareOff, Plus, Settings, Shield, ShieldAlert, Trash2, UserCheck, Users } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   communityGroupsApi,
@@ -30,6 +30,7 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import { fetchGroupPosts } from "@/services/postsApi";
 import GroupMembersTab from "./GroupMembersTab";
 import GroupRequestsTab from "./GroupRequestsTab";
+import GroupReportsTab from "./GroupReportsTab";
 import JoinQuestionDialog from "./JoinQuestionDialog";
 
 export default function GroupFeed({ slug }: { slug: string }) {
@@ -52,6 +53,7 @@ export default function GroupFeed({ slug }: { slug: string }) {
   // Tabs state
   const [currentTab, setCurrentTab] = useState(0);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [reportsCount, setReportsCount] = useState(0);
 
   // Join Question Modal
   const [joinQuestionOpen, setJoinQuestionOpen] = useState(false);
@@ -87,6 +89,15 @@ export default function GroupFeed({ slug }: { slug: string }) {
         setIsPending(res.isPending);
         setMemberCount(res.group.memberCount);
         setPendingRequestsCount(res.group.pendingMemberIds?.length || 0);
+
+        if (res.isAdmin || res.isDeputy || res.viewerPermissions?.isAdmin || res.viewerPermissions?.isDeputy) {
+          communityGroupsApi
+            .getCommentReports(res.group._id, "pending")
+            .then((reps) => {
+              if (isMounted) setReportsCount(reps?.length || 0);
+            })
+            .catch(() => {});
+        }
       })
       .catch((err) => {
         console.error("Lỗi tải hội nhóm:", err);
@@ -407,6 +418,20 @@ export default function GroupFeed({ slug }: { slug: string }) {
                     }
                   />
                 )}
+                {canManageGroup && (
+                  <Tab
+                    icon={<Flag size={18} />}
+                    iconPosition="start"
+                    label={
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <span>{t("reports.tabReports")}</span>
+                        {reportsCount > 0 && (
+                          <Badge badgeContent={reportsCount} color="error" />
+                        )}
+                      </Box>
+                    }
+                  />
+                )}
               </Tabs>
             </Box>
           </Card>
@@ -489,6 +514,16 @@ export default function GroupFeed({ slug }: { slug: string }) {
                 groupId={group._id}
                 onMemberCountChange={setMemberCount}
                 onRequestCountChange={setPendingRequestsCount}
+              />
+            </Box>
+          )}
+
+          {/* TAB 3: Báo cáo vi phạm */}
+          {currentTab === 3 && canManageGroup && (
+            <Box sx={{ mt: 2 }}>
+              <GroupReportsTab
+                groupId={group._id}
+                onReportCountChange={setReportsCount}
               />
             </Box>
           )}
