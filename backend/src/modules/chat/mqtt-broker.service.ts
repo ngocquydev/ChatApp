@@ -128,6 +128,16 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
       heartbeatInterval: 30000,
       connectTimeout: 30000,
     });
+    this.aedes.on('clientError', (client, err) => {
+      this.logger.warn(
+        `⚠️ [MQTT Aedes ClientError] Client ${client?.id}: ${err?.message || err}`,
+      );
+    });
+    this.aedes.on('connectionError', (client, err) => {
+      this.logger.warn(
+        `⚠️ [MQTT Aedes ConnError] Client ${client?.id}: ${err?.message || err}`,
+      );
+    });
 
     // Bắt buộc gọi listen() để Aedes kích hoạt Broker và Persistence (closed = false)
     await this.aedes.listen();
@@ -512,27 +522,58 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
     );
 
     // 6. Khởi chạy HTTP & HTTPS Server cho WebSocket Stream MQTT (ws:// và wss://)
+    const isRenderCloud =
+      process.env.RENDER === 'true' || process.env.IS_RENDER === 'true';
+    const enableStandalone =
+      process.env.ENABLE_MQTT_STANDALONE === 'true' ||
+      (!isRenderCloud && process.env.ENABLE_MQTT_STANDALONE !== 'false');
+
+    if (!enableStandalone) {
+      this.logger.log(
+        'ℹ️ [MQTT] Môi trường đám mây Render (chỉ mở một cổng HTTP chính duy nhất). Standalone MQTT ports (1884/8883/8884) đã được tắt an toàn; chat realtime hoạt động qua Socket.IO trên cổng chính.',
+      );
+      return;
+    }
+
     const mqttPort = Number(process.env.MQTT_PORT) || 1884;
     const mqttWssPort = Number(process.env.MQTT_WSS_PORT) || 8884;
     const mqttTlsPort = Number(process.env.MQTT_TLS_PORT) || 8883;
 
     // A. Khởi chạy Plain WebSocket Server (ws:// - Tương thích môi trường Dev/Test)
-    this.httpServer = createHttpServer();
-    this.wss = new WebSocketServer({ server: this.httpServer });
+    try {
+      this.httpServer = createHttpServer();
+      this.httpServer.on('error', (err: any) => {
+        this.logger.warn(
+          `⚠️ [MQTT HTTP Server] Lỗi cổng ${mqttPort}: ${err?.message || err}`,
+        );
+      });
 
-    this.wss.on('connection', (wsSocket: WebSocket, req: IncomingMessage) => {
-      const stream = createWebSocketStream(wsSocket);
-      Object.assign(stream, { conn: req });
-      if (this.aedes) {
-        this.aedes.handle(stream as unknown as Parameters<typeof this.aedes.handle>[0], req);
-      }
-    });
+      this.wss = new WebSocketServer({ server: this.httpServer });
+      this.wss.on('error', (err: any) => {
+        this.logger.warn(`⚠️ [MQTT WSS Server] Lỗi: ${err?.message || err}`);
+      });
 
-    this.httpServer.listen(mqttPort, () => {
-      this.logger.log(
-        `🚀 [MQTT + Protobuf Broker] Plain WebSocket đang lắng nghe tại ws://localhost:${mqttPort}`,
+      this.wss.on('connection', (wsSocket: WebSocket, req: IncomingMessage) => {
+        const stream = createWebSocketStream(wsSocket);
+        Object.assign(stream, { conn: req });
+        if (this.aedes) {
+          this.aedes.handle(
+            stream as unknown as Parameters<typeof this.aedes.handle>[0],
+            req,
+          );
+        }
+      });
+
+      this.httpServer.listen(mqttPort, () => {
+        this.logger.log(
+          `🚀 [MQTT + Protobuf Broker] Plain WebSocket đang lắng nghe tại ws://localhost:${mqttPort}`,
+        );
+      });
+    } catch (httpErr: any) {
+      this.logger.warn(
+        `⚠️ [MQTT HTTP Server] Không thể khởi chạy tại cổng ${mqttPort}: ${httpErr?.message || httpErr}`,
       );
-    });
+    }
 
     // B. Kiểm tra và kích hoạt mã hóa TLS / SSL (WSS & MQTTS) chống bắt gói tin (Packet Sniffing)
     const tlsCredentials = this.resolveTlsCredentials();
@@ -543,13 +584,25 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
           key: tlsCredentials.key,
           cert: tlsCredentials.cert,
         });
+        this.httpsServer.on('error', (err: any) => {
+          this.logger.warn(
+            `⚠️ [MQTT HTTPS Server] Lỗi cổng ${mqttWssPort}: ${err?.message || err}`,
+          );
+        });
+
         this.wssSecure = new WebSocketServer({ server: this.httpsServer });
+        this.wssSecure.on('error', (err: any) => {
+          this.logger.warn(`⚠️ [MQTT WSS Secure] Lỗi: ${err?.message || err}`);
+        });
 
         this.wssSecure.on('connection', (wsSocket: WebSocket, req: IncomingMessage) => {
           const stream = createWebSocketStream(wsSocket);
           Object.assign(stream, { conn: req });
           if (this.aedes) {
-            this.aedes.handle(stream as unknown as Parameters<typeof this.aedes.handle>[0], req);
+            this.aedes.handle(
+              stream as unknown as Parameters<typeof this.aedes.handle>[0],
+              req,
+            );
           }
         });
 
@@ -567,10 +620,17 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
           },
           (socket) => {
             if (this.aedes) {
-              this.aedes.handle(socket as unknown as Parameters<typeof this.aedes.handle>[0]);
+              this.aedes.handle(
+                socket as unknown as Parameters<typeof this.aedes.handle>[0],
+              );
             }
           },
         );
+        this.tlsServer.on('error', (err: any) => {
+          this.logger.warn(
+            `⚠️ [MQTT TLS Server] Lỗi cổng ${mqttTlsPort}: ${err?.message || err}`,
+          );
+        });
 
         this.tlsServer.listen(mqttTlsPort, () => {
           this.logger.log(
