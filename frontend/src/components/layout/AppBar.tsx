@@ -58,7 +58,9 @@ import { useTranslation } from "@/i18n/useTranslation";
 import NotificationBell from "../notifications/NotificationBell";
 import RecentChatsPopover from "./RecentChatsPopover";
 import UserSearchResults, { SEARCH_PREVIEW_COUNT } from "./UserSearchResults";
-import { DEFAULT_FALLBACK_SHORTCUTS } from "./LeftSidebar";
+import type { NavShortcutItem } from "./LeftSidebar";
+import { communityGroupsApi, CommunityGroupItem } from "@/services/communityGroupsApi";
+import { pagesApi, PageItem } from "@/services/pagesApi";
 
 /** Số kết quả mỗi trang khi "Xem tất cả" / cuộn vô hạn */
 const SEARCH_PAGE_SIZE = 20;
@@ -110,6 +112,52 @@ function ResponsiveAppBar() {
     startConversationWithUser,
     connectSocket,
   } = useChatStore();
+
+  const [drawerShortcuts, setDrawerShortcuts] = useState<NavShortcutItem[]>([]);
+
+  useEffect(() => {
+    if (!user) {
+      setDrawerShortcuts([]);
+      return;
+    }
+    let isMounted = true;
+    Promise.all([
+      communityGroupsApi.getMyGroups().catch(() => [] as CommunityGroupItem[]),
+      pagesApi.getMyPages().catch(() => [] as PageItem[]),
+    ]).then(([myGroups, myPages]) => {
+      if (!isMounted) return;
+      const list: NavShortcutItem[] = [];
+      const seenSlugs = new Set<string>();
+      for (const g of myGroups) {
+        if (!seenSlugs.has(g.slug)) {
+          seenSlugs.add(g.slug);
+          list.push({
+            id: `group-${g._id}`,
+            name: g.name,
+            avatar: g.avatar,
+            href: `/groups/${g.slug}`,
+            type: "group",
+          });
+        }
+      }
+      for (const p of myPages) {
+        if (!seenSlugs.has(p.slug)) {
+          seenSlugs.add(p.slug);
+          list.push({
+            id: `page-${p._id}`,
+            name: p.name,
+            avatar: p.avatar,
+            href: `/pages/${p.slug}`,
+            type: "page",
+          });
+        }
+      }
+      setDrawerShortcuts(list);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -945,49 +993,66 @@ function ResponsiveAppBar() {
             </ListItemButton>
           </ListItem>
         </List>
-        <Divider />
-        <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
-          <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            {t("sidebar.yourShortcuts")}
-          </Typography>
-        </Box>
-        <List dense>
-          {DEFAULT_FALLBACK_SHORTCUTS.map((sc) => (
-            <ListItem key={sc.id} disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  handleDrawerToggle();
-                  router.push(sc.href);
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 42 }}>
-                  {sc.badge || (
-                    <Avatar
-                      sx={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "6px",
-                        bgcolor: "primary.main",
-                        fontSize: "0.75rem",
+        {drawerShortcuts.length > 0 && (
+          <>
+            <Divider />
+            <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                {t("sidebar.yourShortcuts")}
+              </Typography>
+            </Box>
+            <List dense>
+              {drawerShortcuts.map((sc) => (
+                <ListItem key={sc.id} disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      handleDrawerToggle();
+                      router.push(sc.href);
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 42 }}>
+                      {sc.avatar ? (
+                        <Avatar
+                          src={sc.avatar}
+                          variant="rounded"
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: "6px",
+                          }}
+                        />
+                      ) : (
+                        <Avatar
+                          variant="rounded"
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: "6px",
+                            bgcolor: sc.type === "group" ? "primary.main" : "warning.main",
+                            fontSize: "0.75rem",
+                            color: "common.white",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {sc.name[0]?.toUpperCase() || "?"}
+                        </Avatar>
+                      )}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={sc.name}
+                      slotProps={{
+                        primary: {
+                          noWrap: true,
+                          sx: { fontSize: "0.85rem", fontWeight: 600 },
+                        },
                       }}
-                    >
-                      {sc.name[0]}
-                    </Avatar>
-                  )}
-                </ListItemIcon>
-                <ListItemText
-                  primary={sc.name}
-                  slotProps={{
-                    primary: {
-                      noWrap: true,
-                      sx: { fontSize: "0.85rem", fontWeight: 600 },
-                    },
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </>
+        )}
       </Drawer>
     </>
   );

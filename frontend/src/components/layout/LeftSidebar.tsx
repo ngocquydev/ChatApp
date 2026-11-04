@@ -23,12 +23,6 @@ import {
   Layers,
   Store,
   Calendar,
-  Bot,
-  Flame,
-  Code2,
-  HeartHandshake,
-  LayoutTemplate,
-  GraduationCap,
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore } from "@/store/useChatStore";
@@ -56,239 +50,25 @@ interface SidebarNavItem {
   customIcon: React.ReactNode;
 }
 
-/** 9 lối tắt mặc định chuẩn theo giao diện Facebook (Ảnh 3 của người dùng) */
-export const DEFAULT_FALLBACK_SHORTCUTS: NavShortcutItem[] = [
-  {
-    id: "sc-aspnet",
-    name: "ASP.NET Core Việt Nam",
-    href: "/groups/asp-net-core-vn",
-    type: "group",
-    badge: (
-      <Box
-        sx={{
-          width: 36,
-          height: 36,
-          borderRadius: "8px",
-          bgcolor: v.tone("0284c7"),
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: v.white,
-          fontWeight: 800,
-          fontSize: "0.72rem",
-          letterSpacing: "-0.03em",
-        }}
-      >
-        .NET
-      </Box>
-    ),
-  },
-  {
-    id: "sc-ai-vn",
-    name: "AI Việt Nam | Trợ lý AI, ứng dụng AI vào công việc",
-    href: "/groups/ai-viet-nam",
-    type: "group",
-    badge: (
-      <Box
-        sx={{
-          width: 36,
-          height: 36,
-          borderRadius: "8px",
-          bgcolor: "var(--mui-palette-neutral-900)",
-          border: "1px solid",
-          borderColor: "divider",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: v.tone("34d399"),
-        }}
-      >
-        <Bot size={19} />
-      </Box>
-    ),
-  },
-  {
-    id: "sc-grab",
-    name: "Grab Việt Nam VN",
-    href: "/groups/grab-viet-nam",
-    type: "group",
-    badge: (
-      <Box
-        sx={{
-          width: 36,
-          height: 36,
-          borderRadius: "8px",
-          bgcolor: v.tone("16a34a"),
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: v.white,
-          fontWeight: 800,
-          fontSize: "0.72rem",
-        }}
-      >
-        Grab
-      </Box>
-    ),
-  },
-  {
-    id: "sc-phot-tinder",
-    name: "Phốt Tinder - Review Tinder",
-    href: "/groups/phot-tinder",
-    type: "group",
-    badge: (
-      <Box
-        sx={{
-          width: 36,
-          height: 36,
-          borderRadius: "8px",
-          background: `linear-gradient(135deg, ${v.tone("e11d48")} 0%, ${v.tone("ec4899")} 100%)`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: v.white,
-        }}
-      >
-        <Flame size={19} />
-      </Box>
-    ),
-  },
-  {
-    id: "sc-huit-confess",
-    name: "HUIT Confessions - Tiệm Trà Đá Sinh Viên ✅",
-    href: "/groups/sinh-vien-huit",
-    type: "group",
-    badge: (
-      <Box
-        sx={{
-          width: 36,
-          height: 36,
-          borderRadius: "8px",
-          bgcolor: v.tone("f59e0b"),
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: v.white,
-          fontWeight: 800,
-          fontSize: "0.68rem",
-          letterSpacing: "-0.02em",
-        }}
-      >
-        HUIT
-      </Box>
-    ),
-  },
-  {
-    id: "sc-it-for-all",
-    name: "Cộng đồng CNTT cho người mới bắt đầu - IT For Beginners",
-    href: "/groups/cong-dong-cntt",
-    type: "group",
-    badge: (
-      <Box
-        sx={{
-          width: 36,
-          height: 36,
-          borderRadius: "8px",
-          bgcolor: "var(--mui-palette-neutral-600)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: v.white,
-        }}
-      >
-        <Code2 size={19} />
-      </Box>
-    ),
-  },
-  {
-    id: "sc-cuu-tro-cho-meo",
-    name: "Cứu trợ Chó - Mèo lạc tìm chủ Hà Nội",
-    href: "/groups/cuu-tro-cho-meo",
-    type: "group",
-    badge: (
-      <Box
-        sx={{
-          width: 36,
-          height: 36,
-          borderRadius: "8px",
-          bgcolor: v.tone("d97706"),
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: v.white,
-        }}
-      >
-        <HeartHandshake size={19} />
-      </Box>
-    ),
-  },
-  {
-    id: "sc-web-dev",
-    name: "Thiết Kế Website Theo Yêu Cầu !",
-    href: "/pages/thiet-ke-web-pro",
-    type: "page",
-    badge: (
-      <Box
-        sx={{
-          width: 36,
-          height: 36,
-          borderRadius: "8px",
-          background: `linear-gradient(135deg, ${v.tone("a855f7")} 0%, ${v.tone("0284c7")} 100%)`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: v.white,
-        }}
-      >
-        <LayoutTemplate size={19} />
-      </Box>
-    ),
-  },
-  {
-    id: "sc-sinh-vien-huit",
-    name: "Sinh viên HUIT",
-    href: "/groups/sinh-vien-huit-official",
-    type: "group",
-    badge: (
-      <Box
-        sx={{
-          width: 36,
-          height: 36,
-          borderRadius: "8px",
-          bgcolor: v.tone("0284c7"),
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: v.white,
-        }}
-      >
-        <GraduationCap size={19} />
-      </Box>
-    ),
-  },
-];
-
 export default function LeftSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuthStore();
   const { tr, t } = useTranslation();
   const [showMore, setShowMore] = useState(false);
-  const [shortcuts, setShortcuts] = useState<NavShortcutItem[]>(DEFAULT_FALLBACK_SHORTCUTS);
+  const [shortcuts, setShortcuts] = useState<NavShortcutItem[]>([]);
 
   useEffect(() => {
     let isMounted = true;
     Promise.all([
       communityGroupsApi.getMyGroups().catch(() => [] as CommunityGroupItem[]),
       pagesApi.getMyPages().catch(() => [] as PageItem[]),
-      communityGroupsApi.exploreGroups().catch(() => [] as CommunityGroupItem[]),
-      pagesApi.explorePages().catch(() => [] as PageItem[]),
-    ]).then(([myGroups, myPages, allGroups, allPages]) => {
+    ]).then(([myGroups, myPages]) => {
       if (!isMounted) return;
       const list: NavShortcutItem[] = [];
       const seenSlugs = new Set<string>();
 
-      // 1. Ưu tiên các nhóm của người dùng
+      // 1. Nhóm người dùng tham gia hoặc làm quản trị viên
       for (const g of myGroups) {
         if (!seenSlugs.has(g.slug)) {
           seenSlugs.add(g.slug);
@@ -302,7 +82,7 @@ export default function LeftSidebar() {
         }
       }
 
-      // 2. Ưu tiên các trang do người dùng quản lý
+      // 2. Trang Fanpage do người dùng quản lý
       for (const p of myPages) {
         if (!seenSlugs.has(p.slug)) {
           seenSlugs.add(p.slug);
@@ -316,53 +96,13 @@ export default function LeftSidebar() {
         }
       }
 
-      // 3. Nếu chưa đủ 9 lối tắt, nạp từ nhóm & trang hệ thống
-      for (const g of allGroups) {
-        if (list.length >= 9) break;
-        if (!seenSlugs.has(g.slug)) {
-          seenSlugs.add(g.slug);
-          list.push({
-            id: `group-${g._id}`,
-            name: g.name,
-            avatar: g.avatar,
-            href: `/groups/${g.slug}`,
-            type: "group",
-          });
-        }
-      }
-
-      for (const p of allPages) {
-        if (list.length >= 9) break;
-        if (!seenSlugs.has(p.slug)) {
-          seenSlugs.add(p.slug);
-          list.push({
-            id: `page-${p._id}`,
-            name: p.name,
-            avatar: p.avatar,
-            href: `/pages/${p.slug}`,
-            type: "page",
-          });
-        }
-      }
-
-      // 4. Nếu vẫn còn trống, gộp các lối tắt mẫu Facebook
-      for (const fb of DEFAULT_FALLBACK_SHORTCUTS) {
-        if (list.length >= 9) break;
-        if (!seenSlugs.has(fb.id)) {
-          seenSlugs.add(fb.id);
-          list.push(fb);
-        }
-      }
-
-      if (list.length > 0) {
-        setShortcuts(list);
-      }
+      setShortcuts(list);
     });
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user]);
 
   const handleOpenAura = () => {
     if (pathname === "/chat" || (typeof window !== "undefined" && window.innerWidth < 600)) {
@@ -750,98 +490,100 @@ export default function LeftSidebar() {
         </ButtonBase>
       </Box>
 
-      {/* Đường phân cách */}
-      <Divider sx={{ my: 1.5 }} />
+      {/* Mục Lối tắt của bạn (chỉ hiển thị khi có nhóm/trang thực tế) */}
+      {shortcuts.length > 0 && (
+        <>
+          <Divider sx={{ my: 1.5 }} />
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 700,
+                color: "text.secondary",
+                px: 1.5,
+                py: 0.75,
+                fontSize: "0.85rem",
+                letterSpacing: "0.01em",
+              }}
+            >
+              {t("sidebar.yourShortcuts")}
+            </Typography>
 
-      {/* Mục Lối tắt của bạn (chuẩn theo Image 3) */}
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 700,
-            color: "text.secondary",
-            px: 1.5,
-            py: 0.75,
-            fontSize: "0.85rem",
-            letterSpacing: "0.01em",
-          }}
-        >
-          {t("sidebar.yourShortcuts")}
-        </Typography>
-
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-          {shortcuts.map((sc) => {
-            const isActive = pathname === sc.href;
-            return (
-              <ButtonBase
-                key={sc.id}
-                component={NextLink}
-                href={sc.href}
-                aria-label={sc.name}
-                sx={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  px: 1.5,
-                  py: 0.85,
-                  borderRadius: "10px",
-                  textAlign: "left",
-                  bgcolor: isActive ? "action.selected" : "transparent",
-                  "&:hover": { bgcolor: "action.hover" },
-                }}
-              >
-                {sc.avatar ? (
-                  <Avatar
-                    src={sc.avatar}
-                    variant="rounded"
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+              {shortcuts.map((sc) => {
+                const isActive = pathname === sc.href;
+                return (
+                  <ButtonBase
+                    key={sc.id}
+                    component={NextLink}
+                    href={sc.href}
+                    aria-label={sc.name}
                     sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "8px",
-                      flexShrink: 0,
-                    }}
-                  />
-                ) : sc.badge ? (
-                  <Box sx={{ flexShrink: 0 }}>{sc.badge}</Box>
-                ) : (
-                  <Avatar
-                    variant="rounded"
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "8px",
-                      bgcolor: sc.type === "group" ? "primary.main" : v.tone("ea580c"),
-                      fontSize: "0.85rem",
-                      fontWeight: 700,
-                      flexShrink: 0,
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      px: 1.5,
+                      py: 0.85,
+                      borderRadius: "10px",
+                      textAlign: "left",
+                      bgcolor: isActive ? "action.selected" : "transparent",
+                      "&:hover": { bgcolor: "action.hover" },
                     }}
                   >
-                    {sc.name[0]?.toUpperCase() || "S"}
-                  </Avatar>
-                )}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: isActive ? 700 : 600,
-                    fontSize: "0.88rem",
-                    lineHeight: 1.3,
-                    color: isActive ? "primary.main" : "text.primary",
-                    display: "-webkit-box",
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    flex: 1,
-                  }}
-                >
-                  {sc.name}
-                </Typography>
-              </ButtonBase>
-            );
-          })}
-        </Box>
-      </Box>
+                    {sc.avatar ? (
+                      <Avatar
+                        src={sc.avatar}
+                        variant="rounded"
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: "8px",
+                          flexShrink: 0,
+                        }}
+                      />
+                    ) : sc.badge ? (
+                      <Box sx={{ flexShrink: 0 }}>{sc.badge}</Box>
+                    ) : (
+                      <Avatar
+                        variant="rounded"
+                        sx={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: "8px",
+                          bgcolor: sc.type === "group" ? "primary.main" : v.tone("ea580c"),
+                          fontSize: "0.85rem",
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {sc.name[0]?.toUpperCase() || "S"}
+                      </Avatar>
+                    )}
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: isActive ? 700 : 600,
+                        fontSize: "0.88rem",
+                        lineHeight: 1.3,
+                        color: isActive ? "primary.main" : "text.primary",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        flex: 1,
+                      }}
+                    >
+                      {sc.name}
+                    </Typography>
+                  </ButtonBase>
+                );
+              })}
+            </Box>
+          </Box>
+        </>
+      )}
 
       {/* Footer bản quyền */}
       <Box sx={{ pt: 2, px: 1.5 }}>

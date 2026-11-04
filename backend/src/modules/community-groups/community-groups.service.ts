@@ -57,89 +57,10 @@ export class CommunityGroupsService implements OnModuleInit {
 
   async onModuleInit() {
     try {
-      const count = await this.groupModel.countDocuments({ isDeleted: false }).exec();
-      if (count === 0) {
-        const seedGroups = [
-          {
-            name: 'ASP.NET Core Việt Nam',
-            slug: 'asp-net-core-vn',
-            description: 'Cộng đồng giao lưu, chia sẻ kinh nghiệm phát triển phần mềm ASP.NET Core & C# tại Việt Nam.',
-            privacy: 'public',
-            memberCount: 1240,
-            requireApproval: false,
-          },
-          {
-            name: 'AI Việt Nam | Trợ lý AI, ứng dụng AI vào công việc',
-            slug: 'ai-viet-nam',
-            description: 'Hội thảo luận mô hình ngôn ngữ lớn (LLM), Prompt Engineering và tự động hóa với AI.',
-            privacy: 'public',
-            memberCount: 3580,
-            requireApproval: false,
-          },
-          {
-            name: 'Cộng đồng CNTT cho người mới bắt đầu - IT For Beginners',
-            slug: 'cong-dong-cntt',
-            description: 'Nơi giải đáp thắc mắc lập trình, định hướng nghề nghiệp CNTT từ cơ bản đến nâng cao.',
-            privacy: 'public',
-            memberCount: 5200,
-            requireApproval: false,
-          },
-          {
-            name: 'Hội Lập trình viên Fullstack Việt Nam',
-            slug: 'fullstack-vn',
-            description: 'Chia sẻ kiến thức React, Next.js, Node.js, NestJS, Docker và Cloud Architecture.',
-            privacy: 'public',
-            memberCount: 2890,
-            requireApproval: false,
-          },
-          {
-            name: 'Grab Việt Nam VN',
-            slug: 'grab-viet-nam',
-            description: 'Diễn đàn kết nối tài xế và khách hàng công nghệ.',
-            privacy: 'public',
-            memberCount: 4120,
-            requireApproval: false,
-          },
-          {
-            name: 'Thiết Kế Website Theo Yêu Cầu !',
-            slug: 'thiet-ke-website',
-            description: 'Cộng đồng Frontend, UI/UX Designer và Freelancer lập trình web.',
-            privacy: 'public',
-            memberCount: 1850,
-            requireApproval: false,
-          },
-          {
-            name: 'Sinh viên HUIT',
-            slug: 'sinh-vien-huit',
-            description: 'Hội sinh viên năng động, học tập và kết nối hoạt động ngoại khóa.',
-            privacy: 'public',
-            memberCount: 6700,
-            requireApproval: false,
-          },
-        ] as const;
-
-        const systemId = new Types.ObjectId('000000000000000000000001');
-        for (const g of seedGroups) {
-          await this.groupModel.create({
-            ...g,
-            creatorId: systemId,
-            adminIds: [systemId],
-            moderatorIds: [],
-            deputies: [],
-            bannedPostingUserIds: [],
-            mutedCommentUserIds: [],
-            requireJoinReason: false,
-            joinQuestion: 'Tại sao bạn muốn tham gia nhóm này?',
-            pendingRequests: [],
-            members: [systemId],
-            pendingMemberIds: [],
-            rules: [],
-            isDeleted: false,
-          });
-        }
-      }
+      const systemId = new Types.ObjectId('000000000000000000000001');
+      await this.groupModel.deleteMany({ creatorId: systemId }).exec();
     } catch {
-      // Bỏ qua lỗi seed nếu đã tồn tại
+      // Bỏ qua lỗi nếu MongoDB chưa sẵn sàng khi khởi động
     }
   }
 
@@ -236,27 +157,21 @@ export class CommunityGroupsService implements OnModuleInit {
       }
     }
 
-    const isSeedGroup = group.creatorId && toIdString(group.creatorId) === '000000000000000000000001';
     const validMembers = (group.members as any[]).filter((m) => m && (m._id || m.name));
     const validMemberIds = validMembers.map((m) => new Types.ObjectId(m._id ? m._id.toString() : m.toString()));
 
-    if (!isSeedGroup) {
-      // Đối với nhóm do người dùng tạo: số thành viên chính là số thành viên thực tế tồn tại trong CSDL
-      const count = Math.max(validMemberIds.length, 1);
-      if (group.memberCount !== count || (group as any).members?.length !== validMemberIds.length) {
-        await this.groupModel.updateOne(
-          { _id: group._id },
-          {
-            $set: {
-              members: validMemberIds.length > 0 ? validMemberIds : (viewerObjId ? [viewerObjId] : []),
-              memberCount: count,
-            },
+    const count = Math.max(validMemberIds.length, 1);
+    if (group.memberCount !== count || (group as any).members?.length !== validMemberIds.length) {
+      await this.groupModel.updateOne(
+        { _id: group._id },
+        {
+          $set: {
+            members: validMemberIds.length > 0 ? validMemberIds : (viewerObjId ? [viewerObjId] : []),
+            memberCount: count,
           },
-        ).exec();
-        group.memberCount = count;
-      }
-    } else {
-      group.memberCount = Math.max(group.memberCount || 0, 1);
+        },
+      ).exec();
+      group.memberCount = count;
     }
 
     let isMember = viewerObjId
@@ -554,11 +469,9 @@ export class CommunityGroupsService implements OnModuleInit {
       };
     });
 
-    const isSeedGroup = group.creatorId && toIdString(group.creatorId) === '000000000000000000000001';
-
     return {
       members: membersList,
-      memberCount: isSeedGroup ? (group.memberCount || membersList.length) : membersList.length,
+      memberCount: membersList.length,
       viewerId,
     };
   }
