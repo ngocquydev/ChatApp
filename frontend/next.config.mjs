@@ -1,5 +1,18 @@
+const isDev = process.env.NODE_ENV !== 'production';
+
+// Chỉ cho phép các giao thức và nguồn hợp lệ:
+// 1. https: & wss: (Giao thức bảo mật mã hóa TLS bắt buộc)
+// 2. data: & blob: (Giao thức dữ liệu nội tuyến cho Turnstile, Web Worker, Media preview)
+// 3. 'self': Chính domain ứng dụng
+// 4. Các endpoint Cloudflare Turnstile / Captcha chính thức
+// 5. Môi trường phát triển cục bộ: Cho phép riêng biệt localhost / 127.0.0.1
+// -> TUYỆT ĐỐI LOẠI BỎ wildcard "http:" và "ws:" để không cho phép giao thức không an toàn ra Internet.
+const devLocalSources = isDev || process.env.ALLOW_LOCAL_CONNECT === 'true'
+  ? 'http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*'
+  : '';
+
 const cspHeader = `
-  connect-src 'self' data: blob: http: https: ws: wss: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://*.challenges.cloudflare.com https://challenges.cloudflare.com https://*.cloudflarecaptcha.com;
+  connect-src 'self' data: blob: https: wss: ${devLocalSources} https://*.challenges.cloudflare.com https://challenges.cloudflare.com https://*.cloudflarecaptcha.com;
   frame-src 'self' https://challenges.cloudflare.com https://*.challenges.cloudflare.com https://*.firebaseapp.com;
 `.replace(/\s{2,}/g, ' ').trim();
 
@@ -7,6 +20,26 @@ const securityHeaders = [
   {
     key: 'Content-Security-Policy',
     value: cspHeader,
+  },
+  {
+    key: 'Strict-Transport-Security',
+    value: 'max-age=63072000; includeSubDomains; preload',
+  },
+  {
+    key: 'X-Content-Type-Options',
+    value: 'nosniff',
+  },
+  {
+    key: 'X-Frame-Options',
+    value: 'SAMEORIGIN',
+  },
+  {
+    key: 'Referrer-Policy',
+    value: 'strict-origin-when-cross-origin',
+  },
+  {
+    key: 'Permissions-Policy',
+    value: 'camera=(self), microphone=(self), geolocation=(self)',
   },
 ];
 

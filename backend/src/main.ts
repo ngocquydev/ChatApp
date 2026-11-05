@@ -32,6 +32,32 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  // Chỉ cho phép các giao thức và phương thức HTTP hợp lệ đi vào hệ thống
+  const ALLOWED_HTTP_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD']);
+  expressApp.use((req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) => {
+    if (!ALLOWED_HTTP_METHODS.has(req.method.toUpperCase())) {
+      return res.status(405).json({
+        statusCode: 405,
+        message: `Phương thức ${req.method} không được phép`,
+        error: 'Method Not Allowed',
+      });
+    }
+
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+      const proto = req.headers['x-forwarded-proto'];
+      if (proto && proto === 'http') {
+        const host = req.headers.host || '';
+        return res.redirect(301, `https://${host}${req.url}`);
+      }
+    }
+
+    next();
+  });
+
   // Ảnh bài viết: tên file là UUID ngẫu nhiên, chỉ phục vụ ảnh raster đã kiểm tra magic bytes
   app.useStaticAssets(UPLOAD_ROOT, {
     prefix: '/uploads/',
