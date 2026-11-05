@@ -80,7 +80,7 @@ function ResponsiveAppBar() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
-  const { t, tr } = useTranslation();
+  const { t, tr, language } = useTranslation();
 
   // State tìm kiếm người dùng toàn hệ thống
   const [searchQuery, setSearchQuery] = useState("");
@@ -747,7 +747,7 @@ function ResponsiveAppBar() {
                     receivedRequests.map((req) => {
                       const requester = req.requesterId;
                       const timeAgo = req.createdAt
-                        ? new Date(req.createdAt).toLocaleDateString([], {
+                        ? new Date(req.createdAt).toLocaleDateString(language === "en" ? "en-US" : "vi-VN", {
                             month: "numeric",
                             day: "numeric",
                           })
@@ -784,7 +784,11 @@ function ResponsiveAppBar() {
                                 {requester?.name || tr("Người dùng", "User")}
                               </Typography>
                               {timeAgo && (
-                                <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", fontSize: "0.7rem", ml: 1 }}>
+                                <Typography
+                                  variant="caption"
+                                  suppressHydrationWarning
+                                  sx={{ color: "var(--mui-palette-neutral-400)", fontSize: "0.7rem", ml: 1 }}
+                                >
                                   {timeAgo}
                                 </Typography>
                               )}

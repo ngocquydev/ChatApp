@@ -338,6 +338,7 @@ export default function ConversationList({
                       </Box>
                       <Typography
                         variant="caption"
+                        suppressHydrationWarning
                         sx={{
                           flexShrink: 0,
                           color: unreadCount > 0 ? "primary.main" : "text.secondary",

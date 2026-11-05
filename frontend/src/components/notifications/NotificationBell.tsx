@@ -397,6 +397,7 @@ export default function NotificationBell() {
                       <Typography
                         variant="caption"
                         color="text.secondary"
+                        suppressHydrationWarning
                         sx={{ fontSize: "0.75rem", display: "block", mt: 0.3 }}
                       >
                         {formatRelativeTime(item.createdAt)}

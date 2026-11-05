@@ -56,7 +56,7 @@ export default function PostAuthorHeader({
         <Typography variant="caption" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
           {createdAt && (
             <Tooltip title={formatFullDateTime(createdAt)}>
-              <time dateTime={createdAt}>{formatRelativeTime(createdAt)}</time>
+              <time dateTime={createdAt} suppressHydrationWarning>{formatRelativeTime(createdAt)}</time>
             </Tooltip>
           )}
           {privacy && (

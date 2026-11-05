@@ -128,7 +128,7 @@ export default function CommentItem({
           )}
 
           <Tooltip title={formatFullDateTime(comment.createdAt)}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" suppressHydrationWarning>
               {formatRelativeTime(comment.createdAt)}
             </Typography>
           </Tooltip>

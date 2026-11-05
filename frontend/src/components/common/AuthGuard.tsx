@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, ReactNode } from "react";
+import { useEffect, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -11,24 +11,33 @@ interface AuthGuardProps {
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isCheckingAuth } = useAuthStore();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!isCheckingAuth && !isAuthenticated) {
-      router.replace("/login");
-    }
-  }, [isCheckingAuth, isAuthenticated, router]);
+    setMounted(true);
+  }, []);
 
-  // Khi chưa đăng nhập -> chặn render
-  if (!isCheckingAuth && !isAuthenticated) {
-    return null;
+  const hasSession = mounted
+    ? (typeof window !== "undefined" && localStorage.getItem("has_session") === "true")
+    : true;
+
+  useEffect(() => {
+    if (mounted) {
+      if (!isAuthenticated && (!hasSession || !isCheckingAuth)) {
+        router.replace("/login");
+      }
+    }
+  }, [mounted, isAuthenticated, hasSession, isCheckingAuth, router]);
+
+  // Khi chưa mount (SSR và lượt hydrate đầu tiên ở client),
+  // luôn đồng bộ render children để tránh Hydration Mismatch
+  if (!mounted) {
+    return <>{children}</>;
   }
 
-  // Nếu ở client và rõ ràng không có phiên làm việc cũ (chưa từng đăng nhập)
-  if (typeof window !== "undefined") {
-    const hasSession = localStorage.getItem("has_session") === "true";
-    if (!hasSession && !isAuthenticated) {
-      return null;
-    }
+  // Khi đã mount ở client, nếu xác định không có session hoặc đã check xong mà chưa auth -> chặn render
+  if (!isAuthenticated && (!hasSession || !isCheckingAuth)) {
+    return null;
   }
 
   // Cho phép render nội dung (layout + skeleton) để tránh chặn LCP và cho phép API con tải song song

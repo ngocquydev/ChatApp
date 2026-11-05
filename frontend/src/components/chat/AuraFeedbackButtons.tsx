@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Box, IconButton, Tooltip } from "@mui/material";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -17,14 +17,20 @@ export default function AuraFeedbackButtons({
   onFeedback,
 }: AuraFeedbackButtonsProps) {
   const { tr } = useTranslation();
-  const [feedback, setFeedback] = useState<"up" | "down" | null>(() => {
-    if (initialFeedback) return initialFeedback;
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(`aura_feedback_${messageId}`);
-      if (stored === "up" || stored === "down") return stored;
+  const [feedback, setFeedback] = useState<"up" | "down" | null>(initialFeedback);
+
+  useEffect(() => {
+    if (!initialFeedback && typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(`aura_feedback_${messageId}`);
+        if (stored === "up" || stored === "down") {
+          setFeedback(stored);
+        }
+      } catch {
+        // Bỏ qua lỗi localStorage
+      }
     }
-    return null;
-  });
+  }, [initialFeedback, messageId]);
 
   const handleRate = (type: "up" | "down") => {
     const next = feedback === type ? null : type;

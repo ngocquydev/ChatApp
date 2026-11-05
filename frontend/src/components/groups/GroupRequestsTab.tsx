@@ -150,7 +150,7 @@ export default function GroupRequestsTab({
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.5 }}>
                     <Clock size={13} color="var(--mui-palette-text-secondary)" />
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" suppressHydrationWarning>
                       {formatRelativeTime(req.requestedAt)}
                     </Typography>
                   </Box>

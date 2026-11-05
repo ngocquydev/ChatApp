@@ -28,18 +28,21 @@ export function formatChatPreview(text?: string, isDeleted?: boolean): string {
 export function formatChatShortTime(iso?: string): string {
   if (!iso) return "";
   const isEn = useLanguageStore.getState().language === "en";
+  const locale = isEn ? "en-US" : "vi-VN";
   const date = new Date(iso);
   const diffMin = Math.floor((Date.now() - date.getTime()) / 60000);
   if (diffMin < 1) return isEn ? "Just now" : "Vừa xong";
   if (diffMin < 60) return isEn ? `${diffMin}m` : `${diffMin} phút`;
   const diffHours = Math.floor(diffMin / 60);
-  if (diffHours < 24) return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (diffHours < 24) {
+    return date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
   const diffDays = Math.floor(diffHours / 24);
   return diffDays < 7
     ? isEn
       ? `${diffDays}d`
       : `${diffDays} ngày`
-    : date.toLocaleDateString(isEn ? "en-US" : "vi-VN", { day: "2-digit", month: "2-digit" });
+    : date.toLocaleDateString(locale, { day: "2-digit", month: "2-digit" });
 }
 
 interface RecentChatRowProps {
@@ -123,6 +126,7 @@ export default function RecentChatRow({
           <Typography
             variant="body2"
             noWrap
+            suppressHydrationWarning
             sx={{
               fontSize: "0.8rem",
               color: isUnread ? "primary.main" : "text.secondary",
