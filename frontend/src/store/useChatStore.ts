@@ -200,19 +200,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
   typingMap: {},
 
   connectSocket: () => {
-    // 1. KẾT NỐI MQTT OVER WEBSOCKET BROKER (PROTOCOL BUFFERS BINARY CHAT)
+    // Chỉ kết nối khi người dùng đã đăng nhập để tránh gửi request không có token lên Gateway
     const currentUser = useAuthStore.getState().user;
     const currentUserId = String(currentUser?._id || currentUser?.id || "");
-    if (currentUserId) {
-      mqttChatClient.connect("", currentUserId);
-      const isMqtt = mqttChatClient.getIsConnected();
-      if (get().isMqttConnected !== isMqtt) {
-        set({ isMqttConnected: isMqtt });
-      }
+    if (!currentUserId) {
+      return;
+    }
 
-      // Hủy các listener cũ trước khi đăng ký mới để tránh trùng lặp
-      mqttUnbinders.forEach((unsub) => unsub());
-      mqttUnbinders = [];
+    // 1. KẾT NỐI MQTT OVER WEBSOCKET BROKER (PROTOCOL BUFFERS BINARY CHAT)
+    mqttChatClient.connect("", currentUserId);
+    const isMqtt = mqttChatClient.getIsConnected();
+    if (get().isMqttConnected !== isMqtt) {
+      set({ isMqttConnected: isMqtt });
+    }
+
+    // Hủy các listener cũ trước khi đăng ký mới để tránh trùng lặp
+    mqttUnbinders.forEach((unsub) => unsub());
+    mqttUnbinders = [];
 
       // Lắng nghe tin nhắn mới nhị phân qua MQTT
       const unbindMsg = mqttChatClient.onMessage((newMsg) => {
@@ -354,7 +358,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
       });
       mqttUnbinders.push(unbindPresence);
-    }
 
     // 2. KẾT NỐI SOCKET.IO (DUAL HYBRID FALLBACK)
     const currentSocket = get().socket;

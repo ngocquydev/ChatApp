@@ -36,7 +36,10 @@ const runInDetachedContext = AsyncLocalStorage.snapshot();
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Phản hồi đúng origin của request để hỗ trợ credentials: true theo chuẩn CORS
+      callback(null, true);
+    },
     credentials: true,
   },
 })

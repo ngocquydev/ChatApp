@@ -46,7 +46,7 @@ interface ClientShellProps {
 export default function ClientShell({ children }: ClientShellProps) {
   const pathname = usePathname();
   const { isAuthenticated, user, checkAuth } = useAuthStore();
-  const { connectSocket } = useChatStore();
+  const { connectSocket, disconnectSocket } = useChatStore();
   const { fetchFriends, fetchRequests } = useFriendStore();
   const { fetchUnreadCount } = useNotificationStore();
   const { t } = useTranslation();
@@ -66,8 +66,10 @@ export default function ClientShell({ children }: ClientShellProps) {
       fetchFriends();
       fetchRequests();
       fetchUnreadCount();
+    } else if (!isAuthenticated) {
+      disconnectSocket();
     }
-  }, [isAuthenticated, user, connectSocket, fetchFriends, fetchRequests, fetchUnreadCount]);
+  }, [isAuthenticated, user, connectSocket, disconnectSocket, fetchFriends, fetchRequests, fetchUnreadCount]);
 
   const showSocialWidgets = isAuthenticated;
 

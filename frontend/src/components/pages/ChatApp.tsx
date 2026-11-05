@@ -81,13 +81,15 @@ export default function ChatApp() {
 
   const currentUserId = (user?._id || user?.id)?.toString();
 
-  // Kết nối realtime và tải dữ liệu ban đầu (thông báo bạn bè do FriendNoticeToast toàn cục xử lý)
+  // Kết nối realtime và tải dữ liệu ban đầu khi đã có thông tin người dùng
   useEffect(() => {
-    connectSocket();
-    fetchConversations();
-    fetchFriends();
-    fetchRequests();
-  }, [connectSocket, fetchConversations, fetchFriends, fetchRequests]);
+    if (user) {
+      connectSocket();
+      fetchConversations();
+      fetchFriends();
+      fetchRequests();
+    }
+  }, [user, connectSocket, fetchConversations, fetchFriends, fetchRequests]);
   const partner = useMemo<ChatUser | null>(() => {
     if (!activeConversation) return null;
     return (
