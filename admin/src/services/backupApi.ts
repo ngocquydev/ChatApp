@@ -1,4 +1,4 @@
-import api from "./api";
+import api, { getBackendUrl } from "./api";
 
 export interface BackupFileInfo {
   filename: string;
@@ -40,7 +40,7 @@ export const backupApi = {
   },
 
   getDownloadUrl(filename: string): string {
-    const base = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+    const base = getBackendUrl();
     return `${base}/admin/backup/download/${encodeURIComponent(filename)}`;
   },
 };

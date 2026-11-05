@@ -4,8 +4,19 @@ export interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
+export const getBackendUrl = (): string => {
+  let url = (import.meta.env.VITE_BACKEND_URL || "http://localhost:3000").trim();
+  if (url.endsWith("/")) {
+    url = url.slice(0, -1);
+  }
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = `https://${url}`;
+  }
+  return url;
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:3000",
+  baseURL: getBackendUrl(),
   headers: {
     "Content-Type": "application/json",
   },
@@ -30,7 +41,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL || "http://localhost:3000"}/auth/refresh`,
+          `${getBackendUrl()}/auth/refresh`,
           {},
           { withCredentials: true }
         );
