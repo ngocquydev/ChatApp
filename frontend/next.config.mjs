@@ -1,5 +1,5 @@
 const cspHeader = `
-  connect-src 'self' data: blob: https: wss: ws: https://*.challenges.cloudflare.com https://challenges.cloudflare.com https://*.cloudflarecaptcha.com;
+  connect-src 'self' data: blob: http: https: ws: wss: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://*.challenges.cloudflare.com https://challenges.cloudflare.com https://*.cloudflarecaptcha.com;
   frame-src 'self' https://challenges.cloudflare.com https://*.challenges.cloudflare.com https://*.firebaseapp.com;
 `.replace(/\s{2,}/g, ' ').trim();
 

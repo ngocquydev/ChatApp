@@ -259,6 +259,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoggingIn: true });
     try {
       const res = await api.post("/auth/register", body);
+      console.log(res);
       const profile =
         res.data?.profile || (await api.get("/auth/profile")).data?.profile;
 
