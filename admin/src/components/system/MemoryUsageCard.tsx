@@ -44,9 +44,10 @@ export function MemoryUsageCard({ memory, isEn }: MemoryUsageCardProps) {
 
   const status = memory.status || (systemUsagePercent >= 85 ? "critical" : systemUsagePercent >= 75 ? "warning" : "healthy");
 
-  const systemTotalGB = (systemTotalMB / 1024).toFixed(1);
-  const systemUsedGB = (systemUsedMB / 1024).toFixed(1);
-  const systemFreeGB = (systemFreeMB / 1024).toFixed(1);
+  const formatMem = (mb: number) => mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`;
+  const systemTotalDisplay = formatMem(systemTotalMB);
+  const systemUsedDisplay = formatMem(systemUsedMB);
+  const systemFreeDisplay = formatMem(systemFreeMB);
 
   const upgradePlan = memory.upgradePlan || {
     currentTotalRamGB: Math.round(systemTotalMB / 1024),
@@ -139,7 +140,7 @@ export function MemoryUsageCard({ memory, isEn }: MemoryUsageCardProps) {
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Server size={16} />
                 <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                  {isEn ? "Physical Server RAM (Used / Total)" : "RAM Vật Lý Toàn Máy Chủ (Đang dùng / Tổng dung lượng)"}
+                  {isEn ? "Combined Cloud RAM (Render + Redis)" : "Tổng RAM Đám Mây (Render + Redis)"}
                 </Typography>
               </Box>
               <Typography
@@ -149,7 +150,7 @@ export function MemoryUsageCard({ memory, isEn }: MemoryUsageCardProps) {
                   color: status === "critical" ? "error.main" : status === "warning" ? "warning.main" : "text.primary",
                 }}
               >
-                {systemUsedGB} GB / {systemTotalGB} GB ({systemUsagePercent}%)
+                {systemUsedDisplay} / {systemTotalDisplay} ({systemUsagePercent}%)
               </Typography>
             </Box>
             <LinearProgress
@@ -165,7 +166,7 @@ export function MemoryUsageCard({ memory, isEn }: MemoryUsageCardProps) {
             />
             <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                {isEn ? `Free RAM: ${systemFreeGB} GB (${100 - systemUsagePercent}%)` : `RAM còn trống: ${systemFreeGB} GB (${100 - systemUsagePercent}%)`}
+                {isEn ? `Free RAM: ${systemFreeDisplay} (${100 - systemUsagePercent}%)` : `RAM còn trống: ${systemFreeDisplay} (${100 - systemUsagePercent}%)`}
               </Typography>
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
                 {isEn ? `Thresholds: 75% Warning • 85% Critical` : `Ngưỡng: 75% Cảnh báo • 85% Nguy cấp`}
@@ -218,15 +219,15 @@ export function MemoryUsageCard({ memory, isEn }: MemoryUsageCardProps) {
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, 1fr)" }, gap: 2, mb: 3 }}>
           <Box sx={{ p: 2, borderRadius: "12px", bgcolor: "action.hover" }}>
             <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
-              {isEn ? "Total Server RAM" : "Tổng RAM Máy Chủ"}
+              {isEn ? "Total Cloud RAM" : "Tổng RAM Cloud"}
             </Typography>
             <Typography variant="h6" sx={{ fontWeight: 800, mt: 0.5 }}>
-              {systemTotalGB} GB
+              {systemTotalDisplay}
             </Typography>
           </Box>
           <Box sx={{ p: 2, borderRadius: "12px", bgcolor: "action.hover" }}>
             <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
-              {isEn ? "Used RAM" : "RAM Đang Dùng"}
+              {isEn ? "Used Cloud RAM" : "RAM Đang Dùng"}
             </Typography>
             <Typography
               variant="h6"
@@ -236,7 +237,7 @@ export function MemoryUsageCard({ memory, isEn }: MemoryUsageCardProps) {
                 color: status === "critical" ? "error.main" : status === "warning" ? "warning.main" : "inherit",
               }}
             >
-              {systemUsedGB} GB
+              {systemUsedDisplay}
             </Typography>
           </Box>
           <Box sx={{ p: 2, borderRadius: "12px", bgcolor: "action.hover" }}>
@@ -244,7 +245,7 @@ export function MemoryUsageCard({ memory, isEn }: MemoryUsageCardProps) {
               {isEn ? "Free RAM Available" : "RAM Còn Trống"}
             </Typography>
             <Typography variant="h6" sx={{ fontWeight: 800, mt: 0.5, color: "success.main" }}>
-              {systemFreeGB} GB
+              {systemFreeDisplay}
             </Typography>
           </Box>
           <Box sx={{ p: 2, borderRadius: "12px", bgcolor: "action.hover" }}>
@@ -256,6 +257,34 @@ export function MemoryUsageCard({ memory, isEn }: MemoryUsageCardProps) {
             </Typography>
           </Box>
         </Box>
+
+        {/* Cloud Infrastructure Breakdown (Render + Redis) */}
+        {memory.cloudBreakdown && (
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, mb: 3 }}>
+            <Box sx={{ p: 2, borderRadius: "12px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  Render Cloud Backend
+                </Typography>
+                <Chip size="small" label={`${memory.cloudBreakdown.render.percent}%`} color={getBarColor(memory.cloudBreakdown.render.percent)} sx={{ fontWeight: 700, height: 20 }} />
+              </Box>
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                {memory.cloudBreakdown.render.usedMB} MB / {memory.cloudBreakdown.render.totalMB} MB
+              </Typography>
+            </Box>
+            <Box sx={{ p: 2, borderRadius: "12px", border: "1px solid", borderColor: "divider", bgcolor: "action.hover" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  Upstash Cloud Redis
+                </Typography>
+                <Chip size="small" label={`${memory.cloudBreakdown.redis.percent}%`} color={getBarColor(memory.cloudBreakdown.redis.percent)} sx={{ fontWeight: 700, height: 20 }} />
+              </Box>
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                {memory.cloudBreakdown.redis.usedMB} MB / {memory.cloudBreakdown.redis.totalMB} MB
+              </Typography>
+            </Box>
+          </Box>
+        )}
 
         {/* Upgrade Recommendation & Action Plan Banner */}
         <Alert

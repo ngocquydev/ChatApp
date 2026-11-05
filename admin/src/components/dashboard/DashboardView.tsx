@@ -273,10 +273,15 @@ export default function DashboardView() {
               {stats.system.memory.systemUsagePercent !== undefined ? `${stats.system.memory.systemUsagePercent}% RAM` : `${stats.system.memory.heapUsedMB} MB`}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-              {stats.system.memory.systemUsedMB && stats.system.memory.systemTotalMB
-                ? `${((stats.system.memory.systemUsedMB) / 1024).toFixed(1)} / ${((stats.system.memory.systemTotalMB) / 1024).toFixed(1)} GB • Heap: ${stats.system.memory.heapUsedMB} MB`
+              {stats.system.memory.systemUsedMB !== undefined && stats.system.memory.systemTotalMB
+                ? `${stats.system.memory.systemTotalMB >= 1024 ? `${(stats.system.memory.systemUsedMB / 1024).toFixed(1)} / ${(stats.system.memory.systemTotalMB / 1024).toFixed(1)} GB` : `${stats.system.memory.systemUsedMB} / ${stats.system.memory.systemTotalMB} MB`} • Heap: ${stats.system.memory.heapUsedMB} MB`
                 : `Heap: ${stats.system.memory.heapUsedMB} MB • Uptime: ${formatUptime(stats.system.uptimeSeconds)}`}
             </Typography>
+            {stats.system.memory.cloudBreakdown && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5, fontSize: "0.72rem" }}>
+                Render: {stats.system.memory.cloudBreakdown.render.usedMB}/{stats.system.memory.cloudBreakdown.render.totalMB} MB • Redis: {stats.system.memory.cloudBreakdown.redis.usedMB}/{stats.system.memory.cloudBreakdown.redis.totalMB} MB
+              </Typography>
+            )}
           </CardContent>
         </Card>
       </Box>

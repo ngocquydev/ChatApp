@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import * as os from 'node:os';
 import * as v8 from 'node:v8';
+import * as fs from 'node:fs';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserRepository } from '../users/entities/user.entity.js';
@@ -60,7 +61,7 @@ export class AdminService {
       this.edgeBanService.listBans(),
     ]);
 
-    const memoryMetrics = this.getMemoryMetrics();
+    const memoryMetrics = await this.getMemoryMetrics();
     let redisConnected = false;
     if (this.redisService?.client) {
       try {
@@ -357,18 +358,62 @@ export class AdminService {
     throw new BadRequestException('Thao tác kiểm duyệt không hợp lệ');
   }
 
-  getMemoryMetrics() {
+  async getMemoryMetrics() {
     const mem = process.memoryUsage();
     const heapStats = v8.getHeapStatistics();
-    const totalMemBytes = os.totalmem();
-    const freeMemBytes = os.freemem();
-    const usedMemBytes = Math.max(0, totalMemBytes - freeMemBytes);
 
-    const systemTotalMB = Math.round(totalMemBytes / 1024 / 1024);
-    const systemUsedMB = Math.round(usedMemBytes / 1024 / 1024);
-    const systemFreeMB = Math.round(freeMemBytes / 1024 / 1024);
-    const systemUsagePercent = totalMemBytes > 0
-      ? Math.min(100, Math.round((usedMemBytes / totalMemBytes) * 100))
+    // 1. Lấy thông số RAM Render Cloud (Backend Node.js container)
+    let renderTotalMB = Number(process.env.RENDER_MAX_RAM_MB) || Number(process.env.RENDER_MEMORY_LIMIT_MB) || 512;
+    let renderUsedMB = Math.round(mem.rss / 1024 / 1024);
+
+    try {
+      if (fs.existsSync('/sys/fs/cgroup/memory.max')) {
+        const val = fs.readFileSync('/sys/fs/cgroup/memory.max', 'utf-8').trim();
+        if (val !== 'max') {
+          const bytes = parseInt(val, 10);
+          if (bytes > 0 && bytes < 100 * 1024 * 1024 * 1024) {
+            renderTotalMB = Math.round(bytes / 1024 / 1024);
+          }
+        }
+      }
+      if (fs.existsSync('/sys/fs/cgroup/memory.current')) {
+        const currentBytes = parseInt(fs.readFileSync('/sys/fs/cgroup/memory.current', 'utf-8').trim(), 10);
+        if (currentBytes > 0) {
+          renderUsedMB = Math.round(currentBytes / 1024 / 1024);
+        }
+      }
+    } catch {
+      // Fallback nếu không chạy trong cgroup Linux
+    }
+
+    // 2. Lấy thông số RAM Redis Cloud (Upstash)
+    let redisUsedMB = 0;
+    let redisTotalMB = 64; // Gói mặc định Upstash free tier (64MB)
+    if (this.redisService?.client) {
+      try {
+        const info = await this.redisService.client.info('memory');
+        const usedMatch = info.match(/used_memory:(\d+)/);
+        const maxMatch = info.match(/maxmemory:(\d+)/);
+        if (usedMatch) {
+          redisUsedMB = Math.round(parseInt(usedMatch[1], 10) / 1024 / 1024);
+        }
+        if (maxMatch) {
+          const maxBytes = parseInt(maxMatch[1], 10);
+          if (maxBytes > 0) {
+            redisTotalMB = Math.round(maxBytes / 1024 / 1024);
+          }
+        }
+      } catch {
+        // Fallback nếu chưa kết nối Redis
+      }
+    }
+
+    // 3. Tổng hợp RAM kết hợp: Render Cloud + Cloud Redis
+    const systemTotalMB = renderTotalMB + redisTotalMB;
+    const systemUsedMB = renderUsedMB + redisUsedMB;
+    const systemFreeMB = Math.max(0, systemTotalMB - systemUsedMB);
+    const systemUsagePercent = systemTotalMB > 0
+      ? Math.min(100, Math.round((systemUsedMB / systemTotalMB) * 100))
       : 0;
 
     const heapUsedMB = Math.round(mem.heapUsed / 1024 / 1024);
@@ -379,12 +424,12 @@ export class AdminService {
       ? Math.min(100, Math.round((mem.heapUsed / heapStats.heap_size_limit) * 100))
       : 0;
 
-    // Warning >= 75%, Critical >= 85%
+    // Ngưỡng cảnh báo dựa trên tổng hợp tài nguyên Cloud
     let status: 'healthy' | 'warning' | 'critical' = 'healthy';
-    let alertMessage = 'Bộ nhớ RAM hoạt động ổn định.';
-    let alertMessageEn = 'System memory is operating normally.';
-    let recommendation = 'Dung lượng RAM hiện tại đáp ứng tốt lưu lượng hiện tại.';
-    let recommendationEn = 'Current RAM capacity is sufficient for current traffic.';
+    let alertMessage = 'Bộ nhớ Cloud RAM (Render + Redis) hoạt động tối ưu.';
+    let alertMessageEn = 'Cloud RAM (Render + Redis) is operating optimally.';
+    let recommendation = `Tài nguyên Cloud hiện tại (${systemUsedMB} MB / ${systemTotalMB} MB) đáp ứng tốt lưu lượng.`;
+    let recommendationEn = `Current cloud resources (${systemUsedMB} MB / ${systemTotalMB} MB) are healthy.`;
 
     const systemTotalGB = Math.max(1, Math.round(systemTotalMB / 1024));
     const recommendedAddRamGB = systemTotalGB <= 4 ? 4 : systemTotalGB <= 8 ? 8 : 16;
@@ -395,16 +440,16 @@ export class AdminService {
 
     if (maxRatio >= 85) {
       status = 'critical';
-      alertMessage = `CẢNH BÁO NGUY CẤP: Bộ nhớ RAM đã dùng ${maxRatio}%. Nguy cơ tràn RAM (Out of Memory)!`;
-      alertMessageEn = `CRITICAL ALERT: System memory usage reached ${maxRatio}%. High risk of Out of Memory crash!`;
-      recommendation = `Khuyến nghị nâng cấp khẩn cấp: Máy chủ hiện chỉ còn ${systemFreeMB} MB RAM trống. Cần nâng cấp thêm tối thiểu +${recommendedAddRamGB} GB RAM (đạt tổng ${targetTotalRamGB} GB) hoặc cấu hình cờ '${suggestedNodeFlag}' để tránh sập máy chủ.`;
-      recommendationEn = `Urgent upgrade recommended: Server only has ${systemFreeMB} MB free RAM. Upgrade by at least +${recommendedAddRamGB} GB RAM (reaching ${targetTotalRamGB} GB) or set '${suggestedNodeFlag}' flag.`;
+      alertMessage = `CẢNH BÁO NGUY CẤP: Bộ nhớ Cloud (Render + Redis) đã dùng ${maxRatio}%. Nguy cơ tràn RAM (Out of Memory)!`;
+      alertMessageEn = `CRITICAL ALERT: Cloud memory usage reached ${maxRatio}%. High risk of Out of Memory crash!`;
+      recommendation = `Khuyến nghị nâng cấp: Cloud RAM chỉ còn ${systemFreeMB} MB trống. Cần nâng gói Render từ 512MB lên 1GB hoặc mở rộng Upstash Redis.`;
+      recommendationEn = `Upgrade recommended: Only ${systemFreeMB} MB free cloud RAM. Upgrade Render container or expand Redis quota.`;
     } else if (maxRatio >= 75) {
       status = 'warning';
-      alertMessage = `CẢNH BÁO: Tải bộ nhớ RAM đang ở mức cao (${maxRatio}%).`;
-      alertMessageEn = `WARNING: Memory utilization is high (${maxRatio}%).`;
-      recommendation = `Khuyến nghị theo dõi & chuẩn bị nâng cấp: Hệ thống đã dùng ${maxRatio}% tài nguyên bộ nhớ. Chuẩn bị phương án nâng cấp thêm +${recommendedAddRamGB} GB RAM khi lưu lượng người dùng và tin nhắn tăng.`;
-      recommendationEn = `Monitoring & upgrade preparation recommended: Memory is at ${maxRatio}%. Plan a +${recommendedAddRamGB} GB RAM expansion as active users and chat messages grow.`;
+      alertMessage = `CẢNH BÁO: Tải bộ nhớ Cloud (Render + Redis) đang ở mức cao (${maxRatio}%).`;
+      alertMessageEn = `WARNING: Cloud memory utilization is high (${maxRatio}%).`;
+      recommendation = `Khuyến nghị theo dõi: Đã sử dụng ${maxRatio}% tài nguyên Cloud (${systemUsedMB}/${systemTotalMB} MB).`;
+      recommendationEn = `Monitoring recommended: Cloud memory is at ${maxRatio}% (${systemUsedMB}/${systemTotalMB} MB).`;
     }
 
     return {
@@ -421,6 +466,20 @@ export class AdminService {
       systemUsedMB,
       systemFreeMB,
       systemUsagePercent,
+      cloudBreakdown: {
+        render: {
+          name: 'Render Cloud Backend',
+          usedMB: renderUsedMB,
+          totalMB: renderTotalMB,
+          percent: Math.round((renderUsedMB / renderTotalMB) * 100),
+        },
+        redis: {
+          name: 'Upstash Cloud Redis',
+          usedMB: redisUsedMB,
+          totalMB: redisTotalMB,
+          percent: redisTotalMB > 0 ? Math.round((redisUsedMB / redisTotalMB) * 100) : 0,
+        },
+      },
       status,
       alertMessage,
       alertMessageEn,
@@ -436,7 +495,7 @@ export class AdminService {
   }
 
   async getSystemHealth() {
-    const memoryMetrics = this.getMemoryMetrics();
+    const memoryMetrics = await this.getMemoryMetrics();
     let redisConnected = false;
     let redisPingMs = 0;
     if (this.redisService?.client) {

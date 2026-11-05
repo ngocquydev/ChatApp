@@ -25,6 +25,20 @@ export interface SystemMemoryMetrics {
     targetTotalRamGB: number;
     suggestedNodeFlag: string;
   };
+  cloudBreakdown?: {
+    render: {
+      name: string;
+      usedMB: number;
+      totalMB: number;
+      percent: number;
+    };
+    redis: {
+      name: string;
+      usedMB: number;
+      totalMB: number;
+      percent: number;
+    };
+  };
 }
 
 export interface AdminStats {
