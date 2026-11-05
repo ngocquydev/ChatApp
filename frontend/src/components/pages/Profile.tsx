@@ -551,7 +551,6 @@ function ProfileContent() {
       }}
     >
       <Container maxWidth="lg">
-        {/* ================= HERO PROFILE CARD ================= */}
         <Card
           elevation={0}
           sx={{
@@ -947,37 +946,38 @@ function ProfileContent() {
                     }}
                   />
                 )}
+              
               </Box>
 
-              {/* Tag / Email / Phone Chips */}
+              {/* Tag / Email / Phone Chips - Chuyển sang dạng dọc */}
               <Box
                 sx={{
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: { xs: "center", sm: "flex-start" },
-                  gap: 2,
-                  flexWrap: "wrap",
-                  color: "var(--mui-palette-neutral-500)",
+                  flexDirection: "column",
+                  alignItems: { xs: "center", sm: "flex-start" },
+                  gap: 1.25,
+                  color: "var(--mui-palette-neutral-600)",
                   fontSize: "0.875rem",
-                  mb: 2,
+                  mt: 1,
+                  mb: 2.5,
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                  <Mail size={15} />
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Mail size={16} />
                   <span>{user?.email || "chua_co_email@domain.com"}</span>
                 </Box>
 
                 {user?.phone && (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                    <Phone size={15} />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Phone size={16} />
                     <span>{user.phone as string}</span>
                   </Box>
                 )}
 
                 {user?.dateOfBirth && (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                    <Calendar size={15} />
-                    <span>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Calendar size={16} />
+                    <span suppressHydrationWarning>
                       {tr("Sinh nhật:", "Birthday:")}{" "}
                       {new Date(user.dateOfBirth as string).toLocaleDateString(language === "en" ? "en-US" : "vi-VN")}
                     </span>
@@ -985,15 +985,15 @@ function ProfileContent() {
                 )}
 
                 {user?.school && (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                    <GraduationCap size={15} color="var(--mui-palette-brand-500)" />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <GraduationCap size={16} color="var(--mui-palette-brand-500)" />
                     <span>{user.school as string}</span>
                   </Box>
                 )}
 
                 {user?.relationshipStatus && (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                    <Heart size={15} color="var(--mui-palette-error-main)" fill="currentColor" />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Heart size={16} color="var(--mui-palette-error-main)" fill="currentColor" />
                     <span>{getRelationshipLabel(user.relationshipStatus as string, language === "en" ? "en" : "vi")}</span>
                   </Box>
                 )}
@@ -1004,15 +1004,16 @@ function ProfileContent() {
                   sx={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: 0.75,
+                    gap: 1,
                     borderRadius: "8px",
-                    px: 0.75,
+                    px: 0.5,
                     py: 0.25,
+                    ml: { xs: 0, sm: -0.5 },
                     color: "var(--mui-palette-neutral-700)",
                     "&:hover": { color: "var(--mui-palette-brand-600)" },
                   }}
                 >
-                  <Users size={15} color="var(--mui-palette-brand-500)" />
+                  <Users size={16} color="var(--mui-palette-brand-500)" />
                   <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.875rem", color: "inherit" }}>
                     {friends.length}{" "}
                     <Box component="span" sx={{ fontWeight: 500, color: "var(--mui-palette-neutral-500)" }}>
@@ -1021,9 +1022,9 @@ function ProfileContent() {
                   </Typography>
                 </ButtonBase>
 
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                  <Calendar size={15} />
-                  <span>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Calendar size={16} />
+                  <span suppressHydrationWarning>
                     {tr("Tham gia:", "Joined:")} {joinDate}
                   </span>
                 </Box>
