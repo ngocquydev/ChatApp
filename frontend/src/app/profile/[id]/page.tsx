@@ -25,7 +25,8 @@ interface ProfileResponse {
 
 async function getProfileData(id: string): Promise<ProfileResponse | null> {
   try {
-    const res = await fetch(`${apiUrl}/friends/profile/${id}`, {
+    const safeId = encodeURIComponent(id.trim());
+    const res = await fetch(`${apiUrl}/friends/profile/${safeId}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;

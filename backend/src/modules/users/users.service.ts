@@ -443,8 +443,8 @@ export class UsersService implements OnModuleInit {
     let publicApiSchools: string[] = [];
     try {
       const url = cleanSearch
-        ? `http://universities.hipolabs.com/search?name=${encodeURIComponent(cleanSearch)}&country=Vietnam`
-        : 'http://universities.hipolabs.com/search?country=Vietnam';
+        ? `https://universities.hipolabs.com/search?name=${encodeURIComponent(cleanSearch)}&country=Vietnam`
+        : 'https://universities.hipolabs.com/search?country=Vietnam';
       const res = await fetch(url, { signal: AbortSignal.timeout(2500) });
       if (res.ok) {
         const json = (await res.json()) as Array<{ name?: string }>;

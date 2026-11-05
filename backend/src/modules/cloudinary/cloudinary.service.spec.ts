@@ -31,4 +31,9 @@ describe('CloudinaryService', () => {
   it('báo lỗi khi tải lên base64 rỗng', async () => {
     await expect(service.uploadBase64('')).rejects.toThrow(BadRequestException);
   });
+
+  it('từ chối tải lên chuỗi URL ngoài hoặc không phải Data URI (chống SSRF)', async () => {
+    await expect(service.uploadBase64('http://169.254.169.254/latest/meta-data/')).rejects.toThrow(BadRequestException);
+    await expect(service.uploadBase64('https://attacker.com/malicious.png')).rejects.toThrow(BadRequestException);
+  });
 });

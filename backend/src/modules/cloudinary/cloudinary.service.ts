@@ -90,6 +90,11 @@ export class CloudinaryService {
       throw new BadRequestException('Dữ liệu tải lên rỗng');
     }
 
+    // Phòng thủ theo chiều sâu chống SSRF: Chỉ chấp nhận Data URI hợp lệ, chặn truyền URL từ xa vào SDK
+    if (!base64Str.startsWith('data:image/') && !base64Str.startsWith('data:video/')) {
+      throw new BadRequestException('Dữ liệu tải lên phải là Data URI hợp lệ (data:image/... hoặc data:video/...)');
+    }
+
     const folder = options.folder ?? 'chatapp/avatars';
     const resourceType = options.resource_type ?? 'auto';
 
