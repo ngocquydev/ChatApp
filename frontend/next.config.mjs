@@ -1,4 +1,8 @@
 const isDev = process.env.NODE_ENV !== 'production';
+const hasLocalBackend =
+  process.env.NEXT_PUBLIC_BACKEND_URL?.includes('localhost') ||
+  process.env.NEXT_PUBLIC_BACKEND_URL?.includes('127.0.0.1') ||
+  !process.env.NEXT_PUBLIC_BACKEND_URL;
 
 // Chỉ cho phép các giao thức và nguồn hợp lệ:
 // 1. https: & wss: (Giao thức bảo mật mã hóa TLS bắt buộc)
@@ -7,7 +11,7 @@ const isDev = process.env.NODE_ENV !== 'production';
 // 4. Các endpoint Cloudflare Turnstile / Captcha chính thức
 // 5. Môi trường phát triển cục bộ: Cho phép riêng biệt localhost / 127.0.0.1
 // -> TUYỆT ĐỐI LOẠI BỎ wildcard "http:" và "ws:" để không cho phép giao thức không an toàn ra Internet.
-const devLocalSources = isDev || process.env.ALLOW_LOCAL_CONNECT === 'true'
+const devLocalSources = isDev || hasLocalBackend || process.env.ALLOW_LOCAL_CONNECT === 'true'
   ? 'http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*'
   : '';
 

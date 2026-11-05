@@ -82,18 +82,40 @@ class MqttChatClient {
 
     const isHttps =
       typeof window !== "undefined" && window.location.protocol === "https:";
-    const host =
-      typeof window !== "undefined" && window.location.hostname
-        ? window.location.hostname
-        : "localhost";
+
+    // Xác định Backend URL
+    const rawBackend =
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      process.env.VITE_BACKEND_URL ||
+      (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
 
     // Xác định URL kết nối: Ưu tiên mã hóa TLS / WSS (WebSocket Secure) để chống bắt gói tin
     let mqttUrl = process.env.NEXT_PUBLIC_MQTT_URL;
     if (!mqttUrl) {
-      if (isHttps || process.env.NEXT_PUBLIC_MQTT_USE_SSL === "true") {
-        mqttUrl = `wss://${host}:8884`;
-      } else {
-        mqttUrl = `ws://${host}:1884`;
+      try {
+        const backendOrigin = new URL(
+          rawBackend,
+          typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"
+        );
+        const isBackendHttps = backendOrigin.protocol === "https:" || isHttps;
+        const wsProtocol = isBackendHttps ? "wss:" : "ws:";
+        const isLocalhost =
+          backendOrigin.hostname === "localhost" ||
+          backendOrigin.hostname === "127.0.0.1";
+
+        if (isLocalhost) {
+          if (process.env.NEXT_PUBLIC_MQTT_USE_SSL === "true" || isHttps) {
+            mqttUrl = `wss://${backendOrigin.hostname}:8884`;
+          } else {
+            mqttUrl = `ws://${backendOrigin.hostname}:${backendOrigin.port || "3000"}/mqtt`;
+          }
+        } else {
+          // Môi trường Cloud (Render, Vercel, VPS):
+          // Luôn kết nối qua path /mqtt trên domain backend chính (chuẩn cổng 443 / HTTPS, chống bị chặn cổng phụ)
+          mqttUrl = `${wsProtocol}//${backendOrigin.host}/mqtt`;
+        }
+      } catch {
+        mqttUrl = isHttps ? "wss://localhost:8884" : "ws://localhost:1884";
       }
     } else if (isHttps && mqttUrl.startsWith("ws://")) {
       // Tự động nâng cấp sang wss:// trên môi trường HTTPS để tránh lỗi Mixed Content chặn kết nối
@@ -103,14 +125,20 @@ class MqttChatClient {
     const isSecure = mqttUrl.startsWith("wss://");
     const clientId = `web_${userId}_${Math.random().toString(16).slice(2, 8)}`;
 
-    this.client = mqtt.connect(mqttUrl, {
+    let finalConnectUrl = mqttUrl;
+    if (token) {
+      const sep = finalConnectUrl.includes("?") ? "&" : "?";
+      finalConnectUrl = `${finalConnectUrl}${sep}token=${encodeURIComponent(token)}`;
+    }
+
+    this.client = mqtt.connect(finalConnectUrl, {
       clientId,
       username: userId,
       password: token || undefined,
       protocolVersion: 4,
       clean: true,
-      reconnectPeriod: 3000,
-      connectTimeout: 10000,
+      reconnectPeriod: 5000,
+      connectTimeout: 8000,
       rejectUnauthorized: process.env.NODE_ENV === "production",
     });
 
@@ -233,8 +261,17 @@ class MqttChatClient {
       }
     });
 
+    let lastErrorLogTime = 0;
     this.client.on("error", (err) => {
-      console.warn("⚠️ [MQTT] Lỗi kết nối MQTT:", err.message);
+      const now = Date.now();
+      if (now - lastErrorLogTime > 15000) {
+        lastErrorLogTime = now;
+        console.warn(
+          "⚠️ [MQTT] Trạng thái kết nối MQTT:",
+          err.message,
+          "- Hệ thống tự động sử dụng Socket.IO làm kênh đồng bộ thời gian thực an toàn."
+        );
+      }
       if (
         isSecure &&
         (err.message.includes("CERT") ||

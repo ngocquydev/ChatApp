@@ -226,4 +226,14 @@ describe('MqttBrokerService (TLS & Security)', () => {
       expect(isAllowed).toBe(false);
     });
   });
+
+  describe('attachHttpServer', () => {
+    it('gắn listener upgrade cho path /mqtt vào HTTP server chính', () => {
+      const mockServer = {
+        on: vi.fn(),
+      };
+      service.attachHttpServer(mockServer as any);
+      expect(mockServer.on).toHaveBeenCalledWith('upgrade', expect.any(Function));
+    });
+  });
 });

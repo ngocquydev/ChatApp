@@ -208,7 +208,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     // 1. KẾT NỐI MQTT OVER WEBSOCKET BROKER (PROTOCOL BUFFERS BINARY CHAT)
-    mqttChatClient.connect("", currentUserId);
+    const token = useAuthStore.getState().accessToken || "";
+    mqttChatClient.connect(token, currentUserId);
     const isMqtt = mqttChatClient.getIsConnected();
     if (get().isMqttConnected !== isMqtt) {
       set({ isMqttConnected: isMqtt });

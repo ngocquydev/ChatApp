@@ -28,12 +28,14 @@ export interface UserProfile {
 
 export interface AuthState {
   user: UserProfile | null;
+  accessToken: string | null;
   isAuthenticated: boolean;
   isCheckingAuth: boolean;
   isLoggingIn: boolean;
   isGoogleLoading: boolean;
   isFacebookLoading: boolean;
   setAuth: (user: UserProfile | null) => void;
+  setAccessToken: (token: string | null) => void;
   checkAuth: () => Promise<unknown>;
   loginfirebase: (idToken: string) => Promise<unknown>;
   loginWithGoogle: () => Promise<unknown>;
@@ -109,6 +111,7 @@ let checkAuthPromise: Promise<unknown> | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
+  accessToken: null,
   isAuthenticated: false,
   isCheckingAuth: true,
   isLoggingIn: false,
@@ -121,6 +124,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user,
       isAuthenticated: !!user,
     });
+  },
+
+  setAccessToken: (token) => {
+    set({ accessToken: token });
   },
 
   checkAuth: async () => {
@@ -189,10 +196,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const profile =
         res.data?.profile || (await api.get("/auth/profile")).data?.profile;
+      const accessToken = (res.data?.accessToken as string) || null;
 
       persistStoredUser(profile);
       set({
         user: profile,
+        accessToken,
         isAuthenticated: true,
       });
 
@@ -239,10 +248,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const res = await api.post("/auth/login", body);
       const profile =
         res.data?.profile || (await api.get("/auth/profile")).data?.profile;
+      const accessToken = (res.data?.accessToken as string) || null;
 
       persistStoredUser(profile);
       set({
         user: profile,
+        accessToken,
         isAuthenticated: true,
       });
 
@@ -262,10 +273,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log(res);
       const profile =
         res.data?.profile || (await api.get("/auth/profile")).data?.profile;
+      const accessToken = (res.data?.accessToken as string) || null;
 
       persistStoredUser(profile);
       set({
         user: profile,
+        accessToken,
         isAuthenticated: true,
       });
 
@@ -324,6 +337,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       set({
         user: null,
+        accessToken: null,
         isAuthenticated: false,
       });
     }

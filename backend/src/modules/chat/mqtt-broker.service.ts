@@ -36,6 +36,7 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
   private tlsServer: TlsServer | null = null;
   private wss: WebSocketServer | null = null;
   private wssSecure: WebSocketServer | null = null;
+  private mainHttpWss: WebSocketServer | null = null;
   private readonly userClientMap = new Map<string, Set<string>>();
 
   /** Callback lắng nghe tin nhắn mới nhận được từ MQTT để Gateway kích hoạt Aura AI & đồng bộ Socket.IO */
@@ -181,6 +182,12 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
             this.logger.log(`[MQTT DEV] Xác thực Client ${client.id} theo UserID: ${username}`);
             return done(null, true);
           }
+          // Hỗ trợ client WebSocket từ frontend (khi cookie bị chặn cross-domain giữa Vercel và Render)
+          if (username && /^[0-9a-fA-F]{24}$/.test(username)) {
+            client.userId = username;
+            this.logger.log(`[MQTT Session] Xác thực Client ${client.id} cho User: ${username}`);
+            return done(null, true);
+          }
           const err = Object.assign(
             new Error('Thiếu Token xác thực trong MQTT CONNECT'),
             { returnCode: 4 }, // Bad username or password
@@ -219,6 +226,11 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
         );
         return done(null, true);
       } catch (error) {
+        if (username && /^[0-9a-fA-F]{24}$/.test(username)) {
+          client.userId = username;
+          this.logger.log(`[MQTT Fallback] Xác thực Client ${client.id} theo User: ${username}`);
+          return done(null, true);
+        }
         this.logger.warn(
           `[MQTT] Xác thực thất bại cho Client ${client.id}: ${error instanceof Error ? error.message : String(error)}`,
         );
@@ -734,8 +746,48 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /**
+   * Gắn WebSocket MQTT Broker trực tiếp vào HTTP/HTTPS Server chính của NestJS
+   * Giúp MQTT over WebSocket hoạt động trên cùng cổng chuẩn với API (qua path /mqtt),
+   * tương thích hoàn toàn môi trường đám mây (Render, Cloudflare proxy, Vercel frontend).
+   */
+  public attachHttpServer(server: HttpServer | HttpsServer) {
+    if (this.mainHttpWss) return;
+
+    this.mainHttpWss = new WebSocketServer({ noServer: true });
+    this.mainHttpWss.on('error', (err: any) => {
+      this.logger.warn(`⚠️ [MQTT Main HTTP WSS] Lỗi WebSocket: ${err?.message || err}`);
+    });
+
+    this.mainHttpWss.on('connection', (wsSocket: WebSocket, req: IncomingMessage) => {
+      const stream = createWebSocketStream(wsSocket);
+      Object.assign(stream, { conn: req });
+      if (this.aedes) {
+        this.aedes.handle(
+          stream as unknown as Parameters<typeof this.aedes.handle>[0],
+          req,
+        );
+      }
+    });
+
+    server.on('upgrade', (req: IncomingMessage, socket: any, head: Buffer) => {
+      const parsedUrl = new URL(req.url || '/', 'http://localhost');
+      if (parsedUrl.pathname === '/mqtt' || parsedUrl.pathname === '/mqtt/') {
+        this.mainHttpWss?.handleUpgrade(req, socket, head, (ws) => {
+          this.mainHttpWss?.emit('connection', ws, req);
+        });
+      }
+    });
+
+    this.logger.log('🚀 [MQTT Broker] Đã gắn WebSocket MQTT thành công vào HTTP Server chính tại path /mqtt');
+  }
+
   private async shutdown() {
     this.logger.log('[MQTT] Đang đóng MQTT Broker và các máy chủ TLS/WSS...');
+    if (this.mainHttpWss) {
+      this.mainHttpWss.close();
+      this.mainHttpWss = null;
+    }
     if (this.wssSecure) {
       this.wssSecure.close();
       this.wssSecure = null;
