@@ -125,13 +125,11 @@ class MqttChatClient {
     const isSecure = mqttUrl.startsWith("wss://");
     const clientId = `web_${userId}_${Math.random().toString(16).slice(2, 8)}`;
 
-    let finalConnectUrl = mqttUrl;
-    if (token) {
-      const sep = finalConnectUrl.includes("?") ? "&" : "?";
-      finalConnectUrl = `${finalConnectUrl}${sep}token=${encodeURIComponent(token)}`;
-    }
-
-    this.client = mqtt.connect(finalConnectUrl, {
+    // TUYỆT ĐỐI KHÔNG truyền token qua URL query (?token=...) để bảo mật theo chuẩn OWASP A03 / CWE-598
+    // Token được truyền an toàn qua:
+    // 1. MQTT CONNECT packet (password)
+    // 2. HTTP Upgrade Headers (Authorization: Bearer <token>, X-Auth-Token)
+    this.client = mqtt.connect(mqttUrl, {
       clientId,
       username: userId,
       password: token || undefined,
@@ -140,6 +138,14 @@ class MqttChatClient {
       reconnectPeriod: 5000,
       connectTimeout: 8000,
       rejectUnauthorized: process.env.NODE_ENV === "production",
+      wsOptions: {
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+              "X-Auth-Token": token,
+            }
+          : undefined,
+      },
     });
 
     this.client.on("connect", () => {

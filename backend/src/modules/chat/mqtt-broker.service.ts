@@ -153,24 +153,59 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
       try {
         let token = password ? password.toString('utf-8') : '';
 
-        // Fallback: Tìm trong cookie hoặc query param của WebSocket handshake request
+        // Trích xuất token xác thực bảo mật từ Headers, Cookie hoặc handshake request
         const clientConn = client.conn as unknown as
           | { req?: IncomingMessage; conn?: IncomingMessage }
           | undefined;
         const req: IncomingMessage | undefined =
           client.req || clientConn?.req || clientConn?.conn;
+
         if (!token && req) {
-          // Trích từ cookie
-          const cookieHeader = req.headers?.cookie;
-          if (cookieHeader) {
-            const match = cookieHeader.match(/accessToken=([^;]+)/);
-            if (match) token = match[1];
+          // 1. Ưu tiên trích xuất từ HTTP Authorization header (Bearer <token>)
+          const authHeader = req.headers?.authorization || (req.headers as Record<string, string | undefined>)?.Authorization;
+          if (typeof authHeader === 'string' && authHeader.trim()) {
+            const trimmed = authHeader.trim();
+            token = trimmed.startsWith('Bearer ') ? trimmed.slice(7).trim() : trimmed;
           }
 
-          // Trích từ query param: wss://localhost:8884?token=... hoặc ws://...
+          // 2. Trích xuất từ x-auth-token hoặc x-access-token header
+          if (!token) {
+            const xAuth = req.headers?.['x-auth-token'] || req.headers?.['x-access-token'];
+            if (typeof xAuth === 'string' && xAuth.trim()) {
+              token = xAuth.trim();
+            }
+          }
+
+          // 3. Trích xuất từ Sec-WebSocket-Protocol (ví dụ: ['mqtt', 'bearer.<token>'])
+          if (!token && req.headers?.['sec-websocket-protocol']) {
+            const protoHeader = req.headers['sec-websocket-protocol'];
+            const protos = Array.isArray(protoHeader) ? protoHeader : protoHeader.split(',');
+            for (const p of protos) {
+              const trimmed = p.trim();
+              if (trimmed.startsWith('bearer.')) {
+                token = trimmed.slice(7).trim();
+                break;
+              }
+            }
+          }
+
+          // 4. Trích từ HttpOnly Cookie
+          if (!token) {
+            const cookieHeader = req.headers?.cookie;
+            if (cookieHeader) {
+              const match = cookieHeader.match(/(?:accessToken|token|jwt)=([^;]+)/);
+              if (match) token = decodeURIComponent(match[1]);
+            }
+          }
+
+          // 5. Dự phòng tương thích ngược từ query parameter nếu có
           if (!token && req.url) {
-            const urlObj = new URL(req.url, 'http://localhost');
-            token = urlObj.searchParams.get('token') || '';
+            try {
+              const urlObj = new URL(req.url, 'http://localhost');
+              token = urlObj.searchParams.get('token') || '';
+            } catch {
+              // Bỏ qua lỗi parse URL
+            }
           }
         }
 
@@ -754,7 +789,15 @@ export class MqttBrokerService implements OnModuleInit, OnModuleDestroy {
   public attachHttpServer(server: HttpServer | HttpsServer) {
     if (this.mainHttpWss) return;
 
-    this.mainHttpWss = new WebSocketServer({ noServer: true });
+    this.mainHttpWss = new WebSocketServer({
+      noServer: true,
+      handleProtocols: (protocols: Set<string> | string[]) => {
+        const protoList = Array.isArray(protocols) ? protocols : Array.from(protocols);
+        if (protoList.includes('mqtt')) return 'mqtt';
+        if (protoList.includes('mqttv3.1')) return 'mqttv3.1';
+        return protoList[0] || false;
+      },
+    });
     this.mainHttpWss.on('error', (err: any) => {
       this.logger.warn(`⚠️ [MQTT Main HTTP WSS] Lỗi WebSocket: ${err?.message || err}`);
     });

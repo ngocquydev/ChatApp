@@ -43,6 +43,7 @@ const runInDetachedContext = AsyncLocalStorage.snapshot();
     },
     credentials: true,
   },
+  destroyUpgrade: false,
 })
 export class ChatGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
