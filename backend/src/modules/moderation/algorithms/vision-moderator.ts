@@ -1,5 +1,4 @@
-import jpeg from "jpeg-js";
-import { PNG } from "pngjs";
+import { preprocessImageForModeration } from "../utils/image-preprocessor.util.js";
 
 /**
  * Vision Moderation Model (ResNet / Vision Transformer - ViT Representation & Heuristics)
@@ -117,80 +116,57 @@ export class VisionModerator {
       violenceScore = 0.88;
     }
 
-    // Fast & Accurate Skin Tone & Nudity Detection on Decoded Pixels
+    // Fast & Accurate Skin Tone & Nudity Detection on Decoded Pixels (JPEG, PNG, GIF, WebP)
     if (meta.buffer && meta.buffer.length > 32) {
       const buf = meta.buffer;
-      let pixelData: Uint8Array | Buffer | null = null;
-      let totalPixels = 0;
+      const preprocessed = preprocessImageForModeration(buf);
+      let maxSkinRatio = 0;
 
-      // 1. JPEG decoding (starts with 0xFF, 0xD8, 0xFF)
-      if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
-        try {
-          const decoded = jpeg.decode(buf, { useTArray: true, maxMemoryUsageInMB: 64 });
-          if (decoded?.data && decoded.width > 0 && decoded.height > 0) {
-            pixelData = decoded.data;
-            totalPixels = decoded.width * decoded.height;
+      if (preprocessed.frames.length > 0) {
+        // Quét từng frame (đặc biệt hiệu quả cho ảnh GIF động nhiều frames)
+        for (const frame of preprocessed.frames) {
+          const pixelData = frame.rgba;
+          const totalPixels = frame.width * frame.height;
+          let skinSamples = 0;
+          let totalSamples = 0;
+
+          const stepPixels = Math.max(1, Math.floor(totalPixels / 15000));
+          const stepBytes = stepPixels * 4;
+
+          for (let i = 0; i < pixelData.length - 3; i += stepBytes) {
+            const r = pixelData[i];
+            const g = pixelData[i + 1];
+            const b = pixelData[i + 2];
+            const a = pixelData[i + 3];
+
+            if (a !== undefined && a < 50) continue;
+            totalSamples++;
+
+            const cb = -0.168736 * r - 0.331264 * g + 0.5 * b + 128;
+            const cr = 0.5 * r - 0.418688 * g - 0.081312 * b + 128;
+
+            const isSkin =
+              (cb >= 77 && cb <= 127 && cr >= 133 && cr <= 173) ||
+              (r > 95 &&
+                g > 40 &&
+                b > 20 &&
+                Math.max(r, g, b) - Math.min(r, g, b) > 15 &&
+                Math.abs(r - g) > 15 &&
+                r > g &&
+                r > b);
+
+            if (isSkin) skinSamples++;
           }
-        } catch {
-          // Lỗi giải mã JPEG - bỏ qua để fallback
-        }
-      }
-      // 2. PNG decoding (starts with 0x89, 0x50, 0x4E, 0x47)
-      else if (
-        buf.length >= 8 &&
-        buf[0] === 0x89 &&
-        buf[1] === 0x50 &&
-        buf[2] === 0x4e &&
-        buf[3] === 0x47
-      ) {
-        try {
-          const png = PNG.sync.read(buf);
-          if (png?.data && png.width > 0 && png.height > 0) {
-            pixelData = png.data;
-            totalPixels = png.width * png.height;
+
+          const ratio = totalSamples > 0 ? skinSamples / totalSamples : 0;
+          if (ratio > maxSkinRatio) {
+            maxSkinRatio = ratio;
           }
-        } catch {
-          // Lỗi giải mã PNG - bỏ qua để fallback
-        }
-      }
-
-      let skinSamples = 0;
-      let totalSamples = 0;
-
-      if (pixelData && totalPixels > 0) {
-        // Lấy mẫu đều tới ~15,000 pixels để đảm bảo tốc độ cực nhanh (<5ms)
-        const stepPixels = Math.max(1, Math.floor(totalPixels / 15000));
-        const stepBytes = stepPixels * 4;
-
-        for (let i = 0; i < pixelData.length - 3; i += stepBytes) {
-          const r = pixelData[i];
-          const g = pixelData[i + 1];
-          const b = pixelData[i + 2];
-          const a = pixelData[i + 3];
-
-          // Bỏ qua pixel trong suốt
-          if (a !== undefined && a < 50) continue;
-
-          totalSamples++;
-
-          // Dual YCbCr & RGB Skin Tone Classifier
-          const cb = -0.168736 * r - 0.331264 * g + 0.5 * b + 128;
-          const cr = 0.5 * r - 0.418688 * g - 0.081312 * b + 128;
-
-          const isSkin =
-            (cb >= 77 && cb <= 127 && cr >= 133 && cr <= 173) ||
-            (r > 95 &&
-              g > 40 &&
-              b > 20 &&
-              Math.max(r, g, b) - Math.min(r, g, b) > 15 &&
-              Math.abs(r - g) > 15 &&
-              r > g &&
-              r > b);
-
-          if (isSkin) skinSamples++;
         }
       } else {
         // Fallback cho raw synthetic buffer trong unit test
+        let skinSamples = 0;
+        let totalSamples = 0;
         const step = Math.max(3, Math.floor(buf.length / 500));
         for (let i = 0; i < buf.length - 3; i += step) {
           const r = buf[i];
@@ -209,16 +185,16 @@ export class VisionModerator {
 
           if (isSkin) skinSamples++;
         }
+        maxSkinRatio = totalSamples > 0 ? skinSamples / totalSamples : 0;
       }
 
-      const skinRatio = totalSamples > 0 ? skinSamples / totalSamples : 0;
-      if (skinRatio >= 0.4) {
+      if (maxSkinRatio >= 0.4) {
         adultScore = Math.max(adultScore, 0.96);
         racyScore = Math.max(racyScore, 0.95);
-      } else if (skinRatio >= 0.25) {
+      } else if (maxSkinRatio >= 0.25) {
         adultScore = Math.max(adultScore, 0.65);
         racyScore = Math.max(racyScore, 0.85);
-      } else if (skinRatio >= 0.15) {
+      } else if (maxSkinRatio >= 0.15) {
         racyScore = Math.max(racyScore, 0.55);
       }
     }

@@ -7,7 +7,7 @@ FROM node:22-alpine AS dev
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++ dumb-init
+RUN apk add --no-cache python3 make g++ aws-cli libwebp-tools dumb-init aws-cli libwebp-tools
 
 COPY package*.json ./
 RUN npm install
@@ -31,7 +31,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Cài đặt công cụ biên dịch cho các module C++ native (như bcrypt)
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ aws-cli libwebp-tools
 
 COPY package*.json ./
 RUN npm install
@@ -48,7 +48,7 @@ FROM node:22-alpine AS prod-deps
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ aws-cli libwebp-tools
 
 COPY package*.json ./
 RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force

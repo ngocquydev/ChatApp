@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RekognitionClient, DetectModerationLabelsCommand } from '@aws-sdk/client-rekognition';
 import type { RekognitionModerationResult, RekognitionModerationLabel } from './aws-storage.interface.js';
+import { getAwsCredentials } from './aws-credentials.util.js';
+import { preprocessImageForModeration } from '../moderation/utils/image-preprocessor.util.js';
 
 @Injectable()
 export class AwsRekognitionService {
@@ -15,6 +17,11 @@ export class AwsRekognitionService {
     try {
       this.rekognitionClient = new RekognitionClient({
         region: this.region,
+        credentials: () => {
+          const creds = getAwsCredentials();
+          if (!creds) throw new Error('No AWS credentials found');
+          return Promise.resolve(creds);
+        },
       });
       this.configured = Boolean(this.region);
       if (this.configured) {
@@ -33,6 +40,7 @@ export class AwsRekognitionService {
 
   /**
    * Quét và phân loại nội dung hình ảnh bằng Amazon Rekognition
+   * Tự động tiền xử lý GIF động, WebP, PNG và JPEG để Rekognition không bị từ chối định dạng.
    */
   async detectModeration(
     buffer: Buffer,
@@ -48,6 +56,56 @@ export class AwsRekognitionService {
       };
     }
 
+    try {
+      // 1. Chuẩn hóa hình ảnh: Chuyển GIF/WebP thành các frames JPEG/PNG chuẩn
+      const preprocessed = preprocessImageForModeration(buffer);
+      const buffersToScan: Buffer[] = [];
+
+      if (preprocessed.frames.length > 0) {
+        for (const frame of preprocessed.frames) {
+          buffersToScan.push(frame.rekognitionBuffer);
+        }
+      } else {
+        buffersToScan.push(buffer);
+      }
+
+      let worstResult: RekognitionModerationResult = {
+        isUnsafe: false,
+        action: 'ALLOW',
+        adultScore: 0,
+        violenceScore: 0,
+        labels: [],
+      };
+
+      // 2. Quét từng frame với Amazon Rekognition
+      for (const scanBuffer of buffersToScan) {
+        const frameResult = await this.scanSingleBuffer(scanBuffer, minConfidence);
+        if (frameResult.action === 'BLOCK') {
+          return frameResult; // Chặn ngay lập tức nếu bất kỳ frame nào vi phạm 18+
+        }
+        if (frameResult.adultScore > worstResult.adultScore) {
+          worstResult = frameResult;
+        }
+      }
+
+      return worstResult;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Lỗi khi gọi Amazon Rekognition detect-moderation: ${message}`);
+      return {
+        isUnsafe: false,
+        action: 'ALLOW',
+        adultScore: 0,
+        violenceScore: 0,
+        labels: [],
+      };
+    }
+  }
+
+  private async scanSingleBuffer(
+    buffer: Buffer,
+    minConfidence: number,
+  ): Promise<RekognitionModerationResult> {
     try {
       const command = new DetectModerationLabelsCommand({
         Image: {
@@ -137,8 +195,7 @@ export class AwsRekognitionService {
       };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.error(`Lỗi khi gọi Amazon Rekognition detect-moderation: ${message}`);
-      // Lỗi Rekognition không làm sập ứng dụng, để fallback sang local vision moderator
+      this.logger.warn(`Lỗi scanSingleBuffer Amazon Rekognition: ${message}`);
       return {
         isUnsafe: false,
         action: 'ALLOW',

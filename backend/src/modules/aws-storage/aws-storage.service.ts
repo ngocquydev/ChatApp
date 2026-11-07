@@ -4,6 +4,7 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand, CopyObjectCommand } fr
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 import type { S3UploadOptions, S3UploadResult } from './aws-storage.interface.js';
+import { getAwsCredentials } from './aws-credentials.util.js';
 
 @Injectable()
 export class AwsStorageService {
@@ -22,6 +23,11 @@ export class AwsStorageService {
     try {
       this.s3Client = new S3Client({
         region: this.region,
+        credentials: () => {
+          const creds = getAwsCredentials();
+          if (!creds) throw new Error('No AWS credentials found');
+          return Promise.resolve(creds);
+        },
       });
       this.configured = Boolean(this.bucketName && this.region);
       if (this.configured) {

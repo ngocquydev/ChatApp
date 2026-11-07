@@ -76,5 +76,30 @@ describe('AwsRekognitionService', () => {
     expect(result.action).toBe('ALLOW');
     expect(result.isUnsafe).toBe(false);
   });
+
+  it('detectModeration: tự động trích xuất frame từ GIF động và chặn nếu phát hiện nhãn 18+', async () => {
+    mockSend.mockResolvedValueOnce({
+      ModerationLabels: [
+        {
+          Name: 'Exposed Female Genitalia',
+          ParentName: 'Explicit Nudity',
+          Confidence: 96.0,
+        },
+      ],
+    });
+
+    // Tạo GIF hợp lệ 2x2
+    const gifHeader = Buffer.from([
+      0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x02, 0x00, 0x02, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0xff, 0xff, 0xff, 0x2c, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x02,
+      0x02, 0x44, 0x01, 0x00, 0x3b,
+    ]);
+
+    const result = await service.detectModeration(gifHeader);
+
+    expect(result.action).toBe('BLOCK');
+    expect(result.isUnsafe).toBe(true);
+    expect(result.adultScore).toBeGreaterThanOrEqual(0.9);
+  });
 });
 
