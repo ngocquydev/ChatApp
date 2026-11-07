@@ -241,5 +241,45 @@ describe("Moderation & Trust Module (Hỗ trợ song ngữ VI / EN)", () => {
       expect(res.action).toBe("BLOCK");
       expect(res.detectedCategories).toContain("VIOLENCE_GORE");
     });
+
+    it("phải phát hiện hình ảnh 18+ tiếng Việt và chặn bài viết", async () => {
+      const res = await vision.scanImage(
+        {
+          url: "https://res.cloudinary.com/demo/image/upload/anh_nong_18plus_khieu_dam.jpg",
+        },
+        "vi",
+      );
+
+      expect(res.language).toBe("vi");
+      expect(res.isSafe).toBe(false);
+      expect(res.action).toBe("BLOCK");
+      expect(res.scores.adult).toBeGreaterThanOrEqual(0.8);
+      expect(res.reason).toContain("Hình ảnh bị chặn");
+    });
+
+    it("phải phát hiện ảnh nhạy cảm gợi cảm (racy/bikini) và chuyển cờ FLAG_REVIEW", async () => {
+      const res = await vision.scanImage(
+        {
+          url: "https://res.cloudinary.com/demo/image/upload/summer_bikini_swimsuit.jpg",
+        },
+        "vi",
+      );
+
+      expect(res.action).toBe("FLAG_REVIEW");
+      expect(res.scores.racy).toBeGreaterThanOrEqual(0.7);
+    });
+
+    it("phải phát hiện buffer có tỷ lệ da người cao (skin tone) để nhận diện ảnh 18+", async () => {
+      const skinBuffer = Buffer.alloc(300);
+      for (let i = 0; i < skinBuffer.length; i += 3) {
+        skinBuffer[i] = 200;
+        skinBuffer[i + 1] = 140;
+        skinBuffer[i + 2] = 100;
+      }
+
+      const res = await vision.scanImage({ buffer: skinBuffer }, "vi");
+      expect(res.scores.adult).toBeGreaterThanOrEqual(0.8);
+      expect(res.action).toBe("BLOCK");
+    });
   });
 });

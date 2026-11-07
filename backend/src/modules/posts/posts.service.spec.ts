@@ -120,6 +120,80 @@ describe('PostsService', () => {
       );
       expect(postModel.create).not.toHaveBeenCalled();
     });
+
+    it('chặn đăng bài viết nếu chứa ảnh 18+ / khiêu dâm', async () => {
+      const mockModerationService = {
+        moderateText: vi.fn().mockReturnValue({ action: 'ALLOW', toxicityScore: 0, flags: [] }),
+        moderateImage: vi.fn().mockResolvedValue({
+          action: 'BLOCK',
+          scores: { adult: 0.95, violence: 0.05, racy: 0.9 },
+          reason: 'Hình ảnh bị chặn do vi phạm tiêu chuẩn nghiêm trọng về an toàn nội dung (18+ / khiêu dâm).',
+        }),
+      };
+      const svc = new PostsService(
+        postModel as unknown as never,
+        likeModel as unknown as never,
+        commentModel as unknown as never,
+        friendshipModel as unknown as never,
+        usersService as unknown as never,
+        mockModerationService as unknown as never,
+      );
+
+      await expect(
+        svc.createPost(me, {
+          content: 'Ảnh nhạy cảm',
+          images: ['https://example.com/nsfw_adult_xxx.jpg'],
+          privacy: 'public',
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(postModel.create).not.toHaveBeenCalled();
+    });
+
+    it('tự động đánh dấu isSensitive = true nếu ảnh có dấu hiệu nhạy cảm (FLAG_REVIEW)', async () => {
+      const mockModerationService = {
+        moderateText: vi.fn().mockReturnValue({ action: 'ALLOW', toxicityScore: 0, flags: [] }),
+        moderateImage: vi.fn().mockResolvedValue({
+          action: 'FLAG_REVIEW',
+          scores: { adult: 0.6, violence: 0.05, racy: 0.8 },
+          reason: 'Hình ảnh có dấu hiệu nhạy cảm (18+ / gợi cảm)',
+        }),
+      };
+      const createdDoc = {
+        _id: oid(),
+        authorId: oid(),
+        content: 'Bài viết có ảnh gợi cảm',
+        images: ['https://example.com/bikini_model.jpg'],
+        privacy: 'public',
+        isSensitive: true,
+        moderationStatus: 'flagged',
+        isDeleted: false,
+      };
+      postModel.create.mockResolvedValue(createdDoc);
+      postModel.findOne.mockReturnValue(q(createdDoc));
+      usersService.findByIds.mockResolvedValue([{ _id: me, name: 'Tôi' }]);
+
+      const svc = new PostsService(
+        postModel as unknown as never,
+        likeModel as unknown as never,
+        commentModel as unknown as never,
+        friendshipModel as unknown as never,
+        usersService as unknown as never,
+        mockModerationService as unknown as never,
+      );
+
+      await svc.createPost(me, {
+        content: 'Bài viết có ảnh gợi cảm',
+        images: ['https://example.com/bikini_model.jpg'],
+        privacy: 'public',
+      });
+
+      expect(postModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isSensitive: true,
+          moderationStatus: 'flagged',
+        }),
+      );
+    });
   });
 
   describe('deletePost', () => {

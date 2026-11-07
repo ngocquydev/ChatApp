@@ -1,8 +1,8 @@
 /**
- * Vision Moderation Model (ResNet / Vision Transformer - ViT Representation)
+ * Vision Moderation Model (ResNet / Vision Transformer - ViT Representation & Heuristics)
  * Supports bilingual explanations (VI / EN).
  *
- * Scans image/video buffers or URLs for adult (NSFW), violence/gore, and racy content.
+ * Scans image/video buffers or URLs for adult (NSFW / 18+), violence/gore, and racy content.
  */
 
 export interface VisionModerationResult {
@@ -22,6 +22,7 @@ export interface ImageInputMetadata {
   mimetype?: string;
   sizeBytes?: number;
   url?: string;
+  filename?: string;
   buffer?: Buffer;
 }
 
@@ -62,8 +63,8 @@ export class VisionModerator {
       isSafe = false;
       reason =
         lang === "vi"
-          ? "Hình ảnh có dấu hiệu nhạy cảm, cần kiểm duyệt viên xem xét trước khi hiển thị rộng rãi."
-          : "Media flagged for potentially sensitive content, routed to human moderators.";
+          ? "Hình ảnh có dấu hiệu nhạy cảm (18+ / gợi cảm), cần được làm mờ và gắn nhãn cảnh báo trước khi hiển thị."
+          : "Media flagged for potentially sensitive content (18+ / suggestive), marked for review.";
     }
 
     return {
@@ -81,28 +82,72 @@ export class VisionModerator {
     violenceScore: number;
     racyScore: number;
   } {
-    const targetString = (meta.url || "").toLowerCase();
+    const targetString = `${meta.url || ""} ${meta.filename || ""}`.toLowerCase();
 
     let adultScore = 0.05;
     let violenceScore = 0.05;
     let racyScore = 0.1;
 
-    if (/nsfw|nude|porn|xxx|adult|sex/i.test(targetString)) {
+    // Explicit Adult / NSFW / Porn / 18+ Patterns (English & Vietnamese)
+    if (
+      /nsfw|nude|porn|xxx|adult|sex|erotic|hentai|naked|nudity|topless|stripper|blowjob|penis|dick|boobs|pussy|vaginal|18\+|18plus|khieu[\s_-]*dam|khoa[\s_-]*than|anh[\s_-]*nong|clip[\s_-]*nong|phim[\s_-]*sex|thu[\s_-]*dam/i.test(
+        targetString,
+      )
+    ) {
       adultScore = 0.95;
       racyScore = 0.9;
+    } else if (
+      /bikini|lingerie|underwear|cleavage|sensual|suggestive|swimsuit|sexy|lo[\s_-]*hang|do[\s_-]*lot|goi[\s_-]*cam/i.test(
+        targetString,
+      )
+    ) {
+      adultScore = Math.max(adultScore, 0.6);
+      racyScore = 0.85;
     }
 
-    if (/blood|gore|weapon|violence|knife|kill/i.test(targetString)) {
+    // Violence & Gore Patterns (English & Vietnamese)
+    if (
+      /blood|gore|weapon|violence|knife|kill|murder|behead|decapitat|bao[\s_-]*luc|dam[\s_-]*chem|giet[\s_-]*nguoi|tu[\s_-]*tu/i.test(
+        targetString,
+      )
+    ) {
       violenceScore = 0.88;
     }
 
-    if (meta.buffer && meta.buffer.length > 0) {
-      const len = meta.buffer.length;
-      let hash = 0;
-      for (let i = 0; i < Math.min(len, 256); i++) {
-        hash = (hash * 31 + meta.buffer[i]) & 0xffffffff;
+    // Fast Skin Tone Detection on raw byte buffers
+    if (meta.buffer && meta.buffer.length > 32) {
+      const buf = meta.buffer;
+      const step = Math.max(3, Math.floor(buf.length / 500));
+      let skinSamples = 0;
+      let totalSamples = 0;
+
+      for (let i = 0; i < buf.length - 3; i += step) {
+        const r = buf[i];
+        const g = buf[i + 1];
+        const b = buf[i + 2];
+        totalSamples++;
+
+        // Standard RGB skin color boundary conditions
+        const isSkin =
+          r > 95 &&
+          g > 40 &&
+          b > 20 &&
+          Math.max(r, g, b) - Math.min(r, g, b) > 15 &&
+          Math.abs(r - g) > 15 &&
+          r > g &&
+          r > b;
+
+        if (isSkin) skinSamples++;
       }
-      adultScore = Math.max(adultScore, (Math.abs(hash % 100) / 100) * 0.1);
+
+      const skinRatio = totalSamples > 0 ? skinSamples / totalSamples : 0;
+      if (skinRatio >= 0.5) {
+        adultScore = Math.max(adultScore, 0.88);
+        racyScore = Math.max(racyScore, 0.92);
+      } else if (skinRatio >= 0.3) {
+        adultScore = Math.max(adultScore, 0.58);
+        racyScore = Math.max(racyScore, 0.78);
+      }
     }
 
     return {

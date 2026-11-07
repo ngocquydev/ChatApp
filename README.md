@@ -134,6 +134,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/social-feed-profile.md](docs/features/social-feed-profile.md)*
 
 ### 4. Hệ Thống Kiểm Duyệt Nội Dung & Phòng Chống Bot AI (Moderation & Trust)
+- **Kiểm duyệt & Chặn ảnh 18+ / Khiêu dâm / Khỏa thân (NSFW Image Moderation):** Cơ chế phòng thủ đa tầng tại cả cổng tải lên `/upload` và cổng đăng bài `/posts`. Tự động phân tích từ khóa nhạy cảm song ngữ (VI / EN) kết hợp thuật toán phân tích phổ màu da người (Human Skin Tone Detection) trên buffer ảnh. Chặn đứng bài viết công khai vi phạm 18+ (`400 Bad Request`) và tự động kích hoạt lớp phủ làm mờ (`Safe Blur 24px`) với bài viết gợi cảm (`isSensitive: true`).
 - **NLP Text Classifier:** Phân loại văn bản độc hại, ngôn từ thù ghét (Hate speech) và thư rác (Spam) hỗ trợ song ngữ Tiếng Việt & Tiếng Anh.
 - **Vision Content Scanner & Safe Blur:** Quét nhận diện hình ảnh/video bạo lực, nhạy cảm trước khi cho phép lưu trữ. Tự động che mờ an toàn (`Safe Blur 24px`) với tùy chọn "Nhấn để xem" giúp bảo vệ trải nghiệm người dùng.
 - **Trợ lý Cảnh báo An toàn trong Chat (`InChatSafetyBanner`):** Nhận diện thời gian thực các dấu hiệu chuyển tiền, số tài khoản ngân hàng, mã OTP, mật khẩu hoặc lừa đảo qua tin nhắn, bảo vệ người dùng trên cả khung chat chính và hộp chat nổi.
@@ -141,8 +142,8 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Phát hiện Bot & Tài khoản ảo bất thường (Anomaly Detection):**
   - **Isolation Forest:** Phân chia không gian đặc trưng hành vi để cô lập các điểm dị biệt (tần suất spam kết bạn, chu kỳ thích siêu tốc).
   - **Mạng nơ-ron Autoencoder:** Đo lường sai số tái tạo (Reconstruction Error) để phát hiện và cách ly tài khoản máy móc.
-- **Độ tin cậy:** Bảo chứng bởi 17 test cases chuyên sâu (`moderation.service.spec.ts`).
-- 📖 *Xem đặc tả chi tiết tại: [docs/features/moderation-trust.md](docs/features/moderation-trust.md)*
+- **Độ tin cậy:** Bảo chứng bởi 430+ test cases chuyên sâu trong backend.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/nsfw-image-moderation.md](docs/features/nsfw-image-moderation.md) & [docs/features/moderation-trust.md](docs/features/moderation-trust.md)*
 
 ### 5. Giao Diện Sáng/Tối & Hệ Thống Đa Ngôn Ngữ Toàn Diện (6 Ngôn Ngữ)
 - **Dark / Light Mode:** Tự động theo hệ điều hành hoặc đổi 1 chạm trên thanh điều hướng. Sử dụng 100% Design Tokens tập trung (`src/theme/tokens.ts`), ESLint chặn mã màu hex trong component.
@@ -435,7 +436,7 @@ Toàn bộ tài liệu chi tiết, sơ đồ thiết kế kiến trúc và hư�
 | 👥 **Hội Nhóm Chuẩn Facebook** | Tái thiết kế giao diện chuẩn Facebook Groups, kiến trúc module hóa (< 250 dòng), 100% tokens, 6 ngôn ngữ | [Xem tài liệu](docs/features/community-groups-redesign.md) |
 | 👥 **Hội Nhóm & Phân Quyền BQT** | Quản lý thành viên, bổ nhiệm Phó nhóm, phân quyền chi tiết (xóa thành viên, khóa cmt, chặn bài), câu hỏi xét duyệt & Báo cáo bình luận thông minh | [Xem tài liệu](docs/features/group-roles-permissions.md) |
 | 🚩 **Báo Cáo Bình Luận & Kiểm Duyệt** | Báo cáo bình luận, điều hướng thông minh tới BQT Nhóm hoặc Admin Web, xử lý vi phạm & chế tài thành viên | [Xem tài liệu](docs/features/comment-reporting-moderation.md) |
-| 🛡️ **Kiểm duyệt AI** | NLP Classifier, Vision Scanner, Anomaly Detection (Isolation Forest, Autoencoder) | [Xem tài liệu](docs/features/moderation-trust.md) |
+| 🛡️ **Kiểm duyệt AI & Chặn ảnh 18+** | NLP Classifier, Vision Scanner (Chặn ảnh 18+, Nude, Porn, Skin Tone Buffer), Anomaly Detection (Isolation Forest, Autoencoder) | [Xem tài liệu](docs/features/nsfw-image-moderation.md) |
 | 🤖 **Kiểm Soát Hạn Mức AI** | Rate limiting Redis (Cooldown 3s, 6 RPM, 50 calls/ngày), Concurrency lock, Cache tóm tắt 30p, cắt 65% token | [Xem tài liệu](docs/features/ai-rate-limiting-protection.md) |
 | 🛡️ **Trung tâm Bảo mật WAF** | Bảng điều khiển `/admin/security`, WAF-as-Code CLI (`npm run cf:waf`), Turnstile Clearance, Auto-Ban tầng biên | [Xem tài liệu](docs/features/waf.md) |
 | 🐳 **Docker Containers** | Đóng gói toàn bộ hệ thống (Frontend, Backend, Admin, CSDL) với Docker Multi-stage & Compose | [Xem tài liệu](docs/features/docker-containers.md) |

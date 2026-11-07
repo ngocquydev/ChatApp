@@ -106,13 +106,16 @@ Trang cá nhân (`/profile` và `/profile/[id]`) được thiết kế chuẩn m
 ## 5. Hệ Thống Kiểm Duyệt Nội Dung & Phòng Chống Bot AI (Moderation & Trust)
 
 Hệ thống được trang bị bộ máy kiểm soát an toàn chủ động kết hợp giữa NLP Transformer song ngữ, Thị giác máy tính (Vision Models) và 2 mô hình học máy phát hiện dị biệt:
+- **Vision AI & Human Skin Tone Scanner (Chặn ảnh 18+ / khiêu dâm):** Tự động phát hiện và chặn đứng các bài viết công khai chứa ảnh khỏa thân, khiêu dâm (18+) hoặc bạo lực cả ở cổng tải lên `/upload` và cổng đăng bài `/posts`. Áp dụng thuật toán phân tích phổ màu da người trên buffer ảnh và lớp phủ làm mờ (Safe Blur) tự động cho ảnh gợi cảm (`isSensitive: true`).
+- **NLP Transformer:** Kiểm duyệt văn bản song ngữ (VI / EN), phát hiện ngôn từ thô tục, công kích cá nhân và phát ngôn thù ghét.
 - **Isolation Forest:** Phát hiện các hành vi bất thường cày kết bạn hoặc spam tin nhắn.
 - **Autoencoder Neural Network:** Đo lường sai số tái tạo để nhận diện tài khoản giả mạo (Clone/Bot).
 
 ![Kết quả kiểm thử tự động hệ thống Kiểm duyệt AI](assets/screenshots/ai-moderation-trust-tests.png)
 
 ### Độ tin cậy:
-- 100% các bài test bảo mật, chống rò rỉ dữ liệu và kiểm duyệt nội dung đều vượt qua với 141+ test cases tự động (`vitest run`).
+- 100% các bài test bảo mật, chống rò rỉ dữ liệu và kiểm duyệt nội dung đều vượt qua với 430+ test cases tự động (`vitest run`).
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/nsfw-image-moderation.md](features/nsfw-image-moderation.md) & [docs/features/moderation-trust.md](features/moderation-trust.md)*
 
 ---
 

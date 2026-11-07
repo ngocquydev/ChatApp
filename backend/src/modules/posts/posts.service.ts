@@ -584,6 +584,7 @@ export class PostsService {
     }
     let toxicityScore = 0;
     let moderationReason = '';
+    // 1. Kiểm duyệt an toàn văn bản (NLP Transformer)
     if (this.moderationService && content) {
       const modResult = this.moderationService.moderateText(content);
       toxicityScore = modResult.toxicityScore;
@@ -591,6 +592,25 @@ export class PostsService {
         isSensitive = true;
         moderationStatus = 'flagged';
         moderationReason = modResult.reason || modResult.flags.join(', ');
+      }
+    }
+
+    // 2. Kiểm duyệt an toàn hình ảnh (Vision AI - chặn 18+ / khiêu dâm / bạo lực)
+    if (this.moderationService && images.length > 0) {
+      for (const imgUrl of images) {
+        const imgResult = await this.moderationService.moderateImage({ url: imgUrl });
+        if (imgResult.action === 'BLOCK' || imgResult.scores.adult >= 0.8) {
+          throw new BadRequestException(
+            imgResult.reason || 'Bài viết chứa hình ảnh vi phạm tiêu chuẩn cộng đồng về nội dung người lớn (18+).'
+          );
+        }
+        if (imgResult.action === 'FLAG_REVIEW' || imgResult.scores.adult >= 0.5 || imgResult.scores.racy >= 0.7) {
+          isSensitive = true;
+          moderationStatus = 'flagged';
+          moderationReason = moderationReason
+            ? `${moderationReason}; ${imgResult.reason || 'Hình ảnh nhạy cảm cần xem xét'}`
+            : (imgResult.reason || 'Hình ảnh có nội dung nhạy cảm');
+        }
       }
     }
     const created = await this.postModel.create({
@@ -660,16 +680,55 @@ export class PostsService {
       throw new BadRequestException('Bài viết cần có nội dung hoặc ít nhất một ảnh');
     }
 
+    let isSensitive = post.isSensitive ?? false;
+    let moderationStatus = post.moderationStatus ?? 'approved';
+    let moderationReason = post.moderationReason ?? '';
+    let toxicityScore = post.toxicityScore ?? 0;
+
+    if (this.moderationService && content && content !== post.content) {
+      const modResult = this.moderationService.moderateText(content);
+      toxicityScore = modResult.toxicityScore;
+      if (modResult.action === 'BLOCK' || modResult.action === 'FLAG_REVIEW') {
+        isSensitive = true;
+        moderationStatus = 'flagged';
+        moderationReason = modResult.reason || modResult.flags.join(', ');
+      }
+    }
+
+    if (this.moderationService && images.length > 0) {
+      for (const imgUrl of images) {
+        const imgResult = await this.moderationService.moderateImage({ url: imgUrl });
+        if (imgResult.action === 'BLOCK' || imgResult.scores.adult >= 0.8) {
+          throw new BadRequestException(
+            imgResult.reason || 'Bài viết chứa hình ảnh vi phạm tiêu chuẩn cộng đồng về nội dung người lớn (18+).'
+          );
+        }
+        if (imgResult.action === 'FLAG_REVIEW' || imgResult.scores.adult >= 0.5 || imgResult.scores.racy >= 0.7) {
+          isSensitive = true;
+          moderationStatus = 'flagged';
+          moderationReason = moderationReason
+            ? `${moderationReason}; ${imgResult.reason || 'Hình ảnh nhạy cảm cần xem xét'}`
+            : (imgResult.reason || 'Hình ảnh có nội dung nhạy cảm');
+        }
+      }
+    }
+
+    const updateSet: Record<string, unknown> = {
+      content,
+      images,
+      privacy,
+    };
+    if (this.moderationService && (content !== post.content || images !== post.images)) {
+      updateSet.isSensitive = isSensitive;
+      updateSet.moderationStatus = moderationStatus;
+      updateSet.moderationReason = moderationReason;
+      updateSet.toxicityScore = toxicityScore;
+    }
+
     await this.postModel
       .updateOne(
         { _id: post._id },
-        {
-          $set: {
-            content,
-            images,
-            privacy,
-          },
-        },
+        { $set: updateSet },
       )
       .exec();
 
