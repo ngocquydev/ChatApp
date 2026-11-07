@@ -35,3 +35,4 @@ declare module 'omggif' {
 
   export default omggif;
 }
+

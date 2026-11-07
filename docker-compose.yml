@@ -69,9 +69,12 @@ services:
       - FRONTEND_URL=http://localhost:5173
       - ADMIN_URL=http://localhost:5174
       - CORS_ORIGIN=http://localhost:5173,http://localhost:5174
-      - AWS_REGION=ap-southeast-2
-      - AWS_S3_BUCKET_NAME=chatapp-media-703002395048-ap-southeast-2
-      - AWS_PROFILE=default
+      - AWS_REGION=${AWS_REGION:-ap-southeast-2}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-chatapp-media-703002395048-ap-southeast-2}
+      - AWS_PROFILE=${AWS_PROFILE:-default}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
       - TURNSTILE_SECRET=${TURNSTILE_SECRET:-0x4AAAAAAFUR2RRUw7sqoROvHzR6HFexUco}
       - SECRET_KEY_CLOUDFLARE=${SECRET_KEY_CLOUDFLARE:-0x4AAAAAAFUR2RRUw7sqoROvHzR6HFexUco}
       - TURNSTILE_HOSTNAMES=${TURNSTILE_HOSTNAMES:-localhost,127.0.0.1,frontend-blush-seven-zqmn2u56h0.vercel.app}

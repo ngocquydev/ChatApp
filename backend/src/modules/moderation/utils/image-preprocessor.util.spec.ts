@@ -44,3 +44,4 @@ describe('image-preprocessor.util', () => {
     expect(result.frames[0].rekognitionBuffer.length).toBeGreaterThan(0);
   });
 });
+

@@ -40,6 +40,8 @@ export function getAwsCredentials(): AwsCredentialIdentity | null {
     path.join(process.env.HOME || '', '.aws', 'login', 'cache'),
   ];
 
+  let fallbackCache: AwsCredentialIdentity | null = null;
+
   for (const cacheDir of candidateDirs) {
     if (cacheDir && fs.existsSync(cacheDir)) {
       try {
@@ -51,14 +53,18 @@ export function getAwsCredentials(): AwsCredentialIdentity | null {
 
           if (data?.accessToken?.accessKeyId && data?.accessToken?.secretAccessKey) {
             const expTime = new Date(data.accessToken.expiresAt).getTime();
+            const creds: AwsCredentialIdentity = {
+              accessKeyId: data.accessToken.accessKeyId,
+              secretAccessKey: data.accessToken.secretAccessKey,
+              sessionToken: data.accessToken.sessionToken,
+              expiration: new Date(expTime),
+            };
             // Nếu token còn hạn ít nhất 30 giây
             if (expTime - Date.now() > 30_000) {
-              return {
-                accessKeyId: data.accessToken.accessKeyId,
-                secretAccessKey: data.accessToken.secretAccessKey,
-                sessionToken: data.accessToken.sessionToken,
-                expiration: new Date(expTime),
-              };
+              return creds;
+            }
+            if (!fallbackCache) {
+              fallbackCache = creds;
             }
           }
         }
@@ -88,5 +94,10 @@ export function getAwsCredentials(): AwsCredentialIdentity | null {
     logger.debug(`Không thể làm mới credentials qua AWS CLI export-credentials: ${String(err)}`);
   }
 
+  if (fallbackCache) {
+    return fallbackCache;
+  }
+
   return null;
 }
+
