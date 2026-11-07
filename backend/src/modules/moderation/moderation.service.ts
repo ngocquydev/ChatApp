@@ -1,4 +1,5 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit, Optional } from "@nestjs/common";
+import { AwsRekognitionService } from "../aws-storage/aws-rekognition.service.js";
 import {
   IsolationForest,
   type AnomalyPrediction,
@@ -27,6 +28,8 @@ export class ModerationService implements OnModuleInit {
     anomalyThreshold: 0.6,
   });
   private autoencoder: AutoencoderAnomalyDetector | null = null;
+
+  constructor(@Optional() private readonly rekognitionService?: AwsRekognitionService) {}
 
   onModuleInit() {
     this.logger.log("Khởi tạo mô hình Kiểm duyệt & An toàn (Moderation & Trust) - Hỗ trợ song ngữ VI/EN...");
@@ -75,13 +78,51 @@ export class ModerationService implements OnModuleInit {
   }
 
   /**
-   * Quét hình ảnh / video nhạy cảm (Vision ResNet / ViT - hỗ trợ song ngữ VI và EN)
+   * Quét hình ảnh / video nhạy cảm (Vision ResNet / ViT + Amazon Rekognition - hỗ trợ song ngữ VI và EN)
    */
   public async moderateImage(
     meta: ImageInputMetadata,
     lang: "vi" | "en" = "vi",
   ): Promise<VisionModerationResult> {
-    return this.visionModerator.scanImage(meta, lang);
+    // 1. Lớp 1: Fast-Fail tại chỗ (Vision Transformer / Pixel skin tone - Miễn phí & Siêu tốc)
+    const localResult = await this.visionModerator.scanImage(meta, lang);
+    if (localResult.action === "BLOCK") {
+      return localResult;
+    }
+
+    // 2. Lớp 2: Kiểm duyệt chuyên sâu bằng Amazon Rekognition nếu có buffer dữ liệu
+    if (this.rekognitionService?.isConfigured() && meta.buffer && meta.buffer.length > 0) {
+      const rekResult = await this.rekognitionService.detectModeration(meta.buffer);
+      if (rekResult.action === "BLOCK") {
+        return {
+          ...localResult,
+          action: "BLOCK",
+          scores: {
+            ...localResult.scores,
+            adult: Math.max(localResult.scores.adult, rekResult.adultScore),
+            violence: Math.max(localResult.scores.violence, rekResult.violenceScore),
+          },
+          reason:
+            rekResult.reason ||
+            (lang === "vi"
+              ? "Hình ảnh bị chặn do vi phạm tiêu chuẩn cộng đồng về nội dung 18+ / khiêu dâm."
+              : "Image blocked by due to violation of community standards regarding adult/18+ content."),
+        };
+      } else if (rekResult.action === "FLAG_REVIEW") {
+        return {
+          ...localResult,
+          action: "FLAG_REVIEW",
+          scores: {
+            ...localResult.scores,
+            adult: Math.max(localResult.scores.adult, rekResult.adultScore),
+            violence: Math.max(localResult.scores.violence, rekResult.violenceScore),
+          },
+          reason: rekResult.reason || localResult.reason,
+        };
+      }
+    }
+
+    return localResult;
   }
 
   /**

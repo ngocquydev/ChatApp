@@ -4,6 +4,7 @@ import { UsersModule } from '../users/users.module.js';
 import { ModerationModule } from '../moderation/moderation.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { ChatModule } from '../chat/chat.module.js';
+import { AwsStorageModule } from '../aws-storage/aws-storage.module.js';
 import { Friendship, FriendshipSchema } from '../friends/schemas/friendship.schema.js';
 import { Post, PostSchema } from './schemas/post.schema.js';
 import { PostLike, PostLikeSchema } from './schemas/post-like.schema.js';
@@ -26,6 +27,7 @@ import { PostsService } from './posts.service.js';
     UsersModule,
     ModerationModule,
     NotificationsModule,
+    AwsStorageModule,
     forwardRef(() => ChatModule),
   ],
   controllers: [PostsController],

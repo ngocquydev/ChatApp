@@ -33,6 +33,7 @@ import {
 import { CreateCommentReportDto } from './dto/report-comment.dto.js';
 import { savePostImage } from './post-image.util.js';
 import { ModerationService } from '../moderation/moderation.service.js';
+import { AwsStorageService } from '../aws-storage/aws-storage.service.js';
 
 const POST_MEDIA_MAX_BYTES = 100 * 1024 * 1024;
 
@@ -45,6 +46,7 @@ export class PostsController {
     private readonly postsService: PostsService,
     @Optional() private readonly cloudinaryService?: CloudinaryService,
     @Optional() private readonly moderationService?: ModerationService,
+    @Optional() private readonly awsStorageService?: AwsStorageService,
   ) {}
 
   private extractUserId(req: AuthenticatedRequest): string {
@@ -93,6 +95,19 @@ export class PostsController {
           modResult.reason || 'Hình ảnh bị chặn do vi phạm tiêu chuẩn cộng đồng về nội dung 18+ / khiêu dâm.'
         );
       }
+    }
+
+    if (this.awsStorageService?.isConfigured()) {
+      const res = await this.awsStorageService.uploadBuffer(file.buffer, {
+        folder: 'posts',
+        filename: file.originalname,
+        mimetype: file.mimetype,
+      });
+      return {
+        success: true,
+        url: res.url,
+        resource_type: isVideo ? 'video' : 'image',
+      };
     }
 
     if (this.cloudinaryService?.isConfigured()) {

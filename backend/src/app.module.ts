@@ -22,6 +22,7 @@ import { BackupModule } from './modules/backup/backup.module.js';
 import { GroqModule } from './modules/groq/groq.module.js';
 import { PagesModule } from './modules/pages/pages.module.js';
 import { CommunityGroupsModule } from './modules/community-groups/community-groups.module.js';
+import { AwsStorageModule } from './modules/aws-storage/aws-storage.module.js';
 import { WafMiddleware } from './modules/waf/waf.middleware.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 import { CloudflareMiddleware } from './common/middlewares/cloudflare.middleware.js';
@@ -40,12 +41,9 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule({
 
 @Module({
   imports: [
-    // 1. Cấu hình biến môi trường toàn cục từ tệp .env (reload on update)
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-
-    // 2. Kết nối MongoDB sử dụng Mongoose (đọc qua ConfigService)
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
@@ -115,6 +113,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule({
     PagesModule,
 
     CommunityGroupsModule,
+    AwsStorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],
