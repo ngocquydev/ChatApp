@@ -64,6 +64,10 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 |:---:|:---:|
 | ![Cột Điều Hướng Trái](docs/assets/screenshots/facebook-layout.png) | ![Khám Phá Nhóm](docs/assets/screenshots/groups-facebook-layout.png) |
 
+| Tái Thiết Kế Hội Nhóm Chuẩn Facebook (Desktop) | Tương Thích Nhóm Trên Thiết Bị Di Động (Mobile) |
+|:---:|:---:|
+| ![Hội Nhóm Chuẩn Facebook](docs/assets/screenshots/groups-redesign-explore.png) | ![Hội Nhóm Trên Mobile](docs/assets/screenshots/groups-redesign-mobile.png) |
+
 | Kiểm Soát Hạn Mức & Chống Spam Aura AI | Đóng Gói Docker Toàn Bộ Hệ Thống |
 |:---:|:---:|
 | ![Kiểm soát Hạn ngạch & Chống Spam Aura AI](docs/assets/screenshots/ai-rate-limiting.png) | ![Đóng gói Docker Containerization](docs/assets/screenshots/docker-containers.png) |
@@ -213,7 +217,9 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
   - Tạo trang mới với URL slug thân thiện tự động sinh.
   - Hồ sơ trang (`/pages/[slug]`): Nút Theo dõi/Bỏ theo dõi với số lượng follower cập nhật tức thời.
   - Tích hợp Bảng tin bài viết Fanpage (`PostFeed`): Quản trị viên đăng bài viết chính thức từ trang, người dùng theo dõi có thể tương tác, bình luận và thả cảm xúc.
-- **Hội nhóm cộng đồng (`/groups`):**
+- **Hội nhóm cộng đồng chuẩn Facebook & Kiến trúc Module hóa (`/groups`):**
+  - **Tái thiết kế giao diện theo chuẩn Facebook Groups:** Ảnh bìa rộng tỷ lệ 16:6, avatar chồng lớp viền nổi, thanh điều hướng tab dính (Thảo luận `Posts`, Giới thiệu `About`, Thành viên `Members`, Thư viện ảnh `Media`), và cột sidebar thông tin bên phải.
+  - **Kiến trúc module hóa cao cấp:** 100% component trong thư mục `groups/` được tách nhỏ thành các tệp đơn trách nhiệm với kích thước **< 250 dòng code**, loại bỏ 100% mã màu hardcode sang hệ thống Design Tokens và hỗ trợ trọn vẹn **6 ngôn ngữ**.
   - Hỗ trợ chế độ Công khai (Public) và Riêng tư (Private).
   - Thảo luận nội bộ nhóm (`GroupFeed`): Thành viên trong nhóm có thể đăng bài viết, chia sẻ ảnh và trao đổi ý kiến trong cộng đồng riêng.
   - **Quản lý vai trò, Tự động nhận diện Quản trị viên & Trang Quản trị Nhóm (`/groups/[slug]/manage`):**
@@ -418,6 +424,7 @@ Toàn bộ tài liệu chi tiết, sơ đồ thiết kế kiến trúc và hư�
 | 💬 **Nhắn tin Realtime** | Giao thức nhị phân MQTT/Protobuf mã hóa TLS/WSS chống bắt gói tin, Hộp chat nổi Messenger, 5 chủ đề, chế độ hạn chế | [Xem tài liệu](docs/features/chat-realtime.md) |
 | 🤝 **Gợi ý bạn bè** | Thuật toán đồ thị Neo4j (2-Hops & Degree Centrality), đồng bộ realtime, Redis Cache | [Xem tài liệu](docs/features/friend-recommendation.md) |
 | 📰 **Bảng tin & Profile** | Đăng bài 4 ảnh magic-byte, phân quyền riêng tư, timeline cá nhân, học vấn (trường học) & tình trạng mối quan hệ | [Xem tài liệu](docs/features/social-feed-profile.md) |
+| 👥 **Hội Nhóm Chuẩn Facebook** | Tái thiết kế giao diện chuẩn Facebook Groups, kiến trúc module hóa (< 250 dòng), 100% tokens, 6 ngôn ngữ | [Xem tài liệu](docs/features/community-groups-redesign.md) |
 | 👥 **Hội Nhóm & Phân Quyền BQT** | Quản lý thành viên, bổ nhiệm Phó nhóm, phân quyền chi tiết (xóa thành viên, khóa cmt, chặn bài), câu hỏi xét duyệt & Báo cáo bình luận thông minh | [Xem tài liệu](docs/features/group-roles-permissions.md) |
 | 🚩 **Báo Cáo Bình Luận & Kiểm Duyệt** | Báo cáo bình luận, điều hướng thông minh tới BQT Nhóm hoặc Admin Web, xử lý vi phạm & chế tài thành viên | [Xem tài liệu](docs/features/comment-reporting-moderation.md) |
 | 🛡️ **Kiểm duyệt AI** | NLP Classifier, Vision Scanner, Anomaly Detection (Isolation Forest, Autoencoder) | [Xem tài liệu](docs/features/moderation-trust.md) |

@@ -1,28 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  Avatar,
-  Box,
-  Card,
-  Chip,
-  CircularProgress,
-  IconButton,
-  Menu,
-  MenuItem,
-  Tooltip,
-  Typography,
-} from "@mui/material";
-import {
-  Crown,
-  MessageSquareOff,
-  MoreVertical,
-  Shield,
-  ShieldAlert,
-  ShieldCheck,
-  UserMinus,
-  Users,
-} from "lucide-react";
+import { Box, CircularProgress, Menu, MenuItem } from "@mui/material";
+import { MessageSquareOff, Shield, ShieldAlert, UserMinus, Users } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   communityGroupsApi,
@@ -32,6 +12,7 @@ import {
 import EmptyState from "@/components/common/EmptyState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import DeputyPermissionsDialog from "./DeputyPermissionsDialog";
+import MemberRow from "./MemberRow";
 
 interface GroupMembersTabProps {
   groupId: string;
@@ -44,17 +25,14 @@ export default function GroupMembersTab({
   viewerPermissions,
   onMemberCountChange,
 }: GroupMembersTabProps) {
-  const { tr, t } = useTranslation();
+  const { t } = useTranslation();
   const [members, setMembers] = useState<GroupMemberItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [selectedMember, setSelectedMember] = useState<GroupMemberItem | null>(null);
 
-  // Deputy dialog state
   const [deputyDialogOpen, setDeputyDialogOpen] = useState(false);
   const [isSavingDeputy, setIsSavingDeputy] = useState(false);
-
-  // Confirm remove member
   const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
   const [isRemovingMember, setIsRemovingMember] = useState(false);
 
@@ -84,11 +62,6 @@ export default function GroupMembersTab({
 
   const handleCloseMenu = () => {
     setMenuAnchor(null);
-  };
-
-  const handleAppointOrEditDeputy = () => {
-    handleCloseMenu();
-    setDeputyDialogOpen(true);
   };
 
   const handleSaveDeputyPermissions = async (data: {
@@ -187,234 +160,83 @@ export default function GroupMembersTab({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-      {members.map((m) => {
-        const canManageThisMember =
-          m.role !== "creator" &&
-          (viewerPermissions.isAdmin ||
-            (viewerPermissions.isDeputy && m.role === "member"));
+      {members.map((m) => (
+        <MemberRow
+          key={m._id}
+          member={m}
+          viewerPermissions={viewerPermissions}
+          onOpenMenu={handleOpenMenu}
+        />
+      ))}
 
-        return (
-          <Card
-            key={m._id}
-            sx={{
-              p: 2,
-              borderRadius: "16px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              border: "1px solid",
-              borderColor: "divider",
-              boxShadow: "none",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 0 }}>
-              <Avatar
-                src={m.avatar || undefined}
-                sx={{
-                  width: 48,
-                  height: 48,
-                  bgcolor: "primary.main",
-                  fontWeight: 700,
-                }}
-              >
-                {m.name.charAt(0).toUpperCase()}
-              </Avatar>
-              <Box sx={{ minWidth: 0 }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                    {m.name}
-                  </Typography>
-
-                  {/* Role Badge */}
-                  {m.role === "creator" ? (
-                    <Chip
-                      size="small"
-                      icon={<Crown size={14} />}
-                      label={t("groups.adminBadge")}
-                      color="primary"
-                      sx={{ fontWeight: 700, height: 24 }}
-                    />
-                  ) : m.role === "admin" ? (
-                    <Chip
-                      size="small"
-                      icon={<Crown size={14} />}
-                      label={t("groups.adminBadge")}
-                      color="primary"
-                      variant="outlined"
-                      sx={{ fontWeight: 700, height: 24 }}
-                    />
-                  ) : m.role === "deputy" ? (
-                    <Tooltip
-                      title={
-                        m.deputyPermissions
-                          ? `${m.deputyPermissions.canRemoveMembers ? "✓ Xóa thành viên " : ""}${
-                              m.deputyPermissions.canMuteComments ? "✓ Khóa bình luận " : ""
-                            }${m.deputyPermissions.canBlockPosting ? "✓ Cấm đăng bài" : ""}`
-                          : ""
-                      }
-                    >
-                      <Chip
-                        size="small"
-                        icon={<Shield size={14} />}
-                        label={t("groups.deputyBadge")}
-                        color="secondary"
-                        sx={{ fontWeight: 700, height: 24 }}
-                      />
-                    </Tooltip>
-                  ) : null}
-
-                  {/* Restriction badges */}
-                  {m.isBannedPosting && (
-                    <Chip
-                      size="small"
-                      icon={<ShieldAlert size={13} />}
-                      label={t("groups.blockPostingBtn")}
-                      color="error"
-                      variant="outlined"
-                      sx={{ fontWeight: 600, height: 22 }}
-                    />
-                  )}
-                  {m.isMutedComments && (
-                    <Chip
-                      size="small"
-                      icon={<MessageSquareOff size={13} />}
-                      label={t("groups.muteCommentsBtn")}
-                      color="warning"
-                      variant="outlined"
-                      sx={{ fontWeight: 600, height: 22 }}
-                    />
-                  )}
-                </Box>
-
-                {/* Deputy detailed permissions summary */}
-                {m.role === "deputy" && m.deputyPermissions && (
-                  <Box sx={{ display: "flex", gap: 0.75, mt: 0.75, flexWrap: "wrap" }}>
-                    {m.deputyPermissions.canRemoveMembers && (
-                      <Chip
-                        size="small"
-                        label={t("groups.permRemoveMembers")}
-                        variant="outlined"
-                        sx={{ fontSize: "0.7rem", height: 20 }}
-                      />
-                    )}
-                    {m.deputyPermissions.canMuteComments && (
-                      <Chip
-                        size="small"
-                        label={t("groups.permMuteComments")}
-                        variant="outlined"
-                        sx={{ fontSize: "0.7rem", height: 20 }}
-                      />
-                    )}
-                    {m.deputyPermissions.canBlockPosting && (
-                      <Chip
-                        size="small"
-                        label={t("groups.permBlockPosting")}
-                        variant="outlined"
-                        sx={{ fontSize: "0.7rem", height: 20 }}
-                      />
-                    )}
-                  </Box>
-                )}
-              </Box>
-            </Box>
-
-            {/* Manage Action Menu Button */}
-            {canManageThisMember && (
-              <IconButton
-                size="small"
-                onClick={(e) => handleOpenMenu(e, m)}
-                aria-label={t("common.edit")}
-              >
-                <MoreVertical size={18} />
-              </IconButton>
-            )}
-          </Card>
-        );
-      })}
-
-      {/* Member Action Popover Menu */}
+      {/* Dropdown Menu actions */}
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
         onClose={handleCloseMenu}
-        slotProps={{
-          paper: {
-            sx: { borderRadius: "14px", minWidth: 200, boxShadow: "0 6px 20px rgba(0,0,0,0.12)" },
-          },
-        }}
+        disableScrollLock
+        slotProps={{ paper: { sx: { borderRadius: "12px", minWidth: 200 } } }}
       >
-        {/* Admin only: Appoint as Deputy or Edit Deputy */}
-        {viewerPermissions.isAdmin && selectedMember?.role !== "admin" && (
-          <MenuItem onClick={handleAppointOrEditDeputy}>
-            <ShieldCheck size={16} style={{ marginRight: 10 }} />
-            {selectedMember?.role === "deputy"
-              ? t("groups.editDeputyPermissions")
-              : t("groups.appointDeputy")}
-          </MenuItem>
+        {viewerPermissions.isAdmin && selectedMember?.role !== "creator" && (
+          selectedMember?.role === "deputy" ? (
+            <>
+              <MenuItem onClick={() => { handleCloseMenu(); setDeputyDialogOpen(true); }} sx={{ gap: 1.5 }}>
+                <Shield size={16} />
+                {t("groups.editDeputyPermissions")}
+              </MenuItem>
+              <MenuItem onClick={handleRevokeDeputy} sx={{ gap: 1.5, color: "warning.main" }}>
+                <ShieldAlert size={16} />
+                {t("groups.revokeDeputy")}
+              </MenuItem>
+            </>
+          ) : (
+            <MenuItem onClick={() => { handleCloseMenu(); setDeputyDialogOpen(true); }} sx={{ gap: 1.5 }}>
+              <Shield size={16} />
+              {t("groups.appointDeputy")}
+            </MenuItem>
+          )
         )}
 
-        {/* Admin only: Revoke Deputy */}
-        {viewerPermissions.isAdmin && selectedMember?.role === "deputy" && (
-          <MenuItem onClick={handleRevokeDeputy} sx={{ color: "error.main" }}>
-            <ShieldAlert size={16} style={{ marginRight: 10 }} />
-            {t("groups.revokeDeputy")}
-          </MenuItem>
-        )}
+        {(viewerPermissions.isAdmin || viewerPermissions.isDeputy) && (
+          <>
+            <MenuItem onClick={handleToggleMuteComments} sx={{ gap: 1.5 }}>
+              <MessageSquareOff size={16} />
+              {selectedMember?.isMutedComments ? t("groups.unmuteCommentsBtn") : t("groups.muteCommentsBtn")}
+            </MenuItem>
 
-        {/* Mute Comments (Admin or Deputy with canMuteComments) */}
-        {viewerPermissions.canMuteComments && selectedMember?.role === "member" && (
-          <MenuItem onClick={handleToggleMuteComments}>
-            <MessageSquareOff size={16} style={{ marginRight: 10 }} />
-            {selectedMember.isMutedComments
-              ? t("groups.unmuteCommentsBtn")
-              : t("groups.muteCommentsBtn")}
-          </MenuItem>
-        )}
+            <MenuItem onClick={handleToggleBlockPosting} sx={{ gap: 1.5 }}>
+              <ShieldAlert size={16} />
+              {selectedMember?.isBannedPosting ? t("groups.unblockPostingBtn") : t("groups.blockPostingBtn")}
+            </MenuItem>
 
-        {/* Block Posting (Admin or Deputy with canBlockPosting) */}
-        {viewerPermissions.canBlockPosting && selectedMember?.role === "member" && (
-          <MenuItem onClick={handleToggleBlockPosting}>
-            <ShieldAlert size={16} style={{ marginRight: 10 }} />
-            {selectedMember.isBannedPosting
-              ? t("groups.unblockPostingBtn")
-              : t("groups.blockPostingBtn")}
-          </MenuItem>
-        )}
-
-        {/* Remove Member (Admin or Deputy with canRemoveMembers) */}
-        {viewerPermissions.canRemoveMembers && selectedMember?.role === "member" && (
-          <MenuItem
-            onClick={() => {
-              handleCloseMenu();
-              setConfirmRemoveOpen(true);
-            }}
-            sx={{ color: "error.main" }}
-          >
-            <UserMinus size={16} style={{ marginRight: 10 }} />
-            {t("groups.removeMemberBtn")}
-          </MenuItem>
+            <MenuItem onClick={() => { handleCloseMenu(); setConfirmRemoveOpen(true); }} sx={{ gap: 1.5, color: "error.main" }}>
+              <UserMinus size={16} />
+              {t("groups.removeMemberBtn")}
+            </MenuItem>
+          </>
         )}
       </Menu>
 
-      {/* Deputy Permissions Modal */}
-      <DeputyPermissionsDialog
-        open={deputyDialogOpen}
-        member={selectedMember}
-        isSubmitting={isSavingDeputy}
-        onClose={() => setDeputyDialogOpen(false)}
-        onSave={handleSaveDeputyPermissions}
-      />
+      {/* Deputy Dialog */}
+      {selectedMember && (
+        <DeputyPermissionsDialog
+          open={deputyDialogOpen}
+          onClose={() => setDeputyDialogOpen(false)}
+          onSubmit={handleSaveDeputyPermissions}
+          isSubmitting={isSavingDeputy}
+          member={selectedMember}
+        />
+      )}
 
       {/* Confirm Remove Member Dialog */}
       <ConfirmDialog
         open={confirmRemoveOpen}
-        title={t("groups.confirmRemoveMemberTitle")}
-        description={t("groups.confirmRemoveMemberMsg")}
-        confirmLabel={t("groups.removeMemberBtn")}
-        cancelLabel={t("common.cancel")}
-        pending={isRemovingMember}
-        onConfirm={handleConfirmRemove}
         onClose={() => setConfirmRemoveOpen(false)}
+        onConfirm={handleConfirmRemove}
+        pending={isRemovingMember}
+        title={t("groups.confirmRemoveMemberTitle")}
+        description={t("groups.confirmRemoveMemberMsg", { name: selectedMember?.name || "" })}
+        confirmLabel={t("groups.removeMemberBtn")}
       />
     </Box>
   );

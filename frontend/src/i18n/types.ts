@@ -182,6 +182,20 @@ export interface TranslationDictionary {
     deleteGroupConfirmDesc: string;
     deleteGroupSuccess: string;
     deleteGroupError: string;
+    tabAbout: string;
+    tabMedia: string;
+    inviteFriends: string;
+    groupChat: string;
+    aboutGroup: string;
+    groupRules: string;
+    recentMedia: string;
+    joined: string;
+    leaveConfirmTitle: string;
+    leaveConfirmDesc: string;
+    noMediaTitle: string;
+    noMediaDesc: string;
+    pinnedPost: string;
+    manageOverview: string;
   };
   pages: {
     title: string;

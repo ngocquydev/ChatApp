@@ -28,6 +28,7 @@
 20. [Đóng Gói Docker Containerization Toàn Bộ Hệ Thống (Frontend, Backend, Admin, CSDL)](#20-đóng-gói-docker-containerization-toàn-bộ-hệ-thống-frontend-backend-admin-csdl)
 21. [Bảo Vệ Hạn Mức & Chống Spam AI Đa Tầng (Aura AI Rate Limiting & Token Quota Protection)](#21-bảo-vệ-hạn-mức--chống-spam-ai-đa-tầng-aura-ai-rate-limiting--token-quota-protection)
 22. [Kiểm Thử Tự Động Hóa Giao Diện Đa Thiết Bị Bằng Playwright (Mobile, iPad & Desktop)](#22-kiểm-thử-tự-động-hóa-giao-diện-đa-thiết-bị-bằng-playwright-mobile-ipad--desktop)
+23. [Tái Thiết Kế Hội Nhóm Chuẩn Facebook & Kiến Trúc Module Hóa (< 250 Dòng)](#23-tái-thiết-kế-hội-nhóm-chuẩn-facebook--kiến-trúc-module-hóa--250-dòng)
 
 ---
 
@@ -447,7 +448,27 @@ Tự động hóa kiểm thử giao diện người dùng theo chuẩn responsiv
 
 ---
 
+## 23. Tái Thiết Kế Hội Nhóm Chuẩn Facebook & Kiến Trúc Module Hóa (< 250 Dòng)
+
+Toàn bộ hệ thống Hội nhóm Cộng đồng (Community Groups) được tái cấu trúc thành các module nhỏ độc lập đảm bảo **100% file < 250 dòng**, loại bỏ 100% mã màu hardcode sang hệ thống Design Tokens và hỗ trợ trọn vẹn 6 ngôn ngữ.
+
+### 23.1. Giao diện Khám Phá & Tương Thích Đa Thiết Bị:
+| Màn hình Desktop (1440px) | Màn hình Điện thoại (390px) |
+|:---:|:---:|
+| ![Khám phá Nhóm Desktop](assets/screenshots/groups-redesign-explore.png) | ![Khám phá Nhóm Mobile](assets/screenshots/groups-redesign-mobile.png) |
+
+### 23.2. Điểm cải tiến nổi bật:
+- **Ảnh bìa 16:6 & Avatar chồng lớp (Overlapping):** Bố cục phong cách Facebook với ảnh bìa rộng, avatar lồng viền và thanh công cụ tác vụ đa năng.
+- **Thanh điều hướng Tab dính (Sticky Tabs):** Dễ dàng chuyển đổi giữa Bảng tin thảo luận (`Posts`), Giới thiệu & Quy tắc nhóm (`About`), Thành viên & Phân quyền (`Members`), Thư viện hình ảnh (`Media`).
+- **Sidebar thông tin bên phải:** Tóm tắt thông tin giới thiệu, hiển thị danh sách quy tắc được đánh số và xem nhanh các ảnh gần đây trong nhóm.
+- **Quản trị viên & Phân quyền chi tiết:** Trang quản trị `/groups/[slug]/manage` với 4 thẻ chỉ số thống kê, quản lý thành viên, xét duyệt yêu cầu tham gia và khu vực nguy hiểm xóa nhóm an toàn.
+
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/community-groups-redesign.md](features/community-groups-redesign.md)*
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Tái Thiết Kế Hội Nhóm Chuẩn Facebook & Kiến Trúc Module Hóa](features/community-groups-redesign.md)
 > - [Kiểm soát Hạn ngạch & Chống Spam AI Đa Tầng (Aura Rate Limiting)](features/ai-rate-limiting-protection.md)
 > - [Đóng Gói Toàn Bộ Hệ Thống Với Docker Containers](features/docker-containers.md)
 > - [Triển Khai Frontend Lên Vercel Production](features/vercel-deployment.md)

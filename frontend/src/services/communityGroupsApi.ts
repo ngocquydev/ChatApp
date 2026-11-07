@@ -61,6 +61,7 @@ export interface CommunityGroupItem {
   requireApproval: boolean;
   requireJoinReason?: boolean;
   joinQuestion?: string;
+  rules?: string[];
   createdAt: string;
 }
 

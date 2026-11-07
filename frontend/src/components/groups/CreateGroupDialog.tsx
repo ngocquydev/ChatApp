@@ -40,7 +40,7 @@ export default function CreateGroupDialog({
   onClose,
   onCreated,
 }: CreateGroupDialogProps) {
-  const { tr, t } = useTranslation();
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [privacy, setPrivacy] = useState<"public" | "private">("public");
@@ -113,30 +113,9 @@ export default function CreateGroupDialog({
       }}
     >
       <form onSubmit={handleSubmit}>
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            p: 2.5,
-            borderBottom: "1px solid",
-            borderColor: "divider",
-          }}
-        >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", p: 2.5, borderBottom: "1px solid", borderColor: "divider" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0, pr: 1 }}>
-            <Box
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: "12px",
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
+            <Box sx={{ width: 40, height: 40, borderRadius: "12px", bgcolor: "primary.main", color: "primary.contrastText", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Users size={20} />
             </Box>
             <Box sx={{ minWidth: 0 }}>
@@ -153,27 +132,9 @@ export default function CreateGroupDialog({
           </IconButton>
         </DialogTitle>
 
-        <DialogContent
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2.5,
-            pt: "24px !important",
-            px: 3,
-            pb: 2,
-          }}
-        >
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "20px !important", px: 3, pb: 2 }}>
           {error && (
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: "10px",
-                bgcolor: "error.main",
-                color: "error.contrastText",
-                fontSize: "0.85rem",
-                fontWeight: 600,
-              }}
-            >
+            <Box sx={{ p: 1.5, borderRadius: "10px", bgcolor: "error.main", color: "error.contrastText", fontSize: "0.85rem", fontWeight: 600 }}>
               {error}
             </Box>
           )}
@@ -185,7 +146,6 @@ export default function CreateGroupDialog({
             required
             fullWidth
             size="small"
-            sx={{ mt: 0.5 }}
             placeholder={t("groups.groupNamePlaceholder")}
           />
 
@@ -207,12 +167,8 @@ export default function CreateGroupDialog({
             fullWidth
             size="small"
           >
-            <MenuItem value="public">
-              {t("groups.privacyPublicDesc")}
-            </MenuItem>
-            <MenuItem value="private">
-              {t("groups.privacyPrivateDesc")}
-            </MenuItem>
+            <MenuItem value="public">{t("groups.privacyPublicDesc")}</MenuItem>
+            <MenuItem value="private">{t("groups.privacyPrivateDesc")}</MenuItem>
           </TextField>
 
           <TextField
@@ -227,21 +183,11 @@ export default function CreateGroupDialog({
           />
 
           <FormControlLabel
-            control={
-              <Switch
-                checked={requireApproval}
-                onChange={(e) => setRequireApproval(e.target.checked)}
-                color="primary"
-              />
-            }
+            control={<Switch checked={requireApproval} onChange={(e) => setRequireApproval(e.target.checked)} color="primary" />}
             label={
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {t("groups.approvalLabel")}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {t("groups.approvalDesc")}
-                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>{t("groups.approvalLabel")}</Typography>
+                <Typography variant="caption" color="text.secondary">{t("groups.approvalDesc")}</Typography>
               </Box>
             }
           />
@@ -260,12 +206,8 @@ export default function CreateGroupDialog({
             }
             label={
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {t("groups.joinQuestionLabel")}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {t("groups.joinQuestionDesc")}
-                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>{t("groups.joinQuestionLabel")}</Typography>
+                <Typography variant="caption" color="text.secondary">{t("groups.joinQuestionDesc")}</Typography>
               </Box>
             }
           />
@@ -292,13 +234,10 @@ export default function CreateGroupDialog({
             disabled={!name.trim() || !slug.trim() || isSubmitting}
             sx={{ borderRadius: "10px", px: 3, fontWeight: 700 }}
           >
-            {isSubmitting
-              ? t("groups.creating")
-              : t("groups.submitCreate")}
+            {isSubmitting ? t("groups.creating") : t("groups.submitCreate")}
           </Button>
         </DialogActions>
       </form>
     </Dialog>
   );
 }
-
