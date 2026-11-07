@@ -53,7 +53,7 @@ const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(
         process.env.NEXT_PUBLIC_SITE_KEY ||
         process.env.VITE_TURNSTILE_SITE_KEY ||
         process.env.VITE_SITE_KEY ||
-        "1x00000000000000000000AA",
+        "0x4AAAAAAFUR2RRMbBht62MJ",
       action = "login",
       theme = "light",
     },
@@ -188,10 +188,24 @@ const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(
           my: 2,
           display: "flex",
           justifyContent: "center",
-          minHeight: 65,
+          alignItems: "center",
+          height: 65,
+          maxHeight: 65,
+          overflow: "hidden",
+          borderRadius: "4px",
+          "& > div": {
+            height: 65,
+            maxHeight: 65,
+            overflow: "hidden",
+          },
+          "& iframe": {
+            height: "65px !important",
+            maxHeight: "65px !important",
+            overflow: "hidden !important",
+          },
         }}
       >
-        <div ref={containerRef} />
+        <div ref={containerRef} style={{ height: 65, maxHeight: 65, overflow: "hidden" }} />
       </Box>
     );
   }

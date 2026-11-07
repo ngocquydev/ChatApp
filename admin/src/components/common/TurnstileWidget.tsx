@@ -183,10 +183,24 @@ const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(
           my: 2,
           display: "flex",
           justifyContent: "center",
-          minHeight: 65,
+          alignItems: "center",
+          height: 65,
+          maxHeight: 65,
+          overflow: "hidden",
+          borderRadius: "4px",
+          "& > div": {
+            height: 65,
+            maxHeight: 65,
+            overflow: "hidden",
+          },
+          "& iframe": {
+            height: "65px !important",
+            maxHeight: "65px !important",
+            overflow: "hidden !important",
+          },
         }}
       >
-        <div ref={containerRef} />
+        <div ref={containerRef} style={{ height: 65, maxHeight: 65, overflow: "hidden" }} />
       </Box>
     );
   }
