@@ -165,7 +165,8 @@ export default function MyGroupsTab({
                 <Box sx={{ display: "flex", gap: 1, mt: "auto", pt: 1 }}>
                   <Button
                     fullWidth
-                    variant="outlined"
+                    variant="contained"
+                    color="primary"
                     size="small"
                     component={NextLink}
                     href={`/groups/${group.slug}`}
@@ -176,13 +177,25 @@ export default function MyGroupsTab({
 
                   {isAdmin && (
                     <Button
-                      variant="contained"
-                      color="secondary"
+                      variant="outlined"
+                      color="inherit"
                       size="small"
                       startIcon={<Settings size={14} />}
                       component={NextLink}
                       href={`/groups/${group.slug}/manage`}
-                      sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none", flexShrink: 0 }}
+                      sx={{
+                        borderRadius: "10px",
+                        fontWeight: 700,
+                        textTransform: "none",
+                        flexShrink: 0,
+                        borderColor: "divider",
+                        color: "text.primary",
+                        bgcolor: "action.hover",
+                        "&:hover": {
+                          bgcolor: "action.selected",
+                          borderColor: "divider",
+                        },
+                      }}
                     >
                       {t("groups.manageGroup")}
                     </Button>

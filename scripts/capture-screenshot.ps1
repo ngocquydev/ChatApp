@@ -1,4 +1,4 @@
-# scripts/capture-screenshot.ps1 — Tự động mở app và chụp ảnh màn hình bằng Google Chrome Headless
+﻿# scripts/capture-screenshot.ps1 — Tự động mở app và chụp ảnh màn hình bằng Google Chrome Headless
 param (
     [string]$Url = "http://localhost:5173",
     [string]$OutputFile = "docs/assets/screenshots/app-preview.png",
@@ -46,6 +46,7 @@ $chromeArgs = @(
     "--disable-gpu",
     "--hide-scrollbars",
     "--window-size=$Width,$Height",
+    "--virtual-time-budget=4000",
     "--screenshot=$resolvedOutput",
     $Url
 )

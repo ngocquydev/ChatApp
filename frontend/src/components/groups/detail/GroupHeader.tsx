@@ -219,11 +219,21 @@ export default function GroupHeader({
 
             {canManage && (
               <Button
-                variant="contained"
-                color="secondary"
+                variant="outlined"
+                color="inherit"
                 startIcon={<Settings size={16} />}
                 onClick={onManage}
-                sx={{ borderRadius: "10px", fontWeight: 700 }}
+                sx={{
+                  borderRadius: "10px",
+                  fontWeight: 700,
+                  borderColor: "divider",
+                  color: "text.primary",
+                  bgcolor: "action.hover",
+                  "&:hover": {
+                    bgcolor: "action.selected",
+                    borderColor: "divider",
+                  },
+                }}
               >
                 {t("groups.manageGroup")}
               </Button>

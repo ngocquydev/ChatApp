@@ -83,7 +83,7 @@ export default function MemberRow({ member: m, viewerPermissions, onOpenMenu }: 
                 size="small"
                 icon={<ShieldCheck size={12} />}
                 label={t("groups.deputyBadge")}
-                color="secondary"
+                color="info"
                 variant="outlined"
                 sx={{ height: 22, fontSize: "0.75rem", fontWeight: 700 }}
               />
