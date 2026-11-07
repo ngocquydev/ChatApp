@@ -105,17 +105,6 @@ export class TurnstileService {
 
     try {
       result = await callSiteverify(secretKey);
-      // Nếu xác thực bằng secretKey cấu hình thất bại nhưng có thể là token kiểm thử của Cloudflare, thử fallback bằng test secret key
-      if (!result.success && secretKey !== '1x0000000000000000000000000000000AA') {
-        try {
-          const testResult = await callSiteverify('1x0000000000000000000000000000000AA');
-          if (testResult.success) {
-            result = testResult;
-          }
-        } catch {
-          // Bỏ qua lỗi fallback test key
-        }
-      }
     } catch (error) {
       this.logger.error('Lỗi khi gọi API Cloudflare siteverify:', error);
       throw new ForbiddenException(
