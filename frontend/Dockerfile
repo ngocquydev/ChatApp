@@ -48,11 +48,14 @@ ENV HOSTNAME="0.0.0.0"
 
 RUN apk add --no-cache dumb-init
 
-# Sao chép public assets, bản build .next và node_modules
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+# Sao chép public assets, bản build .next và node_modules với quyền sở hữu node:node
+COPY --from=builder --chown=node:node /app/public ./public
+COPY --from=builder --chown=node:node /app/.next ./.next
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder --chown=node:node /app/package.json ./package.json
+
+# Đảm bảo thư mục cache tồn tại và toàn bộ quyền ghi/sở hữu thuộc về user node
+RUN mkdir -p /app/.next/cache/images && chown -R node:node /app/.next
 
 USER node
 
