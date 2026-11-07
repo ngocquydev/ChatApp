@@ -5,7 +5,7 @@ import { RedisService } from '../redis/redis/redis.service.js';
 
 describe('AuraRateLimiterService', () => {
   let service: AuraRateLimiterService;
-  let mockRedisClient: Record<string, ReturnType<typeof vi.fn>>;
+  let mockRedisClient: Record<string, any>;
   let mockRedisService: Partial<RedisService>;
 
   beforeEach(() => {
