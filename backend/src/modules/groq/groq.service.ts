@@ -78,7 +78,11 @@ export class GroqService {
   /**
    * Gọi Groq Cloud Chat Completions bằng HTTP REST (Zero extra dependency)
    */
-  async generateText(prompt: string, systemInstruction?: string): Promise<string> {
+  async generateText(
+    prompt: string,
+    systemInstruction?: string,
+    options?: { maxTokens?: number; temperature?: number },
+  ): Promise<string> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
       return this.fallbackTextGeneration(prompt, systemInstruction);
@@ -93,9 +97,9 @@ export class GroqService {
     const payload = {
       model: this.getModelName(),
       messages,
-      temperature: 0.7,
+      temperature: options?.temperature ?? 0.7,
       top_p: 0.95,
-      max_tokens: 1024,
+      max_tokens: options?.maxTokens || 450,
     };
 
     const controller = new AbortController();
@@ -139,7 +143,11 @@ export class GroqService {
   /**
    * Sinh văn bản qua Groq API dạng luồng dữ liệu (Stream Chunks)
    */
-  async *streamText(prompt: string, systemInstruction?: string): AsyncGenerator<string> {
+  async *streamText(
+    prompt: string,
+    systemInstruction?: string,
+    options?: { maxTokens?: number; temperature?: number },
+  ): AsyncGenerator<string> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
       const fallback = this.fallbackTextGeneration(prompt, systemInstruction);
@@ -159,9 +167,9 @@ export class GroqService {
     const payload = {
       model: this.getModelName(),
       messages,
-      temperature: 0.7,
+      temperature: options?.temperature ?? 0.7,
       top_p: 0.95,
-      max_tokens: 1024,
+      max_tokens: options?.maxTokens || 350,
       stream: true,
     };
 
@@ -276,7 +284,7 @@ export class GroqService {
       `Danh sách bình luận (${comments.length} bình luận):\n${commentsList}\n\n` +
       'Hãy tóm tắt các ý chính và phản hồi của người dùng về bài viết trên:';
 
-    return this.generateText(prompt, systemPrompt);
+    return this.generateText(prompt, systemPrompt, { maxTokens: 450 });
   }
 
   /**
@@ -306,7 +314,7 @@ export class GroqService {
 
     const prompt = `Dưới đây là các tin nhắn gần nhất trong cuộc trò chuyện:\n\n${conversationText}\n\nHãy tóm tắt nội dung cuộc trò chuyện trên:`;
 
-    return this.generateText(prompt, systemPrompt);
+    return this.generateText(prompt, systemPrompt, { maxTokens: 450 });
   }
 
   
@@ -368,7 +376,7 @@ export class GroqService {
       return this.auraRagService.generateFallbackRagReply(cleanPrompt, ragContextData);
     }
 
-    return this.generateText(finalPrompt, systemPrompt);
+    return this.generateText(finalPrompt, systemPrompt, { maxTokens: 350 });
   }
 
   /**
@@ -442,7 +450,7 @@ export class GroqService {
       return;
     }
 
-    yield* this.streamText(finalPrompt, systemPrompt);
+    yield* this.streamText(finalPrompt, systemPrompt, { maxTokens: 350 });
   }
 
   /**

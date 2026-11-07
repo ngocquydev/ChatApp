@@ -26,6 +26,7 @@
 18. [Hệ Thống Đa Ngôn Ngữ Mở Rộng 6 Thứ Tiếng (VI, EN, 简体中文, 繁體中文, 한국어, ไทย)](#18-hệ-thống-đa-ngôn-ngữ-mở-rộng-6-thứ-tiếng-vi-en-简体中文-繁體中文-한국어-ไทย)
 19. [Phân Quyền Quản Trị Viên, Phó Nhóm & Câu Hỏi Xét Duyệt Tham Gia Nhóm](#19-phân-quyền-quản-trị-viên-phó-nhóm--câu-hỏi-xét-duyệt-tham-gia-nhóm)
 20. [Đóng Gói Docker Containerization Toàn Bộ Hệ Thống (Frontend, Backend, Admin, CSDL)](#20-đóng-gói-docker-containerization-toàn-bộ-hệ-thống-frontend-backend-admin-csdl)
+21. [Bảo Vệ Hạn Mức & Chống Spam AI Đa Tầng (Aura AI Rate Limiting & Token Quota Protection)](#21-bảo-vệ-hạn-mức--chống-spam-ai-đa-tầng-aura-ai-rate-limiting--token-quota-protection)
 
 ---
 
@@ -408,7 +409,27 @@ Toàn bộ các dịch vụ của ChatApp được đóng gói hoàn chỉnh và
 
 ---
 
+## 21. Bảo Vệ Hạn Mức & Chống Spam AI Đa Tầng (Aura AI Rate Limiting & Token Quota Protection)
+
+Bảo vệ tối đa API key Groq (Llama 3.3 70B), ngăn chặn triệt để tình trạng cạn kiệt token hoặc lỗi HTTP 429 Quota Exceeded do người dùng spam liên tục hoặc gửi prompt quá dài:
+- **Kiểm soát độ dài câu hỏi:** Giới hạn tối đa 1.000 ký tự cho mỗi yêu cầu, ngăn chặn tấn công nhồi prompt khổng lồ.
+- **Bộ nhớ đệm thông minh Redis (Semantic & Comment Cache):** Tự động lưu cache kết quả tóm tắt bình luận bài viết (TTL 30 phút), phục vụ tức thì cho nhiều người xem cùng lúc với chi phí 0 token.
+- **Rate Limiting 3 lớp trên Redis:**
+  - Cooldown: Yêu cầu giãn cách tối thiểu 3 giây giữa hai câu hỏi liên tiếp.
+  - Tần suất theo phút (RPM): Tối đa 6 yêu cầu / phút / người dùng.
+  - Hạn ngạch hàng ngày (Daily Quota): Cấp 50 lượt gọi AI / ngày / tài khoản, tự động làm mới vào 00:00 UTC.
+- **Khóa xử lý đồng thời (Concurrency Lock):** Mỗi người dùng chỉ được xử lý 1 luồng sinh nội dung AI tại một thời điểm, loại bỏ việc giữ phím Enter tạo ra nhiều stream song song.
+- **Tối ưu hóa ngân sách Token:** Giảm trần `max_tokens` từ 1024 xuống còn 350 tokens cho tin nhắn và 450 tokens cho tóm tắt, tiết kiệm hơn 65% hạn mức Groq.
+- **Phản hồi thân thiện:** Khi chạm giới hạn hạn mức hoặc cooldown, Aura AI thông báo nhẹ nhàng trực tiếp trong hội thoại hoặc trả HTTP 429 với thông điệp rõ ràng, không làm gián đoạn trải nghiệm.
+
+![Hệ thống Kiểm soát Hạn ngạch & Chống Spam Aura AI](assets/screenshots/ai-rate-limiting.png)
+
+- 📖 *Xem chi tiết: [docs/features/ai-rate-limiting-protection.md](features/ai-rate-limiting-protection.md)*
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Kiểm soát Hạn ngạch & Chống Spam AI Đa Tầng (Aura Rate Limiting)](features/ai-rate-limiting-protection.md)
 > - [Đóng Gói Toàn Bộ Hệ Thống Với Docker Containers](features/docker-containers.md)
 > - [Triển Khai Frontend Lên Vercel Production](features/vercel-deployment.md)
 > - [Báo Cáo Bình Luận & Kiểm Duyệt Hội Nhóm (Smart Comment Reporting)](features/comment-reporting-moderation.md)

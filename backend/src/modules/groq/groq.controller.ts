@@ -4,10 +4,13 @@ import {
   ForbiddenException,
   NotFoundException,
   Post,
+  Get,
   Req,
   UnauthorizedException,
   UseGuards,
   BadRequestException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -15,6 +18,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import type { AuthenticatedRequest } from '../auth/types/auth.types.js';
 import { GroqService } from './groq.service.js';
+import { AuraRateLimiterService } from './aura-rate-limiter.service.js';
 import { UsersService } from '../users/users.service.js';
 import { Post as PostEntity, PostDocument } from '../posts/schemas/post.schema.js';
 import { PostComment, PostCommentDocument } from '../posts/schemas/post-comment.schema.js';
@@ -33,6 +37,7 @@ import {
 export class GroqController {
   constructor(
     private readonly groqService: GroqService,
+    private readonly auraRateLimiter: AuraRateLimiterService,
     private readonly usersService: UsersService,
     @InjectModel(PostEntity.name)
     private readonly postModel: Model<PostDocument>,
@@ -55,13 +60,20 @@ export class GroqController {
     return userId;
   }
 
+  @Get('quota')
+  @ApiOperation({ summary: 'Xem hạn ngạch sử dụng Aura AI trong ngày của người dùng' })
+  async getQuota(@Req() req: AuthenticatedRequest) {
+    const userId = this.extractUserId(req);
+    return await this.auraRateLimiter.getUserDailyUsage(userId);
+  }
+
   @Post('summarize-comments')
   @ApiOperation({ summary: 'Tóm tắt bình luận bài viết bằng Llama 3.3 (Groq)' })
   async summarizeComments(
     @Req() req: AuthenticatedRequest,
     @Body() dto: SummarizeCommentsDto,
   ) {
-    this.extractUserId(req);
+    const userId = this.extractUserId(req);
     if (!dto.postId) {
       throw new BadRequestException('Mã bài viết (postId) là bắt buộc');
     }
@@ -86,6 +98,34 @@ export class GroqController {
       .lean()
       .exec();
 
+    // 1. Kiểm tra Cache trong Redis trước khi gọi AI (Tiết kiệm 100% token nếu đã có)
+    const cached = await this.auraRateLimiter.getCachedCommentSummary(
+      post._id.toString(),
+      comments.length,
+    );
+    if (cached) {
+      return {
+        success: true,
+        summary: cached,
+        commentCount: comments.length,
+        model: this.groqService.model,
+        cached: true,
+      };
+    }
+
+    // 2. Kiểm tra hạn mức & chống spam người dùng
+    const quota = await this.auraRateLimiter.checkAndConsumeQuota(userId);
+    if (!quota.allowed) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message: quota.message || 'Bạn đã đạt giới hạn sử dụng AI',
+          retryAfter: quota.retryAfterSeconds,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     const authorIds = Array.from(new Set(comments.map((c) => c.authorId.toString())));
     const authors = await this.usersService.findByIds(authorIds);
     const authorsMap = new Map(authors.map((a) => [a._id.toString(), a.name]));
@@ -95,17 +135,29 @@ export class GroqController {
       text: c.content || (c.mediaUrl ? '[Ảnh/Video đính kèm]' : ''),
     }));
 
-    const summary = await this.groqService.summarizeComments(
-      post.content || '',
-      commentItems,
-    );
+    try {
+      const summary = await this.groqService.summarizeComments(
+        post.content || '',
+        commentItems,
+      );
 
-    return {
-      success: true,
-      summary,
-      commentCount: comments.length,
-      model: this.groqService.model,
-    };
+      // 3. Ghi kết quả vào Cache Redis (TTL 30 phút)
+      await this.auraRateLimiter.setCachedCommentSummary(
+        post._id.toString(),
+        comments.length,
+        summary,
+      );
+
+      return {
+        success: true,
+        summary,
+        commentCount: comments.length,
+        model: this.groqService.model,
+        cached: false,
+      };
+    } finally {
+      await this.auraRateLimiter.releaseConcurrencyLock(userId);
+    }
   }
 
   @Post('summarize-chat')
@@ -123,12 +175,25 @@ export class GroqController {
       throw new BadRequestException('Mã cuộc trò chuyện không hợp lệ');
     }
 
+    const quota = await this.auraRateLimiter.checkAndConsumeQuota(viewerId);
+    if (!quota.allowed) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message: quota.message || 'Bạn đã đạt giới hạn sử dụng AI',
+          retryAfter: quota.retryAfterSeconds,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     const conv = await this.conversationModel
       .findById(new Types.ObjectId(dto.conversationId))
       .lean()
       .exec();
 
     if (!conv) {
+      await this.auraRateLimiter.releaseConcurrencyLock(viewerId);
       throw new NotFoundException('Không tìm thấy cuộc trò chuyện');
     }
 
@@ -136,6 +201,7 @@ export class GroqController {
       (p) => p.toString() === viewerId,
     );
     if (!isParticipant) {
+      await this.auraRateLimiter.releaseConcurrencyLock(viewerId);
       throw new ForbiddenException('Bạn không thuộc cuộc trò chuyện này');
     }
 
@@ -161,14 +227,18 @@ export class GroqController {
       time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString('vi-VN') : undefined,
     }));
 
-    const summary = await this.groqService.summarizeChat(chatItems);
+    try {
+      const summary = await this.groqService.summarizeChat(chatItems);
 
-    return {
-      success: true,
-      summary,
-      messageCount: sortedMessages.length,
-      model: this.groqService.model,
-    };
+      return {
+        success: true,
+        summary,
+        messageCount: sortedMessages.length,
+        model: this.groqService.model,
+      };
+    } finally {
+      await this.auraRateLimiter.releaseConcurrencyLock(viewerId);
+    }
   }
 
   @Post('ask-aura')
@@ -180,6 +250,18 @@ export class GroqController {
     const viewerId = this.extractUserId(req);
     if (!dto.prompt || !dto.prompt.trim()) {
       throw new BadRequestException('Nội dung câu hỏi (prompt) không được để trống');
+    }
+
+    const quota = await this.auraRateLimiter.checkAndConsumeQuota(viewerId, dto.prompt);
+    if (!quota.allowed) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message: quota.message || 'Bạn đã đạt giới hạn sử dụng AI',
+          retryAfter: quota.retryAfterSeconds,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     let historyItems: Array<{ senderName: string; text: string }> = [];
@@ -210,16 +292,20 @@ export class GroqController {
       }
     }
 
-    const reply = await this.groqService.generateAuraChatReply(dto.prompt, historyItems, {
-      conversationId: dto.conversationId,
-      senderId: viewerId,
-      partnerId,
-    });
+    try {
+      const reply = await this.groqService.generateAuraChatReply(dto.prompt, historyItems, {
+        conversationId: dto.conversationId,
+        senderId: viewerId,
+        partnerId,
+      });
 
-    return {
-      success: true,
-      reply,
-      model: this.groqService.model,
-    };
+      return {
+        success: true,
+        reply,
+        model: this.groqService.model,
+      };
+    } finally {
+      await this.auraRateLimiter.releaseConcurrencyLock(viewerId);
+    }
   }
 }

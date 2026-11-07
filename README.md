@@ -64,6 +64,10 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 |:---:|:---:|
 | ![Cột Điều Hướng Trái](docs/assets/screenshots/facebook-layout.png) | ![Khám Phá Nhóm](docs/assets/screenshots/groups-facebook-layout.png) |
 
+| Kiểm Soát Hạn Mức & Chống Spam Aura AI | Đóng Gói Docker Toàn Bộ Hệ Thống |
+|:---:|:---:|
+| ![Kiểm soát Hạn ngạch & Chống Spam Aura AI](docs/assets/screenshots/ai-rate-limiting.png) | ![Đóng gói Docker Containerization](docs/assets/screenshots/docker-containers.png) |
+
 > 🌟 **Xem chi tiết toàn bộ các màn hình, quy trình thao tác và phân tích trải nghiệm người dùng tại:**
 > 👉 **[Tài liệu Tổng hợp Hình ảnh Demo & Trải nghiệm thực tế (docs/demo.md)](docs/demo.md)**
 
@@ -238,6 +242,18 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
   - ![Quản lý Hội nhóm & Phân quyền](docs/assets/screenshots/group-management-roles.png)
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/group-roles-permissions.md](docs/features/group-roles-permissions.md) & [docs/features/comment-reporting-moderation.md](docs/features/comment-reporting-moderation.md)*
 
+### 14. Kiểm Soát Hạn Mức & Chống Lạm Dụng / Spam AI (Aura AI Rate Limiting & Cost Protection)
+- **Kiểm soát độ dài câu hỏi:** Chặn các prompt vượt quá 1.000 ký tự, ngăn chặn triệt để tấn công nhồi token (Prompt Flooding).
+- **Bộ nhớ đệm thông minh Redis (Semantic & Comment Cache):** Tự động lưu cache kết quả tóm tắt bình luận bài viết (TTL 30 phút), phục vụ tức thì cho nhiều người xem cùng lúc với chi phí 0 token.
+- **Rate Limiting 3 lớp trên Redis:**
+  - Cooldown: Yêu cầu giãn cách tối thiểu 3 giây giữa hai câu hỏi liên tiếp.
+  - Tần suất theo phút (RPM): Tối đa 6 yêu cầu / phút / người dùng.
+  - Hạn ngạch hàng ngày (Daily Quota): Cấp 50 lượt gọi AI / ngày / tài khoản, tự động làm mới vào 00:00 UTC.
+- **Khóa xử lý đồng thời (Concurrency Lock):** Mỗi người dùng chỉ được xử lý 1 luồng sinh nội dung AI tại một thời điểm, loại bỏ việc giữ phím Enter tạo ra nhiều stream song song.
+- **Tối ưu hóa ngân sách Token:** Giảm trần `max_tokens` từ 1024 xuống còn 350 tokens cho tin nhắn và 450 tokens cho tóm tắt, tiết kiệm hơn 65% hạn mức Groq Cloud.
+- **Phản hồi thân thiện:** Khi chạm giới hạn hạn mức hoặc cooldown, Aura AI thông báo nhẹ nhàng trực tiếp trong hội thoại hoặc trả HTTP 429 với thông điệp rõ ràng, không làm gián đoạn trải nghiệm.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/ai-rate-limiting-protection.md](docs/features/ai-rate-limiting-protection.md)*
+
 ---
 
 ## 🏗️ Kiến trúc hệ thống & Công nghệ
@@ -405,6 +421,7 @@ Toàn bộ tài liệu chi tiết, sơ đồ thiết kế kiến trúc và hư�
 | 👥 **Hội Nhóm & Phân Quyền BQT** | Quản lý thành viên, bổ nhiệm Phó nhóm, phân quyền chi tiết (xóa thành viên, khóa cmt, chặn bài), câu hỏi xét duyệt & Báo cáo bình luận thông minh | [Xem tài liệu](docs/features/group-roles-permissions.md) |
 | 🚩 **Báo Cáo Bình Luận & Kiểm Duyệt** | Báo cáo bình luận, điều hướng thông minh tới BQT Nhóm hoặc Admin Web, xử lý vi phạm & chế tài thành viên | [Xem tài liệu](docs/features/comment-reporting-moderation.md) |
 | 🛡️ **Kiểm duyệt AI** | NLP Classifier, Vision Scanner, Anomaly Detection (Isolation Forest, Autoencoder) | [Xem tài liệu](docs/features/moderation-trust.md) |
+| 🤖 **Kiểm Soát Hạn Mức AI** | Rate limiting Redis (Cooldown 3s, 6 RPM, 50 calls/ngày), Concurrency lock, Cache tóm tắt 30p, cắt 65% token | [Xem tài liệu](docs/features/ai-rate-limiting-protection.md) |
 | 🛡️ **Trung tâm Bảo mật WAF** | Bảng điều khiển `/admin/security`, WAF-as-Code CLI (`npm run cf:waf`), Turnstile Clearance, Auto-Ban tầng biên | [Xem tài liệu](docs/features/waf.md) |
 | 🐳 **Docker Containers** | Đóng gói toàn bộ hệ thống (Frontend, Backend, Admin, CSDL) với Docker Multi-stage & Compose | [Xem tài liệu](docs/features/docker-containers.md) |
 | 👑 **Cổng Quản Trị Độc Lập** | Kiến trúc tách biệt Admin React SPA (Cổng 5174), bảo mật phân quyền Role Admin, Dashboard & Giám sát hệ thống | [Xem tài liệu](docs/features/admin-portal.md) |

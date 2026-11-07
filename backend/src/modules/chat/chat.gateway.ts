@@ -20,6 +20,7 @@ import { CallStatus, CallType } from './schemas/message.schema.js';
 import { MqttBrokerService } from './mqtt-broker.service.js';
 import { AURA_BOT_ID } from '../groq/aura-bot.constant.js';
 import { GroqService } from '../groq/groq.service.js';
+import { AuraRateLimiterService } from '../groq/aura-rate-limiter.service.js';
 
 interface AuthenticatedSocket extends Socket {
   data: {
@@ -93,6 +94,7 @@ export class ChatGateway
     private readonly redisService: RedisService,
     private readonly mqttBrokerService: MqttBrokerService,
     @Optional() private readonly groqService?: GroqService,
+    @Optional() private readonly auraRateLimiter?: AuraRateLimiterService,
   ) {}
 
   afterInit() {
@@ -391,6 +393,45 @@ export class ChatGateway
 
     if (!this.groqService || (!isMentionAura && !isAuraDirect)) return;
 
+    // 0. Kiểm tra Hạn ngạch & Chống spam dồn dập (Rate Limiting, Cooldown & Daily Quota)
+    if (this.auraRateLimiter) {
+      const quotaCheck = await this.auraRateLimiter.checkAndConsumeQuota(senderId, text);
+      if (!quotaCheck.allowed) {
+        const warningText =
+          quotaCheck.message || 'Bạn đang nhắn quá nhanh cho Aura AI, vui lòng chờ ít giây nhé!';
+        try {
+          const auraMsg = await this.chatService.saveMessage(
+            AURA_BOT_ID,
+            senderId,
+            warningText,
+            conversationId,
+          );
+
+          const warningPayload = {
+            _id: auraMsg._id.toString(),
+            id: auraMsg._id.toString(),
+            conversationId: auraMsg.conversationId.toString(),
+            senderId: AURA_BOT_ID,
+            receiverId: senderId,
+            text: auraMsg.text,
+            type: auraMsg.type || 'text',
+            createdAt: new Date().toISOString(),
+            readAt: null,
+            isDeleted: false,
+            isStreaming: false,
+          };
+
+          this.server?.to(`user:${senderId}`).emit('message:stream_end', warningPayload);
+          if (!isAuraDirect) {
+            this.server?.to(`user:${receiverId}`).emit('message:stream_end', warningPayload);
+          }
+        } catch (e) {
+          this.logger.warn(`Lỗi khi gửi thông báo giới hạn tốc độ Aura: ${e instanceof Error ? e.message : String(e)}`);
+        }
+        return;
+      }
+    }
+
     // Phát sự kiện Aura đang gõ
     this.server?.to(`user:${senderId}`).emit('typing:start', {
       conversationId,
@@ -514,6 +555,10 @@ export class ChatGateway
           conversationId,
           userId: AURA_BOT_ID,
         });
+      }
+    } finally {
+      if (this.auraRateLimiter) {
+        await this.auraRateLimiter.releaseConcurrencyLock(senderId);
       }
     }
   }
