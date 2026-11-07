@@ -206,6 +206,10 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
           {currentTab === 0 && (
             <>
               <ManageSettingsTab
+                groupId={group._id}
+                avatar={group.avatar}
+                coverImage={group.coverImage}
+                onMediaUpdated={(updated) => setGroup((prev) => (prev ? { ...prev, ...updated } : prev))}
                 editName={editName}
                 setEditName={setEditName}
                 editDesc={editDesc}

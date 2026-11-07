@@ -115,6 +115,14 @@ export interface TranslationDictionary {
     approvalDesc: string;
     creating: string;
     submitCreate: string;
+    changeAvatar: string;
+    changeCover: string;
+    groupAvatarLabel: string;
+    groupCoverLabel: string;
+    groupMediaSettingsTitle: string;
+    groupMediaSettingsDesc: string;
+    uploadingImage: string;
+    uploadSuccess: string;
   };
   pages: {
     title: string;

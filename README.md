@@ -227,6 +227,9 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
   - **Kiến trúc module hóa cao cấp:** 100% component trong thư mục `groups/` được tách nhỏ thành các tệp đơn trách nhiệm với kích thước **< 250 dòng code**, loại bỏ 100% mã màu hardcode sang hệ thống Design Tokens và hỗ trợ trọn vẹn **6 ngôn ngữ**. Đã khắc phục triệt để lỗi rò rỉ chuỗi `{count}` trên các tab.
   - Hỗ trợ chế độ Công khai (Public) và Riêng tư (Private).
   - Thảo luận nội bộ nhóm (`GroupFeed`): Thành viên trong nhóm có thể đăng bài viết, chia sẻ ảnh và trao đổi ý kiến trong cộng đồng riêng.
+  - **Tùy biến Ảnh đại diện (Logo) & Ảnh bìa nhóm (Cover Image/Background):**
+    - Quản trị viên và Phó nhóm có thể dễ dàng thay đổi ảnh đại diện (logo) và ảnh bìa nhóm trực tiếp từ Header chi tiết nhóm với nút Camera tiện lợi.
+    - Cung cấp khu vực trực quan "Hình ảnh nhận diện nhóm" (`ManageMediaSettings`) trong tab Cài đặt nhóm (`/groups/[slug]/manage`), xem trước ảnh tức thời, tải ảnh an toàn lên máy chủ và đồng bộ dữ liệu ngay lập tức.
   - **Quản lý vai trò, Tự động nhận diện Quản trị viên & Trang Quản trị Nhóm (`/groups/[slug]/manage`):**
     - Người tạo nhóm tự động giữ vai trò Quản trị viên (Admin/Creator) và Thành viên chính thức (không cần ấn tham gia).
     - Huy hiệu `👑 Quản trị viên` nổi bật kèm nút `⚙️ Quản lý nhóm` dẫn đến trang quản trị chuyên dụng `/groups/[slug]/manage`.

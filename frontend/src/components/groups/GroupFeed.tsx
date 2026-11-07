@@ -177,6 +177,9 @@ export default function GroupFeed({ slug }: { slug: string }) {
             onJoin={handleJoinClick}
             onLeave={() => setLeaveConfirmOpen(true)}
             onManage={() => router.push(`/groups/${group.slug}/manage`)}
+            onUpdateGroup={(updated) => {
+              setData((prev) => (prev ? { ...prev, group: { ...prev.group, ...updated } } : prev));
+            }}
           />
 
           {/* Sticky Navigation Tabs */}

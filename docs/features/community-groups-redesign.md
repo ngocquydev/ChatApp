@@ -66,8 +66,9 @@ frontend/src/components/groups/
 ├── GroupManagePage.tsx             (~239 dòng) -> Trang quản trị nhóm /groups/[slug]/manage
 │
 ├── detail/                         -> Phân hệ Giao diện Chi tiết Nhóm
-│   ├── GroupHeader.tsx             (~237 dòng) -> Ảnh bìa 16:6, avatar, tên nhóm, nút tác vụ
-│   ├── GroupNavTabs.tsx            (~55 dòng)  -> Thanh tab cố định (Thảo luận, Giới thiệu, Thành viên, Media)
+│   ├── GroupHeader.tsx             (~219 dòng) -> Avatar, tên nhóm, chip trạng thái, nút tác vụ
+│   ├── GroupCoverBanner.tsx        (~108 dòng) -> Banner ảnh bìa 16:6 & nút đổi ảnh bìa trực tiếp
+│   ├── GroupNavTabs.tsx            (~59 dòng)  -> Thanh tab cố định (Thảo luận, Giới thiệu, Thành viên, Media)
 │   ├── GroupSidebar.tsx            (~127 dòng) -> Cột bên phải (Giới thiệu, Quy tắc, Thư viện ảnh)
 │   ├── GroupDiscussionTab.tsx      (~60 dòng)  -> Tab Bảng tin thảo luận tích hợp PostFeed
 │   ├── GroupAboutTab.tsx           (~131 dòng) -> Tab Thông tin giới thiệu & Quy tắc chi tiết
@@ -75,7 +76,8 @@ frontend/src/components/groups/
 │
 ├── manage/                         -> Phân hệ Trang Quản trị Nhóm
 │   ├── ManageOverviewMetrics.tsx   (~84 dòng)  -> 4 thẻ chỉ số thống kê (Thành viên, Chờ duyệt, Phó nhóm, Báo cáo)
-│   ├── ManageSettingsTab.tsx       (~188 dòng) -> Form cập nhật cài đặt chung & câu hỏi tham gia
+│   ├── ManageMediaSettings.tsx     (~172 dòng) -> Tùy chỉnh trực quan Ảnh đại diện (Logo) & Ảnh bìa nhóm
+│   ├── ManageSettingsTab.tsx       (~209 dòng) -> Form cập nhật cài đặt chung & câu hỏi tham gia
 │   └── ManageDangerZone.tsx        (~73 dòng)  -> Khu vực nguy hiểm xóa nhóm an toàn
 │
 └── reports/                        -> Phân hệ Kiểm duyệt & Báo cáo Bình luận
@@ -101,6 +103,16 @@ frontend/src/components/groups/
 - Lọc theo 7 chủ đề phổ biến: Công nghệ, Đời sống, Giải trí, Học tập, Trò chơi, Thể thao hoặc xem Tất cả.
 - Chế độ **Thẻ lớn 16:9 (`GroupCoverCard`)**: Tối ưu thị giác với ảnh bìa rộng, hiệu ứng hover nổi bật và Facepile avatar thành viên.
 - Chế độ **Danh sách tối giản (`GroupListItem`)**: Gọn gàng, tải nhiều dữ liệu trên một khung hình, phù hợp người dùng thích giao diện kiểu Reddit/Discord.
+
+### 4.4. Tùy Biến Ảnh Đại Diện (Logo) & Ảnh Bìa (Background/Cover Photo)
+- **Tùy biến nhanh trực tiếp tại Header nhóm (`GroupHeader.tsx` & `GroupCoverBanner.tsx`):**
+  - Quản trị viên (Admin) và Phó nhóm (Deputy) có nút bấm Camera tiện lợi ngay trên ảnh bìa (`Đổi ảnh bìa`) và trên avatar nhóm.
+  - Chọn ảnh trực tiếp từ máy, tự động tải lên máy chủ thông qua endpoint an toàn `/upload` (`uploadMedia`).
+  - Giao diện cập nhật tức thì với hiệu ứng loading và lưu vào MongoDB thông qua `PATCH /community-groups/:id`.
+- **Quản lý trong Cài đặt nhóm (`ManageSettingsTab.tsx` & `ManageMediaSettings.tsx`):**
+  - Cung cấp khu vực trực quan "Hình ảnh nhận diện nhóm" (`ManageMediaSettings`).
+  - Hiển thị bản xem trước ảnh đại diện (Logo) và ảnh bìa nhóm (Cover Image).
+  - Tải lên độc lập từng ảnh, hiển thị thông báo thành công và cập nhật tức thời dữ liệu nhóm.
 
 ---
 

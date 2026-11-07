@@ -13,8 +13,14 @@ import {
 } from "@mui/material";
 import { Save } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
+import { CommunityGroupItem } from "@/services/communityGroupsApi";
+import ManageMediaSettings from "./ManageMediaSettings";
 
 interface ManageSettingsTabProps {
+  groupId?: string;
+  avatar?: string;
+  coverImage?: string;
+  onMediaUpdated?: (updated: Partial<CommunityGroupItem>) => void;
   editName: string;
   setEditName: (val: string) => void;
   editDesc: string;
@@ -34,6 +40,10 @@ interface ManageSettingsTabProps {
 }
 
 export default function ManageSettingsTab({
+  groupId,
+  avatar,
+  coverImage,
+  onMediaUpdated,
   editName,
   setEditName,
   editDesc,
@@ -54,7 +64,17 @@ export default function ManageSettingsTab({
   const { t } = useTranslation();
 
   return (
-    <Card variant="outlined" sx={{ p: 3, borderRadius: "16px", bgcolor: "background.paper", mb: 3 }}>
+    <>
+      {groupId && onMediaUpdated && (
+        <ManageMediaSettings
+          groupId={groupId}
+          groupName={editName}
+          avatar={avatar}
+          coverImage={coverImage}
+          onMediaUpdated={onMediaUpdated}
+        />
+      )}
+      <Card variant="outlined" sx={{ p: 3, borderRadius: "16px", bgcolor: "background.paper", mb: 3 }}>
       <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>
         {t("groups.groupSettings")}
       </Typography>
@@ -183,6 +203,7 @@ export default function ManageSettingsTab({
         </Box>
       </Box>
     </Card>
+    </>
   );
 }
 

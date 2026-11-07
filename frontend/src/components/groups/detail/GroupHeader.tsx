@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Avatar, Box, Button, Card, Chip, Menu, MenuItem, Typography } from "@mui/material";
-import { Check, Clock, Globe, Lock, LogOut, MessageSquare, Plus, Settings, ShieldCheck, UserPlus } from "lucide-react";
+import { useRef, useState } from "react";
+import { Avatar, Box, Button, Card, Chip, CircularProgress, IconButton, Menu, MenuItem, Typography } from "@mui/material";
+import { Camera, Check, Clock, Globe, Lock, LogOut, MessageSquare, Plus, Settings, ShieldCheck, UserPlus } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
-import { CommunityGroupItem } from "@/services/communityGroupsApi";
+import { CommunityGroupItem, communityGroupsApi } from "@/services/communityGroupsApi";
+import { uploadMedia } from "@/services/postsApi";
+import GroupCoverBanner from "./GroupCoverBanner";
 
 interface GroupHeaderProps {
   group: CommunityGroupItem;
@@ -18,6 +20,7 @@ interface GroupHeaderProps {
   onManage: () => void;
   onInvite?: () => void;
   onChat?: () => void;
+  onUpdateGroup?: (updated: Partial<CommunityGroupItem>) => void;
 }
 
 export default function GroupHeader({
@@ -32,20 +35,36 @@ export default function GroupHeader({
   onManage,
   onInvite,
   onChat,
+  onUpdateGroup,
 }: GroupHeaderProps) {
   const { t } = useTranslation();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
 
-  const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => {
-    setMenuAnchor(e.currentTarget);
-  };
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const handleMenuClose = () => {
-    setMenuAnchor(null);
+    try {
+      setIsUploadingAvatar(true);
+      const res = await uploadMedia(file);
+      const updated = await communityGroupsApi.updateGroup(group._id, {
+        avatar: res.url,
+      });
+      onUpdateGroup?.(updated);
+    } catch (err) {
+      console.error("Lỗi cập nhật ảnh đại diện nhóm:", err);
+    } finally {
+      setIsUploadingAvatar(false);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
+    }
   };
 
   const handleLeaveClick = () => {
-    handleMenuClose();
+    setMenuAnchor(null);
     onLeave();
   };
 
@@ -60,23 +79,14 @@ export default function GroupHeader({
         mb: 2.5,
       }}
     >
-      {/* Cover image banner 16:6 aspect ratio */}
-      <Box
-        sx={{
-          height: { xs: 150, sm: 220, md: 260 },
-          bgcolor: "primary.main",
-          backgroundImage: group.coverImage
-            ? `linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.4) 100%), url(${group.coverImage})`
-            : "linear-gradient(135deg, var(--mui-palette-primary-main) 0%, var(--mui-palette-tone-fx-4f46e5) 100%)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          position: "relative",
-        }}
+      <GroupCoverBanner
+        groupId={group._id}
+        coverImage={group.coverImage}
+        canManage={canManage}
+        onUpdateCover={onUpdateGroup}
       />
 
-      {/* Info & action bar below banner */}
       <Box sx={{ px: { xs: 2, sm: 3.5 }, pb: 2.5, pt: { xs: 2, sm: 2.5 }, position: "relative" }}>
-        {/* Overlapping Avatar & Header Content */}
         <Box
           sx={{
             display: "flex",
@@ -85,24 +95,51 @@ export default function GroupHeader({
             gap: { xs: 1.5, sm: 2.5 },
           }}
         >
-          <Avatar
-            src={group.avatar || undefined}
-            sx={{
-              width: { xs: 88, sm: 112 },
-              height: { xs: 88, sm: 112 },
-              mt: { xs: "-54px", sm: "-64px" },
-              border: "4px solid",
-              borderColor: "background.paper",
-              bgcolor: "primary.main",
-              fontWeight: 800,
-              fontSize: { xs: "1.75rem", sm: "2.25rem" },
-              boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
-              flexShrink: 0,
-              zIndex: 2,
-            }}
-          >
-            {group.name.charAt(0).toUpperCase()}
-          </Avatar>
+          {/* Avatar with edit overlay */}
+          <Box sx={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+            {canManage && (
+              <input
+                type="file"
+                ref={avatarInputRef}
+                onChange={handleAvatarFileChange}
+                accept="image/*"
+                style={{ display: "none" }}
+              />
+            )}
+            <Avatar
+              src={group.avatar || undefined}
+              sx={{
+                width: { xs: 88, sm: 112 },
+                height: { xs: 88, sm: 112 },
+                mt: { xs: "-54px", sm: "-64px" },
+                border: "4px solid",
+                borderColor: "background.paper",
+                bgcolor: "primary.main",
+                fontWeight: 800,
+                fontSize: { xs: "1.75rem", sm: "2.25rem" },
+                boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
+                zIndex: 2,
+              }}
+            >
+              {group.name.charAt(0).toUpperCase()}
+            </Avatar>
+            {canManage && (
+              <IconButton
+                size="small"
+                disabled={isUploadingAvatar}
+                onClick={() => avatarInputRef.current?.click()}
+                aria-label={t("groups.changeAvatar")}
+                sx={{
+                  position: "absolute", bottom: 2, right: 2,
+                  bgcolor: "background.paper", border: "2px solid", borderColor: "background.paper",
+                  boxShadow: 2, color: "text.primary", "&:hover": { bgcolor: "action.hover" },
+                  zIndex: 3, p: 0.6,
+                }}
+              >
+                {isUploadingAvatar ? <CircularProgress size={16} /> : <Camera size={16} />}
+              </IconButton>
+            )}
+          </Box>
 
           <Box sx={{ flex: 1, minWidth: 0, textAlign: { xs: "center", sm: "left" }, py: { xs: 0.5, sm: 1 } }}>
             <Typography variant="h5" component="h1" sx={{ fontWeight: 800, letterSpacing: "-0.02em", mb: 0.5 }}>
@@ -165,10 +202,10 @@ export default function GroupHeader({
               </>
             ) : isMember ? (
               <>
-                <Button variant="outlined" startIcon={<Check size={16} />} onClick={handleMenuOpen} disabled={isActionPending} sx={{ borderRadius: "10px", fontWeight: 700 }}>
+                <Button variant="outlined" startIcon={<Check size={16} />} onClick={(e) => setMenuAnchor(e.currentTarget)} disabled={isActionPending} sx={{ borderRadius: "10px", fontWeight: 700 }}>
                   {t("groups.joined")}
                 </Button>
-                <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose} disableScrollLock slotProps={{ paper: { sx: { borderRadius: "12px", minWidth: 160 } } }}>
+                <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)} disableScrollLock slotProps={{ paper: { sx: { borderRadius: "12px", minWidth: 160 } } }}>
                   <MenuItem onClick={handleLeaveClick} sx={{ color: "error.main", gap: 1 }}>
                     <LogOut size={16} />
                     {t("groups.leaveGroup")}
@@ -202,4 +239,3 @@ export default function GroupHeader({
     </Card>
   );
 }
-

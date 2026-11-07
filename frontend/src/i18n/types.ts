@@ -182,6 +182,14 @@ export interface TranslationDictionary {
     deleteGroupConfirmDesc: string;
     deleteGroupSuccess: string;
     deleteGroupError: string;
+    changeAvatar: string;
+    changeCover: string;
+    groupAvatarLabel: string;
+    groupCoverLabel: string;
+    groupMediaSettingsTitle: string;
+    groupMediaSettingsDesc: string;
+    uploadingImage: string;
+    uploadSuccess: string;
     tabAbout: string;
     tabMedia: string;
     inviteFriends: string;

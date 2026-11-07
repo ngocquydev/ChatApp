@@ -468,7 +468,10 @@ Toàn bộ hệ thống Hội nhóm Cộng đồng (Community Groups) được t
 - **Ảnh bìa 16:6 & Avatar chồng lớp (Overlapping):** Bố cục phong cách Facebook với ảnh bìa rộng, avatar lồng viền và thanh công cụ tác vụ đa năng.
 - **Thanh điều hướng Tab dính (Sticky Tabs):** Dễ dàng chuyển đổi giữa Bảng tin thảo luận (`Posts`), Giới thiệu & Quy tắc nhóm (`About`), Thành viên & Phân quyền (`Members`), Thư viện hình ảnh (`Media`).
 - **Sidebar thông tin bên phải:** Tóm tắt thông tin giới thiệu, hiển thị danh sách quy tắc được đánh số và xem nhanh các ảnh gần đây trong nhóm.
+- **Tùy biến Ảnh đại diện (Logo) & Ảnh bìa (Cover Image):** Quản trị viên và Phó nhóm có thể dễ dàng đổi ảnh đại diện (logo) và ảnh bìa trực tiếp ngay tại Header nhóm hoặc trong tab Cài đặt nhóm (`/groups/[slug]/manage`). Tích hợp nút camera tiện lợi, tải ảnh lên an toàn và hiển thị tức thì.
 - **Quản trị viên & Phân quyền chi tiết:** Trang quản trị `/groups/[slug]/manage` với 4 thẻ chỉ số thống kê, quản lý thành viên, xét duyệt yêu cầu tham gia và khu vực nguy hiểm xóa nhóm an toàn.
+
+![Tùy biến Nhóm](assets/screenshots/group-customization.png)
 
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/community-groups-redesign.md](features/community-groups-redesign.md)*
 
