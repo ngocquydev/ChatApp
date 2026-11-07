@@ -2,8 +2,8 @@ node_modules
 npm-debug.log*
 dist
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 coverage
 .git
 .gitignore
@@ -13,4 +13,7 @@ coverage
 test
 src/**/*.spec.ts
 vitest.config*.ts
+certs/*.pem
+certs/*.key
+!certs/README.md
 

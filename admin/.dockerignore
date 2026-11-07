@@ -1,8 +1,11 @@
 node_modules
 npm-debug.log*
 dist
-.env.local
-.env.*.local
+.env
+.env.*
+!.env.example
+certs/*.key
+certs/*.pem
 coverage
 .git
 .gitignore

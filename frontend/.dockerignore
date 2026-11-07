@@ -3,8 +3,11 @@ npm-debug.log*
 .next
 out
 build
-.env.local
-.env.*.local
+.env
+.env.*
+!.env.example
+certs/*.key
+certs/*.pem
 coverage
 .git
 .gitignore

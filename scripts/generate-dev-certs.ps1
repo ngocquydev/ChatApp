@@ -1,5 +1,9 @@
 # Script tự động tạo chứng chỉ SSL/TLS tự ký cho môi trường phát triển (Development)
 # Dùng để bật mã hóa TLS 1.3 / WSS cho MQTT Broker nhằm chống bắt gói tin (Packet Sniffing)
+param(
+    [switch]$Force
+)
+
 $ErrorActionPreference = "Stop"
 
 $certsDir = Join-Path $PSScriptRoot "..\backend\certs"
@@ -10,7 +14,7 @@ if (-not (Test-Path $certsDir)) {
 $keyPath = Join-Path $certsDir "mqtt-key.pem"
 $certPath = Join-Path $certsDir "mqtt-cert.pem"
 
-if ((Test-Path $keyPath) -and (Test-Path $certPath)) {
+if (-not $Force -and (Test-Path $keyPath) -and (Test-Path $certPath)) {
     Write-Host "✅ [SSL/TLS] Chứng chỉ SSL/TLS phát triển đã tồn tại sẵn tại: $certsDir" -ForegroundColor Green
     exit 0
 }

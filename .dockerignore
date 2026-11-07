@@ -20,7 +20,11 @@ Thumbs.db
 **/coverage
 
 # Environment & Secrets
-**/.env.local
-**/.env.*.local
+**/.env
+**/.env.*
+!**/.env.example
 **/.vercel
+**/certs/*.key
+**/certs/*.pem
+!**/certs/README.md
 

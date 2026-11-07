@@ -15,7 +15,6 @@ RUN npm install
 
 COPY tsconfig*.json nest-cli.json ./
 COPY src/ ./src/
-COPY certs/ ./certs/
 
 RUN npm run build
 
@@ -48,10 +47,9 @@ RUN apk add --no-cache dumb-init
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/certs ./certs
 
-# Tạo thư mục uploads cho hình ảnh bài viết và gán quyền user node không root
-RUN mkdir -p /app/uploads/posts && chown -R node:node /app
+# Tạo thư mục uploads và certs rỗng, gán quyền user node không root
+RUN mkdir -p /app/uploads/posts /app/certs && chown -R node:node /app
 
 USER node
 
