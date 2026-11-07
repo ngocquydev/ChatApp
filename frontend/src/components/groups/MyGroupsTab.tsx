@@ -148,14 +148,14 @@ export default function MyGroupsTab({
                       {group.name}
                     </Typography>
 
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.25 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.25, flexWrap: "wrap" }}>
                       <Chip
                         size="small"
                         icon={group.privacy === "public" ? <Globe size={10} /> : <Lock size={10} />}
                         label={group.privacy === "public" ? t("groups.publicGroup") : t("groups.privateGroup")}
                         sx={{ height: 18, fontSize: "0.65rem", borderRadius: "6px" }}
                       />
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary" noWrap sx={{ whiteSpace: "nowrap" }}>
                         • {t("groups.membersCount", { count: group.memberCount || 1 })}
                       </Typography>
                     </Box>
@@ -171,7 +171,7 @@ export default function MyGroupsTab({
                     href={`/groups/${group.slug}`}
                     sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
                   >
-                    {t("common.view")}
+                    {t("groups.viewGroup")}
                   </Button>
 
                   {isAdmin && (

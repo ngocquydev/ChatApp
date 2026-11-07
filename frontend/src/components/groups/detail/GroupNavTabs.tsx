@@ -7,10 +7,14 @@ import { useTranslation } from "@/i18n/useTranslation";
 interface GroupNavTabsProps {
   currentTab: number;
   onChange: (tabIndex: number) => void;
+  memberCount?: number;
 }
 
-export default function GroupNavTabs({ currentTab, onChange }: GroupNavTabsProps) {
+export default function GroupNavTabs({ currentTab, onChange, memberCount }: GroupNavTabsProps) {
   const { t } = useTranslation();
+  const membersLabel = typeof memberCount === "number" && memberCount > 0
+    ? `${t("groups.tabMembers")} (${memberCount})`
+    : t("groups.tabMembers");
 
   return (
     <Card
@@ -46,7 +50,7 @@ export default function GroupNavTabs({ currentTab, onChange }: GroupNavTabsProps
       >
         <Tab icon={<FileText size={18} />} iconPosition="start" label={t("groups.tabPosts")} />
         <Tab icon={<Info size={18} />} iconPosition="start" label={t("groups.tabAbout")} />
-        <Tab icon={<Users size={18} />} iconPosition="start" label={t("groups.tabMembers")} />
+        <Tab icon={<Users size={18} />} iconPosition="start" label={membersLabel} />
         <Tab icon={<ImageIcon size={18} />} iconPosition="start" label={t("groups.tabMedia")} />
       </Tabs>
     </Card>

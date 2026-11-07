@@ -14,9 +14,10 @@ Trang Hội nhóm Cộng đồng (`/groups`) và Chi tiết Nhóm (`/groups/[slu
   - Nút **`+ Tạo nhóm mới`** nổi bật.
   - Danh mục **Nhóm do bạn quản lý** & **Nhóm bạn đã tham gia** cuộn độc lập.
 - **Bảng Tin Tổng Hợp Các Nhóm (`GroupFeedTab`):** Tổng hợp bài viết thời gian thực từ các nhóm người dùng đã tham gia (`GET /posts/groups/feed`), cuộn vô hạn với con trỏ cursor, tương tác thả cảm xúc & bình luận.
-- **Thẻ Nhóm Banner Lớn (16:9) & Facepile (`GroupCoverCard`):**
+- **Thẻ Nhóm Banner Lớn (16:9) & Thành Viên Thực Tế (`GroupCoverCard`):**
   - Ảnh bìa 16:9 sắc nét kèm avatar nhóm lồng góc.
-  - Cụm avatar thành viên xếp chồng (**Facepile**) hiển thị trực quan các thành viên tiêu biểu.
+  - Số lượng thành viên thực tế kèm icon nhóm (loại bỏ hoàn toàn avatar giả lập A, B, C).
+  - Tự động nhận diện tư cách thành viên: nếu đã là thành viên hoặc quản trị viên thì hiển thị trạng thái "Đã tham gia" / "Xem nhóm" thay vì hiển thị "+ Tham gia nhóm".
   - Huy hiệu quyền riêng tư và danh mục.
 - **Bộ Lọc Phân Loại Chủ Đề & Chuyển Đổi Chế Độ Xem (`GroupDiscoverTab`):**
   - Thanh chọn chủ đề dạng viên thuốc (Pills): *Tất cả, Công nghệ, Đời sống, Giải trí, Học tập, Trò chơi, Thể thao*.

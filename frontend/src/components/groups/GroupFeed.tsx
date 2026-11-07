@@ -180,7 +180,7 @@ export default function GroupFeed({ slug }: { slug: string }) {
           />
 
           {/* Sticky Navigation Tabs */}
-          <GroupNavTabs currentTab={currentTab} onChange={setCurrentTab} />
+          <GroupNavTabs currentTab={currentTab} onChange={setCurrentTab} memberCount={memberCount} />
 
           {/* Tab Views */}
           {currentTab === 0 && (

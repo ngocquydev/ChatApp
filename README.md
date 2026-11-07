@@ -219,7 +219,8 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
   - Tích hợp Bảng tin bài viết Fanpage (`PostFeed`): Quản trị viên đăng bài viết chính thức từ trang, người dùng theo dõi có thể tương tác, bình luận và thả cảm xúc.
 - **Hội nhóm cộng đồng chuẩn Facebook & Kiến trúc Module hóa (`/groups`):**
   - **Tái thiết kế giao diện theo chuẩn Facebook Groups:** Ảnh bìa rộng tỷ lệ 16:6, avatar chồng lớp viền nổi, thanh điều hướng tab dính (Thảo luận `Posts`, Giới thiệu `About`, Thành viên `Members`, Thư viện ảnh `Media`), và cột sidebar thông tin bên phải.
-  - **Kiến trúc module hóa cao cấp:** 100% component trong thư mục `groups/` được tách nhỏ thành các tệp đơn trách nhiệm với kích thước **< 250 dòng code**, loại bỏ 100% mã màu hardcode sang hệ thống Design Tokens và hỗ trợ trọn vẹn **6 ngôn ngữ**.
+  - **100% dữ liệu thực & Nhận diện trạng thái thành viên tự động:** Loại bỏ hoàn toàn dữ liệu giả/avatar tĩnh (A, B, C), hiển thị số lượng thành viên thực tế, tự động đồng bộ trạng thái "Đã tham gia" / "Xem nhóm" cho người sáng lập/thành viên.
+  - **Kiến trúc module hóa cao cấp:** 100% component trong thư mục `groups/` được tách nhỏ thành các tệp đơn trách nhiệm với kích thước **< 250 dòng code**, loại bỏ 100% mã màu hardcode sang hệ thống Design Tokens và hỗ trợ trọn vẹn **6 ngôn ngữ**. Đã khắc phục triệt để lỗi rò rỉ chuỗi `{count}` trên các tab.
   - Hỗ trợ chế độ Công khai (Public) và Riêng tư (Private).
   - Thảo luận nội bộ nhóm (`GroupFeed`): Thành viên trong nhóm có thể đăng bài viết, chia sẻ ảnh và trao đổi ý kiến trong cộng đồng riêng.
   - **Quản lý vai trò, Tự động nhận diện Quản trị viên & Trang Quản trị Nhóm (`/groups/[slug]/manage`):**

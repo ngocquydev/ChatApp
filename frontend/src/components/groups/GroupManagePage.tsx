@@ -197,9 +197,9 @@ export default function GroupManagePage({ slug }: GroupManagePageProps) {
           <Card sx={{ borderRadius: "16px", mb: 3, border: "1px solid", borderColor: "divider", bgcolor: "background.paper" }}>
             <Tabs value={currentTab} onChange={(_, v) => setCurrentTab(v)} variant="scrollable" scrollButtons="auto" sx={{ minHeight: 48, px: 1 }}>
               <Tab icon={<Settings size={18} />} iconPosition="start" label={t("groups.tabSettings")} />
-              <Tab icon={<UserCheck size={18} />} iconPosition="start" label={t("groups.tabRequests")} />
-              <Tab icon={<Users size={18} />} iconPosition="start" label={t("groups.tabMembers")} />
-              <Tab icon={<Flag size={18} />} iconPosition="start" label="Báo cáo vi phạm" />
+              <Tab icon={<UserCheck size={18} />} iconPosition="start" label={pendingCount > 0 ? `${t("groups.tabRequests")} (${pendingCount})` : t("groups.tabRequests")} />
+              <Tab icon={<Users size={18} />} iconPosition="start" label={memberCount > 0 ? `${t("groups.tabMembers")} (${memberCount})` : t("groups.tabMembers")} />
+              <Tab icon={<Flag size={18} />} iconPosition="start" label={reportsCount > 0 ? `${t("reports.tabReports")} (${reportsCount})` : t("reports.tabReports")} />
             </Tabs>
           </Card>
 

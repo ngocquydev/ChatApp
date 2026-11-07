@@ -458,6 +458,8 @@ Toàn bộ hệ thống Hội nhóm Cộng đồng (Community Groups) được t
 | ![Khám phá Nhóm Desktop](assets/screenshots/groups-redesign-explore.png) | ![Khám phá Nhóm Mobile](assets/screenshots/groups-redesign-mobile.png) |
 
 ### 23.2. Điểm cải tiến nổi bật:
+- **Dữ liệu thật & Nhận diện trạng thái thành viên tự động:** Loại bỏ hoàn toàn dữ liệu giả/avatar tĩnh (A, B, C), hiển thị số lượng thành viên thực tế kèm kiểm tra tư cách thành viên chuẩn xác ("Đã tham gia" / "Xem nhóm").
+- **Định dạng Tab động chuẩn i18n:** Khắc phục lỗi rò rỉ chuỗi `{count}` trên thanh tab điều hướng nhóm và trang quản trị, hiển thị số lượng linh hoạt không phụ thuộc tham số cố định.
 - **Ảnh bìa 16:6 & Avatar chồng lớp (Overlapping):** Bố cục phong cách Facebook với ảnh bìa rộng, avatar lồng viền và thanh công cụ tác vụ đa năng.
 - **Thanh điều hướng Tab dính (Sticky Tabs):** Dễ dàng chuyển đổi giữa Bảng tin thảo luận (`Posts`), Giới thiệu & Quy tắc nhóm (`About`), Thành viên & Phân quyền (`Members`), Thư viện hình ảnh (`Media`).
 - **Sidebar thông tin bên phải:** Tóm tắt thông tin giới thiệu, hiển thị danh sách quy tắc được đánh số và xem nhanh các ảnh gần đây trong nhóm.

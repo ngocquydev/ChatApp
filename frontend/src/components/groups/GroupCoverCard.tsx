@@ -3,7 +3,6 @@
 import NextLink from "next/link";
 import {
   Avatar,
-  AvatarGroup,
   Box,
   Button,
   Card,
@@ -29,9 +28,6 @@ export default function GroupCoverCard({
   const { t } = useTranslation();
   const isMember = !!group.isMember;
   const isPending = !!group.isPending;
-
-  // Generate initials for facepile preview
-  const memberInitials = ["A", "B", "C"];
 
   return (
     <Card
@@ -125,29 +121,10 @@ export default function GroupCoverCard({
             {group.name}
           </Typography>
 
-          {/* Facepile preview and member count */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-            <AvatarGroup
-              max={3}
-              sx={{
-                "& .MuiAvatar-root": {
-                  width: 22,
-                  height: 22,
-                  fontSize: "0.65rem",
-                  fontWeight: 700,
-                  border: "2px solid",
-                  borderColor: "background.paper",
-                },
-              }}
-            >
-              {memberInitials.map((init, i) => (
-                <Avatar key={i} sx={{ bgcolor: i === 0 ? "primary.main" : i === 1 ? "secondary.main" : "text.secondary" }}>
-                  {init}
-                </Avatar>
-              ))}
-            </AvatarGroup>
-
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+          {/* Member count */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.5, color: "text.secondary" }}>
+            <Users size={16} />
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
               {t("groups.membersCount", { count: group.memberCount || 1 })}
             </Typography>
           </Box>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import { Compass, Newspaper, Plus, Users } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useAuthStore } from "@/store/useAuthStore";
 import { communityGroupsApi, CommunityGroupItem } from "@/services/communityGroupsApi";
 import GroupsSidebarNav from "./GroupsSidebarNav";
 import GroupFeedTab from "./GroupFeedTab";
@@ -21,6 +22,9 @@ import JoinQuestionDialog from "./JoinQuestionDialog";
 
 export default function GroupsExplore() {
   const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const currentUserId = (user?._id || user?.id) as string | undefined;
+
   const [activeTab, setActiveTab] = useState<"feed" | "discover" | "my-groups">("feed");
   const [groups, setGroups] = useState<CommunityGroupItem[]>([]);
   const [myGroups, setMyGroups] = useState<CommunityGroupItem[]>([]);
@@ -32,25 +36,44 @@ export default function GroupsExplore() {
   const [pendingJoinGroup, setPendingJoinGroup] = useState<CommunityGroupItem | null>(null);
   const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
 
-  const loadData = async (q?: string) => {
+  const loadData = useCallback(async (q?: string) => {
     setIsLoading(true);
     try {
       const [allGroups, joinedGroups] = await Promise.all([
         communityGroupsApi.exploreGroups(q),
         communityGroupsApi.getMyGroups().catch(() => []),
       ]);
-      setGroups(allGroups);
+
+      const joinedIds = new Set(joinedGroups.map((jg) => jg._id));
+      const enriched = (allGroups || []).map((g) => {
+        const creatorId = typeof g.creatorId === "object" ? g.creatorId?._id : g.creatorId;
+        const isJoined =
+          joinedIds.has(g._id) ||
+          (!!currentUserId && creatorId === currentUserId) ||
+          (g.adminIds || []).some((a) => (typeof a === "object" ? a._id : a) === currentUserId) ||
+          (g.members || []).some((m) => (typeof m === "object" ? (m as any)._id : m) === currentUserId);
+        const isPending = (g.pendingMemberIds || []).some(
+          (p) => (typeof p === "object" ? (p as any)._id : p) === currentUserId
+        );
+        return {
+          ...g,
+          isMember: isJoined,
+          isPending,
+        };
+      });
+
+      setGroups(enriched);
       setMyGroups(joinedGroups);
     } catch (e) {
       console.error("Lỗi tải nhóm:", e);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentUserId]);
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [loadData]);
 
   const handleJoinGroup = async (group: CommunityGroupItem) => {
     if (group.privacy === "private" && group.requireJoinReason) {
