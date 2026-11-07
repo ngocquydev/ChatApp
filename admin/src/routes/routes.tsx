@@ -15,9 +15,6 @@ export interface RouteItem {
   children?: RouteItem[];
 }
 
-/**
- * Danh sách các route con bên trong AdminLayout (/)
- */
 export const childRoutes: RouteItem[] = [
   { index: true, element: <DashboardView /> },
   { path: "users", element: <UsersManagementView /> },
@@ -27,9 +24,6 @@ export const childRoutes: RouteItem[] = [
   { path: "system", element: <SystemHealthView /> },
 ];
 
-/**
- * Cấu hình toàn bộ routes của ứng dụng Admin Portal
- */
 export const routes: RouteItem[] = [
   {
     path: "/login",

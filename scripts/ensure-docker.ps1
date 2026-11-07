@@ -1,6 +1,7 @@
 # scripts/ensure-docker.ps1 — Tự động kiểm tra và khởi động Docker Desktop & Containers
 param (
     [switch]$StartContainers = $true,
+    [switch]$All = $false,
     [int]$TimeoutSeconds = 60
 )
 
@@ -75,10 +76,15 @@ if (-not $isDockerRunning) {
 }
 
 if ($StartContainers) {
-    Write-Host "📦 Đang khởi động các dịch vụ MongoDB & Redis qua Docker Compose..." -ForegroundColor Cyan
-    docker compose up -d
+    if ($All) {
+        Write-Host "📦 Đang khởi động toàn bộ dịch vụ (Databases + Backend + Frontend + Admin) qua Docker Compose..." -ForegroundColor Cyan
+        docker compose up -d --build
+    } else {
+        Write-Host "📦 Đang khởi động các dịch vụ cơ sở dữ liệu (MongoDB, Redis, Neo4j) qua Docker Compose..." -ForegroundColor Cyan
+        docker compose up -d mongo redis neo4j
+    }
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "✅ MongoDB và Redis containers đã được khởi động thành công!" -ForegroundColor Green
+        Write-Host "✅ Containers đã được khởi động thành công!" -ForegroundColor Green
         docker compose ps
     } else {
         Write-Error "❌ Khởi động docker compose thất bại!"

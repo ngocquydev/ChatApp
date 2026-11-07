@@ -9,10 +9,6 @@ export interface LangEntry {
   th: string;
 }
 
-/**
- * Bản đồ từ điển mở rộng tự động cho 6 ngôn ngữ.
- * Dùng để hỗ trợ hàm tr(vi, en) khi chuyển sang zh-CN, zh-TW, ko, th.
- */
 export const AUTO_TRANSLATIONS: Record<string, Omit<LangEntry, "vi" | "en">> = {
   // Navigation & Headers
   "tin nhắn": { "zh-CN": "消息", "zh-TW": "訊息", ko: "메시지", th: "ข้อความ" },

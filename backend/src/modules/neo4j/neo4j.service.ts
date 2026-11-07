@@ -90,9 +90,6 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     return database ? this.driver.session({ database }) : this.driver.session();
   }
 
-  /**
-   * Đồng bộ nút User vào Neo4j
-   */
   async syncUser(user: { id: string; name: string; avatar?: string }): Promise<void> {
     if (!this.isAvailable()) return;
     const session = this.getSession();
@@ -116,9 +113,6 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Tạo quan hệ bạn bè 2 chiều [:FRIEND] giữa 2 người dùng
-   */
   async addFriendship(userId1: string, userId2: string): Promise<void> {
     if (!this.isAvailable()) return;
     const session = this.getSession();
@@ -138,9 +132,6 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Xóa quan hệ bạn bè [:FRIEND]
-   */
   async removeFriendship(userId1: string, userId2: string): Promise<void> {
     if (!this.isAvailable()) return;
     const session = this.getSession();
@@ -159,9 +150,6 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Tạo quan hệ chặn [:BLOCK]
-   */
   async blockUser(userId: string, targetId: string): Promise<void> {
     if (!this.isAvailable()) return;
     const session = this.getSession();
@@ -181,11 +169,6 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Gợi ý kết bạn bằng đồ thị Neo4j (Friends of Friends & Network Centrality)
-   * - Tier 1: Tìm người có bạn chung (Friends of Friends - 2 hops), sắp xếp theo số bạn chung giảm dần.
-   * - Tier 2: Nếu chưa đủ số lượng limit, mở rộng lấy người dùng có nhiều kết nối nhất trong mạng lưới.
-   */
   async getFriendSuggestions(userId: string, limit = 10): Promise<Neo4jFriendSuggestion[]> {
     if (!this.isAvailable()) return [];
     const session = this.getSession();

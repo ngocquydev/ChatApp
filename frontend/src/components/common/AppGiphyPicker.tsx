@@ -14,13 +14,8 @@ import {
 } from "@mui/material";
 import { Search, X } from "lucide-react";
 import Masonry from "react-masonry-css";
-import { GiphyFetch } from "@giphy/js-fetch-api";
 import type { IGif } from "@giphy/js-types";
 import { useTranslation } from "@/i18n/useTranslation";
-
-const GIPHY_KEY =
-  process.env.NEXT_PUBLIC_GIPHY_API_KEY || "HtWiX1xoMLhJ0C2mmP1BXRbUSKeAOIHI";
-const gf = new GiphyFetch(GIPHY_KEY);
 
 const QUICK_TAGS = [
   { id: "trending", labelVi: "🔥 Xu hướng", labelEn: "🔥 Trending", query: "" },
@@ -34,7 +29,7 @@ const QUICK_TAGS = [
   { id: "cat", labelVi: "🐱 Mèo", labelEn: "🐱 Cat", query: "cat" },
 ];
 
-const PAGE_LIMIT = 20;
+const PAGE_LIMIT:Number = 20;
 
 export interface AppGiphyPickerProps {
   onSelect: (gifUrl: string, title?: string) => void;
@@ -74,20 +69,22 @@ export default function AppGiphyPicker({
         }
 
         const trimmed = query.trim();
-        const res = trimmed
-          ? await gf.search(trimmed, {
-              limit: PAGE_LIMIT,
-              offset: currentOffset,
-              lang: isEn ? "en" : "vi",
-              rating: "g",
-            })
-          : await gf.trending({
-              limit: PAGE_LIMIT,
-              offset: currentOffset,
-              rating: "g",
-            });
+        const params = new URLSearchParams({
+        offset: currentOffset.toString(),
+        limit: PAGE_LIMIT.toString(),
+        lang: isEn ? "en" : "vi",
+        rating: "g",
+      });
+      if (trimmed) {
+        params.set("q", trimmed);
+      }
+      const response = await fetch(`/api/giphy?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(`Fetch ponse: ${response.statusText}`);
+      }
+      const res = await response.json();
 
-        const newGifs = res.data || [];
+        const newGifs = res.data || [];      
         setGifs((prev) => (isInitial ? newGifs : [...prev, ...newGifs]));
         setHasMore(newGifs.length === PAGE_LIMIT);
         setOffset(currentOffset + newGifs.length);
@@ -106,7 +103,6 @@ export default function AppGiphyPicker({
     [isEn]
   );
 
-  // Khởi tạo và khi đổi tag
   const handleTagClick = (tag: (typeof QUICK_TAGS)[0]) => {
     setActiveTag(tag.id);
     setSearch(tag.query);

@@ -25,6 +25,7 @@
 17. [Gắn Thẻ Bạn Bè Chuẩn Facebook & Tự Động Gợi Ý Mention (Facebook-Style Friend Tagging & Mention Link)](#17-gắn-thẻ-bạn-bè-chuẩn-facebook--tự-động-gợi-ý-mention-facebook-style-friend-tagging--mention-link)
 18. [Hệ Thống Đa Ngôn Ngữ Mở Rộng 6 Thứ Tiếng (VI, EN, 简体中文, 繁體中文, 한국어, ไทย)](#18-hệ-thống-đa-ngôn-ngữ-mở-rộng-6-thứ-tiếng-vi-en-简体中文-繁體中文-한국어-ไทย)
 19. [Phân Quyền Quản Trị Viên, Phó Nhóm & Câu Hỏi Xét Duyệt Tham Gia Nhóm](#19-phân-quyền-quản-trị-viên-phó-nhóm--câu-hỏi-xét-duyệt-tham-gia-nhóm)
+20. [Đóng Gói Docker Containerization Toàn Bộ Hệ Thống (Frontend, Backend, Admin, CSDL)](#20-đóng-gói-docker-containerization-toàn-bộ-hệ-thống-frontend-backend-admin-csdl)
 
 ---
 
@@ -388,7 +389,27 @@ Hệ thống nâng cấp cơ chế quản trị Hội nhóm Cộng đồng (`/gr
 
 ---
 
+## 20. Đóng Gói Docker Containerization Toàn Bộ Hệ Thống (Frontend, Backend, Admin, CSDL)
+
+Toàn bộ các dịch vụ của ChatApp được đóng gói hoàn chỉnh vào các Docker container độc lập, khởi chạy đồng bộ thông qua `docker-compose.yml`:
+- **Cấu hình đa tầng Multi-stage:** Tách biệt môi trường build và runtime, giảm kích thước image và gia tăng bảo mật với process supervisor `dumb-init` cùng non-root user `node`.
+- **Hỗ trợ 6 dịch vụ đồng bộ:**
+  - `chat_frontend`: Next.js 16 App Router (cổng 5173).
+  - `chat_backend`: NestJS + Socket.IO + MQTT Broker (cổng 3000).
+  - `chat_admin`: Vite React SPA phục vụ qua Nginx Alpine (cổng 5174).
+  - `chat_mongo`: MongoDB 7.x (cổng 27017).
+  - `chat_redis`: Redis Cache & PubSub (cổng 6379).
+  - `chat_neo4j`: Neo4j Community Graph DB (cổng 7474 / 7687).
+- **Khởi động 1 chạm:** Script `powershell -File .\scripts\ensure-docker.ps1 -All` tự động kiểm tra Docker Desktop daemon và khởi chạy toàn bộ dịch vụ.
+
+![Đóng gói Docker Containerization toàn bộ hệ thống](assets/screenshots/docker-containers.png)
+
+- 📖 *Xem chi tiết: [docs/features/docker-containers.md](features/docker-containers.md)*
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Đóng Gói Toàn Bộ Hệ Thống Với Docker Containers](features/docker-containers.md)
 > - [Triển Khai Frontend Lên Vercel Production](features/vercel-deployment.md)
 > - [Báo Cáo Bình Luận & Kiểm Duyệt Hội Nhóm (Smart Comment Reporting)](features/comment-reporting-moderation.md)
 > - [Phân quyền Quản trị viên, Phó nhóm & Câu hỏi Xét duyệt](features/group-roles-permissions.md)

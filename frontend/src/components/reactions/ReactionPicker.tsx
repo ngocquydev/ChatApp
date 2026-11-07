@@ -59,7 +59,6 @@ export default function ReactionPicker({
         },
       }}
     >
-      {/* Nhãn cảm xúc hiển thị sắc nét phía trên emoji đang hover (kiểu chuẩn Facebook) */}
       {activeHoveredDef && (
         <Box
           sx={{

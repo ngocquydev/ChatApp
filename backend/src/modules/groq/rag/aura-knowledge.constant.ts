@@ -1,6 +1,3 @@
-/**
- * Kho tri thức về ứng dụng ChatApp dành cho hệ thống RAG (Retrieval-Augmented Generation) của Aura AI.
- */
 export interface AppFeatureDoc {
   id: string;
   title: string;

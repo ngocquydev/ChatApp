@@ -39,10 +39,6 @@ declare global {
   }
 }
 
-/**
- * Cloudflare Turnstile Widget Component
- * Tự động tải script Cloudflare Turnstile và render widget xác thực người dùng.
- */
 const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(
   function TurnstileWidget(
     {
@@ -65,8 +61,6 @@ const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(
     const containerRef = useRef<HTMLDivElement | null>(null);
     const widgetIdRef = useRef<string | null>(null);
     const cleanSiteKey = (siteKey || "").trim();
-
-    // Lưu trữ callback trong ref để tránh re-render / recreate widget khi component cha re-render
     const callbacksRef = useRef({ onSuccess, onError, onExpire });
     useEffect(() => {
       callbacksRef.current = { onSuccess, onError, onExpire };
@@ -102,8 +96,6 @@ const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(
 
       const renderWidget = () => {
         if (!isMounted || !containerRef.current || !window.turnstile) return;
-
-        // Nếu widget đã được render và còn tồn tại thì không render đè
         if (widgetIdRef.current !== null) {
           return;
         }

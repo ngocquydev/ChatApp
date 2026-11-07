@@ -127,14 +127,12 @@ export default function ChatApp() {
         pt: `${APP_BAR_HEIGHT}px`,
       }}
     >
-      {/* ==================== SIDEBAR ==================== */}
       <Box
         component="aside"
         aria-label={tr("Hội thoại và bạn bè", "Chats and friends")}
         sx={{
           width: { xs: "100%", sm: 320, md: 380 },
           flexShrink: 0,
-          // Mobile: ẩn sidebar khi đang xem một hội thoại
           display: { xs: hasActive ? "none" : "flex", sm: "flex" },
           flexDirection: "column",
           minHeight: 0,
@@ -238,7 +236,6 @@ export default function ChatApp() {
         </Box>
       </Box>
 
-      {/* ==================== KHUNG CHAT ==================== */}
       <Box
         component="section"
         aria-label={tr("Khung trò chuyện", "Chat area")}

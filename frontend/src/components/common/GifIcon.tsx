@@ -5,9 +5,6 @@ export interface GifIconProps extends SVGProps<SVGSVGElement> {
   strokeWidth?: number | string;
 }
 
-/**
- * Biểu tượng GIF vector đồng bộ kích thước và phong cách với bộ Lucide Icons.
- */
 export function GifIcon({
   size = 20,
   strokeWidth = 2,

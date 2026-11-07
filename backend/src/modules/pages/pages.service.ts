@@ -27,9 +27,6 @@ export class PagesService implements OnModuleInit {
     }
   }
 
-  /**
-   * Tạo trang Fanpage mới
-   */
   async createPage(creatorId: string, dto: CreatePageDto): Promise<PageDocument> {
     const slug = dto.slug.trim().toLowerCase();
     const existing = await this.pageModel.findOne({ slug }).exec();
@@ -58,9 +55,7 @@ export class PagesService implements OnModuleInit {
     return page;
   }
 
-  /**
-   * Lấy chi tiết trang theo slug
-   */
+ 
   async getPageBySlug(slug: string, viewerId?: string): Promise<{
     page: PageDocument;
     isFollowing: boolean;
@@ -87,9 +82,6 @@ export class PagesService implements OnModuleInit {
     return { page, isFollowing, isAdmin };
   }
 
-  /**
-   * Theo dõi hoặc bỏ theo dõi Trang
-   */
   async toggleFollowPage(pageId: string, userId: string): Promise<{
     isFollowing: boolean;
     followerCount: number;
@@ -121,9 +113,6 @@ export class PagesService implements OnModuleInit {
     };
   }
 
-  /**
-   * Danh sách trang do tôi quản lý
-   */
   async getMyPages(userId: string): Promise<PageDocument[]> {
     const objUserId = new Types.ObjectId(userId);
     return this.pageModel
@@ -135,9 +124,6 @@ export class PagesService implements OnModuleInit {
       .exec();
   }
 
-  /**
-   * Khám phá các trang thịnh hành
-   */
   async explorePages(keyword?: string, limit = 20, offset = 0): Promise<PageDocument[]> {
     const query: Record<string, unknown> = { isDeleted: false };
     if (keyword?.trim()) {
@@ -156,9 +142,6 @@ export class PagesService implements OnModuleInit {
       .exec();
   }
 
-  /**
-   * Cập nhật thông tin trang
-   */
   async updatePage(pageId: string, userId: string, dto: UpdatePageDto): Promise<PageDocument> {
     if (!Types.ObjectId.isValid(pageId)) {
       throw new BadRequestException('Mã trang không hợp lệ');

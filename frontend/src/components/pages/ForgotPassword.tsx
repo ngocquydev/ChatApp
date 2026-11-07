@@ -37,10 +37,8 @@ export default function ForgotPassword() {
   const router = useRouter();
   const { forgotPassword, verifyOtp, resetPassword } = useAuthStore();
 
-  // Current Step: 1 = Email, 2 = OTP, 3 = New Password, 4 = Success
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
-  // Form states
   const [email, setEmail] = useState("");
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [resetToken, setResetToken] = useState("");
@@ -48,17 +46,11 @@ export default function ForgotPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // Loading & Cooldown
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [isCounting, setIsCounting] = useState(false);
   const [redirectCount, setRedirectCount] = useState(5);
-
-  // OTP Inputs refs for auto-focus
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  // Toast notification state
   const [toast, setToast] = useState<{
     open: boolean;
     type: "success" | "error" | "info";
@@ -73,7 +65,6 @@ export default function ForgotPassword() {
     setToast({ open: true, message, type });
   };
 
-  // Countdown timer for resend OTP
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isCounting && countdown > 0) {
@@ -86,7 +77,6 @@ export default function ForgotPassword() {
     return () => clearInterval(timer);
   }, [isCounting, countdown]);
 
-  // Auto redirect countdown on Step 4
   useEffect(() => {
     let redirectTimer: NodeJS.Timeout;
     if (step === 4 && redirectCount > 0) {
@@ -99,7 +89,6 @@ export default function ForgotPassword() {
     return () => clearInterval(redirectTimer);
   }, [step, redirectCount, router]);
 
-  // STEP 1: Handle Send OTP
   const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
@@ -131,7 +120,6 @@ export default function ForgotPassword() {
     }
   };
 
-  // Handle OTP Inputs (type, auto-advance, backspace, paste)
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
 
@@ -139,7 +127,6 @@ export default function ForgotPassword() {
     newOtp[index] = value.slice(-1);
     setOtpDigits(newOtp);
 
-    // Auto advance to next box
     if (value && index < 5) {
       otpInputRefs.current[index + 1]?.focus();
     }
@@ -207,7 +194,6 @@ export default function ForgotPassword() {
     }
   };
 
-  // Password Strength Calculation
   const calculatePasswordStrength = (pwd: string) => {
     let score = 0;
     if (pwd.length >= 8) score += 25;
@@ -227,7 +213,6 @@ export default function ForgotPassword() {
     return { label: tr("Rất an toàn", "Very strong"), color: "var(--mui-palette-tone-10b981)" };
   };
 
-  // STEP 3: Handle Reset Password
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPassword || newPassword.length < 8) {
@@ -266,7 +251,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    // Trang này luôn dùng nền tối (glass card) → ghim scheme sáng (data-light) để token không đảo
+
     <Box
       data-light=""
       sx={{
@@ -357,7 +342,6 @@ export default function ForgotPassword() {
           </Typography>
         </Box>
 
-        {/* Stepper Dots (1 -> 2 -> 3) */}
         {step < 4 && (
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1.5, mb: 3.5 }}>
             {[1, 2, 3].map((s) => (
@@ -375,7 +359,6 @@ export default function ForgotPassword() {
           </Box>
         )}
 
-        {/* ================= STEP 1: NHẬP EMAIL ================= */}
         {step === 1 && (
           <Box sx={{ animation: "fadeIn 0.3s ease" }}>
             <form onSubmit={handleRequestOtp}>

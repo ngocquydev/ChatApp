@@ -1,0 +1,26 @@
+# Version control & IDE
+**/.git
+**/.gitignore
+**/.vscode
+**/.idea
+**/.DS_Store
+Thumbs.db
+
+# Dependencies & Build artifacts
+**/node_modules
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/.pnpm-debug.log*
+**/dist
+**/.next
+**/.turbo
+**/out
+**/build
+**/coverage
+
+# Environment & Secrets
+**/.env.local
+**/.env.*.local
+**/.vercel
+

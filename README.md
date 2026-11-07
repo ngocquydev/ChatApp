@@ -321,13 +321,27 @@ chat/
 
 ---
 
-### 2. Khởi chạy Cơ sở Dữ liệu (Docker)
-Tại thư mục gốc của dự án (`chat/`), khởi động MongoDB và Redis:
-```bash
+### 2. Khởi chạy Hệ thống Bằng Docker (Toàn Bộ Hoặc CSDL)
+
+#### Cách 1: Khởi chạy Trọn gói Toàn Bộ Dịch Vụ (Khuyến nghị)
+```powershell
+# Tự động phát hiện Docker Desktop và khởi chạy: Databases + Backend + Frontend + Admin
+powershell -File .\scripts\ensure-docker.ps1 -All
+
+# Hoặc dùng Docker Compose chuẩn:
 docker compose up -d
+```
+- **Frontend App**: `http://localhost:5173`
+- **Backend API & Swagger**: `http://localhost:3000` & `http://localhost:3000/api-docs`
+- **Admin Portal**: `http://localhost:5174`
+
+#### Cách 2: Chỉ khởi chạy Cụm CSDL (Khi phát triển cục bộ)
+```bash
+docker compose up -d mongo redis neo4j
 ```
 - MongoDB: `localhost:27017`
 - Redis: `localhost:6379`
+- Neo4j: `localhost:7474` (Bolt: `localhost:7687`)
 
 ---
 
@@ -392,6 +406,7 @@ Toàn bộ tài liệu chi tiết, sơ đồ thiết kế kiến trúc và hư�
 | 🚩 **Báo Cáo Bình Luận & Kiểm Duyệt** | Báo cáo bình luận, điều hướng thông minh tới BQT Nhóm hoặc Admin Web, xử lý vi phạm & chế tài thành viên | [Xem tài liệu](docs/features/comment-reporting-moderation.md) |
 | 🛡️ **Kiểm duyệt AI** | NLP Classifier, Vision Scanner, Anomaly Detection (Isolation Forest, Autoencoder) | [Xem tài liệu](docs/features/moderation-trust.md) |
 | 🛡️ **Trung tâm Bảo mật WAF** | Bảng điều khiển `/admin/security`, WAF-as-Code CLI (`npm run cf:waf`), Turnstile Clearance, Auto-Ban tầng biên | [Xem tài liệu](docs/features/waf.md) |
+| 🐳 **Docker Containers** | Đóng gói toàn bộ hệ thống (Frontend, Backend, Admin, CSDL) với Docker Multi-stage & Compose | [Xem tài liệu](docs/features/docker-containers.md) |
 | 👑 **Cổng Quản Trị Độc Lập** | Kiến trúc tách biệt Admin React SPA (Cổng 5174), bảo mật phân quyền Role Admin, Dashboard & Giám sát hệ thống | [Xem tài liệu](docs/features/admin-portal.md) |
 | 🛡️ **Chống DDoS Cloudflare** | Anycast L3/L4 Mitigation, WAF Rules, Cloudflare Tunnel (ẩn 100% IP máy chủ), Rate Limiting | [Xem tài liệu](docs/features/cloudflare-ddos-protection.md) |
 | 💾 **Sao lưu & Phục hồi CSDL** | Tự động sao lưu 17h chiều hàng ngày (UTC+7), 1-chạm qua Admin Portal, nén Docker gzip, retention policy | [Xem tài liệu](docs/features/database-backup.md) |

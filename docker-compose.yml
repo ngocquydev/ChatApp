@@ -1,22 +1,34 @@
 services:
+  # ============================================================================
+  # 1. Cơ sở dữ liệu & Bộ nhớ đệm (Databases & Caches)
+  # ============================================================================
   redis:
     image: redis:alpine
     container_name: chat_redis
+    restart: unless-stopped
     command: redis-server --appendonly yes
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - chat_network
+
   mongo:
     image: mongo:latest
     container_name: chat_mongo
+    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    networks:
+      - chat_network
+
   neo4j:
     image: neo4j:5-community
     container_name: chat_neo4j
+    restart: unless-stopped
     ports:
       - "7474:7474"
       - "7687:7687"
@@ -24,8 +36,90 @@ services:
       - NEO4J_AUTH=neo4j/password123
     volumes:
       - neo4j_data:/data
+    networks:
+      - chat_network
+
+  # ============================================================================
+  # 2. Máy chủ Backend (NestJS + Socket.IO + MQTT Broker + AI Aura)
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chat_backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongo:27017/chatapp
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=password123
+      - JWT_SECRET=${JWT_SECRET:-chatapp_jwt_secret_super_key_2026}
+      - JWT_EXPIRES_IN=7d
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-chatapp_jwt_refresh_secret_super_key_2026}
+      - JWT_REFRESH_EXPIRES_IN=30d
+      - FRONTEND_URL=http://localhost:5173
+      - ADMIN_URL=http://localhost:5174
+      - CORS_ORIGIN=http://localhost:5173,http://localhost:5174
+    volumes:
+      - backend_uploads:/app/uploads
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - chat_network
+
+  # ============================================================================
+  # 3. Giao diện Người dùng Frontend (Next.js 16 + React 19)
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3000}
+    container_name: chat_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - PORT=5173
+      - NODE_ENV=production
+      - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3000}
+    depends_on:
+      - backend
+    networks:
+      - chat_network
+
+  # ============================================================================
+  # 4. Giao diện Quản trị viên Admin Portal (React SPA + Nginx)
+  # ============================================================================
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      args:
+        - VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3000}
+    container_name: chat_admin
+    restart: unless-stopped
+    ports:
+      - "5174:5174"
+    depends_on:
+      - backend
+    networks:
+      - chat_network
 
 volumes:
   redis_data:
   mongo_data:
   neo4j_data:
+  backend_uploads:
+
+networks:
+  chat_network:
+    driver: bridge

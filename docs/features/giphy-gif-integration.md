@@ -48,6 +48,6 @@ Hệ thống tích hợp trực tiếp thư viện tìm kiếm ảnh động chu
 
 Khai báo trong `frontend/.env` (hoặc `.env.local`):
 ```env
-NEXT_PUBLIC_GIPHY_API_KEY=HtWiX1xoMLhJ0C2mmP1BXRbUSKeAOIHI
+NEXT_PUBLIC_GIPHY_API_KEY=
 ```
 Code client được cấu hình tự động dự phòng về API key mặc định, đảm bảo hoạt động ngay lập tức mà không cần khởi động lại máy chủ.

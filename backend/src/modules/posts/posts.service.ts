@@ -55,7 +55,6 @@ export interface PostView {
   likedByMe: boolean;
   myReaction?: ReactionType | null;
   reactionsCount?: Record<string, number>;
-  /** null = bài thường; { unavailable } = bài gốc đã xóa hoặc người xem không có quyền */
   sharedPost: SharedPostView | { unavailable: true } | null;
   isSensitive?: boolean;
   moderationStatus?: 'approved' | 'flagged' | 'rejected';
