@@ -210,36 +210,28 @@ export async function uploadPostImage(file: File): Promise<string> {
   const form = new FormData();
   form.append("file", file);
   
-  const { data } = await api.post("/posts/images", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const { data } = await api.post("/posts/images", form);
   return data.url as string;
 }
 
 export async function uploadMedia(file: File): Promise<{ url: string; resource_type?: string }> {
   const form = new FormData();
   form.append("file", file);
-  const { data } = await api.post("/upload", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const { data } = await api.post("/upload", form);
   return { url: data.url, resource_type: data.resource_type };
 }
 
 export async function uploadAvatar(file: File | Blob): Promise<string> {
   const form = new FormData();
   form.append("file", file, file instanceof File ? file.name : "avatar.jpg");
-  const { data } = await api.post("/upload/avatar", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const { data } = await api.post("/upload/avatar", form);
   return data.url as string;
 }
 
 export async function uploadCover(file: File | Blob): Promise<string> {
   const form = new FormData();
   form.append("file", file, file instanceof File ? file.name : "cover.jpg");
-  const { data } = await api.post("/upload/cover", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const { data } = await api.post("/upload/cover", form);
   return data.url as string;
 }
 

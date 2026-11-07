@@ -25,6 +25,30 @@ let failedQueue: Array<{
   reject: (reason?: unknown) => void;
 }> = [];
 
+let authTokenGetter: (() => string | null) | null = null;
+export const setAuthTokenGetter = (fn: () => string | null) => {
+  authTokenGetter = fn;
+};
+
+// Request Interceptor:
+// 1. Tự động xóa Content-Type khi gửi FormData để Axios/Browser tự chèn multipart boundary chuẩn (tránh lỗi Multer không nhận tệp)
+// 2. Tự động đính kèm header Authorization: Bearer <token> nếu có token trong auth store
+api.interceptors.request.use((config) => {
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    if (config.headers) {
+      delete config.headers["Content-Type"];
+      delete config.headers["content-type"];
+    }
+  }
+
+  const token = authTokenGetter ? authTokenGetter() : null;
+  if (token && config.headers && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
+
 const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {

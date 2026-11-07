@@ -405,7 +405,7 @@ function ProfileContent() {
   // Hoàn tất crop ảnh và lưu làm avatar
   const handleConfirmCropAvatar = async (croppedBlob: Blob) => {
     setIsCroppingUpload(true);
-    showToast(tr("Đang tải ảnh đại diện lên Cloudinary…", "Uploading profile picture to Cloudinary…"), "info");
+    showToast(tr("Đang tải ảnh đại diện…", "Uploading profile picture…"), "info");
     try {
       const url = await uploadAvatar(croppedBlob);
       setAvatarUrl(url);
@@ -439,7 +439,7 @@ function ProfileContent() {
 
     setIsUpdating(true);
     setCoverMenuAnchor(null);
-    showToast(tr("Đang tải ảnh bìa lên Cloudinary…", "Uploading cover photo to Cloudinary…"), "info");
+    showToast(tr("Đang tải ảnh bìa…", "Uploading cover photo…"), "info");
     try {
       const coverUrl = await uploadCover(file);
       await updateProfile({ cover: coverUrl });

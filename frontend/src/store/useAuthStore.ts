@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import api from "../services/api";
+import api, { setAuthTokenGetter } from "../services/api";
 import {
   auth,
   googleProvider,
@@ -343,3 +343,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 }));
+
+setAuthTokenGetter(() => useAuthStore.getState().accessToken);

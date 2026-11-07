@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagg
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CloudinaryService } from '../cloudinary/cloudinary.service.js';
 import { ModerationService } from '../moderation/moderation.service.js';
+import { savePostImage } from '../posts/post-image.util.js';
 
 export const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // 100MB (tệp đa phương tiện & tài liệu)
 
@@ -98,21 +99,42 @@ export class UploadController {
       }
     }
 
-    const result = await this.cloudinaryService.uploadBuffer(file.buffer, {
-      folder: 'chatapp/media',
-      resource_type: resourceType,
-      filename: file.originalname,
-      use_filename: true,
-      unique_filename: true,
-    });
+    const isCloudinaryReady = typeof this.cloudinaryService?.isConfigured === 'function'
+      ? this.cloudinaryService.isConfigured()
+      : Boolean(this.cloudinaryService);
 
+    if (isCloudinaryReady) {
+      try {
+        const result = await this.cloudinaryService.uploadBuffer(file.buffer, {
+          folder: 'chatapp/media',
+          resource_type: resourceType,
+          filename: file.originalname,
+          use_filename: true,
+          unique_filename: true,
+        });
+
+        return {
+          success: true,
+          url: result.secure_url,
+          public_id: result.public_id,
+          resource_type: result.resource_type,
+          format: result.format,
+          bytes: result.bytes,
+          original_filename: file.originalname,
+        };
+      } catch {
+        // Fallback lưu cục bộ nếu Cloudinary gặp sự cố
+      }
+    }
+
+    const localUrl = await savePostImage(file.buffer);
     return {
       success: true,
-      url: result.secure_url,
-      public_id: result.public_id,
-      resource_type: result.resource_type,
-      format: result.format,
-      bytes: result.bytes,
+      url: localUrl,
+      public_id: 'local',
+      resource_type: resourceType,
+      format: file.originalname?.split('.').pop() || 'bin',
+      bytes: file.buffer.length,
       original_filename: file.originalname,
     };
   }
@@ -143,16 +165,48 @@ export class UploadController {
       throw new BadRequestException('Ảnh đại diện phải là tệp hình ảnh (JPG, PNG, WEBP, GIF)');
     }
 
-    const result = await this.cloudinaryService.uploadBuffer(file.buffer, {
-      folder: 'chatapp/avatars',
-      resource_type: 'image',
-    });
+    // Kiểm duyệt an toàn thị giác AI (chặn 18+ / khiêu dâm / bạo lực)
+    if (this.moderationService && file.buffer) {
+      const modResult = await this.moderationService.moderateImage({
+        buffer: file.buffer,
+        mimetype: file.mimetype,
+        filename: file.originalname,
+      });
+      if (modResult.action === 'BLOCK' || modResult.scores.adult >= 0.8) {
+        throw new BadRequestException(
+          modResult.reason || 'Ảnh đại diện bị chặn do vi phạm tiêu chuẩn cộng đồng về nội dung 18+ / khiêu dâm.'
+        );
+      }
+    }
 
+    const isCloudinaryReady = typeof this.cloudinaryService?.isConfigured === 'function'
+      ? this.cloudinaryService.isConfigured()
+      : Boolean(this.cloudinaryService);
+
+    if (isCloudinaryReady) {
+      try {
+        const result = await this.cloudinaryService.uploadBuffer(file.buffer, {
+          folder: 'chatapp/avatars',
+          resource_type: 'image',
+        });
+
+        return {
+          success: true,
+          url: result.secure_url,
+          avatar: result.secure_url,
+          public_id: result.public_id,
+        };
+      } catch {
+        // Fallback lưu cục bộ nếu Cloudinary gặp sự cố
+      }
+    }
+
+    const localUrl = await savePostImage(file.buffer);
     return {
       success: true,
-      url: result.secure_url,
-      avatar: result.secure_url,
-      public_id: result.public_id,
+      url: localUrl,
+      avatar: localUrl,
+      public_id: 'local',
     };
   }
 
@@ -182,16 +236,48 @@ export class UploadController {
       throw new BadRequestException('Ảnh bìa phải là tệp hình ảnh (JPG, PNG, WEBP, GIF)');
     }
 
-    const result = await this.cloudinaryService.uploadBuffer(file.buffer, {
-      folder: 'chatapp/covers',
-      resource_type: 'image',
-    });
+    // Kiểm duyệt an toàn thị giác AI (chặn 18+ / khiêu dâm / bạo lực)
+    if (this.moderationService && file.buffer) {
+      const modResult = await this.moderationService.moderateImage({
+        buffer: file.buffer,
+        mimetype: file.mimetype,
+        filename: file.originalname,
+      });
+      if (modResult.action === 'BLOCK' || modResult.scores.adult >= 0.8) {
+        throw new BadRequestException(
+          modResult.reason || 'Ảnh bìa bị chặn do vi phạm tiêu chuẩn cộng đồng về nội dung 18+ / khiêu dâm.'
+        );
+      }
+    }
 
+    const isCloudinaryReady = typeof this.cloudinaryService?.isConfigured === 'function'
+      ? this.cloudinaryService.isConfigured()
+      : Boolean(this.cloudinaryService);
+
+    if (isCloudinaryReady) {
+      try {
+        const result = await this.cloudinaryService.uploadBuffer(file.buffer, {
+          folder: 'chatapp/covers',
+          resource_type: 'image',
+        });
+
+        return {
+          success: true,
+          url: result.secure_url,
+          cover: result.secure_url,
+          public_id: result.public_id,
+        };
+      } catch {
+        // Fallback lưu cục bộ nếu Cloudinary gặp sự cố
+      }
+    }
+
+    const localUrl = await savePostImage(file.buffer);
     return {
       success: true,
-      url: result.secure_url,
-      cover: result.secure_url,
-      public_id: result.public_id,
+      url: localUrl,
+      cover: localUrl,
+      public_id: 'local',
     };
   }
 }

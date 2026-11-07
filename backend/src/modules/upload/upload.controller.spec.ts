@@ -9,6 +9,7 @@ describe('UploadController', () => {
 
   beforeEach(() => {
     cloudinaryService = {
+      isConfigured: vi.fn().mockReturnValue(true),
       uploadBuffer: vi.fn().mockResolvedValue({
         url: 'http://res.cloudinary.com/test/image/upload/v1/test.jpg',
         secure_url: 'https://res.cloudinary.com/test/image/upload/v1/test.jpg',
