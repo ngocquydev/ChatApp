@@ -47,16 +47,27 @@ export default function GroupsExplore() {
       const joinedIds = new Set(joinedGroups.map((jg) => jg._id));
       const enriched = (allGroups || []).map((g) => {
         const creatorId = typeof g.creatorId === "object" ? g.creatorId?._id : g.creatorId;
+        const isUserAdmin =
+          Boolean(g.isAdmin) ||
+          Boolean(
+            currentUserId &&
+              (creatorId === currentUserId ||
+                (g.adminIds || []).some((a) => (typeof a === "object" ? a._id : a) === currentUserId))
+          );
         const isJoined =
+          isUserAdmin ||
+          Boolean(g.isMember) ||
           joinedIds.has(g._id) ||
-          (!!currentUserId && creatorId === currentUserId) ||
-          (g.adminIds || []).some((a) => (typeof a === "object" ? a._id : a) === currentUserId) ||
           (g.members || []).some((m) => (typeof m === "object" ? (m as any)._id : m) === currentUserId);
-        const isPending = (g.pendingMemberIds || []).some(
-          (p) => (typeof p === "object" ? (p as any)._id : p) === currentUserId
-        );
+        const isPending =
+          !isJoined &&
+          (Boolean(g.isPending) ||
+            (g.pendingMemberIds || []).some(
+              (p) => (typeof p === "object" ? (p as any)._id : p) === currentUserId
+            ));
         return {
           ...g,
+          isAdmin: isUserAdmin,
           isMember: isJoined,
           isPending,
         };

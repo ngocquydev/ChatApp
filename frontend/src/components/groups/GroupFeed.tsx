@@ -53,8 +53,8 @@ export default function GroupFeed({ slug }: { slug: string }) {
       .then((res) => {
         if (!isMounted) return;
         setData(res);
-        setIsMember(res.isMember);
-        setIsPending(res.isPending);
+        setIsMember(Boolean(res.isMember || res.isAdmin || res.isDeputy));
+        setIsPending(Boolean(res.isPending && !res.isMember && !res.isAdmin && !res.isDeputy));
         setMemberCount(res.group.memberCount);
       })
       .catch((err) => {

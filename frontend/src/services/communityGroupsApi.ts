@@ -59,6 +59,7 @@ export interface CommunityGroupItem {
   pendingMemberIds: string[];
   memberCount: number;
   isMember?: boolean;
+  isAdmin?: boolean;
   isPending?: boolean;
   requireApproval: boolean;
   requireJoinReason?: boolean;

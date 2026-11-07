@@ -726,7 +726,7 @@ export class CommunityGroupsService implements OnModuleInit {
   /**
    * Khám phá các hội nhóm
    */
-  async exploreGroups(keyword?: string, limit = 20, offset = 0): Promise<CommunityGroupDocument[]> {
+  async exploreGroups(keyword?: string, limit = 20, offset = 0, viewerId?: string): Promise<any[]> {
     const query: Record<string, unknown> = {
       isDeleted: false,
       privacy: 'public',
@@ -743,15 +743,32 @@ export class CommunityGroupsService implements OnModuleInit {
       .sort({ memberCount: -1, createdAt: -1 })
       .skip(offset)
       .limit(limit)
+      .lean()
       .exec();
 
-    // Đồng bộ số lượng thành viên thực tế (tránh hiển thị số lượng ảo)
-    for (const g of groups) {
-      if (Array.isArray(g.members) && g.members.length > 0) {
-        g.memberCount = g.members.length;
-      }
-    }
-    return groups;
+    const viewerIdStr = viewerId ? String(viewerId) : '';
+    return groups.map((g: any) => {
+      const creatorStr = toIdString(g.creatorId);
+      const isCreator = viewerIdStr ? creatorStr === viewerIdStr : false;
+      const isAdmin = viewerIdStr
+        ? isCreator || (g.adminIds || []).some((a: any) => toIdString(a) === viewerIdStr)
+        : false;
+      const isMember = viewerIdStr
+        ? isAdmin || (g.members || []).some((m: any) => toIdString(m) === viewerIdStr)
+        : false;
+      const isPending = viewerIdStr
+        ? (g.pendingMemberIds || []).some((p: any) => toIdString(p) === viewerIdStr) ||
+          (g.pendingRequests || []).some((r: any) => toIdString(r.userId) === viewerIdStr)
+        : false;
+
+      return {
+        ...g,
+        memberCount: Array.isArray(g.members) && g.members.length > 0 ? g.members.length : (g.memberCount || 1),
+        isMember,
+        isAdmin,
+        isPending,
+      };
+    });
   }
 
   /**

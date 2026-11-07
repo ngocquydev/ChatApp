@@ -9,8 +9,9 @@ import {
   Chip,
   Typography,
 } from "@mui/material";
-import { Check, Clock, Globe, Lock, Plus, Users } from "lucide-react";
+import { Check, Clock, Globe, Lock, Plus, Settings, Users } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useAuthStore } from "@/store/useAuthStore";
 import { CommunityGroupItem } from "@/services/communityGroupsApi";
 
 interface GroupListItemProps {
@@ -25,8 +26,19 @@ export default function GroupListItem({
   isActionPending,
 }: GroupListItemProps) {
   const { t } = useTranslation();
-  const isMember = !!group.isMember;
-  const isPending = !!group.isPending;
+  const { user } = useAuthStore();
+  const currentUserId = (user?._id || user?.id) as string | undefined;
+
+  const creatorId = typeof group.creatorId === "object" ? group.creatorId?._id : group.creatorId;
+  const isAdmin =
+    Boolean(group.isAdmin) ||
+    Boolean(
+      currentUserId &&
+        (creatorId === currentUserId ||
+          (group.adminIds || []).some((a) => (typeof a === "object" ? a._id : a) === currentUserId))
+    );
+  const isMember = isAdmin || Boolean(group.isMember);
+  const isPending = !isMember && Boolean(group.isPending);
 
   return (
     <Card
@@ -113,7 +125,18 @@ export default function GroupListItem({
 
       {/* Action Button */}
       <Box sx={{ flexShrink: 0 }}>
-        {isMember ? (
+        {isAdmin ? (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<Settings size={15} />}
+            component={NextLink}
+            href={`/groups/${group.slug}/manage`}
+            sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
+          >
+            {t("groups.manageGroup")}
+          </Button>
+        ) : isMember ? (
           <Button
             variant="outlined"
             size="small"
@@ -122,7 +145,7 @@ export default function GroupListItem({
             href={`/groups/${group.slug}`}
             sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
           >
-            {t("groups.joined")}
+            {t("groups.viewGroup")}
           </Button>
         ) : isPending ? (
           <Button

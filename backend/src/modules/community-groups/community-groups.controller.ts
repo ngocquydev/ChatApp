@@ -66,13 +66,16 @@ export class CommunityGroupsController {
   }
 
   @Get('explore')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Khám phá danh sách hội nhóm công khai' })
   async exploreGroups(
     @Query('q') q?: string,
     @Query('limit') limit?: number,
     @Query('offset') offset?: number,
+    @Request() req?: AuthenticatedRequest,
   ) {
-    return this.groupsService.exploreGroups(q, limit ? Number(limit) : 20, offset ? Number(offset) : 0);
+    const viewerId = this.extractUserId(req);
+    return this.groupsService.exploreGroups(q, limit ? Number(limit) : 20, offset ? Number(offset) : 0, viewerId);
   }
 
   @Get(':slug')

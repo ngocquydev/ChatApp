@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Avatar, Box, Button, Card, Chip, Menu, MenuItem, Typography } from "@mui/material";
-import { Check, Clock, Globe, Lock, LogOut, MessageSquare, Plus, Settings, UserPlus } from "lucide-react";
+import { Check, Clock, Globe, Lock, LogOut, MessageSquare, Plus, Settings, ShieldCheck, UserPlus } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { CommunityGroupItem } from "@/services/communityGroupsApi";
 
@@ -151,92 +151,49 @@ export default function GroupHeader({
               py: { xs: 0.5, sm: 1 },
             }}
           >
-            {isMember ? (
+            {canManage ? (
               <>
-                <Button
+                <Chip
+                  icon={<ShieldCheck size={14} color="var(--mui-palette-primary-main)" />}
+                  label={t("groups.adminBadge")}
                   variant="outlined"
-                  startIcon={<Check size={16} />}
-                  onClick={handleMenuOpen}
-                  disabled={isActionPending}
-                  sx={{ borderRadius: "10px", fontWeight: 700 }}
-                >
+                  sx={{ borderRadius: "8px", fontWeight: 700, borderColor: "primary.main", color: "primary.main", height: 36 }}
+                />
+                <Button variant="contained" startIcon={<Settings size={16} />} onClick={onManage} sx={{ borderRadius: "10px", fontWeight: 700 }}>
+                  {t("groups.manageGroup")}
+                </Button>
+              </>
+            ) : isMember ? (
+              <>
+                <Button variant="outlined" startIcon={<Check size={16} />} onClick={handleMenuOpen} disabled={isActionPending} sx={{ borderRadius: "10px", fontWeight: 700 }}>
                   {t("groups.joined")}
                 </Button>
-                <Menu
-                  anchorEl={menuAnchor}
-                  open={Boolean(menuAnchor)}
-                  onClose={handleMenuClose}
-                  disableScrollLock
-                  slotProps={{ paper: { sx: { borderRadius: "12px", minWidth: 160 } } }}
-                >
+                <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose} disableScrollLock slotProps={{ paper: { sx: { borderRadius: "12px", minWidth: 160 } } }}>
                   <MenuItem onClick={handleLeaveClick} sx={{ color: "error.main", gap: 1 }}>
                     <LogOut size={16} />
                     {t("groups.leaveGroup")}
                   </MenuItem>
                 </Menu>
-
-                {onInvite && (
-                  <Button
-                    variant="outlined"
-                    startIcon={<UserPlus size={16} />}
-                    onClick={onInvite}
-                    sx={{ borderRadius: "10px", fontWeight: 700 }}
-                  >
-                    {t("groups.inviteFriends")}
-                  </Button>
-                )}
-
-                {onChat && (
-                  <Button
-                    variant="outlined"
-                    startIcon={<MessageSquare size={16} />}
-                    onClick={onChat}
-                    sx={{ borderRadius: "10px", fontWeight: 700 }}
-                  >
-                    {t("groups.groupChat")}
-                  </Button>
-                )}
               </>
             ) : isPending ? (
-              <Button
-                variant="outlined"
-                disabled
-                startIcon={<Clock size={16} />}
-                sx={{ borderRadius: "10px", fontWeight: 700 }}
-              >
+              <Button variant="outlined" disabled startIcon={<Clock size={16} />} sx={{ borderRadius: "10px", fontWeight: 700 }}>
                 {t("groups.requested")}
               </Button>
             ) : (
-              <Button
-                variant="contained"
-                startIcon={<Plus size={16} />}
-                onClick={onJoin}
-                disabled={isActionPending}
-                sx={{ borderRadius: "10px", fontWeight: 700 }}
-              >
+              <Button variant="contained" startIcon={<Plus size={16} />} onClick={onJoin} disabled={isActionPending} sx={{ borderRadius: "10px", fontWeight: 700 }}>
                 {t("groups.joinGroup")}
               </Button>
             )}
 
-            {canManage && (
-              <Button
-                variant="outlined"
-                color="inherit"
-                startIcon={<Settings size={16} />}
-                onClick={onManage}
-                sx={{
-                  borderRadius: "10px",
-                  fontWeight: 700,
-                  borderColor: "divider",
-                  color: "text.primary",
-                  bgcolor: "action.hover",
-                  "&:hover": {
-                    bgcolor: "action.selected",
-                    borderColor: "divider",
-                  },
-                }}
-              >
-                {t("groups.manageGroup")}
+            {(isMember || canManage) && onInvite && (
+              <Button variant="outlined" startIcon={<UserPlus size={16} />} onClick={onInvite} sx={{ borderRadius: "10px", fontWeight: 700 }}>
+                {t("groups.inviteFriends")}
+              </Button>
+            )}
+
+            {(isMember || canManage) && onChat && (
+              <Button variant="outlined" startIcon={<MessageSquare size={16} />} onClick={onChat} sx={{ borderRadius: "10px", fontWeight: 700 }}>
+                {t("groups.groupChat")}
               </Button>
             )}
           </Box>

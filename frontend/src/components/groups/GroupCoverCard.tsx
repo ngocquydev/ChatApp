@@ -10,8 +10,9 @@ import {
   Chip,
   Typography,
 } from "@mui/material";
-import { Check, Clock, Globe, Lock, Plus, Users } from "lucide-react";
+import { Check, Clock, Globe, Lock, Plus, Settings, Users } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useAuthStore } from "@/store/useAuthStore";
 import { CommunityGroupItem } from "@/services/communityGroupsApi";
 
 interface GroupCoverCardProps {
@@ -26,8 +27,19 @@ export default function GroupCoverCard({
   isActionPending,
 }: GroupCoverCardProps) {
   const { t } = useTranslation();
-  const isMember = !!group.isMember;
-  const isPending = !!group.isPending;
+  const { user } = useAuthStore();
+  const currentUserId = (user?._id || user?.id) as string | undefined;
+
+  const creatorId = typeof group.creatorId === "object" ? group.creatorId?._id : group.creatorId;
+  const isAdmin =
+    Boolean(group.isAdmin) ||
+    Boolean(
+      currentUserId &&
+        (creatorId === currentUserId ||
+          (group.adminIds || []).some((a) => (typeof a === "object" ? a._id : a) === currentUserId))
+    );
+  const isMember = isAdmin || Boolean(group.isMember);
+  const isPending = !isMember && Boolean(group.isPending);
 
   return (
     <Card
@@ -150,7 +162,19 @@ export default function GroupCoverCard({
 
       {/* Action Footer */}
       <Box sx={{ px: 2, pb: 2, pt: 0 }}>
-        {isMember ? (
+        {isAdmin ? (
+          <Button
+            fullWidth
+            variant="outlined"
+            size="small"
+            startIcon={<Settings size={15} />}
+            component={NextLink}
+            href={`/groups/${group.slug}/manage`}
+            sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
+          >
+            {t("groups.manageGroup")}
+          </Button>
+        ) : isMember ? (
           <Button
             fullWidth
             variant="outlined"
@@ -160,7 +184,7 @@ export default function GroupCoverCard({
             href={`/groups/${group.slug}`}
             sx={{ borderRadius: "10px", fontWeight: 700, textTransform: "none" }}
           >
-            {t("groups.joined")}
+            {t("groups.viewGroup")}
           </Button>
         ) : isPending ? (
           <Button
