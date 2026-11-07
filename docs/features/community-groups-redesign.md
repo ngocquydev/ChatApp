@@ -4,15 +4,25 @@
 
 ---
 
-## 1. Giới thiệu & Mục tiêu
+## 1. Giới thiệu & Điểm Cải Tiến Đột Phá
 
-Tính năng Hội nhóm Cộng đồng (Community Groups) đã được đại tu toàn diện để mang lại trải nghiệm tương tác trực quan, chuyên nghiệp theo tiêu chuẩn Facebook Groups:
-- **Ảnh bìa & Avatar chồng lớp (Overlapping Avatar):** Tỷ lệ banner 16:6 chuẩn phong cách Facebook, avatar nổi bật lồng vào viền ảnh bìa.
-- **Thanh điều hướng Tab dính (Sticky Tabs Navigation):** Thảo luận (`Posts`), Giới thiệu (`About`), Thành viên (`Members`), và File phương tiện (`Media`).
-- **Bố cục 2 cột bất đối xứng trên Desktop:** Bảng tin thảo luận trung tâm (kèm khung đăng bài, danh sách bài viết) kết hợp Cột thông tin giới thiệu bên phải (Tóm tắt nhóm, Quy tắc nhóm, Thư viện ảnh).
-- **Trải nghiệm Mobile Master–Detail linh hoạt:** Tự động co giãn mượt mà theo màn hình điện thoại (320px – 390px), ẩn sidebar và ưu tiên nội dung trọng tâm.
+Trang Hội nhóm Cộng đồng (`/groups`) và Chi tiết Nhóm (`/groups/[slug]`) đã được chuyển đổi hoàn toàn sang mô hình chuẩn Facebook:
+- **Cột Trái Điều Hướng Nhóm Chuyên Dụng (`GroupsSidebarNav`):** Thay thế thanh điều hướng chung khi vào `/groups`. Tích hợp:
+  - Nút quay về Trang chủ.
+  - Ô tìm kiếm nhóm nhanh.
+  - 3 Tab điều hướng chính: **Bảng tin của bạn** (`feed`), **Khám phá** (`discover`), **Nhóm của bạn** (`my-groups`).
+  - Nút **`+ Tạo nhóm mới`** nổi bật.
+  - Danh mục **Nhóm do bạn quản lý** & **Nhóm bạn đã tham gia** cuộn độc lập.
+- **Bảng Tin Tổng Hợp Các Nhóm (`GroupFeedTab`):** Tổng hợp bài viết thời gian thực từ các nhóm người dùng đã tham gia (`GET /posts/groups/feed`), cuộn vô hạn với con trỏ cursor, tương tác thả cảm xúc & bình luận.
+- **Thẻ Nhóm Banner Lớn (16:9) & Facepile (`GroupCoverCard`):**
+  - Ảnh bìa 16:9 sắc nét kèm avatar nhóm lồng góc.
+  - Cụm avatar thành viên xếp chồng (**Facepile**) hiển thị trực quan các thành viên tiêu biểu.
+  - Huy hiệu quyền riêng tư và danh mục.
+- **Bộ Lọc Phân Loại Chủ Đề & Chuyển Đổi Chế Độ Xem (`GroupDiscoverTab`):**
+  - Thanh chọn chủ đề dạng viên thuốc (Pills): *Tất cả, Công nghệ, Đời sống, Giải trí, Học tập, Trò chơi, Thể thao*.
+  - Nút chuyển đổi linh hoạt: **Dạng thẻ (Grid)** và **Dạng danh sách tối giản (Minimalist List)** kiểu Reddit / Discord.
 - **Tuân thủ tuyệt đối quy chuẩn mã nguồn (`AGENTS.md`):**
-  - **100% component < 250 dòng:** Không còn component nguyên khối 500-600 dòng.
+  - **100% component < 250 dòng code:** Phân chia module rõ ràng, tối đa 243 dòng.
   - **100% Theme Tokens:** Không hardcode màu sắc, tương thích hoàn hảo Light Mode và Dark Mode.
   - **100% Đa ngôn ngữ (6 Ngôn ngữ):** Cập nhật đồng bộ các khóa i18n trên `vi`, `en`, `zh-CN`, `zh-TW`, `ko`, `th`.
 
@@ -34,62 +44,58 @@ Mọi component trong `frontend/src/components/groups/` được phân rã thàn
 
 ```
 frontend/src/components/groups/
-├── GroupFeed.tsx                   (~211 dòng) -> Điều phối trung tâm trang chi tiết /groups/[slug]
-├── GroupsExplore.tsx               (~176 dòng) -> Trang Khám phá nhóm /groups
-├── GroupCard.tsx                   (~94 dòng)  -> Thẻ hiển thị nhóm trong danh mục khám phá
-├── MyGroupCompactCard.tsx          (~49 dòng)  -> Thẻ thu nhỏ cho nhóm đã tham gia
-├── CreateGroupDialog.tsx           (~226 dòng) -> Hộp thoại tạo nhóm mới chuẩn token
-├── MemberRow.tsx                   (~119 dòng) -> Dòng thành viên độc lập kèm menu phân quyền
-├── GroupMembersTab.tsx             (~233 dòng) -> Tab quản lý & danh sách thành viên
-├── DeputyPermissionsDialog.tsx     (~147 dòng) -> Hộp thoại cấp quyền chi tiết cho phó nhóm
-├── GroupManagePage.tsx             (~235 dòng) -> Trang quản trị nhóm /groups/[slug]/manage
+├── GroupsExplore.tsx               (~198 dòng) -> Điều phối chính trang /groups (Tabs, Dialogs, State)
+├── GroupsSidebarNav.tsx            (~226 dòng) -> Cột trái điều hướng nhóm chuẩn Facebook
+├── GroupNavRow.tsx                 (~62 dòng)  -> Dòng nhóm rút gọn trong cột trái
+├── GroupFeedTab.tsx                (~41 dòng)  -> Tab Bảng tin tổng hợp bài viết các nhóm đã tham gia
+├── GroupDiscoverTab.tsx            (~200 dòng) -> Tab Khám phá nhóm (bộ lọc chủ đề & đổi chế độ xem)
+├── GroupCoverCard.tsx              (~215 dòng) -> Thẻ nhóm ảnh bìa 16:9 + Facepile thành viên
+├── GroupListItem.tsx               (~152 dòng) -> Thẻ nhóm danh sách tinh gọn phong cách Reddit/Discord
+├── MyGroupsTab.tsx                 (~198 dòng) -> Tab danh sách các nhóm đã tham gia & quản lý
+├── CreateGroupDialog.tsx           (~243 dòng) -> Hộp thoại tạo nhóm mới chuẩn token
+├── JoinQuestionDialog.tsx          (~189 dòng) -> Hộp thoại trả lời câu hỏi tham gia nhóm
+├── GroupFeed.tsx                   (~230 dòng) -> Điều phối trung tâm trang chi tiết /groups/[slug]
+├── MemberRow.tsx                   (~132 dòng) -> Dòng thành viên độc lập kèm menu phân quyền
+├── GroupMembersTab.tsx             (~243 dòng) -> Tab quản lý & danh sách thành viên
+├── DeputyPermissionsDialog.tsx     (~159 dòng) -> Hộp thoại cấp quyền chi tiết cho phó nhóm
+├── GroupManagePage.tsx             (~239 dòng) -> Trang quản trị nhóm /groups/[slug]/manage
 │
 ├── detail/                         -> Phân hệ Giao diện Chi tiết Nhóm
-│   ├── GroupHeader.tsx             (~242 dòng) -> Ảnh bìa 16:6, avatar, tên nhóm, nút tác vụ
-│   ├── GroupNavTabs.tsx            (~50 dòng)  -> Thanh tab cố định (Thảo luận, Giới thiệu, Thành viên, Media)
-│   ├── GroupSidebar.tsx            (~117 dòng) -> Cột bên phải (Giới thiệu, Quy tắc, Thư viện ảnh)
-│   ├── GroupDiscussionTab.tsx      (~53 dòng)  -> Tab Bảng tin thảo luận tích hợp PostFeed
-│   ├── GroupAboutTab.tsx           (~119 dòng) -> Tab Thông tin giới thiệu & Quy tắc chi tiết
-│   └── GroupMediaTab.tsx           (~30 dòng)  -> Tab Thư viện ảnh & video cộng đồng
+│   ├── GroupHeader.tsx             (~237 dòng) -> Ảnh bìa 16:6, avatar, tên nhóm, nút tác vụ
+│   ├── GroupNavTabs.tsx            (~55 dòng)  -> Thanh tab cố định (Thảo luận, Giới thiệu, Thành viên, Media)
+│   ├── GroupSidebar.tsx            (~127 dòng) -> Cột bên phải (Giới thiệu, Quy tắc, Thư viện ảnh)
+│   ├── GroupDiscussionTab.tsx      (~60 dòng)  -> Tab Bảng tin thảo luận tích hợp PostFeed
+│   ├── GroupAboutTab.tsx           (~131 dòng) -> Tab Thông tin giới thiệu & Quy tắc chi tiết
+│   └── GroupMediaTab.tsx           (~35 dòng)  -> Tab Thư viện ảnh & video cộng đồng
 │
 ├── manage/                         -> Phân hệ Trang Quản trị Nhóm
-│   ├── ManageOverviewMetrics.tsx   (~76 dòng)  -> 4 thẻ chỉ số thống kê (Thành viên, Chờ duyệt, Phó nhóm, Báo cáo)
-│   ├── ManageSettingsTab.tsx       (~173 dòng) -> Form cập nhật cài đặt chung & câu hỏi tham gia
-│   └── ManageDangerZone.tsx        (~67 dòng)  -> Khu vực nguy hiểm xóa nhóm an toàn
+│   ├── ManageOverviewMetrics.tsx   (~84 dòng)  -> 4 thẻ chỉ số thống kê (Thành viên, Chờ duyệt, Phó nhóm, Báo cáo)
+│   ├── ManageSettingsTab.tsx       (~188 dòng) -> Form cập nhật cài đặt chung & câu hỏi tham gia
+│   └── ManageDangerZone.tsx        (~73 dòng)  -> Khu vực nguy hiểm xóa nhóm an toàn
 │
 └── reports/                        -> Phân hệ Kiểm duyệt & Báo cáo Bình luận
-    ├── GroupReportsTab.tsx         (~180 dòng) -> Bộ lọc và danh sách bình luận vi phạm
-    ├── ReportCardItem.tsx          (~126 dòng) -> Thẻ báo cáo trích dẫn nội dung vi phạm
-    └── ReportActionDialog.tsx      (~86 dòng)  -> Hộp thoại xử lý vi phạm kèm ghi chú
+    ├── GroupReportsTab.tsx         (~195 dòng) -> Bộ lọc và danh sách bình luận vi phạm
+    ├── ReportCardItem.tsx          (~137 dòng) -> Thẻ báo cáo trích dẫn nội dung vi phạm
+    └── ReportActionDialog.tsx      (~94 dòng)  -> Hộp thoại xử lý vi phạm kèm ghi chú
 ```
 
 ---
 
 ## 4. Các Tính Năng Chi Tiết
 
-### 4.1. Thanh Điều Hướng Tab Chi Tiết (Group Navigation)
-- **Thảo luận (`Posts`):**
-  - Tích hợp trực tiếp `PostFeed` dùng chung, phân trang theo con trỏ cursor, tải vô hạn mượt mà.
-  - Tự động hiển thị cảnh báo nếu thành viên đang bị quản trị viên khóa quyền đăng bài (`isBannedPosting`) hoặc khóa quyền bình luận (`isMutedComments`).
-- **Giới thiệu (`About`):**
-  - Hiển thị mô tả chi tiết của nhóm, trạng thái quyền riêng tư (Công khai / Riêng tư).
-  - Mục **Quy tắc nhóm (Group Rules)** được đánh số rõ ràng, định dạng trực quan.
-- **Thành viên (`Members`):**
-  - Xem danh sách thành viên kèm vai trò (`👑 Quản trị viên`, `🛡️ Phó nhóm`, `Thành viên`).
-  - Quản trị viên và Phó nhóm có thể lọc theo: *Tất cả*, *Quản trị viên & Phó nhóm*, *Bị hạn chế*.
-  - Thao tác nhanh: Bổ nhiệm phó nhóm, cấp quyền, khóa bình luận, cấm đăng bài, xóa khỏi nhóm.
-- **Phương tiện (`Media`):**
-  - Lưới hiển thị hình ảnh và video đã được chia sẻ trong nhóm kèm trạng thái rỗng (`EmptyState`).
+### 4.1. Cột Điều Hướng Nhóm Chuyên Dụng (`GroupsSidebarNav`)
+- Cung cấp trải nghiệm chuẩn ứng dụng Facebook Desktop.
+- Quản trị viên và người dùng dễ dàng chuyển đổi qua lại giữa Bảng tin nhóm, mục Khám phá nhóm mới và danh sách nhóm của cá nhân.
+- Truy cập tức thời vào nhóm đang quản lý hoặc nhóm đã tham gia với avatar và số lượng thành viên cập nhật trực tiếp.
 
-### 4.2. Khám Phá & Tìm Kiếm Nhóm (`GroupsExplore`)
-- Thanh tìm kiếm tức thời theo tên hoặc mô tả nhóm.
-- Hàng ngang trượt các nhóm người dùng đã tham gia (`MyGroupCompactCard`).
-- Lưới các nhóm đề xuất tham gia (`GroupCard`) kèm số lượng thành viên, chế độ quyền riêng tư và nút tham gia/đã tham gia nhanh.
+### 4.2. Bảng Tin Tổng Hợp Các Nhóm (`GroupFeedTab`)
+- Tích hợp endpoint backend `@Get('groups/feed')` trả về luồng bài viết tổng hợp từ các nhóm đã gia nhập.
+- Hiển thị bài đăng, người đăng, tên nhóm nguồn, tương tác thả cảm xúc và bình luận.
 
-### 4.3. Quản Trị Nhóm Toàn Diện (`GroupManagePage`)
-- **Chỉ số tổng quan:** Hiển thị tức thì 4 thẻ số liệu động: Tổng số thành viên, Số yêu cầu chờ duyệt, Số lượng phó nhóm, Số báo cáo bình luận đang mở.
-- **Quản lý cài đặt & Phê duyệt:** Tùy chỉnh bật/tắt yêu cầu phê duyệt thành viên và câu hỏi lý do tham gia nhóm.
-- **Danger Zone:** Xóa nhóm và giải phóng tài nguyên an toàn thông qua `ConfirmDialog`.
+### 4.3. Chế Độ Xem Khám Phá Đa Dạng (`GroupDiscoverTab`)
+- Lọc theo 7 chủ đề phổ biến: Công nghệ, Đời sống, Giải trí, Học tập, Trò chơi, Thể thao hoặc xem Tất cả.
+- Chế độ **Thẻ lớn 16:9 (`GroupCoverCard`)**: Tối ưu thị giác với ảnh bìa rộng, hiệu ứng hover nổi bật và Facepile avatar thành viên.
+- Chế độ **Danh sách tối giản (`GroupListItem`)**: Gọn gàng, tải nhiều dữ liệu trên một khung hình, phù hợp người dùng thích giao diện kiểu Reddit/Discord.
 
 ---
 
@@ -107,4 +113,3 @@ frontend/src/components/groups/
   - TypeScript Typecheck: `0 errors`
   - ESLint / Oxlint: `0 errors`
   - Next.js Static Pages Build: `14/14 static pages prerendered`
-

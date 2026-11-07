@@ -5,28 +5,32 @@ import {
   Box,
   Button,
   Container,
-  Grid,
-  InputAdornment,
-  Skeleton,
-  TextField,
+  Tab,
+  Tabs,
   Typography,
 } from "@mui/material";
-import { Plus, Search, Users } from "lucide-react";
+import { Compass, Newspaper, Plus, Users } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { communityGroupsApi, CommunityGroupItem } from "@/services/communityGroupsApi";
+import GroupsSidebarNav from "./GroupsSidebarNav";
+import GroupFeedTab from "./GroupFeedTab";
+import GroupDiscoverTab from "./GroupDiscoverTab";
+import MyGroupsTab from "./MyGroupsTab";
 import CreateGroupDialog from "./CreateGroupDialog";
-import EmptyState from "@/components/common/EmptyState";
-import LeftSidebar from "@/components/layout/LeftSidebar";
-import GroupCard from "./GroupCard";
-import MyGroupCompactCard from "./MyGroupCompactCard";
+import JoinQuestionDialog from "./JoinQuestionDialog";
 
 export default function GroupsExplore() {
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<"feed" | "discover" | "my-groups">("feed");
   const [groups, setGroups] = useState<CommunityGroupItem[]>([]);
   const [myGroups, setMyGroups] = useState<CommunityGroupItem[]>([]);
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+
+  // Dialogs
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [pendingJoinGroup, setPendingJoinGroup] = useState<CommunityGroupItem | null>(null);
+  const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
 
   const loadData = async (q?: string) => {
     setIsLoading(true);
@@ -38,7 +42,7 @@ export default function GroupsExplore() {
       setGroups(allGroups);
       setMyGroups(joinedGroups);
     } catch (e) {
-      console.error("Lỗi tải danh sách nhóm:", e);
+      console.error("Lỗi tải nhóm:", e);
     } finally {
       setIsLoading(false);
     }
@@ -48,141 +52,147 @@ export default function GroupsExplore() {
     void loadData();
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    void loadData(search);
+  const handleJoinGroup = async (group: CommunityGroupItem) => {
+    if (group.privacy === "private" && group.requireJoinReason) {
+      setPendingJoinGroup(group);
+      return;
+    }
+    try {
+      setJoiningGroupId(group._id);
+      const res = await communityGroupsApi.joinGroup(group._id);
+      setGroups((prev) =>
+        prev.map((g) => (g._id === group._id ? { ...g, isMember: res.status === "joined", isPending: res.status === "pending" } : g))
+      );
+      if (res.status === "joined") {
+        setMyGroups((prev) => [group, ...prev]);
+      }
+    } catch (e) {
+      console.error("Lỗi tham gia nhóm:", e);
+    } finally {
+      setJoiningGroupId(null);
+    }
+  };
+
+  const handleQuestionSubmit = async (reason: string) => {
+    if (!pendingJoinGroup) return;
+    try {
+      setJoiningGroupId(pendingJoinGroup._id);
+      const res = await communityGroupsApi.joinGroup(pendingJoinGroup._id, reason);
+      setGroups((prev) =>
+        prev.map((g) => (g._id === pendingJoinGroup._id ? { ...g, isMember: res.status === "joined", isPending: res.status === "pending" } : g))
+      );
+      setPendingJoinGroup(null);
+    } catch (e) {
+      console.error("Lỗi gửi câu trả lời tham gia:", e);
+    } finally {
+      setJoiningGroupId(null);
+    }
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        minHeight: "100dvh",
-        bgcolor: "var(--mui-palette-neutral-100)",
-        pt: { xs: "78px", sm: "84px", md: "88px" },
-      }}
-    >
-      <LeftSidebar />
+    <Box sx={{ display: "flex", minHeight: "100dvh", bgcolor: "var(--mui-palette-neutral-100)" }}>
+      {/* Facebook-style Left Navigation for Groups */}
+      <GroupsSidebarNav
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          if (tab === "discover" && search) void loadData(search);
+        }}
+        myGroups={myGroups}
+        onCreateGroup={() => setOpenCreateDialog(true)}
+        searchQuery={search}
+        onSearchChange={(q) => {
+          setSearch(q);
+          void loadData(q);
+        }}
+      />
+
+      {/* Main Content Area */}
       <Box
+        component="main"
+        id="main-content"
         sx={{
           flex: 1,
-          ml: { md: "280px", lg: "320px", xl: "350px" },
+          ml: { md: "320px", lg: "360px" },
+          pt: { xs: "72px", sm: "80px", md: "84px" },
           p: { xs: 2, sm: 3 },
           minWidth: 0,
         }}
       >
-        <Container maxWidth="lg" sx={{ py: { xs: 1.5, sm: 2 } }}>
-          {/* Header bar */}
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "stretch", sm: "center" },
-              justifyContent: "space-between",
-              gap: 2,
-              mb: 3,
-            }}
-          >
-            <Box>
-              <Typography variant="h5" component="h1" sx={{ fontWeight: 800, letterSpacing: "-0.02em" }}>
+        <Container maxWidth="lg" sx={{ py: 1 }}>
+          {/* Mobile Top Controls (< md) */}
+          <Box sx={{ display: { xs: "block", md: "none" }, mb: 2.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
+              <Typography variant="h5" component="h1" sx={{ fontWeight: 800 }}>
                 {t("groups.title")}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t("groups.description")}
-              </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<Plus size={16} />}
+                onClick={() => setOpenCreateDialog(true)}
+                sx={{ borderRadius: "10px", fontWeight: 700 }}
+              >
+                {t("groups.createGroup")}
+              </Button>
             </Box>
 
-            <Button
-              variant="contained"
-              startIcon={<Plus size={18} />}
-              onClick={() => setOpenCreateDialog(true)}
-              sx={{ borderRadius: "12px", px: 2.5, fontWeight: 700 }}
+            <Tabs
+              value={activeTab}
+              onChange={(_, val) => setActiveTab(val)}
+              variant="fullWidth"
+              sx={{ bgcolor: "background.paper", borderRadius: "12px", border: "1px solid", borderColor: "divider" }}
             >
-              {t("groups.createGroup")}
-            </Button>
+              <Tab icon={<Newspaper size={16} />} iconPosition="start" value="feed" label={t("groups.feedTab")} sx={{ fontWeight: 700 }} />
+              <Tab icon={<Compass size={16} />} iconPosition="start" value="discover" label={t("groups.discoverTab")} sx={{ fontWeight: 700 }} />
+              <Tab icon={<Users size={16} />} iconPosition="start" value="my-groups" label={t("groups.myGroupsTab")} sx={{ fontWeight: 700 }} />
+            </Tabs>
           </Box>
 
-          {/* Tìm kiếm */}
-          <Box component="form" onSubmit={handleSearch} sx={{ mb: 3 }}>
-            <TextField
-              fullWidth
-              size="small"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("groups.searchPlaceholder")}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search size={18} color="var(--mui-palette-text-secondary)" />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: "14px",
-                  bgcolor: "background.paper",
-                },
-              }}
-            />
-          </Box>
-
-          {/* Nhóm của tôi */}
-          {myGroups.length > 0 && !search && (
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
-                {t("groups.yourGroups")}
-              </Typography>
-              <Grid container spacing={2}>
-                {myGroups.map((g) => (
-                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={g._id}>
-                    <MyGroupCompactCard group={g} />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
+          {/* Active Tab View */}
+          {activeTab === "feed" && (
+            <GroupFeedTab onDiscoverClick={() => setActiveTab("discover")} />
           )}
 
-          {/* Tất cả các nhóm */}
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-            {t("groups.allGroups")}
-          </Typography>
-
-          {isLoading ? (
-            <Grid container spacing={2}>
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
-                  <Skeleton variant="rounded" height={160} sx={{ borderRadius: "16px" }} />
-                </Grid>
-              ))}
-            </Grid>
-          ) : groups.length === 0 ? (
-            <EmptyState
-              icon={<Users size={48} />}
-              title={t("groups.noGroupsFound")}
-              description={t("groups.noGroupsDesc")}
+          {activeTab === "discover" && (
+            <GroupDiscoverTab
+              groups={groups}
+              isLoading={isLoading}
+              onJoinGroup={handleJoinGroup}
+              joiningGroupId={joiningGroupId}
             />
-          ) : (
-            <Grid container spacing={2}>
-              {groups.map((g) => (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={g._id}>
-                  <GroupCard group={g} />
-                </Grid>
-              ))}
-            </Grid>
           )}
 
-          <CreateGroupDialog
-            open={openCreateDialog}
-            onClose={() => setOpenCreateDialog(false)}
-            onCreated={(newGroup) => {
-              setGroups((prev) => [newGroup, ...prev]);
-              setMyGroups((prev) => [newGroup, ...prev]);
-            }}
-          />
+          {activeTab === "my-groups" && (
+            <MyGroupsTab
+              myGroups={myGroups}
+              onDiscoverClick={() => setActiveTab("discover")}
+              onCreateGroup={() => setOpenCreateDialog(true)}
+            />
+          )}
         </Container>
       </Box>
+
+      {/* Dialogs */}
+      <CreateGroupDialog
+        open={openCreateDialog}
+        onClose={() => setOpenCreateDialog(false)}
+        onCreated={(newGroup) => {
+          setGroups((prev) => [newGroup, ...prev]);
+          setMyGroups((prev) => [newGroup, ...prev]);
+          setActiveTab("my-groups");
+        }}
+      />
+
+      {pendingJoinGroup && (
+        <JoinQuestionDialog
+          open={Boolean(pendingJoinGroup)}
+          question={pendingJoinGroup.joinQuestion}
+          isSubmitting={joiningGroupId === pendingJoinGroup._id}
+          onClose={() => setPendingJoinGroup(null)}
+          onSubmit={handleQuestionSubmit}
+        />
+      )}
     </Box>
   );
 }

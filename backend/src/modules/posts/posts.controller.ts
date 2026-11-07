@@ -123,6 +123,16 @@ export class PostsController {
     return { success: true, ...page };
   }
 
+  @Get('groups/feed')
+  @ApiOperation({ summary: 'Bảng tin bài viết tổng hợp từ các hội nhóm đã tham gia' })
+  async groupsFeed(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: PageQueryDto,
+  ) {
+    const page = await this.postsService.getGroupsFeed(this.extractUserId(req), query);
+    return { success: true, ...page };
+  }
+
   @Get('group/:groupId')
   @ApiOperation({ summary: 'Bài viết trong một Hội nhóm cộng đồng' })
   async groupPosts(

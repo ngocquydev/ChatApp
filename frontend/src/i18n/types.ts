@@ -196,6 +196,22 @@ export interface TranslationDictionary {
     noMediaDesc: string;
     pinnedPost: string;
     manageOverview: string;
+    feedTab: string;
+    discoverTab: string;
+    myGroupsTab: string;
+    catAll: string;
+    catTech: string;
+    catLifestyle: string;
+    catEntertainment: string;
+    catEducation: string;
+    catGaming: string;
+    catSports: string;
+    viewGrid: string;
+    viewList: string;
+    feedEmptyTitle: string;
+    feedEmptyDesc: string;
+    managedGroupsSection: string;
+    joinedGroupsSection: string;
   };
   pages: {
     title: string;

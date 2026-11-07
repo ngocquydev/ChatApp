@@ -173,6 +173,13 @@ export async function fetchPagePosts(
   return data;
 }
 
+export async function fetchGroupsFeed(
+  options: PageOptions = {},
+): Promise<CursorPage<PostView>> {
+  const { data } = await api.get("/posts/groups/feed", { params: pageParams(options) });
+  return data;
+}
+
 export async function fetchGroupPosts(
   groupId: string,
   options: PageOptions = {},

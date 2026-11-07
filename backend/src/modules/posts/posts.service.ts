@@ -406,6 +406,39 @@ export class PostsService {
     );
   }
 
+  /** Bảng tin tổng hợp các bài viết từ tất cả hội nhóm mà người dùng đã tham gia */
+  async getGroupsFeed(
+    viewerId: string,
+    options: { limit?: number; after?: string },
+  ) {
+    if (!this.groupModel) {
+      return { items: [], hasMore: false, nextCursor: null };
+    }
+    const viewerObjId = new Types.ObjectId(viewerId);
+    const joinedGroups = await this.groupModel
+      .find({ members: viewerObjId, isDeleted: { $ne: true } })
+      .select('_id')
+      .lean<{ _id: Types.ObjectId }[]>()
+      .exec();
+
+    const groupIds = (joinedGroups || []).map((g) => g._id);
+    if (groupIds.length === 0) {
+      const publicGroups = await this.groupModel
+        .find({ privacy: 'public', isDeleted: { $ne: true } })
+        .select('_id')
+        .limit(20)
+        .lean<{ _id: Types.ObjectId }[]>()
+        .exec();
+      const publicGroupIds = (publicGroups || []).map((g) => g._id);
+      if (publicGroupIds.length === 0) {
+        return { items: [], hasMore: false, nextCursor: null };
+      }
+      return this.toPage({ groupId: { $in: publicGroupIds } }, viewerId, options);
+    }
+
+    return this.toPage({ groupId: { $in: groupIds } }, viewerId, options);
+  }
+
   /** Ảnh gần đây của một người (cho khung "Ảnh" ở hồ sơ bao gồm ảnh bài viết, ảnh bìa, avatar). */
   async getUserPhotos(viewerId: string, targetUserId: string, limit = 9) {
     const target = toObjectId(targetUserId, 'Mã người dùng không hợp lệ');
