@@ -27,6 +27,7 @@
 19. [Phân Quyền Quản Trị Viên, Phó Nhóm & Câu Hỏi Xét Duyệt Tham Gia Nhóm](#19-phân-quyền-quản-trị-viên-phó-nhóm--câu-hỏi-xét-duyệt-tham-gia-nhóm)
 20. [Đóng Gói Docker Containerization Toàn Bộ Hệ Thống (Frontend, Backend, Admin, CSDL)](#20-đóng-gói-docker-containerization-toàn-bộ-hệ-thống-frontend-backend-admin-csdl)
 21. [Bảo Vệ Hạn Mức & Chống Spam AI Đa Tầng (Aura AI Rate Limiting & Token Quota Protection)](#21-bảo-vệ-hạn-mức--chống-spam-ai-đa-tầng-aura-ai-rate-limiting--token-quota-protection)
+22. [Kiểm Thử Tự Động Hóa Giao Diện Đa Thiết Bị Bằng Playwright (Mobile, iPad & Desktop)](#22-kiểm-thử-tự-động-hóa-giao-diện-đa-thiết-bị-bằng-playwright-mobile-ipad--desktop)
 
 ---
 
@@ -425,6 +426,24 @@ Bảo vệ tối đa API key Groq (Llama 3.3 70B), ngăn chặn triệt để t�
 ![Hệ thống Kiểm soát Hạn ngạch & Chống Spam Aura AI](assets/screenshots/ai-rate-limiting.png)
 
 - 📖 *Xem chi tiết: [docs/features/ai-rate-limiting-protection.md](features/ai-rate-limiting-protection.md)*
+
+---
+
+## 22. Kiểm Thử Tự Động Hóa Giao Diện Đa Thiết Bị Bằng Playwright (Mobile, iPad & Desktop)
+
+Tự động hóa kiểm thử giao diện người dùng theo chuẩn responsive trên cả 3 kích thước màn hình tiêu chuẩn (Mobile 390px, iPad Tablet 768px, Máy tính Desktop 1440px) sử dụng **Playwright MCP Server trên môi trường Docker**:
+- **Máy tính (Desktop - 1440x900):** Bố cục split-screen 2 cột rộng rãi, hero banner trực quan kèm lời chứng thực, form đăng nhập căn phải cân đối.
+- **iPad / Tablet (768x1024):** Tự động chuyển đổi layout co giãn mượt mà, căn chỉnh các thành phần theo lưới MUI Grid, không bị vỡ khung hình.
+- **Điện thoại (Mobile - 390x844):** Tối ưu hóa hoàn toàn cho ngón tay cái, kích thước nút bấm chuẩn công thái học (> 44px), loại bỏ 100% thanh cuộn ngang (Zero horizontal overflow).
+
+| Máy tính Desktop (1440px) | iPad Tablet (768px) | Điện thoại Mobile (390px) |
+|:---:|:---:|:---:|
+| ![Desktop 1440px](assets/screenshots/test-desktop-1440.png) | ![iPad 768px](assets/screenshots/test-ipad-768.png) | ![Mobile 390px](assets/screenshots/test-mobile-390.png) |
+
+### Giao diện Quản trị viên Admin Portal trên 3 thiết bị:
+| Admin Desktop (1440px) | Admin iPad (768px) | Admin Mobile (390px) |
+|:---:|:---:|:---:|
+| ![Admin Desktop](assets/screenshots/admin-desktop-1440.png) | ![Admin iPad](assets/screenshots/admin-ipad-768.png) | ![Admin Mobile](assets/screenshots/admin-mobile-390.png) |
 
 ---
 
