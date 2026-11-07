@@ -91,25 +91,26 @@ export class PostsController {
       });
 
       if (modResult.action === 'BLOCK' || modResult.scores.adult >= 0.8) {
+        // Lưu trữ ảnh vi phạm 18+ vào AWS S3 Quarantine để lưu bằng chứng kiểm duyệt / audit
+        if (this.awsStorageService?.isConfigured()) {
+          try {
+            await this.awsStorageService.uploadBuffer(file.buffer, {
+              folder: 'quarantine/18plus',
+              filename: file.originalname,
+              mimetype: file.mimetype,
+            });
+          } catch {
+            // Không để lỗi lưu bằng chứng S3 ảnh hưởng việc chặn ảnh vi phạm
+          }
+        }
+
         throw new BadRequestException(
           modResult.reason || 'Hình ảnh bị chặn do vi phạm tiêu chuẩn cộng đồng về nội dung 18+ / khiêu dâm.'
         );
       }
     }
 
-    if (this.awsStorageService?.isConfigured()) {
-      const res = await this.awsStorageService.uploadBuffer(file.buffer, {
-        folder: 'posts',
-        filename: file.originalname,
-        mimetype: file.mimetype,
-      });
-      return {
-        success: true,
-        url: res.url,
-        resource_type: isVideo ? 'video' : 'image',
-      };
-    }
-
+    // Ảnh an toàn: Lưu trữ trên Cloudinary (chính cho media người dùng)
     if (this.cloudinaryService?.isConfigured()) {
       const isVideo = file.mimetype?.startsWith('video/') || false;
       const res = await this.cloudinaryService.uploadBuffer(file.buffer, {
