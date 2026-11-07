@@ -1,16 +1,18 @@
 {
   "mcpServers": {
-    "chrome-devtools": {
-      "command": "npx",
-      "args": ["-y", "chrome-devtools-mcp@latest", "--isolated"]
-    },
-    "puppeteer": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
-    },
     "docker": {
       "command": "npx",
       "args": ["-y", "mcp-docker-server@latest"]
+    },
+    "playwright": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--init",
+        "mcr.microsoft.com/playwright/mcp"
+      ]
     }
   }
 }
