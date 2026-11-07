@@ -1,6 +1,26 @@
 # syntax=docker/dockerfile:1
 
 # ==============================================================================
+# 0. Development Stage: Môi trường phát triển Next.js với Hot Reload / Fast Refresh
+# ==============================================================================
+FROM node:22-alpine AS dev
+
+WORKDIR /app
+
+RUN apk add --no-cache dumb-init
+
+COPY package*.json ./
+RUN npm install
+
+ENV NODE_ENV=development
+ENV PORT=5173
+ENV WATCHPACK_POLLING=true
+
+EXPOSE 5173
+
+CMD ["dumb-init", "npm", "run", "dev"]
+
+# ==============================================================================
 # 1. Dependencies Stage: Cài đặt node_modules đầy đủ
 # ==============================================================================
 FROM node:22-alpine AS deps

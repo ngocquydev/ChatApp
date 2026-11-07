@@ -46,13 +46,16 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: dev
     container_name: chat_backend
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - PORT=3000
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
       - MONGODB_URI=mongodb://mongo:27017/chatapp
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -66,8 +69,21 @@ services:
       - FRONTEND_URL=http://localhost:5173
       - ADMIN_URL=http://localhost:5174
       - CORS_ORIGIN=http://localhost:5173,http://localhost:5174
+      - AWS_REGION=ap-southeast-2
+      - AWS_S3_BUCKET_NAME=chatapp-media-703002395048-ap-southeast-2
+      - AWS_PROFILE=default
     volumes:
+      # Bind Mount source code & configs để kích hoạt Hot Reload lập tức khi sửa file
+      - ./backend/src:/app/src
+      - ./backend/package.json:/app/package.json
+      - ./backend/tsconfig.json:/app/tsconfig.json
+      - ./backend/tsconfig.build.json:/app/tsconfig.build.json
+      - ./backend/nest-cli.json:/app/nest-cli.json
+      # Anonymous volume bảo toàn node_modules riêng biệt của container Linux
+      - /app/node_modules
       - backend_uploads:/app/uploads
+      # Nạp chứng chỉ/credentials AWS từ máy host vào container
+      - ~/.aws:/root/.aws:ro
     depends_on:
       - mongo
       - redis
@@ -81,6 +97,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: dev
       args:
         - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3000}
     container_name: chat_frontend
@@ -89,26 +106,49 @@ services:
       - "5173:5173"
     environment:
       - PORT=5173
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
       - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3000}
+    volumes:
+      # Bind Mount source code & assets để kích hoạt Fast Refresh lập tức
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/next.config.mjs:/app/next.config.mjs
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      # Anonymous volumes bảo toàn dependencies và cache biên dịch
+      - /app/node_modules
+      - /app/.next
     depends_on:
       - backend
     networks:
       - chat_network
 
   # ============================================================================
-  # 4. Giao diện Quản trị viên Admin Portal (React SPA + Nginx)
+  # 4. Giao diện Quản trị viên Admin Portal (React SPA + Vite HMR)
   # ============================================================================
   admin:
     build:
       context: ./admin
       dockerfile: Dockerfile
+      target: dev
       args:
         - VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3000}
     container_name: chat_admin
     restart: unless-stopped
     ports:
       - "5174:5174"
+    environment:
+      - VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3000}
+    volumes:
+      # Bind Mount source code để kích hoạt Vite HMR lập tức
+      - ./admin/src:/app/src
+      - ./admin/public:/app/public
+      - ./admin/package.json:/app/package.json
+      - ./admin/index.html:/app/index.html
+      - ./admin/vite.config.ts:/app/vite.config.ts
+      # Anonymous volume bảo toàn dependencies
+      - /app/node_modules
     depends_on:
       - backend
     networks:

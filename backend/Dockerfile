@@ -1,6 +1,29 @@
 # syntax=docker/dockerfile:1
 
 # ==============================================================================
+# 0. Development Stage: Môi trường phát triển với Hot Reload (Watch mode)
+# ==============================================================================
+FROM node:22-alpine AS dev
+
+WORKDIR /app
+
+RUN apk add --no-cache python3 make g++ dumb-init
+
+COPY package*.json ./
+RUN npm install
+
+ENV NODE_ENV=development
+ENV PORT=3000
+ENV CHOKIDAR_USEPOLLING=true
+ENV WATCHPACK_POLLING=true
+
+RUN mkdir -p /app/uploads/posts /app/certs
+
+EXPOSE 3000
+
+CMD ["dumb-init", "npm", "run", "start:dev"]
+
+# ==============================================================================
 # 1. Build Stage: Biên dịch ứng dụng NestJS TypeScript
 # ==============================================================================
 FROM node:22-alpine AS builder
