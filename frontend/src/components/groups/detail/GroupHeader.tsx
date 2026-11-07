@@ -75,36 +75,37 @@ export default function GroupHeader({
       />
 
       {/* Info & action bar below banner */}
-      <Box sx={{ px: { xs: 2, sm: 3 }, pb: 2.5, pt: 1, position: "relative" }}>
-        {/* Overlapping Avatar */}
+      <Box sx={{ px: { xs: 2, sm: 3.5 }, pb: 2.5, pt: { xs: 2, sm: 2.5 }, position: "relative" }}>
+        {/* Overlapping Avatar & Header Content */}
         <Box
           sx={{
             display: "flex",
             flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "center", sm: "flex-end" },
-            gap: 2,
-            mt: { xs: "-50px", sm: "-60px" },
-            mb: 2,
+            alignItems: { xs: "center", sm: "center" },
+            gap: { xs: 1.5, sm: 2.5 },
           }}
         >
           <Avatar
             src={group.avatar || undefined}
             sx={{
-              width: { xs: 84, sm: 104 },
-              height: { xs: 84, sm: 104 },
+              width: { xs: 88, sm: 112 },
+              height: { xs: 88, sm: 112 },
+              mt: { xs: "-54px", sm: "-64px" },
               border: "4px solid",
               borderColor: "background.paper",
               bgcolor: "primary.main",
               fontWeight: 800,
               fontSize: { xs: "1.75rem", sm: "2.25rem" },
-              boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
+              boxShadow: "0 6px 20px rgba(0,0,0,0.15)",
+              flexShrink: 0,
+              zIndex: 2,
             }}
           >
             {group.name.charAt(0).toUpperCase()}
           </Avatar>
 
-          <Box sx={{ flex: 1, minWidth: 0, textAlign: { xs: "center", sm: "left" } }}>
-            <Typography variant="h5" component="h1" sx={{ fontWeight: 800, letterSpacing: "-0.02em" }}>
+          <Box sx={{ flex: 1, minWidth: 0, textAlign: { xs: "center", sm: "left" }, py: { xs: 0.5, sm: 1 } }}>
+            <Typography variant="h5" component="h1" sx={{ fontWeight: 800, letterSpacing: "-0.02em", mb: 0.5 }}>
               {group.name}
             </Typography>
 
@@ -113,8 +114,7 @@ export default function GroupHeader({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: { xs: "center", sm: "flex-start" },
-                gap: 1,
-                mt: 0.5,
+                gap: 1.25,
                 flexWrap: "wrap",
               }}
             >
@@ -143,11 +143,12 @@ export default function GroupHeader({
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 1,
+              gap: 1.25,
               flexWrap: "wrap",
               justifyContent: { xs: "center", sm: "flex-end" },
               width: { xs: "100%", sm: "auto" },
-              mt: { xs: 1, sm: 0 },
+              mt: { xs: 1.5, sm: 0 },
+              py: { xs: 0.5, sm: 1 },
             }}
           >
             {isMember ? (

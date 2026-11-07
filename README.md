@@ -68,6 +68,10 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 |:---:|:---:|
 | ![Hội Nhóm Chuẩn Facebook](docs/assets/screenshots/groups-redesign-explore.png) | ![Hội Nhóm Trên Mobile](docs/assets/screenshots/groups-redesign-mobile.png) |
 
+| Header Chi Tiết Nhóm Thoáng Đãng (Desktop) | Header Chi Tiết Nhóm Tương Thích (Mobile) |
+|:---:|:---:|
+| ![Header Chi Tiết Nhóm Desktop](docs/assets/screenshots/groups-header-desktop-fixed.png) | ![Header Chi Tiết Nhóm Mobile](docs/assets/screenshots/groups-header-mobile-fixed.png) |
+
 | Kiểm Soát Hạn Mức & Chống Spam Aura AI | Đóng Gói Docker Toàn Bộ Hệ Thống |
 |:---:|:---:|
 | ![Kiểm soát Hạn ngạch & Chống Spam Aura AI](docs/assets/screenshots/ai-rate-limiting.png) | ![Đóng gói Docker Containerization](docs/assets/screenshots/docker-containers.png) |

@@ -34,8 +34,12 @@ Trang Hội nhóm Cộng đồng (`/groups`) và Chi tiết Nhóm (`/groups/[slu
 ### 2.1. Khám Phá Nhóm Chuẩn Facebook Trên Màn Hình Desktop (1440px)
 ![Giao diện Khám phá Hội nhóm](docs/assets/screenshots/groups-redesign-explore.png)
 
-### 2.2. Giao diện Tương thích Linh hoạt Trên Thiết bị Di Động (Mobile 390px)
-![Giao diện Nhóm trên Mobile](docs/assets/screenshots/groups-redesign-mobile.png)
+### 2.2. Trang Chi Tiết Nhóm Với Header Thoáng Đãng & Nút Tác Vụ Tinh Gọn (Desktop 1440px)
+![Chi tiết Hội nhóm Desktop](docs/assets/screenshots/groups-header-desktop-fixed.png)
+
+### 2.3. Giao diện Tương thích Linh hoạt Trên Thiết bị Di Động (Mobile 390px)
+![Chi tiết Hội nhóm Mobile](docs/assets/screenshots/groups-header-mobile-fixed.png)
+![Giao diện Khám phá trên Mobile](docs/assets/screenshots/groups-redesign-mobile.png)
 
 ---
 
