@@ -23,6 +23,9 @@ import { CommentReport, CommentReportDocument } from './schemas/comment-report.s
 import { CommunityGroup, CommunityGroupDocument } from '../community-groups/schemas/community-group.schema.js';
 import type { CreatePostDto, SharePostDto, UpdatePostDto } from './dto/posts.dto.js';
 import type { CreateCommentReportDto } from './dto/report-comment.dto.js';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { POST_UPLOAD_DIR } from './post-image.util.js';
 
 export type ViewerRelation = 'self' | 'friends' | 'none';
 
@@ -598,7 +601,19 @@ export class PostsService {
     // 2. Kiểm duyệt an toàn hình ảnh (Vision AI - chặn 18+ / khiêu dâm / bạo lực)
     if (this.moderationService && images.length > 0) {
       for (const imgUrl of images) {
-        const imgResult = await this.moderationService.moderateImage({ url: imgUrl });
+        let buffer: Buffer | undefined;
+        if (imgUrl.startsWith('/uploads/posts/')) {
+          try {
+            const fileName = path.basename(imgUrl);
+            const filePath = path.join(POST_UPLOAD_DIR, fileName);
+            if (fs.existsSync(filePath)) {
+              buffer = await fs.promises.readFile(filePath);
+            }
+          } catch {
+            // Nuốt lỗi đọc file đệm
+          }
+        }
+        const imgResult = await this.moderationService.moderateImage({ url: imgUrl, buffer });
         if (imgResult.action === 'BLOCK' || imgResult.scores.adult >= 0.8) {
           throw new BadRequestException(
             imgResult.reason || 'Bài viết chứa hình ảnh vi phạm tiêu chuẩn cộng đồng về nội dung người lớn (18+).'
@@ -697,7 +712,19 @@ export class PostsService {
 
     if (this.moderationService && images.length > 0) {
       for (const imgUrl of images) {
-        const imgResult = await this.moderationService.moderateImage({ url: imgUrl });
+        let buffer: Buffer | undefined;
+        if (imgUrl.startsWith('/uploads/posts/')) {
+          try {
+            const fileName = path.basename(imgUrl);
+            const filePath = path.join(POST_UPLOAD_DIR, fileName);
+            if (fs.existsSync(filePath)) {
+              buffer = await fs.promises.readFile(filePath);
+            }
+          } catch {
+            // Nuốt lỗi đọc file đệm
+          }
+        }
+        const imgResult = await this.moderationService.moderateImage({ url: imgUrl, buffer });
         if (imgResult.action === 'BLOCK' || imgResult.scores.adult >= 0.8) {
           throw new BadRequestException(
             imgResult.reason || 'Bài viết chứa hình ảnh vi phạm tiêu chuẩn cộng đồng về nội dung người lớn (18+).'

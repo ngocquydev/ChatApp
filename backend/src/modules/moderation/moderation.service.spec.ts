@@ -281,5 +281,25 @@ describe("Moderation & Trust Module (Hỗ trợ song ngữ VI / EN)", () => {
       expect(res.scores.adult).toBeGreaterThanOrEqual(0.8);
       expect(res.action).toBe("BLOCK");
     });
+
+    it("phải giải mã tệp JPEG nén thực tế và chặn nếu tỷ lệ da người vượt ngưỡng 18+", async () => {
+      const width = 30;
+      const height = 30;
+      const frame = Buffer.alloc(width * height * 4);
+      for (let i = 0; i < frame.length; i += 4) {
+        frame[i] = 210;
+        frame[i + 1] = 150;
+        frame[i + 2] = 110;
+        frame[i + 3] = 255;
+      }
+      const jpeg = await import("jpeg-js");
+      const encodeFn = jpeg.default?.encode || (jpeg as unknown as { encode: typeof jpeg.default.encode }).encode;
+      const encoded = encodeFn({ data: frame, width, height }, 80);
+
+      const res = await vision.scanImage({ buffer: encoded.data }, "vi");
+      expect(res.scores.adult).toBeGreaterThanOrEqual(0.8);
+      expect(res.action).toBe("BLOCK");
+      expect(res.reason).toContain("Hình ảnh bị chặn");
+    });
   });
 });
