@@ -11,18 +11,30 @@ export class FirebaseService implements OnModuleInit {
   onModuleInit() {
     // Dùng getApps() thay vì admin.apps
     if (!getApps().length) {
-      const projectId = process.env.FIREBASE_PROJECT_ID;
-      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+      const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
+      let privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim();
 
       if (projectId && clientEmail && privateKey) {
-        initializeApp({
-          credential: cert({
-            projectId,
-            clientEmail,
-            privateKey: privateKey.replace(/\\n/g, '\n'),
-          }),
-        });
+        if (
+          (privateKey.startsWith('"') && privateKey.endsWith('"')) ||
+          (privateKey.startsWith("'") && privateKey.endsWith("'"))
+        ) {
+          privateKey = privateKey.slice(1, -1);
+        }
+
+        try {
+          initializeApp({
+            credential: cert({
+              projectId,
+              clientEmail,
+              privateKey: privateKey.replace(/\\n/g, '\n'),
+            }),
+          });
+          console.log('[FirebaseService] Khởi tạo Firebase Admin SDK thành công.');
+        } catch (err) {
+          console.warn('[FirebaseService] Lỗi khởi tạo Firebase Admin SDK:', err);
+        }
       } else {
         console.warn(
           '[FirebaseService] Thiếu biến môi trường FIREBASE_* — bỏ qua khởi tạo Firebase Admin SDK.',

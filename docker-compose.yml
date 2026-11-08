@@ -84,6 +84,9 @@ services:
       - TURNSTILE_SECRET=${TURNSTILE_SECRET:-0x4AAAAAAFUR2RRUw7sqoROvHzR6HFexUco}
       - SECRET_KEY_CLOUDFLARE=${SECRET_KEY_CLOUDFLARE:-0x4AAAAAAFUR2RRUw7sqoROvHzR6HFexUco}
       - TURNSTILE_HOSTNAMES=${TURNSTILE_HOSTNAMES:-localhost,127.0.0.1,frontend-blush-seven-zqmn2u56h0.vercel.app}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-chatapp-fd260}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL:-firebase-adminsdk-fbsvc@chatapp-fd260.iam.gserviceaccount.com}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
     volumes:
       # Bind Mount source code & configs để kích hoạt Hot Reload lập tức khi sửa file
       - ./backend/src:/app/src
