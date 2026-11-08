@@ -249,6 +249,8 @@ export const th: TranslationDictionary = {
     commentAs: "แสดงความคิดเห็นในชื่อ {name}…",
     writeComment: "เขียนความคิดเห็น…",
     commentsCount: "{count} ความคิดเห็น",
+    viewMoreComments: "ดูความคิดเห็นเพิ่มเติม",
+    loadingComments: "กำลังโหลดความคิดเห็น…",
     sharesCount: "{count} แชร์",
     shareToTimeline: "แชร์ไปยังไทม์ไลน์",
     noPostsTitle: "ยังไม่มีโพสต์ในฟีด",
@@ -284,6 +286,8 @@ export const th: TranslationDictionary = {
     title: "การแจ้งเตือน",
     markAllRead: "ทำเครื่องหมายว่าอ่านแล้วทั้งหมด",
     noNotifications: "ไม่มีการแจ้งเตือนใหม่",
+    loadMore: "โหลดการแจ้งเตือนเพิ่มเติม",
+    loading: "กำลังโหลดเพิ่มเติม…",
   },
   auth: {
     loginTitle: "เข้าสู่ระบบ",

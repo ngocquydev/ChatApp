@@ -249,6 +249,8 @@ export const vi: TranslationDictionary = {
     commentAs: "Bình luận dưới tên {name}…",
     writeComment: "Viết bình luận…",
     commentsCount: "{count} bình luận",
+    viewMoreComments: "Xem thêm bình luận",
+    loadingComments: "Đang tải bình luận…",
     sharesCount: "{count} lượt chia sẻ",
     shareToTimeline: "Chia sẻ lên dòng thời gian",
     noPostsTitle: "Bảng tin còn trống",
@@ -284,6 +286,8 @@ export const vi: TranslationDictionary = {
     title: "Thông báo",
     markAllRead: "Đánh dấu tất cả đã đọc",
     noNotifications: "Không có thông báo mới",
+    loadMore: "Xem thêm thông báo",
+    loading: "Đang tải thêm…",
   },
   auth: {
     loginTitle: "Đăng nhập",

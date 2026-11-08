@@ -249,6 +249,8 @@ export const en: TranslationDictionary = {
     commentAs: "Comment as {name}…",
     writeComment: "Write a comment…",
     commentsCount: "{count} comments",
+    viewMoreComments: "View more comments",
+    loadingComments: "Loading comments…",
     sharesCount: "{count} shares",
     shareToTimeline: "Share to feed",
     noPostsTitle: "Your feed is empty",
@@ -284,6 +286,8 @@ export const en: TranslationDictionary = {
     title: "Notifications",
     markAllRead: "Mark all as read",
     noNotifications: "No new notifications",
+    loadMore: "Load more notifications",
+    loading: "Loading more…",
   },
   auth: {
     loginTitle: "Log In",

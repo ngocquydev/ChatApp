@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Alert, Box, Button, Skeleton, Snackbar, Typography } from "@mui/material";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, Box, Button, CircularProgress, Skeleton, Snackbar, Typography } from "@mui/material";
 import { Sparkles } from "lucide-react";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { summarizeComments } from "@/services/groqApi";
 import AiCommentSummaryBox from "./AiCommentSummaryBox";
 import ReportCommentDialog from "./ReportCommentDialog";
 import { usePagedList } from "@/hooks/usePagedList";
+import { useInfiniteSentinel } from "@/hooks/useInfiniteSentinel";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   addComment,
@@ -41,12 +42,13 @@ export default function PostCommentSection({
   currentUserId,
   onCountChange,
 }: PostCommentSectionProps) {
-  const { tr } = useTranslation();
+  const { t, tr } = useTranslation();
   const list = usePagedList<CommentView>(
     (after) => fetchComments(postId, { limit: COMMENT_PAGE_SIZE, after }),
     (err) => apiErrorMessage(err, tr("Không tải được bình luận.", "Could not load comments.")),
   );
 
+  const [visibleCount, setVisibleCount] = useState(COMMENT_PAGE_SIZE);
   const [sending, setSending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<CommentView | null>(null);
@@ -55,6 +57,34 @@ export default function PostCommentSection({
   const [deleting, setDeleting] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+
+  const sortedItems = useMemo(
+    () => [...list.items].sort((a, b) => a._id.localeCompare(b._id)),
+    [list.items],
+  );
+  const displayedItems = sortedItems.slice(0, visibleCount);
+  const canLoadOrRevealMore = visibleCount < sortedItems.length || list.hasMore;
+
+  const handleReachBottom = useCallback(() => {
+    if (visibleCount < sortedItems.length) {
+      setVisibleCount((prev) => Math.min(prev + COMMENT_PAGE_SIZE, sortedItems.length));
+    } else if (list.status === "ready" && list.hasMore && !list.isLoadingMore && !list.loadMoreError) {
+      list.loadMore();
+    }
+  }, [visibleCount, sortedItems.length, list]);
+
+  const sentinelRef = useInfiniteSentinel(
+    handleReachBottom,
+    Boolean(canLoadOrRevealMore && !list.isLoadingMore && !list.loadMoreError),
+    visibleCount + sortedItems.length,
+  );
+
+  // Tự động nâng visibleCount để hiển thị khi có bình luận mới tải từ server
+  useEffect(() => {
+    if (list.items.length > visibleCount && visibleCount > COMMENT_PAGE_SIZE) {
+      setVisibleCount(list.items.length);
+    }
+  }, [list.items.length, visibleCount]);
 
   // Lắng nghe sự kiện socket thời gian thực khi có bình luận mới hoặc xóa bình luận
   useEffect(() => {
@@ -111,6 +141,7 @@ export default function PostCommentSection({
       }
       const comment = await addComment(postId, content || undefined, media);
       list.append(comment);
+      setVisibleCount((prev) => Math.max(prev, list.items.length + 1));
       onCountChange(1);
     } catch (err) {
       setActionError(apiErrorMessage(err, tr("Không gửi được bình luận.", "Could not send comment.")));
@@ -243,27 +274,41 @@ export default function PostCommentSection({
             </Typography>
           ) : (
             <Box component="ul" aria-label={tr("Bình luận", "Comments")} sx={{ p: 0, m: 0, display: "flex", flexDirection: "column", gap: 1.25 }}>
-              {[...list.items]
-                .sort((a, b) => a._id.localeCompare(b._id))
-                .map((c) => (
-                  <CommentItem
-                    key={c._id}
-                    comment={c}
-                    currentUserId={currentUserId}
-                    canDelete={c.author._id === currentUserId || postAuthorId === currentUserId}
-                    onDelete={setToDelete}
-                    onReport={setToReport}
-                    onToggleReaction={handleToggleCommentReaction}
-                  />
-                ))}
+              {displayedItems.map((c) => (
+                <CommentItem
+                  key={c._id}
+                  comment={c}
+                  currentUserId={currentUserId}
+                  canDelete={c.author._id === currentUserId || postAuthorId === currentUserId}
+                  onDelete={setToDelete}
+                  onReport={setToReport}
+                  onToggleReaction={handleToggleCommentReaction}
+                />
+              ))}
             </Box>
           )}
 
-          {list.hasMore && (
-            <Button size="small" onClick={list.loadMore} disabled={list.isLoadingMore} sx={{ mt: 1, fontWeight: 600 }}>
-              {list.isLoadingMore ? tr("Đang tải…", "Loading…") : tr("Xem thêm bình luận", "View more comments")}
+          {/* Mốc cuộn vô hạn: chạm tới thì tự động hiển thị tiếp 5 bình luận hoặc tải tiếp từ server */}
+          {canLoadOrRevealMore && !list.isLoadingMore && (
+            <Box ref={sentinelRef} aria-hidden sx={{ height: 1 }} />
+          )}
+
+          {list.isLoadingMore && (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 1.5 }}>
+              <CircularProgress size={20} />
+            </Box>
+          )}
+
+          {canLoadOrRevealMore && !list.isLoadingMore && (
+            <Button
+              size="small"
+              onClick={handleReachBottom}
+              sx={{ mt: 1, fontWeight: 600, textTransform: "none" }}
+            >
+              {t("feed.viewMoreComments")}
             </Button>
           )}
+
           {list.loadMoreError && (
             <Alert severity="error" sx={{ mt: 1 }}>
               {list.loadMoreError}

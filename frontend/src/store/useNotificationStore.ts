@@ -27,6 +27,8 @@ interface NotificationState {
   dismissNotice: () => void;
 }
 
+const NOTIFICATION_PAGE_SIZE = 5;
+
 export const useNotificationStore = create<NotificationState>((set, get) => ({
   notifications: [],
   unreadCount: 0,
@@ -39,7 +41,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   fetchNotifications: async () => {
     set({ isLoading: true });
     try {
-      const res = await fetchNotificationsApi({ limit: 20 });
+      const res = await fetchNotificationsApi({ limit: NOTIFICATION_PAGE_SIZE });
       set({
         notifications: res.notifications || [],
         unreadCount: res.unreadCount ?? 0,
@@ -58,7 +60,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     if (!hasMore || !nextCursor || isLoadingMore) return;
     set({ isLoadingMore: true });
     try {
-      const res = await fetchNotificationsApi({ limit: 20, before: nextCursor });
+      const res = await fetchNotificationsApi({ limit: NOTIFICATION_PAGE_SIZE, before: nextCursor });
       set((state) => {
         const seen = new Set(state.notifications.map((n) => n._id));
         const fresh = (res.notifications || []).filter((n) => !seen.has(n._id));

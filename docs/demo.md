@@ -29,6 +29,7 @@
 21. [Bảo Vệ Hạn Mức & Chống Spam AI Đa Tầng (Aura AI Rate Limiting & Token Quota Protection)](#21-bảo-vệ-hạn-mức--chống-spam-ai-đa-tầng-aura-ai-rate-limiting--token-quota-protection)
 22. [Kiểm Thử Tự Động Hóa Giao Diện Đa Thiết Bị Bằng Playwright (Mobile, iPad & Desktop)](#22-kiểm-thử-tự-động-hóa-giao-diện-đa-thiết-bị-bằng-playwright-mobile-ipad--desktop)
 23. [Tái Thiết Kế Hội Nhóm Chuẩn Facebook & Kiến Trúc Module Hóa (< 250 Dòng)](#23-tái-thiết-kế-hội-nhóm-chuẩn-facebook--kiến-trúc-module-hóa--250-dòng)
+24. [Phân Trang & Cuộn Vô Hạn Thông Báo & Bình Luận (5 Mục Đầu + Cuộn Tải Tiếp)](#24-phân-trang--cuộn-vô-hạn-thông-báo--bình-luận-5-mục-đầu--cuộn-tải-tiếp)
 
 ---
 
@@ -480,7 +481,24 @@ Toàn bộ hệ thống Hội nhóm Cộng đồng (Community Groups) được t
 
 ---
 
+## 24. Phân Trang & Cuộn Vô Hạn Thông Báo & Bình Luận (5 Mục Đầu + Cuộn Tải Tiếp)
+
+Tối ưu hóa sâu trải nghiệm cuộn và hiệu năng render DOM:
+- **Thông báo (`NotificationBell`):** Giới hạn chỉ render 5 thông báo mới nhất khi mở dropdown. Khi người dùng cuộn xuống dưới cùng của danh sách popover, hệ thống tự động tải và hiển thị tiếp 5 thông báo tiếp theo.
+- **Bình luận bài viết (`PostCommentSection`):** Chỉ hiển thị 5 bình luận đầu tiên dưới mỗi bài viết, giữ khung thẻ bài viết gọn gàng. Khi người dùng cuộn trang tiếp cận mốc cuối danh sách, hook `useInfiniteSentinel` tự động mở rộng 5 bình luận tiếp theo hoặc gọi API lấy thêm từ backend.
+
+### 24.1. Thông báo hiển thị 5 mục ban đầu
+![Notification Dropdown Pagination](assets/screenshots/notifications-dropdown-pagination.png)
+
+### 24.2. Bình luận hiển thị 5 mục ban đầu kèm cuộn vô hạn
+![Post Comments Infinite Scroll](assets/screenshots/post-comments-infinite-scroll.png)
+
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/infinite-scroll-pagination.md](features/infinite-scroll-pagination.md)*
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Phân trang & Cuộn vô hạn 5 mục cho Thông báo & Bình luận](features/infinite-scroll-pagination.md)
 > - [Tái Thiết Kế Hội Nhóm Chuẩn Facebook & Kiến Trúc Module Hóa](features/community-groups-redesign.md)
 > - [Kiểm soát Hạn ngạch & Chống Spam AI Đa Tầng (Aura Rate Limiting)](features/ai-rate-limiting-protection.md)
 > - [Đóng Gói Toàn Bộ Hệ Thống Với Docker Containers](features/docker-containers.md)

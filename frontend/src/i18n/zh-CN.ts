@@ -249,6 +249,8 @@ export const zhCN: TranslationDictionary = {
     commentAs: "以{name}的身份发表评论…",
     writeComment: "写评论…",
     commentsCount: "{count} 条评论",
+    viewMoreComments: "查看更多评论",
+    loadingComments: "正在加载评论…",
     sharesCount: "{count} 次分享",
     shareToTimeline: "分享到时间线",
     noPostsTitle: "暂无动态",
@@ -284,6 +286,8 @@ export const zhCN: TranslationDictionary = {
     title: "通知",
     markAllRead: "全部标为已读",
     noNotifications: "暂无新通知",
+    loadMore: "加载更多通知",
+    loading: "加载中…",
   },
   auth: {
     loginTitle: "登录",

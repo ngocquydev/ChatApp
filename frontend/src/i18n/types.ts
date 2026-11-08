@@ -266,6 +266,8 @@ export interface TranslationDictionary {
     commentAs: string;
     writeComment: string;
     commentsCount: string;
+    viewMoreComments: string;
+    loadingComments: string;
     sharesCount: string;
     shareToTimeline: string;
     noPostsTitle: string;
@@ -301,6 +303,8 @@ export interface TranslationDictionary {
     title: string;
     markAllRead: string;
     noNotifications: string;
+    loadMore: string;
+    loading: string;
   };
   auth: {
     loginTitle: string;

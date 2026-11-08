@@ -249,6 +249,8 @@ export const zhTW: TranslationDictionary = {
     commentAs: "以{name}的身分發佈留言…",
     writeComment: "撰寫留言…",
     commentsCount: "{count} 則留言",
+    viewMoreComments: "查看更多留言",
+    loadingComments: "正在載入留言…",
     sharesCount: "{count} 次分享",
     shareToTimeline: "分享到動態時報",
     noPostsTitle: "尚無動態",
@@ -284,6 +286,8 @@ export const zhTW: TranslationDictionary = {
     title: "通知",
     markAllRead: "全部標示為已讀",
     noNotifications: "沒有新通知",
+    loadMore: "載入更多通知",
+    loading: "載入中…",
   },
   auth: {
     loginTitle: "登入",

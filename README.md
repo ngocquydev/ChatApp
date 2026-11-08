@@ -72,6 +72,10 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 |:---:|:---:|
 | ![Header Chi Tiết Nhóm Desktop](docs/assets/screenshots/groups-header-desktop-fixed.png) | ![Header Chi Tiết Nhóm Mobile](docs/assets/screenshots/groups-header-mobile-fixed.png) |
 
+| Phân Trang Dropdown Thông Báo (5 Mục Ban Đầu) | Cuộn Vô Hạn Bình Luận Bài Viết (5 Mục Ban Đầu) |
+|:---:|:---:|
+| ![Thông Báo 5 Mục](docs/assets/screenshots/notifications-dropdown-pagination.png) | ![Bình Luận 5 Mục](docs/assets/screenshots/post-comments-infinite-scroll.png) |
+
 | Kiểm Soát Hạn Mức & Chống Spam Aura AI | Đóng Gói Docker Toàn Bộ Hệ Thống |
 |:---:|:---:|
 | ![Kiểm soát Hạn ngạch & Chống Spam Aura AI](docs/assets/screenshots/ai-rate-limiting.png) | ![Đóng gói Docker Containerization](docs/assets/screenshots/docker-containers.png) |
@@ -126,6 +130,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 
 ### 3. Bảng Tin Mạng Xã Hội & Hồ Sơ Cá Nhân (Feed & Profile Timeline)
 - **Bảng tin 100% dữ liệu thực:** Cuộn vô hạn với phân trang con trỏ (Cursor-based pagination: `limit`, `after`), loại bỏ hoàn toàn hiện tượng chớp giật layout (Zero-Layout-Shift).
+- **Phân trang & Cuộn vô hạn tối ưu (5 mục ban đầu):** Dropdown thông báo chỉ tải và render 5 mục mới nhất; bình luận bài viết hiển thị 5 mục đầu tiên, tự động kích hoạt tải tiếp khi người dùng cuộn xuống dưới, tối ưu hóa triệt để hiệu năng render DOM và trải nghiệm mượt mà.
 - **Khung tạo bài viết đa phương tiện:** Hỗ trợ tối đa 4 ảnh chất lượng cao kèm kiểm tra chữ ký Magic-byte chống tệp thực thi độc hại.
 - **Phân quyền riêng tư 3 cấp độ:** *Công khai (`public`)*, *Bạn bè (`friends`)*, *Chỉ mình tôi (`only_me`)*.
 - **Tương tác thời gian thực:** Thả cảm xúc thích (Cập nhật lạc quan - Optimistic Update), bình luận và chia sẻ bài viết.

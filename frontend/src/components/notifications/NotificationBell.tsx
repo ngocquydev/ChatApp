@@ -153,9 +153,12 @@ function getLocalizedNotificationBody(item: NotificationItem, language: Supporte
   return item.content;
 }
 
+const NOTIFICATION_PAGE_SIZE = 5;
+
 export default function NotificationBell() {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(NOTIFICATION_PAGE_SIZE);
   const { t, tr, language } = useTranslation();
 
   const {
@@ -176,13 +179,33 @@ export default function NotificationBell() {
     fetchUnreadCount();
   }, [fetchUnreadCount]);
 
+  // Tự động nâng visibleCount để hiển thị các mục vừa tải thêm
+  useEffect(() => {
+    if (notifications.length > visibleCount && visibleCount > NOTIFICATION_PAGE_SIZE) {
+      setVisibleCount(notifications.length);
+    }
+  }, [notifications.length, visibleCount]);
+
   const handleOpen = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
-    fetchNotifications();
+    setVisibleCount(NOTIFICATION_PAGE_SIZE);
+    void fetchNotifications();
   };
 
   const handleClose = () => {
     setAnchorEl(null);
+    setVisibleCount(NOTIFICATION_PAGE_SIZE);
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight <= 80) {
+      if (visibleCount < notifications.length) {
+        setVisibleCount((prev) => Math.min(prev + NOTIFICATION_PAGE_SIZE, notifications.length));
+      } else if (hasMore && !isLoadingMore) {
+        void loadMore();
+      }
+    }
   };
 
   const handleClickItem = (item: NotificationItem) => {
@@ -212,6 +235,8 @@ export default function NotificationBell() {
     void deleteNotification(id);
   };
 
+  const displayedNotifications = notifications.slice(0, visibleCount);
+  const canLoadMore = visibleCount < notifications.length || hasMore;
   const isOpen = Boolean(anchorEl);
 
   return (
@@ -322,7 +347,15 @@ export default function NotificationBell() {
         </Box>
 
         {/* Nội dung danh sách */}
-        <Box sx={{ flex: 1, overflowY: "auto", p: 1 }}>
+        <Box
+          onScroll={handleScroll}
+          sx={{
+            flex: 1,
+            overflowY: "auto",
+            p: 1,
+            maxHeight: 390,
+          }}
+        >
           {isLoading && notifications.length === 0 ? (
             <Box sx={{ p: 1.5, display: "flex", flexDirection: "column", gap: 1.5 }}>
               {[1, 2, 3].map((k) => (
@@ -344,7 +377,7 @@ export default function NotificationBell() {
             />
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-              {notifications.map((item) => (
+              {displayedNotifications.map((item) => (
                 <Box
                   key={item._id}
                   sx={{
@@ -445,15 +478,28 @@ export default function NotificationBell() {
                 </Box>
               ))}
 
-              {hasMore && (
+              {/* Đang tải thêm khi cuộn */}
+              {isLoadingMore && (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 1.5 }}>
+                  <CircularProgress size={20} />
+                </Box>
+              )}
+
+              {/* Nút xem thêm dự phòng nếu cần click thủ công */}
+              {canLoadMore && !isLoadingMore && (
                 <Button
                   fullWidth
                   size="small"
-                  onClick={() => void loadMore()}
-                  disabled={isLoadingMore}
-                  sx={{ mt: 1, fontSize: "0.8rem", fontWeight: 600 }}
+                  onClick={() => {
+                    if (visibleCount < notifications.length) {
+                      setVisibleCount((prev) => Math.min(prev + NOTIFICATION_PAGE_SIZE, notifications.length));
+                    } else if (hasMore) {
+                      void loadMore();
+                    }
+                  }}
+                  sx={{ mt: 1, fontSize: "0.8rem", fontWeight: 600, textTransform: "none" }}
                 >
-                  {isLoadingMore ? <CircularProgress size={16} /> : tr("Xem thêm thông báo", "Load more notifications")}
+                  {t("notifications.loadMore")}
                 </Button>
               )}
             </Box>

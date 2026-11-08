@@ -249,6 +249,8 @@ export const ko: TranslationDictionary = {
     commentAs: "{name}(으)로 댓글 달기…",
     writeComment: "댓글 작성…",
     commentsCount: "댓글 {count}개",
+    viewMoreComments: "댓글 더 보기",
+    loadingComments: "댓글 불러오는 중…",
     sharesCount: "공유 {count}회",
     shareToTimeline: "타임라인에 공유",
     noPostsTitle: "피드가 비어 있습니다",
@@ -284,6 +286,8 @@ export const ko: TranslationDictionary = {
     title: "알림",
     markAllRead: "모두 읽음으로 표시",
     noNotifications: "새로운 알림이 없습니다",
+    loadMore: "알림 더 보기",
+    loading: "더 불러오는 중…",
   },
   auth: {
     loginTitle: "로그인",
