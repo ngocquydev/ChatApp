@@ -55,7 +55,7 @@ services:
       - "8883:8883"
       - "8884:8884"
     env_file:
-      - ./backend/.env
+      - ./.env.local
     environment:
       - PORT=3000
       - NODE_ENV=development
@@ -80,7 +80,8 @@ services:
       - ./backend/tsconfig.build.json:/app/tsconfig.build.json
       - ./backend/nest-cli.json:/app/nest-cli.json
       - ./backend/certs:/app/certs:ro
-      - ./backend/.env:/app/.env:ro
+      - ./.env.local:/app/.env.local:ro
+      - ./.env.local:/app/.env:ro
       # Anonymous volume bảo toàn node_modules riêng biệt của container Linux
       - /app/node_modules
       - backend_uploads:/app/uploads
@@ -107,7 +108,7 @@ services:
     ports:
       - "5173:5173"
     env_file:
-      - ./frontend/.env
+      - ./.env.local
     environment:
       - PORT=5173
       - NODE_ENV=development
@@ -121,8 +122,8 @@ services:
       - ./frontend/package.json:/app/package.json
       - ./frontend/next.config.mjs:/app/next.config.mjs
       - ./frontend/tsconfig.json:/app/tsconfig.json
-      - ./frontend/.env:/app/.env:ro
-      - ./frontend/.env.local:/app/.env.local:ro
+      - ./.env.local:/app/.env.local:ro
+      - ./.env.local:/app/.env:ro
       # Anonymous volume bảo toàn dependencies
       - /app/node_modules
     command: ["npx", "next", "dev", "-p", "5173", "--webpack"]
@@ -146,7 +147,7 @@ services:
     ports:
       - "5174:5174"
     env_file:
-      - ./admin/.env
+      - ./.env.local
     environment:
       - VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3000}
     volumes:
@@ -156,7 +157,8 @@ services:
       - ./admin/package.json:/app/package.json
       - ./admin/index.html:/app/index.html
       - ./admin/vite.config.ts:/app/vite.config.ts
-      - ./admin/.env:/app/.env:ro
+      - ./.env.local:/app/.env.local:ro
+      - ./.env.local:/app/.env:ro
       # Anonymous volume bảo toàn dependencies
       - /app/node_modules
     depends_on:

@@ -1,9 +1,16 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
+import fs from "node:fs";
+
+// Determine root directory containing consolidated .env.local
+const rootEnvDir = fs.existsSync(path.resolve(__dirname, "../.env.local"))
+  ? path.resolve(__dirname, "..")
+  : __dirname;
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  envDir: rootEnvDir,
   plugins: [react()],
   define: {
     "process.env": {},

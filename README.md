@@ -381,15 +381,22 @@ docker compose up -d mongo redis neo4j
 
 ---
 
+### 2. Cấu hình Biến Môi trường Tập trung (.env.local)
+Toàn bộ biến môi trường của hệ thống (Backend NestJS, Frontend Next.js, Admin Vite và Docker Compose) đã được chuẩn hóa và **gom về một file duy nhất `.env.local` tại thư mục gốc repository** để tiện quản lý và bảo trì.
+
+```bash
+# Tạo file .env.local duy nhất tại gốc dự án từ .env.example:
+cp .env.example .env.local
+```
+
+---
+
 ### 3. Cấu hình & Chạy Backend (NestJS)
 ```bash
 cd backend
 npm install
 
-# Tạo file .env dựa trên .env.example:
-cp .env.example .env
-
-# Khởi chạy server ở chế độ phát triển:
+# Khởi chạy server ở chế độ phát triển (tự động nạp ../.env.local):
 npm run start:dev
 
 # (Tùy chọn) Đồng bộ bộ quy tắc WAF lên Cloudflare qua WAF-as-Code CLI:
@@ -406,10 +413,7 @@ npm run cf:waf -- --sync
 cd ../frontend
 npm install
 
-# Tạo file .env.local dựa trên .env.example:
-cp .env.example .env.local
-
-# Khởi chạy máy chủ phát triển (Turbopack):
+# Khởi chạy máy chủ phát triển (Turbopack, tự động nạp ../.env.local):
 npm run dev
 ```
 - Truy cập ứng dụng: `http://localhost:5173` (hoặc `http://localhost:3000`)
@@ -421,7 +425,7 @@ npm run dev
 cd ../admin
 npm install
 
-# Khởi chạy cổng quản trị:
+# Khởi chạy cổng quản trị (tự động nạp ../.env.local):
 npm run dev
 ```
 - Truy cập trang Quản trị: `http://localhost:5174/login` (Tài khoản role `admin`)

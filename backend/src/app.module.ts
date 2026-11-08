@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { createObserveModule } from '@nestjs/observe';
+import * as path from 'path';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './modules/auth/auth.module.js';
@@ -43,6 +44,14 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [
+        path.resolve(process.cwd(), '.env.local'),
+        path.resolve(process.cwd(), '../.env.local'),
+        path.resolve(__dirname, '../../.env.local'),
+        path.resolve(__dirname, '../.env.local'),
+        '.env.local',
+        '.env',
+      ],
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],

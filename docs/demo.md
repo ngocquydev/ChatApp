@@ -30,6 +30,7 @@
 22. [Kiểm Thử Tự Động Hóa Giao Diện Đa Thiết Bị Bằng Playwright (Mobile, iPad & Desktop)](#22-kiểm-thử-tự-động-hóa-giao-diện-đa-thiết-bị-bằng-playwright-mobile-ipad--desktop)
 23. [Tái Thiết Kế Hội Nhóm Chuẩn Facebook & Kiến Trúc Module Hóa (< 250 Dòng)](#23-tái-thiết-kế-hội-nhóm-chuẩn-facebook--kiến-trúc-module-hóa--250-dòng)
 24. [Phân Trang & Cuộn Vô Hạn Thông Báo & Bình Luận (5 Mục Đầu + Cuộn Tải Tiếp)](#24-phân-trang--cuộn-vô-hạn-thông-báo--bình-luận-5-mục-đầu--cuộn-tải-tiếp)
+25. [Cấu Hình Biến Môi Trường Hợp Nhất (Single Consolidated .env.local)](#25-cấu-hình-biến-môi-trường-hợp-nhất-single-consolidated-envlocal)
 
 ---
 
@@ -497,7 +498,19 @@ Tối ưu hóa sâu trải nghiệm cuộn và hiệu năng render DOM:
 
 ---
 
+## 25. Cấu Hình Biến Môi Trường Hợp Nhất (Single Consolidated .env.local)
+
+Toàn bộ biến môi trường của hệ thống (NestJS Backend, Next.js Frontend, Vite Admin Portal và Docker Compose) được gom về một nguồn sự thật duy nhất tại `.env.local` ở gốc repository, kèm theo bản mẫu `.env.example` chuẩn hóa 10 phân hệ.
+
+- **Frontend Next.js**: Nạp qua `@next/env` `loadEnvConfig(rootEnvDir)`.
+- **Backend NestJS**: Nạp qua `ConfigModule.forRoot` với mảng `envFilePath` đa đường dẫn.
+- **Admin Vite**: Nạp qua `envDir: rootEnvDir`.
+- **Docker Compose**: Nạp qua `env_file: ./.env.local` và mount read-only vào từng container.
+
+---
+
 > 💡 **Khám phá thêm tài liệu chi tiết tại thư mục [docs/features/](features/):**
+> - [Cấu hình biến môi trường hợp nhất (Single Consolidated .env.local)](features/consolidated-environment-configuration.md)
 > - [Phân trang & Cuộn vô hạn 5 mục cho Thông báo & Bình luận](features/infinite-scroll-pagination.md)
 > - [Tái Thiết Kế Hội Nhóm Chuẩn Facebook & Kiến Trúc Module Hóa](features/community-groups-redesign.md)
 > - [Kiểm soát Hạn ngạch & Chống Spam AI Đa Tầng (Aura Rate Limiting)](features/ai-rate-limiting-protection.md)

@@ -1,6 +1,5 @@
 .vscode/
-.env
-.env.*
+.env*
 !.env.example
 node_modules/
 dist/
@@ -12,4 +11,3 @@ logs/
 .aider-desk/
 
 .vercel
-.env*

@@ -1,3 +1,14 @@
+import nextEnv from '@next/env';
+import path from 'node:path';
+import fs from 'node:fs';
+
+const { loadEnvConfig } = nextEnv;
+const rootEnvDir = fs.existsSync(path.resolve(process.cwd(), '../.env.local'))
+  ? path.resolve(process.cwd(), '..')
+  : process.cwd();
+
+loadEnvConfig(rootEnvDir);
+
 const isDev = process.env.NODE_ENV !== 'production';
 const hasLocalBackend =
   process.env.NEXT_PUBLIC_BACKEND_URL?.includes('localhost') ||
