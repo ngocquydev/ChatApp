@@ -54,6 +54,8 @@ services:
       - "1884:1884"
       - "8883:8883"
       - "8884:8884"
+    env_file:
+      - ./backend/.env
     environment:
       - PORT=3000
       - NODE_ENV=development
@@ -65,28 +67,11 @@ services:
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=${NEO4J_PASSWORD:-neo4j_dev_password_change_me}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-30d}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
       - ADMIN_URL=${ADMIN_URL:-http://localhost:5174}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
-      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
-      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
-      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
       - AWS_REGION=${AWS_REGION:-ap-southeast-2}
-      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
       - AWS_PROFILE=${AWS_PROFILE:-default}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
-      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
-      - TURNSTILE_SECRET=${TURNSTILE_SECRET}
-      - SECRET_KEY_CLOUDFLARE=${SECRET_KEY_CLOUDFLARE}
-      - TURNSTILE_HOSTNAMES=${TURNSTILE_HOSTNAMES:-localhost,127.0.0.1}
-      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
-      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
-      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
     volumes:
       # Bind Mount source code & configs để kích hoạt Hot Reload lập tức khi sửa file
       - ./backend/src:/app/src
@@ -95,6 +80,7 @@ services:
       - ./backend/tsconfig.build.json:/app/tsconfig.build.json
       - ./backend/nest-cli.json:/app/nest-cli.json
       - ./backend/certs:/app/certs:ro
+      - ./backend/.env:/app/.env:ro
       # Anonymous volume bảo toàn node_modules riêng biệt của container Linux
       - /app/node_modules
       - backend_uploads:/app/uploads
