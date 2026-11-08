@@ -181,23 +181,41 @@ export default function NotificationBell() {
   const handleOpen = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
     setVisibleCount(NOTIFICATION_PAGE_SIZE);
+    setIsRevealingMore(false);
     void fetchNotifications();
   };
 
   const handleClose = () => {
     setAnchorEl(null);
     setVisibleCount(NOTIFICATION_PAGE_SIZE);
+    setIsRevealingMore(false);
+  };
+
+  const [isRevealingMore, setIsRevealingMore] = useState(false);
+
+  const triggerLoadMore = () => {
+    if (isRevealingMore || isLoadingMore) return;
+    if (visibleCount < notifications.length) {
+      setIsRevealingMore(true);
+      setTimeout(() => {
+        setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
+        setIsRevealingMore(false);
+      }, 300);
+    } else if (hasMore) {
+      setIsRevealingMore(true);
+      setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
+      void loadMore().finally(() => {
+        setIsRevealingMore(false);
+      });
+    }
   };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
-    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distanceToBottom <= 60) {
-      if (visibleCount < notifications.length) {
-        setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
-      } else if (hasMore && !isLoadingMore) {
-        setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
-        void loadMore();
+    if (el.scrollHeight > el.clientHeight && el.scrollTop > 20) {
+      const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (distanceToBottom <= 40) {
+        triggerLoadMore();
       }
     }
   };
@@ -205,25 +223,17 @@ export default function NotificationBell() {
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (e.deltaY > 0) {
       const el = e.currentTarget;
-      const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-      if (distanceToBottom <= 60) {
-        if (visibleCount < notifications.length) {
-          setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
-        } else if (hasMore && !isLoadingMore) {
-          setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
-          void loadMore();
+      if (el.scrollHeight > el.clientHeight && el.scrollTop > 20) {
+        const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        if (distanceToBottom <= 40) {
+          triggerLoadMore();
         }
       }
     }
   };
 
   const handleLoadMoreClick = () => {
-    if (visibleCount < notifications.length) {
-      setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
-    } else if (hasMore) {
-      setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
-      void loadMore();
-    }
+    triggerLoadMore();
   };
 
   const handleClickItem = (item: NotificationItem) => {
@@ -304,7 +314,7 @@ export default function NotificationBell() {
           paper: {
             sx: {
               width: { xs: 320, sm: 380 },
-              maxHeight: 380,
+              maxHeight: 460,
               borderRadius: "16px",
               boxShadow: "0px 12px 32px rgba(0, 0, 0, 0.2)",
               mt: 1,
@@ -372,7 +382,7 @@ export default function NotificationBell() {
             flex: 1,
             overflowY: "auto",
             p: 1,
-            maxHeight: 280,
+            maxHeight: 360,
             "&::-webkit-scrollbar": { width: 6 },
             "&::-webkit-scrollbar-thumb": {
               bgcolor: "divider",
@@ -503,19 +513,23 @@ export default function NotificationBell() {
                 </Box>
               ))}
 
-              {/* Đang tải thêm khi cuộn */}
-              {isLoadingMore && (
-                <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", p: 1.2 }}>
-                  <Skeleton variant="circular" width={40} height={40} animation="wave" sx={{ flexShrink: 0 }} />
-                  <Box sx={{ flex: 1 }}>
-                    <Skeleton variant="text" width="75%" height={18} animation="wave" />
-                    <Skeleton variant="text" width="40%" height={14} animation="wave" />
-                  </Box>
+              {/* Đang tải thêm khi cuộn (hiệu ứng Facebook skeleton) */}
+              {(isLoadingMore || isRevealingMore) && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1, p: 1 }}>
+                  {[1, 2].map((k) => (
+                    <Box key={k} sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+                      <Skeleton variant="circular" width={40} height={40} animation="wave" sx={{ flexShrink: 0 }} />
+                      <Box sx={{ flex: 1 }}>
+                        <Skeleton variant="text" width="75%" height={18} animation="wave" />
+                        <Skeleton variant="text" width="40%" height={14} animation="wave" />
+                      </Box>
+                    </Box>
+                  ))}
                 </Box>
               )}
 
-              {/* Nút xem thêm dự phòng nếu cần click thủ công */}
-              {canLoadMore && !isLoadingMore && (
+              {/* Nút xem thêm nếu cần click thủ công */}
+              {canLoadMore && !isLoadingMore && !isRevealingMore && (
                 <Button
                   fullWidth
                   size="small"

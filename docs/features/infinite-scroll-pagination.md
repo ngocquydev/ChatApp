@@ -18,23 +18,19 @@ Tối ưu hóa trải nghiệm người dùng (UX) và hiệu năng hiển thị
 ### 3.1. Phía Thông báo (`NotificationBell.tsx` + `useNotificationStore.ts`)
 - Hằng số `NOTIFICATION_PAGE_SIZE = 5`.
 - `fetchNotifications`: Gọi API `fetchNotificationsApi({ limit: 5 })` khi mở popover.
-- Cắt lát hiển thị: `notifications.slice(0, visibleCount)` (ban đầu `visibleCount = 5`).
-- Sự kiện `onScroll`: Theo dõi khoảng cách `scrollHeight - scrollTop - clientHeight <= 80px`:
-  - Nếu trong store còn mục chưa hiển thị: Nâng `visibleCount += 5`.
-  - Nếu đã hiển thị hết danh sách cục bộ và `hasMore = true`: Tự động gọi `loadMore()` với `limit: 5`.
-  - Hiển thị spinner `CircularProgress` ở cuối khi đang tải thêm.
-  - Reset `visibleCount = 5` khi đóng popover.
+- Cắt lát hiển thị nghiêm ngặt: `notifications.slice(0, visibleCount)` (ban đầu `visibleCount = 5`).
+- Khung cuộn tối ưu (`maxHeight: 360px`, Popover paper `maxHeight: 460px`): Đảm bảo hiển thị trọn vẹn 5 thông báo đầu tiên.
+- Cơ chế chống tải sớm (anti-premature trigger): Chỉ kích hoạt tải thêm khi `el.scrollTop > 20` và `distanceToBottom <= 40px`, ngăn chặn việc kích hoạt ngầm khi popover vừa mở.
+- Hiệu ứng tải Facebook skeleton: Khi cuộn hoặc ấn xem thêm, hiển thị avatar tròn và 2 dòng skeleton dạng sóng (`wave`) trong 300ms trước khi hiển thị 5 mục kế tiếp.
+- Reset `visibleCount = 5` khi đóng popover.
 
 ### 3.2. Phía Bình luận (`PostCommentSection.tsx`)
 - Hằng số `COMMENT_PAGE_SIZE = 5`.
 - Hook `usePagedList`: Phân trang theo con trỏ với `limit: 5`.
-- Khung cuộn độc lập (`maxHeight: 350px`, `overflowY: "auto"`): Có scrollbar tùy biến, cho phép cuộn trực tiếp bên trong danh sách bình luận mà không làm phình dài thẻ bài viết.
+- Khung hiển thị thoải mái (`maxHeight: { xs: 480, sm: 580 }`, `overflowY: "auto"`): Đảm bảo hiển thị trọn vẹn 5 bình luận đầu tiên mà không bị cắt cụt ở bình luận thứ 3.
 - **Khung tải bình luận phong cách Facebook (`FacebookCommentSkeleton`)**: Hiển thị avatar tròn (28px), bong bóng bình luận bo tròn (`borderRadius: 14px`) và dòng tác vụ (Thích · Phản hồi · Thời gian) cùng hiệu ứng sóng (`wave`) khi cuộn hoặc tải thêm bình luận, mô phỏng hoàn hảo trải nghiệm Facebook.
-- Quản lý trạng thái `visibleCount`: Chỉ hiển thị `COMMENT_PAGE_SIZE` bình luận ban đầu, nâng từng đợt nghiêm ngặt 5 mục khi cuộn xuống.
-- Hook `useInfiniteSentinel`: Tích hợp `IntersectionObserver` tại mốc cuối danh sách bình luận đã render (`sentinelRef`). Khi mốc này xuất hiện trong tầm nhìn người dùng:
-  - Tự động kích hoạt hiệu ứng tải Facebook skeleton và hiển thị 5 bình luận tiếp theo nếu đã nạp trong bộ nhớ.
-  - Tự động gọi `list.loadMore()` nếu còn dữ liệu trên máy chủ.
-  - Đảm bảo khi người dùng tự đăng bình luận mới, bình luận đó ngay lập tức hiển thị đầy đủ.
+- Quản lý trạng thái `visibleCount`: Chỉ hiển thị đúng `COMMENT_PAGE_SIZE` bình luận ban đầu, nâng từng đợt nghiêm ngặt 5 mục khi người dùng thực sự cuộn xuống (`scrollTop > 20 && distanceToBottom <= 40`) hoặc ấn nút "Xem thêm bình luận".
+- Đảm bảo khi người dùng tự đăng bình luận mới, bình luận đó ngay lập tức hiển thị đầy đủ.
 
 ### 3.3. Đa ngôn ngữ (i18n)
 Bổ sung đầy đủ nhãn ngôn ngữ trên cả 6 ngôn ngữ chính thức:

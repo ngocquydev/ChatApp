@@ -8,7 +8,6 @@ import { summarizeComments } from "@/services/groqApi";
 import AiCommentSummaryBox from "./AiCommentSummaryBox";
 import ReportCommentDialog from "./ReportCommentDialog";
 import { usePagedList } from "@/hooks/usePagedList";
-import { useInfiniteSentinel } from "@/hooks/useInfiniteSentinel";
 import { useTranslation } from "@/i18n/useTranslation";
 import {
   addComment,
@@ -119,27 +118,24 @@ export default function PostCommentSection({
     }
   }, [isRevealingMore, visibleCount, sortedItems.length, list]);
 
-  const sentinelRef = useInfiniteSentinel(
-    handleReachBottom,
-    Boolean(canLoadOrRevealMore && !list.isLoadingMore && !isRevealingMore && !list.loadMoreError),
-    visibleCount + sortedItems.length,
-    "0px",
-  );
-
   const handleCommentsScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
-    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distanceToBottom <= 60) {
-      handleReachBottom();
+    if (el.scrollHeight > el.clientHeight && el.scrollTop > 20) {
+      const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (distanceToBottom <= 40) {
+        handleReachBottom();
+      }
     }
   };
 
   const handleCommentsWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (e.deltaY > 0) {
       const el = e.currentTarget;
-      const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-      if (distanceToBottom <= 60) {
-        handleReachBottom();
+      if (el.scrollHeight > el.clientHeight && el.scrollTop > 20) {
+        const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        if (distanceToBottom <= 40) {
+          handleReachBottom();
+        }
       }
     }
   };
@@ -346,7 +342,7 @@ export default function PostCommentSection({
                 display: "flex",
                 flexDirection: "column",
                 gap: 1.25,
-                maxHeight: 350,
+                maxHeight: { xs: 480, sm: 580 },
                 overflowY: "auto",
                 pr: 0.5,
                 "&::-webkit-scrollbar": { width: 6 },
@@ -369,11 +365,6 @@ export default function PostCommentSection({
                 />
               ))}
 
-              {/* Mốc cuộn vô hạn bên trong danh sách bình luận */}
-              {canLoadOrRevealMore && !list.isLoadingMore && !isRevealingMore && (
-                <Box ref={sentinelRef} aria-hidden sx={{ height: 1 }} />
-              )}
-
               {/* Khung tải bình luận phong cách Facebook */}
               {(list.isLoadingMore || isRevealingMore) && (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25, py: 0.5 }}>
@@ -388,7 +379,13 @@ export default function PostCommentSection({
             <Button
               size="small"
               onClick={handleReachBottom}
-              sx={{ mt: 1, fontWeight: 600, textTransform: "none" }}
+              sx={{
+                mt: 1,
+                fontWeight: 600,
+                textTransform: "none",
+                color: "text.secondary",
+                "&:hover": { color: "primary.main" },
+              }}
             >
               {t("feed.viewMoreComments")}
             </Button>
