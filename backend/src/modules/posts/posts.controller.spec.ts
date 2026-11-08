@@ -4,7 +4,6 @@ import { PostsController } from './posts.controller.js';
 import { PostsService } from './posts.service.js';
 import { ModerationService } from '../moderation/moderation.service.js';
 import type { CloudinaryService } from '../cloudinary/cloudinary.service.js';
-import type { AwsStorageService } from '../aws-storage/aws-storage.service.js';
 
 describe('PostsController - Image Moderation', () => {
   let controller: PostsController;
@@ -28,36 +27,6 @@ describe('PostsController - Image Moderation', () => {
     await expect(controller.uploadImage(fakeAdultFile)).rejects.toThrow(
       BadRequestException,
     );
-  });
-
-  it('lưu ảnh vi phạm 18+ vào AWS S3 Quarantine khi phát hiện', async () => {
-    const uploadBufferSpy = vi.fn().mockResolvedValue({ url: 'https://s3/quarantine/test.jpg' });
-    const mockAwsStorage = {
-      isConfigured: () => true,
-      uploadBuffer: uploadBufferSpy,
-    } as unknown as AwsStorageService;
-
-    const controllerWithAws = new PostsController(
-      postsService,
-      undefined,
-      moderationService,
-      mockAwsStorage,
-    );
-
-    const fakeAdultFile = {
-      buffer: Buffer.from('fake-adult-data'),
-      mimetype: 'image/jpeg',
-      originalname: 'anh_nong_18plus_khoa_than.jpg',
-    };
-
-    await expect(controllerWithAws.uploadImage(fakeAdultFile)).rejects.toThrow(
-      BadRequestException,
-    );
-    expect(uploadBufferSpy).toHaveBeenCalledWith(fakeAdultFile.buffer, {
-      folder: 'quarantine/18plus',
-      filename: fakeAdultFile.originalname,
-      mimetype: fakeAdultFile.mimetype,
-    });
   });
 
   it('tải ảnh an toàn lên Cloudinary khi Cloudinary đã cấu hình', async () => {

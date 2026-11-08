@@ -1,18 +1,3 @@
-export interface S3UploadOptions {
-  folder?: string;
-  filename?: string;
-  mimetype?: string;
-  metadata?: Record<string, string>;
-}
-
-export interface S3UploadResult {
-  url: string;
-  bucket: string;
-  key: string;
-  contentType?: string;
-  bytes?: number;
-}
-
 export interface RekognitionModerationLabel {
   name: string;
   parentName?: string;

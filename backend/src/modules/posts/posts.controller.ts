@@ -33,7 +33,6 @@ import {
 import { CreateCommentReportDto } from './dto/report-comment.dto.js';
 import { savePostImage } from './post-image.util.js';
 import { ModerationService } from '../moderation/moderation.service.js';
-import { AwsStorageService } from '../aws-storage/aws-storage.service.js';
 
 const POST_MEDIA_MAX_BYTES = 100 * 1024 * 1024;
 
@@ -46,7 +45,6 @@ export class PostsController {
     private readonly postsService: PostsService,
     @Optional() private readonly cloudinaryService?: CloudinaryService,
     @Optional() private readonly moderationService?: ModerationService,
-    @Optional() private readonly awsStorageService?: AwsStorageService,
   ) {}
 
   private extractUserId(req: AuthenticatedRequest): string {
@@ -91,19 +89,6 @@ export class PostsController {
       });
 
       if (modResult.action === 'BLOCK' || modResult.scores.adult >= 0.8) {
-        // Lưu trữ ảnh vi phạm 18+ vào AWS S3 Quarantine để lưu bằng chứng kiểm duyệt / audit
-        if (this.awsStorageService?.isConfigured()) {
-          try {
-            await this.awsStorageService.uploadBuffer(file.buffer, {
-              folder: 'quarantine/18plus',
-              filename: file.originalname,
-              mimetype: file.mimetype,
-            });
-          } catch {
-            // Không để lỗi lưu bằng chứng S3 ảnh hưởng việc chặn ảnh vi phạm
-          }
-        }
-
         throw new BadRequestException(
           modResult.reason || 'Hình ảnh bị chặn do vi phạm tiêu chuẩn cộng đồng về nội dung 18+ / khiêu dâm.'
         );
