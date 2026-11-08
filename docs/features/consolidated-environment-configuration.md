@@ -106,3 +106,4 @@ Tệp `.env.example` tại gốc dự án cung cấp mẫu chuẩn gồm 10 nhó
 - **Backend Lint**: `npm run lint --prefix backend` (0 errors)
 - **Backend Tests**: `npm run test --prefix backend` (50 test files passed, 452 tests passed)
 - **Admin Build**: `npm run build --prefix admin` (0 errors, 3187 modules transformed)
+
