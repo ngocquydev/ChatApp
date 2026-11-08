@@ -120,13 +120,14 @@ services:
     restart: unless-stopped
     ports:
       - "5173:5173"
+    env_file:
+      - ./frontend/.env
     environment:
       - PORT=5173
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
       - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3000}
-      - NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
-      - VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY:-}
     volumes:
       # Bind Mount source code & assets để kích hoạt Fast Refresh lập tức
       - ./frontend/src:/app/src
@@ -134,9 +135,11 @@ services:
       - ./frontend/package.json:/app/package.json
       - ./frontend/next.config.mjs:/app/next.config.mjs
       - ./frontend/tsconfig.json:/app/tsconfig.json
-      # Anonymous volumes bảo toàn dependencies và cache biên dịch
+      - ./frontend/.env:/app/.env:ro
+      - ./frontend/.env.local:/app/.env.local:ro
+      # Anonymous volume bảo toàn dependencies
       - /app/node_modules
-      - /app/.next
+    command: ["npx", "next", "dev", "-p", "5173", "--webpack"]
     depends_on:
       - backend
     networks:
@@ -156,10 +159,10 @@ services:
     restart: unless-stopped
     ports:
       - "5174:5174"
+    env_file:
+      - ./admin/.env
     environment:
       - VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3000}
-      - VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY:-}
-      - NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     volumes:
       # Bind Mount source code để kích hoạt Vite HMR lập tức
       - ./admin/src:/app/src
@@ -167,6 +170,7 @@ services:
       - ./admin/package.json:/app/package.json
       - ./admin/index.html:/app/index.html
       - ./admin/vite.config.ts:/app/vite.config.ts
+      - ./admin/.env:/app/.env:ro
       # Anonymous volume bảo toàn dependencies
       - /app/node_modules
     depends_on:
