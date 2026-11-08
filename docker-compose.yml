@@ -52,6 +52,7 @@ services:
     ports:
       - "3000:3000"
       - "1884:1884"
+      - "8883:8883"
       - "8884:8884"
     environment:
       - PORT=3000
@@ -90,6 +91,7 @@ services:
       - ./backend/tsconfig.json:/app/tsconfig.json
       - ./backend/tsconfig.build.json:/app/tsconfig.build.json
       - ./backend/nest-cli.json:/app/nest-cli.json
+      - ./backend/certs:/app/certs:ro
       # Anonymous volume bảo toàn node_modules riêng biệt của container Linux
       - /app/node_modules
       - backend_uploads:/app/uploads
