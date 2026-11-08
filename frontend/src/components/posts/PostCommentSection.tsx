@@ -67,8 +67,9 @@ export default function PostCommentSection({
 
   const handleReachBottom = useCallback(() => {
     if (visibleCount < sortedItems.length) {
-      setVisibleCount((prev) => Math.min(prev + COMMENT_PAGE_SIZE, sortedItems.length));
+      setVisibleCount((prev) => prev + COMMENT_PAGE_SIZE);
     } else if (list.status === "ready" && list.hasMore && !list.isLoadingMore && !list.loadMoreError) {
+      setVisibleCount((prev) => prev + COMMENT_PAGE_SIZE);
       list.loadMore();
     }
   }, [visibleCount, sortedItems.length, list]);
@@ -77,14 +78,26 @@ export default function PostCommentSection({
     handleReachBottom,
     Boolean(canLoadOrRevealMore && !list.isLoadingMore && !list.loadMoreError),
     visibleCount + sortedItems.length,
+    "0px",
   );
 
-  // Tự động nâng visibleCount để hiển thị khi có bình luận mới tải từ server
-  useEffect(() => {
-    if (list.items.length > visibleCount && visibleCount > COMMENT_PAGE_SIZE) {
-      setVisibleCount(list.items.length);
+  const handleCommentsScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceToBottom <= 60) {
+      handleReachBottom();
     }
-  }, [list.items.length, visibleCount]);
+  };
+
+  const handleCommentsWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (e.deltaY > 0) {
+      const el = e.currentTarget;
+      const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (distanceToBottom <= 60) {
+        handleReachBottom();
+      }
+    }
+  };
 
   // Lắng nghe sự kiện socket thời gian thực khi có bình luận mới hoặc xóa bình luận
   useEffect(() => {
@@ -273,7 +286,28 @@ export default function PostCommentSection({
               {tr("Chưa có bình luận nào. Hãy là người đầu tiên!", "No comments yet. Be the first to comment!")}
             </Typography>
           ) : (
-            <Box component="ul" aria-label={tr("Bình luận", "Comments")} sx={{ p: 0, m: 0, display: "flex", flexDirection: "column", gap: 1.25 }}>
+            <Box
+              role="list"
+              aria-label={tr("Bình luận", "Comments")}
+              onScroll={handleCommentsScroll}
+              onWheel={handleCommentsWheel}
+              sx={{
+                p: 0,
+                m: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.25,
+                maxHeight: 350,
+                overflowY: "auto",
+                pr: 0.5,
+                "&::-webkit-scrollbar": { width: 6 },
+                "&::-webkit-scrollbar-thumb": {
+                  bgcolor: "divider",
+                  borderRadius: "4px",
+                  "&:hover": { bgcolor: "text.disabled" },
+                },
+              }}
+            >
               {displayedItems.map((c) => (
                 <CommentItem
                   key={c._id}
@@ -285,17 +319,17 @@ export default function PostCommentSection({
                   onToggleReaction={handleToggleCommentReaction}
                 />
               ))}
-            </Box>
-          )}
 
-          {/* Mốc cuộn vô hạn: chạm tới thì tự động hiển thị tiếp 5 bình luận hoặc tải tiếp từ server */}
-          {canLoadOrRevealMore && !list.isLoadingMore && (
-            <Box ref={sentinelRef} aria-hidden sx={{ height: 1 }} />
-          )}
+              {/* Mốc cuộn vô hạn bên trong danh sách bình luận */}
+              {canLoadOrRevealMore && !list.isLoadingMore && (
+                <Box ref={sentinelRef} aria-hidden sx={{ height: 1 }} />
+              )}
 
-          {list.isLoadingMore && (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 1.5 }}>
-              <CircularProgress size={20} />
+              {list.isLoadingMore && (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 1.5 }}>
+                  <CircularProgress size={20} />
+                </Box>
+              )}
             </Box>
           )}
 

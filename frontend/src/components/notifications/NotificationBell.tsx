@@ -179,13 +179,6 @@ export default function NotificationBell() {
     fetchUnreadCount();
   }, [fetchUnreadCount]);
 
-  // Tự động nâng visibleCount để hiển thị các mục vừa tải thêm
-  useEffect(() => {
-    if (notifications.length > visibleCount && visibleCount > NOTIFICATION_PAGE_SIZE) {
-      setVisibleCount(notifications.length);
-    }
-  }, [notifications.length, visibleCount]);
-
   const handleOpen = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
     setVisibleCount(NOTIFICATION_PAGE_SIZE);
@@ -199,12 +192,38 @@ export default function NotificationBell() {
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight <= 80) {
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceToBottom <= 60) {
       if (visibleCount < notifications.length) {
-        setVisibleCount((prev) => Math.min(prev + NOTIFICATION_PAGE_SIZE, notifications.length));
+        setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
       } else if (hasMore && !isLoadingMore) {
+        setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
         void loadMore();
       }
+    }
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (e.deltaY > 0) {
+      const el = e.currentTarget;
+      const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (distanceToBottom <= 60) {
+        if (visibleCount < notifications.length) {
+          setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
+        } else if (hasMore && !isLoadingMore) {
+          setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
+          void loadMore();
+        }
+      }
+    }
+  };
+
+  const handleLoadMoreClick = () => {
+    if (visibleCount < notifications.length) {
+      setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
+    } else if (hasMore) {
+      setVisibleCount((prev) => prev + NOTIFICATION_PAGE_SIZE);
+      void loadMore();
     }
   };
 
@@ -286,7 +305,7 @@ export default function NotificationBell() {
           paper: {
             sx: {
               width: { xs: 320, sm: 380 },
-              maxHeight: 490,
+              maxHeight: 380,
               borderRadius: "16px",
               boxShadow: "0px 12px 32px rgba(0, 0, 0, 0.2)",
               mt: 1,
@@ -349,11 +368,18 @@ export default function NotificationBell() {
         {/* Nội dung danh sách */}
         <Box
           onScroll={handleScroll}
+          onWheel={handleWheel}
           sx={{
             flex: 1,
             overflowY: "auto",
             p: 1,
-            maxHeight: 390,
+            maxHeight: 280,
+            "&::-webkit-scrollbar": { width: 6 },
+            "&::-webkit-scrollbar-thumb": {
+              bgcolor: "divider",
+              borderRadius: "4px",
+              "&:hover": { bgcolor: "text.disabled" },
+            },
           }}
         >
           {isLoading && notifications.length === 0 ? (
@@ -490,13 +516,7 @@ export default function NotificationBell() {
                 <Button
                   fullWidth
                   size="small"
-                  onClick={() => {
-                    if (visibleCount < notifications.length) {
-                      setVisibleCount((prev) => Math.min(prev + NOTIFICATION_PAGE_SIZE, notifications.length));
-                    } else if (hasMore) {
-                      void loadMore();
-                    }
-                  }}
+                  onClick={handleLoadMoreClick}
                   sx={{ mt: 1, fontSize: "0.8rem", fontWeight: 600, textTransform: "none" }}
                 >
                   {t("notifications.loadMore")}
