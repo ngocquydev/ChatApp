@@ -173,13 +173,25 @@ const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(
     }, [cleanSiteKey, action, theme]);
 
     if (!cleanSiteKey) {
-      return (
-        <Box sx={{ my: 1.5, p: 1, border: "1px dashed var(--mui-palette-neutral-300)", borderRadius: 1.5 }}>
-          <Typography variant="caption" color="text.secondary">
-            Vui lòng thêm NEXT_PUBLIC_TURNSTILE_SITE_KEY trong file .env để kích hoạt Turnstile.
-          </Typography>
-        </Box>
-      );
+      if (process.env.NODE_ENV === "development") {
+        return (
+          <Box
+            sx={{
+              my: 1.5,
+              p: 1.5,
+              border: "1px dashed",
+              borderColor: "divider",
+              borderRadius: "8px",
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="caption" color="text.secondary">
+              Vui lòng thêm NEXT_PUBLIC_TURNSTILE_SITE_KEY trong file .env để kích hoạt Turnstile.
+            </Typography>
+          </Box>
+        );
+      }
+      return null;
     }
 
     return (
