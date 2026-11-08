@@ -7,7 +7,6 @@ import {
   Box,
   Button,
   ButtonBase,
-  CircularProgress,
   IconButton,
   Popover,
   Skeleton,
@@ -506,8 +505,12 @@ export default function NotificationBell() {
 
               {/* Đang tải thêm khi cuộn */}
               {isLoadingMore && (
-                <Box sx={{ display: "flex", justifyContent: "center", py: 1.5 }}>
-                  <CircularProgress size={20} />
+                <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", p: 1.2 }}>
+                  <Skeleton variant="circular" width={40} height={40} animation="wave" sx={{ flexShrink: 0 }} />
+                  <Box sx={{ flex: 1 }}>
+                    <Skeleton variant="text" width="75%" height={18} animation="wave" />
+                    <Skeleton variant="text" width="40%" height={14} animation="wave" />
+                  </Box>
                 </Box>
               )}
 

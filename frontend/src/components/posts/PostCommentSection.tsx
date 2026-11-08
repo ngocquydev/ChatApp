@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Box, Button, CircularProgress, Skeleton, Snackbar, Typography } from "@mui/material";
+import { Alert, Box, Button, Skeleton, Snackbar, Typography } from "@mui/material";
 import { Sparkles } from "lucide-react";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { summarizeComments } from "@/services/groqApi";
@@ -34,6 +34,44 @@ interface PostCommentSectionProps {
   onCountChange: (delta: number) => void;
 }
 
+/** Khung tải bình luận với hiệu ứng sóng (wave) phong cách Facebook */
+function FacebookCommentSkeleton() {
+  return (
+    <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start", py: 0.5, listStyle: "none" }}>
+      {/* Avatar tròn 28px tương đồng với kích thước avatar trong CommentItem */}
+      <Skeleton variant="circular" width={28} height={28} animation="wave" sx={{ flexShrink: 0, mt: 0.5 }} />
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        {/* Bong bóng bình luận bo tròn kiểu Facebook */}
+        <Box
+          sx={{
+            bgcolor: "action.hover",
+            borderRadius: "14px",
+            px: 1.5,
+            py: 1,
+            display: "inline-block",
+            minWidth: 160,
+            maxWidth: "85%",
+          }}
+        >
+          {/* Tên tác giả */}
+          <Skeleton variant="text" width={100} height={16} animation="wave" sx={{ mb: 0.5, borderRadius: "4px" }} />
+          {/* Nội dung bình luận */}
+          <Skeleton variant="text" width="90%" height={14} animation="wave" sx={{ borderRadius: "4px" }} />
+          <Skeleton variant="text" width="60%" height={14} animation="wave" sx={{ borderRadius: "4px" }} />
+        </Box>
+
+        {/* Dòng tương tác: Thích · Phản hồi · Thời gian dưới bong bóng */}
+        <Box sx={{ display: "flex", gap: 1.5, mt: 0.5, ml: 1, alignItems: "center" }}>
+          <Skeleton variant="text" width={30} height={12} animation="wave" sx={{ borderRadius: "3px" }} />
+          <Skeleton variant="text" width={42} height={12} animation="wave" sx={{ borderRadius: "3px" }} />
+          <Skeleton variant="text" width={50} height={12} animation="wave" sx={{ borderRadius: "3px" }} />
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 /** Danh sách + ô nhập bình luận của một bài viết (hỗ trợ đính kèm ảnh / video). */
 export default function PostCommentSection({
   postId,
@@ -57,6 +95,7 @@ export default function PostCommentSection({
   const [deleting, setDeleting] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
+  const [isRevealingMore, setIsRevealingMore] = useState(false);
 
   const sortedItems = useMemo(
     () => [...list.items].sort((a, b) => a._id.localeCompare(b._id)),
@@ -66,17 +105,23 @@ export default function PostCommentSection({
   const canLoadOrRevealMore = visibleCount < sortedItems.length || list.hasMore;
 
   const handleReachBottom = useCallback(() => {
+    if (isRevealingMore || list.isLoadingMore) return;
+
     if (visibleCount < sortedItems.length) {
-      setVisibleCount((prev) => prev + COMMENT_PAGE_SIZE);
+      setIsRevealingMore(true);
+      setTimeout(() => {
+        setVisibleCount((prev) => prev + COMMENT_PAGE_SIZE);
+        setIsRevealingMore(false);
+      }, 350);
     } else if (list.status === "ready" && list.hasMore && !list.isLoadingMore && !list.loadMoreError) {
       setVisibleCount((prev) => prev + COMMENT_PAGE_SIZE);
       list.loadMore();
     }
-  }, [visibleCount, sortedItems.length, list]);
+  }, [isRevealingMore, visibleCount, sortedItems.length, list]);
 
   const sentinelRef = useInfiniteSentinel(
     handleReachBottom,
-    Boolean(canLoadOrRevealMore && !list.isLoadingMore && !list.loadMoreError),
+    Boolean(canLoadOrRevealMore && !list.isLoadingMore && !isRevealingMore && !list.loadMoreError),
     visibleCount + sortedItems.length,
     "0px",
   );
@@ -232,9 +277,13 @@ export default function PostCommentSection({
   return (
     <Box sx={{ pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
       {list.status === "loading" && (
-        <Box aria-busy="true" aria-label={tr("Đang tải bình luận", "Loading comments")} sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          <Skeleton variant="rounded" height={52} />
-          <Skeleton variant="rounded" height={52} width="80%" />
+        <Box
+          aria-busy="true"
+          aria-label={tr("Đang tải bình luận", "Loading comments")}
+          sx={{ display: "flex", flexDirection: "column", gap: 1.25, py: 1 }}
+        >
+          <FacebookCommentSkeleton />
+          <FacebookCommentSkeleton />
         </Box>
       )}
 
@@ -321,19 +370,21 @@ export default function PostCommentSection({
               ))}
 
               {/* Mốc cuộn vô hạn bên trong danh sách bình luận */}
-              {canLoadOrRevealMore && !list.isLoadingMore && (
+              {canLoadOrRevealMore && !list.isLoadingMore && !isRevealingMore && (
                 <Box ref={sentinelRef} aria-hidden sx={{ height: 1 }} />
               )}
 
-              {list.isLoadingMore && (
-                <Box sx={{ display: "flex", justifyContent: "center", py: 1.5 }}>
-                  <CircularProgress size={20} />
+              {/* Khung tải bình luận phong cách Facebook */}
+              {(list.isLoadingMore || isRevealingMore) && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25, py: 0.5 }}>
+                  <FacebookCommentSkeleton />
+                  <FacebookCommentSkeleton />
                 </Box>
               )}
             </Box>
           )}
 
-          {canLoadOrRevealMore && !list.isLoadingMore && (
+          {canLoadOrRevealMore && !list.isLoadingMore && !isRevealingMore && (
             <Button
               size="small"
               onClick={handleReachBottom}

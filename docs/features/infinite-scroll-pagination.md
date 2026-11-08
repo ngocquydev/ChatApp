@@ -28,9 +28,11 @@ Tối ưu hóa trải nghiệm người dùng (UX) và hiệu năng hiển thị
 ### 3.2. Phía Bình luận (`PostCommentSection.tsx`)
 - Hằng số `COMMENT_PAGE_SIZE = 5`.
 - Hook `usePagedList`: Phân trang theo con trỏ với `limit: 5`.
-- Quản lý trạng thái `visibleCount`: Chỉ hiển thị `COMMENT_PAGE_SIZE` bình luận ban đầu.
+- Khung cuộn độc lập (`maxHeight: 350px`, `overflowY: "auto"`): Có scrollbar tùy biến, cho phép cuộn trực tiếp bên trong danh sách bình luận mà không làm phình dài thẻ bài viết.
+- **Khung tải bình luận phong cách Facebook (`FacebookCommentSkeleton`)**: Hiển thị avatar tròn (28px), bong bóng bình luận bo tròn (`borderRadius: 14px`) và dòng tác vụ (Thích · Phản hồi · Thời gian) cùng hiệu ứng sóng (`wave`) khi cuộn hoặc tải thêm bình luận, mô phỏng hoàn hảo trải nghiệm Facebook.
+- Quản lý trạng thái `visibleCount`: Chỉ hiển thị `COMMENT_PAGE_SIZE` bình luận ban đầu, nâng từng đợt nghiêm ngặt 5 mục khi cuộn xuống.
 - Hook `useInfiniteSentinel`: Tích hợp `IntersectionObserver` tại mốc cuối danh sách bình luận đã render (`sentinelRef`). Khi mốc này xuất hiện trong tầm nhìn người dùng:
-  - Tự động mở rộng hiển thị 5 bình luận tiếp theo nếu đã nạp trong bộ nhớ.
+  - Tự động kích hoạt hiệu ứng tải Facebook skeleton và hiển thị 5 bình luận tiếp theo nếu đã nạp trong bộ nhớ.
   - Tự động gọi `list.loadMore()` nếu còn dữ liệu trên máy chủ.
   - Đảm bảo khi người dùng tự đăng bình luận mới, bình luận đó ngay lập tức hiển thị đầy đủ.
 
