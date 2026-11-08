@@ -41,7 +41,7 @@ describe('image-preprocessor.util', () => {
     expect(result.frames.length).toBeGreaterThan(0);
     expect(result.frames[0].width).toBe(2);
     expect(result.frames[0].height).toBe(2);
-    expect(result.frames[0].rekognitionBuffer.length).toBeGreaterThan(0);
+    expect(result.frames[0].rgba.length).toBeGreaterThan(0);
   });
 });
 

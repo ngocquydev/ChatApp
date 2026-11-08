@@ -70,8 +70,6 @@ services:
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
       - ADMIN_URL=${ADMIN_URL:-http://localhost:5174}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
-      - AWS_REGION=${AWS_REGION:-ap-southeast-2}
-      - AWS_PROFILE=${AWS_PROFILE:-default}
     volumes:
       # Bind Mount source code & configs để kích hoạt Hot Reload lập tức khi sửa file
       - ./backend/src:/app/src
@@ -85,8 +83,6 @@ services:
       # Anonymous volume bảo toàn node_modules riêng biệt của container Linux
       - /app/node_modules
       - backend_uploads:/app/uploads
-      # Nạp chứng chỉ/credentials AWS từ máy host vào container
-      - ~/.aws:/root/.aws:ro
     depends_on:
       - mongo
       - redis

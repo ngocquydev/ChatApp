@@ -1,4 +1,4 @@
-// Image Preprocessor Utility for Dual-Layer Moderation
+// Image Preprocessor Utility for Vision Moderation
 import jpeg from 'jpeg-js';
 import { PNG } from 'pngjs';
 import omggif from 'omggif';
@@ -8,8 +8,6 @@ export interface DecodedImageFrame {
   rgba: Buffer;
   width: number;
   height: number;
-  /** Buffer chuẩn hóa (JPEG hoặc PNG) để gửi sang Amazon Rekognition */
-  rekognitionBuffer: Buffer;
 }
 
 export interface PreprocessedImageResult {
@@ -96,13 +94,10 @@ export function preprocessImageForModeration(buffer: Buffer): PreprocessedImageR
             const rgba = Buffer.alloc(width * height * 4);
             reader.decodeAndBlitFrameRGBA(frameIdx, rgba);
 
-            // Chuyển frame thành JPEG buffer để Rekognition có thể quét
-            const jpegEncoded = jpeg.encode({ data: rgba, width, height }, 85);
             frames.push({
               rgba,
               width,
               height,
-              rekognitionBuffer: jpegEncoded.data,
             });
           }
         }
@@ -120,7 +115,6 @@ export function preprocessImageForModeration(buffer: Buffer): PreprocessedImageR
             rgba: Buffer.from(decoded.data),
             width: decoded.width,
             height: decoded.height,
-            rekognitionBuffer: buffer, // JPEG đã được Rekognition hỗ trợ sẵn
           });
         }
       } catch {
@@ -137,7 +131,6 @@ export function preprocessImageForModeration(buffer: Buffer): PreprocessedImageR
             rgba: png.data,
             width: png.width,
             height: png.height,
-            rekognitionBuffer: buffer, // PNG đã được Rekognition hỗ trợ sẵn
           });
         }
       } catch {
@@ -160,7 +153,6 @@ export function preprocessImageForModeration(buffer: Buffer): PreprocessedImageR
               rgba: png.data,
               width: png.width,
               height: png.height,
-              rekognitionBuffer: proc.stdout,
             });
           }
         }

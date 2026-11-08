@@ -85,17 +85,16 @@ Việc phân mảnh này khiến việc thiết lập môi trường mới, đ�
 ---
 
 ## 3. Bản Mẫu `.env.example`
-Tệp `.env.example` tại gốc dự án cung cấp mẫu chuẩn gồm 10 nhóm biến môi trường:
+Tệp `.env.example` tại gốc dự án cung cấp mẫu chuẩn gồm các nhóm biến môi trường:
 1. **System & Ports & URLs**: `PORT`, `PORT_FE`, `PORT_ADMIN`, `NEXT_PUBLIC_BACKEND_URL`, `FRONTEND_URL`
 2. **Database & Cache**: `MONGODB_URI`, `REDIS_URL`, `NEO4J_URI`, `AURA_INSTANCEID`
 3. **Authentication**: `JWT_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_SECRET`
 4. **Cloudflare Turnstile**: `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, `CLOUDFLARE_TUNNEL_TOKEN`
 5. **Firebase**: `NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_PROJECT_ID`, `FIREBASE_PRIVATE_KEY`
-6. **AWS S3 & Rekognition**: `AWS_REGION`, `AWS_S3_BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
-7. **Cloudinary**: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
-8. **AI Models**: `GROQ_API_KEY`, `GROQ_MODEL`
-9. **SMTP Mailer**: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
-10. **Third-Party & Admin**: `NEXT_GIPHY_API_KEY`, `VITE_DEFAULT_ADMIN_EMAIL`, `VITE_DEFAULT_ADMIN_PASSWORD`
+6. **Cloudinary**: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+7. **AI Models**: `GROQ_API_KEY`, `GROQ_MODEL`
+8. **SMTP Mailer**: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`
+9. **Third-Party & Admin**: `NEXT_GIPHY_API_KEY`, `VITE_DEFAULT_ADMIN_EMAIL`, `VITE_DEFAULT_ADMIN_PASSWORD`
 
 ---
 

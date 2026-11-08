@@ -24,7 +24,6 @@ import { BackupModule } from './modules/backup/backup.module.js';
 import { GroqModule } from './modules/groq/groq.module.js';
 import { PagesModule } from './modules/pages/pages.module.js';
 import { CommunityGroupsModule } from './modules/community-groups/community-groups.module.js';
-import { AwsStorageModule } from './modules/aws-storage/aws-storage.module.js';
 import { WafMiddleware } from './modules/waf/waf.middleware.js';
 import { RateLimitMiddleware } from './common/middlewares/rate-limit.middleware.js';
 import { CloudflareMiddleware } from './common/middlewares/cloudflare.middleware.js';
@@ -125,7 +124,6 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url));
     PagesModule,
 
     CommunityGroupsModule,
-    AwsStorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],
