@@ -17,8 +17,7 @@ export class AwsStorageService {
   constructor(private readonly configService: ConfigService) {
     this.region = this.configService.get<string>('AWS_REGION') || 'ap-southeast-2';
     this.bucketName =
-      this.configService.get<string>('AWS_S3_BUCKET_NAME') ||
-      'chatapp-media-703002395048-ap-southeast-2';
+      this.configService.get<string>('AWS_S3_BUCKET_NAME') || '';
 
     try {
       this.s3Client = new S3Client({

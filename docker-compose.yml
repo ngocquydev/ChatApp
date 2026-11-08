@@ -33,7 +33,7 @@ services:
       - "7474:7474"
       - "7687:7687"
     environment:
-      - NEO4J_AUTH=neo4j/password123
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-neo4j_dev_password_change_me}
     volumes:
       - neo4j_data:/data
     networks:
@@ -64,28 +64,28 @@ services:
       - REDIS_PORT=6379
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=password123
-      - JWT_SECRET=${JWT_SECRET:-chatapp_jwt_secret_super_key_2026}
-      - JWT_EXPIRES_IN=7d
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-chatapp_jwt_refresh_secret_super_key_2026}
-      - JWT_REFRESH_EXPIRES_IN=30d
-      - FRONTEND_URL=http://localhost:5173
-      - ADMIN_URL=http://localhost:5174
-      - CORS_ORIGIN=http://localhost:5173,http://localhost:5174
-      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-rjkxi7lw}
-      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-153391946946721}
-      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-nHsaDbqPuakHe5KkJuUma6-7Yu0}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-neo4j_dev_password_change_me}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-30d}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - ADMIN_URL=${ADMIN_URL:-http://localhost:5174}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
       - AWS_REGION=${AWS_REGION:-ap-southeast-2}
-      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME:-chatapp-media-703002395048-ap-southeast-2}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
       - AWS_PROFILE=${AWS_PROFILE:-default}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
       - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-}
-      - TURNSTILE_SECRET=${TURNSTILE_SECRET:-0x4AAAAAAFUR2RRUw7sqoROvHzR6HFexUco}
-      - SECRET_KEY_CLOUDFLARE=${SECRET_KEY_CLOUDFLARE:-0x4AAAAAAFUR2RRUw7sqoROvHzR6HFexUco}
-      - TURNSTILE_HOSTNAMES=${TURNSTILE_HOSTNAMES:-localhost,127.0.0.1,frontend-blush-seven-zqmn2u56h0.vercel.app}
-      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-chatapp-fd260}
-      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL:-firebase-adminsdk-fbsvc@chatapp-fd260.iam.gserviceaccount.com}
+      - TURNSTILE_SECRET=${TURNSTILE_SECRET}
+      - SECRET_KEY_CLOUDFLARE=${SECRET_KEY_CLOUDFLARE}
+      - TURNSTILE_HOSTNAMES=${TURNSTILE_HOSTNAMES:-localhost,127.0.0.1}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
       - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
     volumes:
       # Bind Mount source code & configs để kích hoạt Hot Reload lập tức khi sửa file
@@ -125,8 +125,8 @@ services:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
       - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3000}
-      - NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-0x4AAAAAAFUR2RRMbBht62MJ}
-      - VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY:-0x4AAAAAAFUR2RRMbBht62MJ}
+      - NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+      - VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY:-}
     volumes:
       # Bind Mount source code & assets để kích hoạt Fast Refresh lập tức
       - ./frontend/src:/app/src
@@ -158,8 +158,8 @@ services:
       - "5174:5174"
     environment:
       - VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3000}
-      - VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY:-0x4AAAAAAFUR2RRMbBht62MJ}
-      - NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-0x4AAAAAAFUR2RRMbBht62MJ}
+      - VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY:-}
+      - NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
     volumes:
       # Bind Mount source code để kích hoạt Vite HMR lập tức
       - ./admin/src:/app/src

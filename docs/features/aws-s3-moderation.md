@@ -7,7 +7,7 @@
 ## 1. Mục tiêu & Tổng quan
 
 Hệ thống kết hợp sức mạnh của điện toán đám mây **AWS S3** và thị giác máy tính học sâu **Amazon Rekognition** để xây dựng hàng rào bảo mật và kiểm duyệt toàn diện:
-1. **Lưu trữ chuẩn công nghiệp:** Toàn bộ ảnh tải lên bài viết được lưu trữ an toàn trên AWS S3 (`chatapp-media-703002395048-ap-southeast-2`) thay vì phân tán trên ổ cứng cục bộ.
+1. **Lưu trữ chuẩn công nghiệp:** Toàn bộ ảnh tải lên bài viết được lưu trữ an toàn trên AWS S3 (`chatapp-media-your-account-id-ap-southeast-2`) thay vì phân tán trên ổ cứng cục bộ.
 2. **Kiểm duyệt 2 lớp tối ưu chi phí (Hybrid Fast-Fail):**
    - **Lớp 1 (Fast-Fail tại chỗ < 5ms):** Thuật toán giải mã pixel RGBA và phân tích không gian màu kép YCbCr/RGB chặn đứng các ảnh khiêu dâm lộ liễu mà không tốn chi phí gọi AWS API.
    - **Lớp 2 (Amazon Rekognition Deep AI):** Phân tích ngữ cảnh sâu với các nhãn `Explicit Nudity` (`Exposed Female Genitalia`, `Exposed Male Genitalia`, `Exposed Female Nipple`), `Suggestive`, và `Violence` với độ chính xác học sâu $> 99\%$.
@@ -38,7 +38,7 @@ Hệ thống kết hợp sức mạnh của điện toán đám mây **AWS S3** 
        │ (Ảnh an toàn)
        ▼ (2) AwsStorageService.uploadBuffer
 ┌────────────────────────────────────────────────────────┐
-│ AWS S3 Bucket: chatapp-media-703002395048-ap-southeast-2│
+│ AWS S3 Bucket: chatapp-media-your-account-id-ap-southeast-2│
 │ - Lưu trữ tại prefix: posts/UUID.jpg                   │
 │ - Trả về URL an toàn: https://...s3.ap-southeast-2...  │
 └────────────────────────────────────────────────────────┘
@@ -51,7 +51,7 @@ Hệ thống kết hợp sức mạnh của điện toán đám mây **AWS S3** 
 Trong `backend/.env`:
 ```env
 AWS_REGION=ap-southeast-2
-AWS_S3_BUCKET_NAME=chatapp-media-703002395048-ap-southeast-2
+AWS_S3_BUCKET_NAME=chatapp-media-your-account-id-ap-southeast-2
 AWS_PROFILE=default
 ```
 
