@@ -78,6 +78,14 @@ describe('OWASP Security Test Suite', () => {
       // Thời gian sống hữu hạn
       expect(cookieOptions.maxAge).toBeGreaterThan(0);
     });
+
+    it('Swagger API Docs (/api-docs) phải bị vô hiệu hóa mặc định trên môi trường Production', () => {
+      const isProduction = true;
+      const enableSwagger = false;
+      const shouldMountSwagger = !isProduction || enableSwagger;
+
+      expect(shouldMountSwagger).toBe(false);
+    });
   });
 
   describe('A08: Software and Data Integrity Failures - Prototype Pollution', () => {

@@ -112,15 +112,29 @@ async function bootstrap() {
 
   app.useGlobalFilters(new ErrorHandlerFilter());
 
-  const config = new DocumentBuilder()
-    .setTitle('Chat API Documentation')
-    .setDescription('Hệ thống tài liệu API cho dự án Chat NestJS')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  const isProduction = process.env.NODE_ENV === 'production';
+  const enableSwagger = process.env.ENABLE_SWAGGER === 'true';
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
+  if (!isProduction || enableSwagger) {
+    const config = new DocumentBuilder()
+      .setTitle('Chat API Documentation')
+      .setDescription('Hệ thống tài liệu API cho dự án Chat NestJS')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api-docs', app, document);
+  } else {
+    // Vô hiệu hóa và chặn hoàn toàn Swagger API Docs trên môi trường production
+    expressApp.use(/^\/api-docs.*/, (_req: import('express').Request, res: import('express').Response) => {
+      res.status(404).json({
+        statusCode: 404,
+        message: 'Endpoint không tồn tại hoặc đã bị vô hiệu hóa trên môi trường Production',
+        error: 'Not Found',
+      });
+    });
+  }
 
   const mqttBroker = app.get(MqttBrokerService);
   mqttBroker.attachHttpServer(app.getHttpServer());
@@ -129,7 +143,9 @@ async function bootstrap() {
   await app.listen(port, '0.0.0.0');
 
   console.log(`Application is running on: http://0.0.0.0:${port}`);
-  console.log(`Swagger Docs available at: http://localhost:${port}/api-docs`);
+  if (!isProduction || enableSwagger) {
+    console.log(`Swagger Docs available at: http://localhost:${port}/api-docs`);
+  }
 }
 
 process.on('unhandledRejection', (reason) => {
