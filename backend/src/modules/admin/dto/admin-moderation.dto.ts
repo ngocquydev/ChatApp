@@ -1,6 +1,7 @@
 import { IsIn, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import type { ModerationLanguage } from '../../moderation/algorithms/transformer-text-moderator.js';
+
+export type ModerationLanguage = 'vi' | 'en' | 'auto';
 
 export class AdminTestTextDto {
   @IsString()

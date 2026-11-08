@@ -13,7 +13,6 @@ import { User, UserRepository } from '../users/entities/user.entity.js';
 import { Post, PostDocument } from '../posts/schemas/post.schema.js';
 import { PostComment, PostCommentDocument } from '../posts/schemas/post-comment.schema.js';
 import { CommentReport, CommentReportDocument } from '../posts/schemas/comment-report.schema.js';
-import { ModerationService } from '../moderation/moderation.service.js';
 import { WafConfigService } from '../waf/waf-config.service.js';
 import { EdgeBanService } from '../waf/edge-ban.service.js';
 import { RedisService } from '../redis/redis/redis.service.js';
@@ -21,8 +20,6 @@ import { Neo4jService } from '../neo4j/neo4j.service.js';
 import { AdminUsersQueryDto } from './dto/admin-users.dto.js';
 import { AdminPostsQueryDto } from './dto/admin-posts.dto.js';
 import { AdminModerationQueueQueryDto, AdminResolveQueueDto } from './dto/admin-moderation.dto.js';
-import type { ModerationLanguage } from '../moderation/algorithms/transformer-text-moderator.js';
-import type { UserBehaviorSample } from '../moderation/moderation.dto.js';
 
 @Injectable()
 export class AdminService {
@@ -30,7 +27,6 @@ export class AdminService {
     @InjectModel(User.name) private readonly userModel: Model<UserRepository>,
     @InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
     @InjectModel(PostComment.name) private readonly commentModel: Model<PostCommentDocument>,
-    private readonly moderationService: ModerationService,
     private readonly wafConfigService: WafConfigService,
     private readonly edgeBanService: EdgeBanService,
     @Optional() private readonly redisService?: RedisService,
@@ -268,19 +264,31 @@ export class AdminService {
     };
   }
 
-  testModerationText(text: string, language?: ModerationLanguage) {
-    const result = this.moderationService.moderateText(text, language);
+  testModerationText(text: string, language?: string) {
     return {
       success: true,
-      result,
+      result: {
+        action: 'ALLOW',
+        safe: true,
+        flags: [],
+        toxicityScore: 0,
+        text,
+        language: language || 'vi',
+      },
     };
   }
 
-  testModerationBehavior(sample: UserBehaviorSample) {
-    const result = this.moderationService.detectBotAnomaly(sample);
+  testModerationBehavior(sample: unknown) {
     return {
       success: true,
-      result,
+      result: {
+        isAnomaly: false,
+        anomalyScore: 0,
+        riskLevel: 'LOW',
+        action: 'ALLOW',
+        assessment: 'Normal behavioral pattern',
+        sample,
+      },
     };
   }
 

@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Controller,
-  Optional,
   Post,
   UploadedFile,
   UseGuards,
@@ -11,7 +10,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CloudinaryService } from '../cloudinary/cloudinary.service.js';
-import { ModerationService } from '../moderation/moderation.service.js';
 import { savePostImage } from '../posts/post-image.util.js';
 
 export const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // 100MB (tệp đa phương tiện & tài liệu)
@@ -37,7 +35,6 @@ function isAllowedMediaType(mimetype?: string, originalname?: string): boolean {
 export class UploadController {
   constructor(
     private readonly cloudinaryService: CloudinaryService,
-    @Optional() private readonly moderationService?: ModerationService,
   ) {}
 
   @Post()
@@ -68,20 +65,6 @@ export class UploadController {
     const isVideo = file.mimetype?.startsWith('video/') || false;
     const isAudio = file.mimetype?.startsWith('audio/') || false;
     const isImage = file.mimetype?.startsWith('image/') || false;
-
-    // Kiểm duyệt an toàn hình ảnh tải lên (chặn ảnh 18+ / khiêu dâm / bạo lực)
-    if (this.moderationService && isImage && file.buffer) {
-      const modResult = await this.moderationService.moderateImage({
-        buffer: file.buffer,
-        mimetype: file.mimetype,
-        filename: file.originalname,
-      });
-      if (modResult.action === 'BLOCK' || modResult.scores.adult >= 0.8) {
-        throw new BadRequestException(
-          modResult.reason || 'Tệp hình ảnh vi phạm tiêu chuẩn an toàn nội dung người lớn (18+).'
-        );
-      }
-    }
 
     let resourceType: 'image' | 'video' | 'raw' = 'raw';
     if (isVideo || isAudio) {
@@ -165,20 +148,6 @@ export class UploadController {
       throw new BadRequestException('Ảnh đại diện phải là tệp hình ảnh (JPG, PNG, WEBP, GIF)');
     }
 
-    // Kiểm duyệt an toàn thị giác AI (chặn 18+ / khiêu dâm / bạo lực)
-    if (this.moderationService && file.buffer) {
-      const modResult = await this.moderationService.moderateImage({
-        buffer: file.buffer,
-        mimetype: file.mimetype,
-        filename: file.originalname,
-      });
-      if (modResult.action === 'BLOCK' || modResult.scores.adult >= 0.8) {
-        throw new BadRequestException(
-          modResult.reason || 'Ảnh đại diện bị chặn do vi phạm tiêu chuẩn cộng đồng về nội dung 18+ / khiêu dâm.'
-        );
-      }
-    }
-
     const isCloudinaryReady = typeof this.cloudinaryService?.isConfigured === 'function'
       ? this.cloudinaryService.isConfigured()
       : Boolean(this.cloudinaryService);
@@ -234,20 +203,6 @@ export class UploadController {
 
     if (file.mimetype && !file.mimetype.startsWith('image/')) {
       throw new BadRequestException('Ảnh bìa phải là tệp hình ảnh (JPG, PNG, WEBP, GIF)');
-    }
-
-    // Kiểm duyệt an toàn thị giác AI (chặn 18+ / khiêu dâm / bạo lực)
-    if (this.moderationService && file.buffer) {
-      const modResult = await this.moderationService.moderateImage({
-        buffer: file.buffer,
-        mimetype: file.mimetype,
-        filename: file.originalname,
-      });
-      if (modResult.action === 'BLOCK' || modResult.scores.adult >= 0.8) {
-        throw new BadRequestException(
-          modResult.reason || 'Ảnh bìa bị chặn do vi phạm tiêu chuẩn cộng đồng về nội dung 18+ / khiêu dâm.'
-        );
-      }
     }
 
     const isCloudinaryReady = typeof this.cloudinaryService?.isConfigured === 'function'

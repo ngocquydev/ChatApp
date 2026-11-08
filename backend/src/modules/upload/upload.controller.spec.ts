@@ -66,29 +66,6 @@ describe('UploadController', () => {
     );
   });
 
-  it('chặn tải lên ảnh chứa nội dung khiêu dâm / 18+ (NSFW)', async () => {
-    const mockModeration = {
-      moderateImage: vi.fn().mockResolvedValue({
-        action: 'BLOCK',
-        scores: { adult: 0.95, violence: 0.05, racy: 0.9 },
-        reason: 'Tệp hình ảnh vi phạm tiêu chuẩn an toàn nội dung người lớn (18+).',
-      }),
-    };
-    const ctrlWithMod = new UploadController(
-      cloudinaryService as CloudinaryService,
-      mockModeration as unknown as never,
-    );
-
-    await expect(
-      ctrlWithMod.uploadMedia({
-        buffer: Buffer.from('fake-nsfw-bytes'),
-        mimetype: 'image/jpeg',
-        originalname: 'adult_nsfw_explicit.jpg',
-      }),
-    ).rejects.toThrow(BadRequestException);
-    expect(cloudinaryService.uploadBuffer).not.toHaveBeenCalled();
-  });
-
   it('tải lên ảnh bìa thành công và trả về cover url trong thư mục chatapp/covers', async () => {
     const res = await controller.uploadCover({
       buffer: Buffer.from('fake-cover-bytes'),

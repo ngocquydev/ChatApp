@@ -32,7 +32,6 @@ import {
 } from './dto/posts.dto.js';
 import { CreateCommentReportDto } from './dto/report-comment.dto.js';
 import { savePostImage } from './post-image.util.js';
-import { ModerationService } from '../moderation/moderation.service.js';
 
 const POST_MEDIA_MAX_BYTES = 100 * 1024 * 1024;
 
@@ -44,7 +43,6 @@ export class PostsController {
   constructor(
     private readonly postsService: PostsService,
     @Optional() private readonly cloudinaryService?: CloudinaryService,
-    @Optional() private readonly moderationService?: ModerationService,
   ) {}
 
   private extractUserId(req: AuthenticatedRequest): string {
@@ -76,23 +74,6 @@ export class PostsController {
   ) {
     if (!file?.buffer || file.buffer.length === 0) {
       throw new BadRequestException('Chưa chọn ảnh hoặc video để tải lên');
-    }
-
-    const isVideo = file.mimetype?.startsWith('video/') || false;
-
-    // Kiểm duyệt an toàn thị giác AI (chặn 18+ / khiêu dâm / bạo lực)
-    if (this.moderationService && !isVideo && file.buffer) {
-      const modResult = await this.moderationService.moderateImage({
-        buffer: file.buffer,
-        mimetype: file.mimetype,
-        filename: file.originalname,
-      });
-
-      if (modResult.action === 'BLOCK' || modResult.scores.adult >= 0.8) {
-        throw new BadRequestException(
-          modResult.reason || 'Hình ảnh bị chặn do vi phạm tiêu chuẩn cộng đồng về nội dung 18+ / khiêu dâm.'
-        );
-      }
     }
 
     // Ảnh an toàn: Lưu trữ trên Cloudinary (chính cho media người dùng)

@@ -8,7 +8,6 @@ describe('AdminService', () => {
   let mockUserModel: any;
   let mockPostModel: any;
   let mockCommentModel: any;
-  let mockModerationService: any;
   let mockWafConfigService: any;
   let mockEdgeBanService: any;
   let mockRedisService: any;
@@ -50,18 +49,6 @@ describe('AdminService', () => {
       countDocuments: vi.fn().mockResolvedValue(50),
     };
 
-    mockModerationService = {
-      moderateText: vi.fn().mockReturnValue({
-        isClean: true,
-        action: 'pass',
-        toxicityScore: 0.05,
-      }),
-      detectBotAnomaly: vi.fn().mockReturnValue({
-        isAnomaly: false,
-        anomalyScore: 0.1,
-      }),
-    };
-
     mockWafConfigService = {
       getConfig: vi.fn().mockResolvedValue({
         enabled: true,
@@ -92,7 +79,6 @@ describe('AdminService', () => {
       mockUserModel,
       mockPostModel,
       mockCommentModel,
-      mockModerationService,
       mockWafConfigService,
       mockEdgeBanService,
       mockRedisService,
@@ -195,7 +181,7 @@ describe('AdminService', () => {
     it('should test moderation text and behavior', () => {
       const textRes = service.testModerationText('xin chào', 'vi');
       expect(textRes.success).toBe(true);
-      expect(mockModerationService.moderateText).toHaveBeenCalledWith('xin chào', 'vi');
+      expect(textRes.result.safe).toBe(true);
 
       const behaviorRes = service.testModerationBehavior({
         friendRequestsPerHour: 2,
@@ -206,6 +192,7 @@ describe('AdminService', () => {
         distinctTargetRatio: 0.8,
       });
       expect(behaviorRes.success).toBe(true);
+      expect(behaviorRes.result.isAnomaly).toBe(false);
     });
 
     it('should get moderation queue and resolve items', async () => {

@@ -17,7 +17,6 @@ import { CloudinaryModule } from './modules/cloudinary/cloudinary.module.js';
 import { UploadModule } from './modules/upload/upload.module.js';
 import { Neo4jModule } from './modules/neo4j/neo4j.module.js';
 import { AppGraphqlModule } from './modules/graphql/app-graphql.module.js';
-import { ModerationModule } from './modules/moderation/moderation.module.js';
 import { WafModule } from './modules/waf/waf.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
 import { BackupModule } from './modules/backup/backup.module.js';
@@ -110,8 +109,6 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url));
     Neo4jModule,
 
     AppGraphqlModule,
-
-    ModerationModule,
 
     WafModule,
 

@@ -1,7 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from '../users/users.module.js';
-import { ModerationModule } from '../moderation/moderation.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { ChatModule } from '../chat/chat.module.js';
 import { Friendship, FriendshipSchema } from '../friends/schemas/friendship.schema.js';
@@ -24,7 +23,6 @@ import { PostsService } from './posts.service.js';
       { name: CommunityGroup.name, schema: CommunityGroupSchema },
     ]),
     UsersModule,
-    ModerationModule,
     NotificationsModule,
     forwardRef(() => ChatModule),
   ],
