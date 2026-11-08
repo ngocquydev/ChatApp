@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { createObserveModule } from '@nestjs/observe';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './modules/auth/auth.module.js';
@@ -40,6 +41,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule({
   },
 });
 
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -47,8 +50,8 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule({
       envFilePath: [
         path.resolve(process.cwd(), '.env.local'),
         path.resolve(process.cwd(), '../.env.local'),
-        path.resolve(__dirname, '../../.env.local'),
-        path.resolve(__dirname, '../.env.local'),
+        path.resolve(currentDir, '../../.env.local'),
+        path.resolve(currentDir, '../.env.local'),
         '.env.local',
         '.env',
       ],
