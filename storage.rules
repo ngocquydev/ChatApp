@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // ChatApp sử dụng AWS S3 và Cloudinary để lưu trữ tệp/hình ảnh.
+    // Khóa toàn bộ quyền đọc/ghi từ client vào Firebase Storage để đảm bảo an toàn tuyệt đối.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

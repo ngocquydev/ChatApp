@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ChatApp sử dụng MongoDB Atlas cho toàn bộ cơ sở dữ liệu và chỉ dùng Firebase cho Authentication (OAuth).
+    // Khóa toàn bộ quyền đọc/ghi từ client vào Firestore để tránh lộ dữ liệu hoặc bị quét bot/DDOS.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
