@@ -54,6 +54,9 @@ export const metadata: Metadata = {
     shortcut: "/logo.png",
     apple: "/logo.png",
   },
+  verification: {
+    google: "ETQbKAkcAHUAScfz_ML9MH0aXZS9dq2w5Ie_plWT2Dw",
+  },
   openGraph: {
     type: "website",
     locale: "vi_VN",
