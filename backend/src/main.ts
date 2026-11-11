@@ -27,6 +27,7 @@ async function bootstrap() {
   });
 
   const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.disable('x-powered-by');
   // Chỉ tin X-Forwarded-* từ Cloudflare Edge hoặc proxy nội bộ (cloudflared tunnel / TRUSTED_PROXY_CIDRS),
   // tránh client kết nối thẳng giả mạo req.ip / req.protocol
   expressApp.set('trust proxy', (addr: string) => isTrustedProxyIp(addr));
