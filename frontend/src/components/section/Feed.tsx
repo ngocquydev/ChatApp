@@ -8,8 +8,6 @@ import { fetchFeed } from "@/services/postsApi";
 import { useTranslation } from "@/i18n/useTranslation";
 
 const PAGE_SIZE = 10;
-
-/** Bảng tin: bài của bạn và bạn bè, đăng bài mới, cuộn vô hạn. Dữ liệu thật từ API /posts/feed. */
 function Feed() {
   const { t } = useTranslation();
 
@@ -25,7 +23,14 @@ function Feed() {
         gap: 2.5,
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 1,
+        }}
+      >
         <Typography variant="h5" component="h1" sx={{ fontWeight: 800 }}>
           {t("feed.title")}
         </Typography>
@@ -35,7 +40,10 @@ function Feed() {
           size="small"
           variant="outlined"
           startIcon={<Compass size={16} aria-hidden />}
-          sx={{ display: { xs: "inline-flex", md: "none" }, borderRadius: "10px" }}
+          sx={{
+            display: { xs: "inline-flex", md: "none" },
+            borderRadius: "10px",
+          }}
         >
           {t("feed.exploreFriends")}
         </Button>

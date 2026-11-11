@@ -58,9 +58,6 @@ class MqttChatClient {
   private presenceHandlers = new Set<PresenceHandler>();
   private seenHandlers = new Set<SeenHandler>();
 
-  /**
-   * Kết nối tới MQTT over WebSocket Broker sử dụng Protocol Buffers
-   */
   public connect(token: string, userId: string) {
     if (this.client && this.currentUserId === userId) {
       if (this.isConnected || !this.client.disconnected) {
@@ -71,9 +68,7 @@ class MqttChatClient {
     if (this.client) {
       try {
         this.client.end(true);
-      } catch {
-        // ignore
-      }
+      } catch {}
       this.client = null;
     }
 
@@ -82,20 +77,20 @@ class MqttChatClient {
 
     const isHttps =
       typeof window !== "undefined" && window.location.protocol === "https:";
-
-    // Xác định Backend URL
     const rawBackend =
       process.env.NEXT_PUBLIC_BACKEND_URL ||
       process.env.VITE_BACKEND_URL ||
-      (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
-
-    // Xác định URL kết nối: Ưu tiên mã hóa TLS / WSS (WebSocket Secure) để chống bắt gói tin
+      (typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost:3000");
     let mqttUrl = process.env.NEXT_PUBLIC_MQTT_URL;
     if (!mqttUrl) {
       try {
         const backendOrigin = new URL(
           rawBackend,
-          typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"
+          typeof window !== "undefined"
+            ? window.location.origin
+            : "http://localhost:3000",
         );
         const isBackendHttps = backendOrigin.protocol === "https:" || isHttps;
         const wsProtocol = isBackendHttps ? "wss:" : "ws:";
@@ -110,25 +105,18 @@ class MqttChatClient {
             mqttUrl = `ws://${backendOrigin.hostname}:${backendOrigin.port || "3000"}/mqtt`;
           }
         } else {
-          // Môi trường Cloud (Render, Vercel, VPS):
-          // Luôn kết nối qua path /mqtt trên domain backend chính (chuẩn cổng 443 / HTTPS, chống bị chặn cổng phụ)
           mqttUrl = `${wsProtocol}//${backendOrigin.host}/mqtt`;
         }
       } catch {
         mqttUrl = isHttps ? "wss://localhost:8884" : "ws://localhost:1884";
       }
     } else if (isHttps && mqttUrl.startsWith("ws://")) {
-      // Tự động nâng cấp sang wss:// trên môi trường HTTPS để tránh lỗi Mixed Content chặn kết nối
       mqttUrl = mqttUrl.replace("ws://", "wss://");
     }
 
     const isSecure = mqttUrl.startsWith("wss://");
     const clientId = `web_${userId}_${Math.random().toString(16).slice(2, 8)}`;
 
-    // TUYỆT ĐỐI KHÔNG truyền token qua URL query (?token=...) để bảo mật theo chuẩn OWASP A03 / CWE-598
-    // Token được truyền an toàn qua:
-    // 1. MQTT CONNECT packet (password)
-    // 2. HTTP Upgrade Headers (Authorization: Bearer <token>, X-Auth-Token)
     this.client = mqtt.connect(mqttUrl, {
       clientId,
       username: userId,
@@ -151,22 +139,17 @@ class MqttChatClient {
     this.client.on("connect", () => {
       this.isConnected = true;
       console.log(
-        `🔒 [MQTT ${isSecure ? "TLS/WSS MÃ HÓA" : "WS"}] Kết nối thành công tới MQTT Broker: ${mqttUrl}`
+        `🔒 [MQTT ${isSecure ? "TLS/WSS MÃ HÓA" : "WS"}] Kết nối thành công tới MQTT Broker: ${mqttUrl}`,
       );
-     
 
-      // Subscribe topic tin nhắn cá nhân
       this.client?.subscribe(`chat/user/${userId}`, { qos: 1 }, (err) => {
         if (err) console.error("Lỗi subscribe chat/user:", err);
       });
 
-      // Subscribe topic typing cá nhân
       this.client?.subscribe(`chat/user/${userId}/typing`, { qos: 0 });
 
-      // Subscribe topic đã xem cá nhân
       this.client?.subscribe(`chat/user/${userId}/seen`, { qos: 1 });
 
-      // Subscribe topic presence
       this.client?.subscribe("chat/presence", { qos: 0 });
     });
 
@@ -174,7 +157,6 @@ class MqttChatClient {
       try {
         const uint8Payload = new Uint8Array(payload);
 
-        // 1. Nhận tin nhắn mới (Binary ChatMessageProto)
         if (topic === `chat/user/${userId}`) {
           const decoded = ChatMessageProto.decode(uint8Payload) as unknown as {
             id: string;
@@ -206,15 +188,16 @@ class MqttChatClient {
             text: decoded.text,
             createdAt: decoded.createdAt,
             readAt: decoded.readAt || undefined,
-            type: decoded.type || (decoded.text?.startsWith("📞") || decoded.text?.startsWith("📹") ? "call" : "text"),
+            type:
+              decoded.type ||
+              (decoded.text?.startsWith("📞") || decoded.text?.startsWith("📹")
+                ? "call"
+                : "text"),
             callLog: parsedCallLog,
           };
-       
-          this.messageHandlers.forEach((handler) => handler(msgObj));
-        }
 
-        // 2. Nhận sự kiện Typing (Binary TypingEventProto)
-        else if (topic === `chat/user/${userId}/typing`) {
+          this.messageHandlers.forEach((handler) => handler(msgObj));
+        } else if (topic === `chat/user/${userId}/typing`) {
           const decoded = TypingEventProto.decode(uint8Payload) as unknown as {
             conversationId: string;
             userId: string;
@@ -226,10 +209,7 @@ class MqttChatClient {
             isTyping: Boolean(decoded.isTyping),
           };
           this.typingHandlers.forEach((handler) => handler(typingObj));
-        }
-
-        // 3. Nhận sự kiện Seen (Binary MessageReadProto)
-        else if (topic === `chat/user/${userId}/seen`) {
+        } else if (topic === `chat/user/${userId}/seen`) {
           const decoded = MessageReadProto.decode(uint8Payload) as unknown as {
             conversationId: string;
             readerId: string;
@@ -241,11 +221,10 @@ class MqttChatClient {
             readAt: decoded.readAt,
           };
           this.seenHandlers.forEach((handler) => handler(seenObj));
-        }
-
-        // 4. Nhận sự kiện Presence (Binary PresenceEventProto)
-        else if (topic === "chat/presence") {
-          const decoded = PresenceEventProto.decode(uint8Payload) as unknown as {
+        } else if (topic === "chat/presence") {
+          const decoded = PresenceEventProto.decode(
+            uint8Payload,
+          ) as unknown as {
             userId: string;
             isOnline?: boolean;
             onlineUserIds?: string[];
@@ -262,7 +241,7 @@ class MqttChatClient {
       } catch (err) {
         console.error(
           `[MQTT] Lỗi giải mã Binary Protocol Buffers từ topic ${topic}:`,
-          err
+          err,
         );
       }
     });
@@ -275,7 +254,7 @@ class MqttChatClient {
         console.warn(
           "⚠️ [MQTT] Trạng thái kết nối MQTT:",
           err.message,
-          "- Hệ thống tự động sử dụng Socket.IO làm kênh đồng bộ thời gian thực an toàn."
+          "- Hệ thống tự động sử dụng Socket.IO làm kênh đồng bộ thời gian thực an toàn.",
         );
       }
       if (
@@ -285,7 +264,7 @@ class MqttChatClient {
           err.message.includes("DEPTH_ZERO_SELF_SIGNED_CERT"))
       ) {
         console.warn(
-          "⚠️ [MQTT TLS] Trình duyệt có thể đang chặn chứng chỉ tự ký (Self-signed certificate). Hãy truy cập https://localhost:8884 trên trình duyệt một lần để chấp nhận chứng chỉ trong môi trường phát triển."
+          "⚠️ [MQTT TLS] Trình duyệt có thể đang chặn chứng chỉ tự ký (Self-signed certificate). Hãy truy cập https://localhost:8884 trên trình duyệt một lần để chấp nhận chứng chỉ trong môi trường phát triển.",
         );
       }
     });
@@ -295,20 +274,15 @@ class MqttChatClient {
       console.log("ℹ️ [MQTT] Mất kết nối MQTT Broker");
     });
   }
-
-  /**
-   * Gửi tin nhắn bằng Protocol Buffers nhị phân qua MQTT
-   */
   public sendMessage(conversationId: string, receiverId: string, text: string) {
     if (!this.client || !this.isConnected) {
       console.warn(
-        "MQTT chưa kết nối, bỏ qua hoặc chuyển tiếp qua socket fallback"
+        "MQTT chưa kết nối, bỏ qua hoặc chuyển tiếp qua socket fallback",
       );
       return false;
     }
 
     try {
-      // Đóng gói payload thành Uint8Array nhị phân
       const binaryPayload = SendMessageProto.encode({
         conversationId,
         receiverId,
@@ -316,7 +290,7 @@ class MqttChatClient {
       }).finish();
 
       console.log(
-        `🚀 [MQTT BINARY SEND] Gửi gói tin Protobuf (${binaryPayload.byteLength} bytes) tới topic 'chat/send'`
+        `🚀 [MQTT BINARY SEND] Gửi gói tin Protobuf (${binaryPayload.byteLength} bytes) tới topic 'chat/send'`,
       );
 
       this.client.publish(
@@ -325,7 +299,7 @@ class MqttChatClient {
         { qos: 1 },
         (err) => {
           if (err) console.error("Lỗi khi publish chat/send:", err);
-        }
+        },
       );
       return true;
     } catch (err) {
@@ -334,13 +308,10 @@ class MqttChatClient {
     }
   }
 
-  /**
-   * Bắn sự kiện Typing nhị phân
-   */
   public sendTyping(
     conversationId: string,
     receiverId: string,
-    isTyping: boolean
+    isTyping: boolean,
   ) {
     if (!this.client || !this.isConnected) return;
 
@@ -352,19 +323,14 @@ class MqttChatClient {
         isTyping,
       }).finish();
 
-      this.client.publish(
-        "chat/typing",
-        binaryPayload as unknown as Buffer,
-        { qos: 0 }
-      );
+      this.client.publish("chat/typing", binaryPayload as unknown as Buffer, {
+        qos: 0,
+      });
     } catch (err) {
       console.error("Lỗi gửi typing nhị phân:", err);
     }
   }
 
-  /**
-   * Báo đã đọc (Seen) nhị phân
-   */
   public sendRead(conversationId: string, receiverId: string) {
     if (!this.client || !this.isConnected) return;
 
@@ -375,35 +341,29 @@ class MqttChatClient {
         readAt: new Date().toISOString(),
       }).finish();
 
-      this.client.publish(
-        "chat/read",
-        binaryPayload as unknown as Buffer,
-        { qos: 1 }
-      );
+      this.client.publish("chat/read", binaryPayload as unknown as Buffer, {
+        qos: 1,
+      });
     } catch (err) {
       console.error("Lỗi gửi read nhị phân:", err);
     }
   }
 
-  // Đăng ký nhận tin nhắn
   public onMessage(handler: MessageHandler) {
     this.messageHandlers.add(handler);
     return () => this.messageHandlers.delete(handler);
   }
 
-  // Đăng ký nhận typing
   public onTyping(handler: TypingHandler) {
     this.typingHandlers.add(handler);
     return () => this.typingHandlers.delete(handler);
   }
 
-  // Đăng ký nhận presence
   public onPresence(handler: PresenceHandler) {
     this.presenceHandlers.add(handler);
     return () => this.presenceHandlers.delete(handler);
   }
 
-  // Đăng ký nhận seen
   public onSeen(handler: SeenHandler) {
     this.seenHandlers.add(handler);
     return () => this.seenHandlers.delete(handler);

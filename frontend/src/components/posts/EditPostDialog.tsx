@@ -32,6 +32,7 @@ import {
 import { useTranslation } from "@/i18n/useTranslation";
 import PostAuthorHeader from "./PostAuthorHeader";
 import PrivacyPicker from "./PrivacyPicker";
+import { videoUploadError } from "./videoUploadError";
 import MentionAutocomplete, { MentionAutocompleteHandle } from "@/components/common/MentionAutocomplete";
 import useMention from "@/hooks/useMention";
 
@@ -136,7 +137,7 @@ export default function EditPostDialog({
         setAttachments((prev) => prev.map((a) => (a.key === key ? { ...a, url } : a)));
       } catch (err) {
         setAttachments((prev) => prev.filter((a) => a.key !== key));
-        setError(apiErrorMessage(err, tr("Không tải được tệp lên.", "Could not upload file.")));
+        setError(isVideo ? videoUploadError(err, tr) : apiErrorMessage(err, tr("Không tải được tệp lên.", "Could not upload file.")));
       } finally {
         setUploading((n) => n - 1);
       }

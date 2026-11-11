@@ -87,13 +87,15 @@ Nút tim bật/tắt cảm xúc **Tim** và hiển thị số tim. Hộp chia s�
 
 Để đăng video, chọn **Đăng video** trên `/explore`, thêm tệp bằng **Ảnh/Video** trong ô đăng bài ở trang chủ, chọn **Công khai**, rồi đăng.
 
+Video bài viết được FFmpeg xử lý thành MP4 H.264/AAC có `faststart` trước khi tải lên Cloudinary. Khi chạy backend ngoài Docker, cần cài FFmpeg có `libx264` và thêm vào `PATH`.
+
 Giao diện sử dụng AppBar và sidebar chung của ChatApp. Khung xem video đặt bên dưới AppBar, có thông tin tác giả, cột tương tác, nút chuyển clip và thanh phát/tua video riêng.
 
-- Phân trang theo cursor dùng API `/posts/feed`; chỉ hiển thị bài có video.
+- Phân trang theo cursor dùng query GraphQL `feed`; chỉ hiển thị bài có video.
 - Video dừng khi cuộn khỏi vùng nhìn thấy. Quyền riêng tư của bài viết vẫn được backend áp dụng.
 - Trang khám phá bạn bè cũ được chuyển sang `/friends`.
 - Tài liệu: [docs/features/short-video-explore.md](features/short-video-explore.md).
-- Ảnh demo chưa có: Chrome headless bị thoát trước khi tạo ảnh trong môi trường hiện tại.
+- Ảnh demo với video tổng hợp và dữ liệu giả lập: [short-video-optimized-demo.png](assets/screenshots/short-video-optimized-demo.png).
 
 ### Khám phá bạn bè (`/friends`)
 

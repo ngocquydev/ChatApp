@@ -4,7 +4,11 @@ import { useState, useRef, useEffect, MouseEvent } from "react";
 import { Box, Button, IconButton } from "@mui/material";
 import { Heart, ThumbsUp } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
-import { REACTION_MAP, ReactionType, getReactionLabel } from "./reactionConstants";
+import {
+  REACTION_MAP,
+  ReactionType,
+  getReactionLabel,
+} from "./reactionConstants";
 import ReactionPicker from "./ReactionPicker";
 
 interface PostReactionButtonProps {
@@ -96,7 +100,7 @@ export default function PostReactionButton({
             position: "absolute",
             bottom: "100%",
             left: 0,
-            pb: "10px", // Cầu nối vô hình (hover bridge) chống mất focus khi di chuột lên
+            pb: "10px",
             zIndex: 1300,
           }}
         >
@@ -111,43 +115,61 @@ export default function PostReactionButton({
         </Box>
       )}
 
-      {iconOnly ? <IconButton
-        disabled={disabled}
-        aria-pressed={Boolean(myReaction)}
-        aria-label={currentLabel}
-        onClick={handleClick}
-        sx={{ color: activeDef ? activeDef.color : "common.white", p: 0.75 }}
-      >
-        {activeDef ? <span role="img" aria-hidden style={{ fontSize: "1.6rem", lineHeight: 1 }}>{activeDef.emoji}</span> : <Heart size={30} aria-hidden />}
-      </IconButton> : <Button
-        fullWidth
-        color="inherit"
-        disabled={disabled}
-        aria-pressed={Boolean(myReaction)}
-        aria-label={currentLabel}
-        onClick={handleClick}
-        startIcon={
-          activeDef ? (
-            <span role="img" aria-hidden style={{ fontSize: "1.15rem", lineHeight: 1 }}>
+      {iconOnly ? (
+        <IconButton
+          disabled={disabled}
+          aria-pressed={Boolean(myReaction)}
+          aria-label={currentLabel}
+          onClick={handleClick}
+          sx={{ color: activeDef ? activeDef.color : "common.white", p: 0.75 }}
+        >
+          {activeDef ? (
+            <span
+              role="img"
+              aria-hidden
+              style={{ fontSize: "1.6rem", lineHeight: 1 }}
+            >
               {activeDef.emoji}
             </span>
           ) : (
-            <ThumbsUp size={18} aria-hidden />
-          )
-        }
-        sx={{
-          fontWeight: 600,
-          fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-          color: currentColor,
-          py: 0.8,
-          px: { xs: 0.5, sm: 1.5 },
-          borderRadius: "8px",
-          transition: "all 0.15s ease",
-          "&:hover": { bgcolor: "action.hover" },
-        }}
-      >
-        {currentLabel}
-      </Button>}
+            <Heart size={30} aria-hidden />
+          )}
+        </IconButton>
+      ) : (
+        <Button
+          fullWidth
+          color="inherit"
+          disabled={disabled}
+          aria-pressed={Boolean(myReaction)}
+          aria-label={currentLabel}
+          onClick={handleClick}
+          startIcon={
+            activeDef ? (
+              <span
+                role="img"
+                aria-hidden
+                style={{ fontSize: "1.15rem", lineHeight: 1 }}
+              >
+                {activeDef.emoji}
+              </span>
+            ) : (
+              <ThumbsUp size={18} aria-hidden />
+            )
+          }
+          sx={{
+            fontWeight: 600,
+            fontSize: { xs: "0.8125rem", sm: "0.875rem" },
+            color: currentColor,
+            py: 0.8,
+            px: { xs: 0.5, sm: 1.5 },
+            borderRadius: "8px",
+            transition: "all 0.15s ease",
+            "&:hover": { bgcolor: "action.hover" },
+          }}
+        >
+          {currentLabel}
+        </Button>
+      )}
     </Box>
   );
 }

@@ -36,8 +36,6 @@ export interface FriendRecommendationResult {
   relationStatus: "none" | "pending_sent" | "pending_received" | "friends";
   requestId?: string;
 }
-
-/** Thông báo realtime về bạn bè, hiển thị bằng toast toàn cục. `id` tăng dần để cùng một người vẫn kích hoạt lại toast. */
 export interface FriendNotice {
   id: number;
   type: "accepted" | "request_received";
@@ -45,8 +43,6 @@ export interface FriendNotice {
   name: string;
   avatar?: string;
 }
-
-/** Dữ liệu server gửi kèm sự kiện friend:accepted / friend:request_received */
 export interface FriendRealtimePayload {
   user?: { _id?: string; name?: string; avatar?: string };
   request?: { _id?: string };
@@ -63,49 +59,54 @@ interface FriendState {
   isLoadingRecommendations: boolean;
   isLocating: boolean;
   isSearching: boolean;
-  /** Đang tải trang tiếp theo (infinite scroll) */
   isSearchingMore: boolean;
-  /** Còn trang kết quả tiếp theo không */
   searchHasMore: boolean;
-  /** Con trỏ trang tiếp theo (nextCursor của server) */
   searchCursor: string | null;
-  /** Từ khóa của phiên tìm kiếm hiện tại — dùng khi tải thêm */
   searchTerm: string;
-  /** Thông báo lỗi tìm kiếm (hết thời gian, mất mạng…) */
   searchError: string | null;
   searchSeq?: number;
   userLocation: { latitude: number; longitude: number } | null;
-  /** Thông báo bạn bè mới nhất chưa bị đóng (null = không có) */
   notice: FriendNotice | null;
-
-  /** Xử lý sự kiện socket: làm mới dữ liệu, cập nhật trạng thái đang hiển thị và bật thông báo */
-  handleRealtimeEvent: (type: FriendNotice["type"], payload?: FriendRealtimePayload) => void;
+  handleRealtimeEvent: (
+    type: FriendNotice["type"],
+    payload?: FriendRealtimePayload,
+  ) => void;
   dismissNotice: () => void;
 
   fetchFriends: () => Promise<void>;
   fetchRequests: () => Promise<void>;
-  fetchRecommendations: (coords?: { latitude: number; longitude: number }) => Promise<void>;
+  fetchRecommendations: (coords?: {
+    latitude: number;
+    longitude: number;
+  }) => Promise<void>;
   updateLocation: (latitude: number, longitude: number) => Promise<boolean>;
-  /** `limit`: số kết quả trang đầu (mặc định server = 20) */
   searchUsers: (query: string, options?: { limit?: number }) => Promise<void>;
-  /** Tải trang kết quả kế tiếp của phiên tìm kiếm hiện tại */
   loadMoreSearchResults: (limit?: number) => Promise<void>;
-  sendFriendRequest: (recipientId: string) => Promise<{ success: boolean; message: string }>;
+  sendFriendRequest: (
+    recipientId: string,
+  ) => Promise<{ success: boolean; message: string }>;
   respondToRequest: (
     requestId: string,
-    action: "accept" | "reject"
+    action: "accept" | "reject",
   ) => Promise<{ success: boolean; message: string }>;
-  cancelRequest: (requestId: string) => Promise<{ success: boolean; message: string }>;
-  unfriend: (friendId: string) => Promise<{ success: boolean; message: string }>;
+  cancelRequest: (
+    requestId: string,
+  ) => Promise<{ success: boolean; message: string }>;
+  unfriend: (
+    friendId: string,
+  ) => Promise<{ success: boolean; message: string }>;
   clearSearchResults: () => void;
 }
-
-/** Chuyển lỗi axios thành câu tiếng Việt ngắn gọn cho người dùng */
 function searchErrorMessage(err: unknown): string {
   if (err instanceof GraphQLQueryError && err.statusCode === 408) return err.message;
-  const e = err as { response?: { status?: number; data?: { message?: string } } };
+  const e = err as {
+    response?: { status?: number; data?: { message?: string } };
+  };
   if (e.response?.status === 408) {
-    return e.response.data?.message || "Tìm kiếm mất quá nhiều thời gian. Hãy nhập từ khóa cụ thể hơn.";
+    return (
+      e.response.data?.message ||
+      "Tìm kiếm mất quá nhiều thời gian. Hãy nhập từ khóa cụ thể hơn."
+    );
   }
   return "Không thể tìm kiếm lúc này. Vui lòng thử lại.";
 }
@@ -137,16 +138,21 @@ export const useFriendStore = create<FriendState>((set, get) => ({
 
     if (type === "accepted") get().fetchFriends();
     get().fetchRequests();
-
-    // Cập nhật ngay các danh sách đang hiển thị (tìm kiếm, gợi ý) thay vì đợi người dùng tải lại
     if (otherId) {
       const next =
         type === "accepted"
           ? { relationStatus: "friends" as const, requestId: undefined }
-          : { relationStatus: "pending_received" as const, requestId: payload?.request?._id };
+          : {
+              relationStatus: "pending_received" as const,
+              requestId: payload?.request?._id,
+            };
       set((state) => ({
-        searchResults: state.searchResults.map((u) => (u._id === otherId ? { ...u, ...next } : u)),
-        recommendations: state.recommendations.map((r) => (r._id === otherId ? { ...r, ...next } : r)),
+        searchResults: state.searchResults.map((u) =>
+          u._id === otherId ? { ...u, ...next } : u,
+        ),
+        recommendations: state.recommendations.map((r) =>
+          r._id === otherId ? { ...r, ...next } : r,
+        ),
       }));
     }
 
@@ -162,7 +168,6 @@ export const useFriendStore = create<FriendState>((set, get) => ({
   },
 
   clearSearchResults: () => {
-    // Tăng searchSeq để mọi request đang bay bị bỏ qua khi về
     set({
       searchResults: [],
       isSearching: false,
@@ -181,7 +186,8 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       const res = await api.get("/friends");
       if (res.data?.friends) {
         const cleanFriends = res.data.friends.filter(
-          (f: { friend?: { role?: string } }) => f.friend?.role !== "admin" && f.friend?.role !== "bot"
+          (f: { friend?: { role?: string } }) =>
+            f.friend?.role !== "admin" && f.friend?.role !== "bot",
         );
         set({ friends: cleanFriends });
       }
@@ -197,10 +203,12 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     try {
       const res = await api.get("/friends/requests");
       const cleanReceived = (res.data?.received || []).filter(
-        (r: { requesterId?: { role?: string } }) => r.requesterId?.role !== "admin" && r.requesterId?.role !== "bot"
+        (r: { requesterId?: { role?: string } }) =>
+          r.requesterId?.role !== "admin" && r.requesterId?.role !== "bot",
       );
       const cleanSent = (res.data?.sent || []).filter(
-        (r: { recipientId?: { role?: string } }) => r.recipientId?.role !== "admin" && r.recipientId?.role !== "bot"
+        (r: { recipientId?: { role?: string } }) =>
+          r.recipientId?.role !== "admin" && r.recipientId?.role !== "bot",
       );
       set({
         receivedRequests: cleanReceived,
@@ -229,10 +237,13 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     });
     try {
       const page = await searchFriendsPage(trimmed, options?.limit ?? 20);
-      // Chỉ cập nhật nếu request này là mới nhất (tránh race condition giữa các phím gõ nhanh)
       if (get().searchSeq === nextSeq) {
-        const rawUsers = page.users as (UserRelationResult & { role?: string })[];
-        const cleanUsers = rawUsers.filter((u) => u.role !== "admin" && u.role !== "bot");
+        const rawUsers = page.users as (UserRelationResult & {
+          role?: string;
+        })[];
+        const cleanUsers = rawUsers.filter(
+          (u) => u.role !== "admin" && u.role !== "bot",
+        );
         set({
           searchResults: cleanUsers,
           searchHasMore: page.hasMore,
@@ -254,9 +265,23 @@ export const useFriendStore = create<FriendState>((set, get) => ({
   },
 
   loadMoreSearchResults: async (limit = 20) => {
-    const { searchHasMore, searchCursor, searchTerm, isSearching, isSearchingMore, searchSeq } = get();
+    const {
+      searchHasMore,
+      searchCursor,
+      searchTerm,
+      isSearching,
+      isSearchingMore,
+      searchSeq,
+    } = get();
     // Chặn gọi chồng: đang tải trang đầu/trang kế, hết dữ liệu hoặc chưa có con trỏ
-    if (!searchHasMore || !searchCursor || !searchTerm || isSearching || isSearchingMore) return;
+    if (
+      !searchHasMore ||
+      !searchCursor ||
+      !searchTerm ||
+      isSearching ||
+      isSearchingMore
+    )
+      return;
     const seq = searchSeq || 0;
     set({ isSearchingMore: true, searchError: null });
     try {
@@ -267,7 +292,10 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       set((state) => {
         const seen = new Set(state.searchResults.map((u) => u._id));
         return {
-          searchResults: [...state.searchResults, ...incoming.filter((u) => !seen.has(u._id))],
+          searchResults: [
+            ...state.searchResults,
+            ...incoming.filter((u) => !seen.has(u._id)),
+          ],
           searchHasMore: page.hasMore,
           searchCursor: page.nextCursor,
           isSearchingMore: false,
@@ -281,7 +309,10 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     }
   },
 
-  fetchRecommendations: async (coords?: { latitude: number; longitude: number }) => {
+  fetchRecommendations: async (coords?: {
+    latitude: number;
+    longitude: number;
+  }) => {
     // SWR Pattern: Chỉ bật loading toàn phần khi store chưa có gợi ý nào
     if (get().recommendations.length === 0) {
       set({ isLoadingRecommendations: true });
@@ -295,8 +326,11 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       }
       const res = await api.get(url);
       if (res.data?.recommendations) {
-        const rawRecs = (res.data.recommendations || []) as (FriendRecommendationResult & { role?: string })[];
-        const cleanRecs = rawRecs.filter((r) => r.role !== "admin" && r.role !== "bot");
+        const rawRecs = (res.data.recommendations ||
+          []) as (FriendRecommendationResult & { role?: string })[];
+        const cleanRecs = rawRecs.filter(
+          (r) => r.role !== "admin" && r.role !== "bot",
+        );
         set({ recommendations: cleanRecs });
       }
     } catch (err) {
@@ -338,7 +372,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
                 relationStatus: nextStatus,
                 requestId: reqId,
               }
-            : u
+            : u,
         ),
         recommendations: state.recommendations.map((r) =>
           r._id === recipientId
@@ -347,7 +381,7 @@ export const useFriendStore = create<FriendState>((set, get) => ({
                 relationStatus: nextStatus,
                 requestId: reqId,
               }
-            : r
+            : r,
         ),
       }));
       // Tải lại lời mời và bạn bè nếu auto-accept
@@ -358,8 +392,8 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       return { success: true, message: res.data?.message || "Đã gửi lời mời!" };
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Gửi lời mời thất bại";
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Gửi lời mời thất bại";
       return { success: false, message: msg };
     }
   },
@@ -371,7 +405,9 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       });
       // Xóa khỏi receivedRequests
       set((state) => ({
-        receivedRequests: state.receivedRequests.filter((r) => r._id !== requestId),
+        receivedRequests: state.receivedRequests.filter(
+          (r) => r._id !== requestId,
+        ),
         recommendations: state.recommendations.map((r) =>
           r.requestId === requestId
             ? {
@@ -379,17 +415,20 @@ export const useFriendStore = create<FriendState>((set, get) => ({
                 relationStatus: action === "accept" ? "friends" : "none",
                 requestId: undefined,
               }
-            : r
+            : r,
         ),
       }));
       if (action === "accept") {
         get().fetchFriends();
       }
-      return { success: true, message: res.data?.message || "Xử lý thành công!" };
+      return {
+        success: true,
+        message: res.data?.message || "Xử lý thành công!",
+      };
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Xử lý lời mời thất bại";
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Xử lý lời mời thất bại";
       return { success: false, message: msg };
     }
   },
@@ -400,17 +439,21 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       set((state) => ({
         sentRequests: state.sentRequests.filter((r) => r._id !== requestId),
         searchResults: state.searchResults.map((u) =>
-          u.requestId === requestId ? { ...u, relationStatus: "none", requestId: undefined } : u
+          u.requestId === requestId
+            ? { ...u, relationStatus: "none", requestId: undefined }
+            : u,
         ),
         recommendations: state.recommendations.map((r) =>
-          r.requestId === requestId ? { ...r, relationStatus: "none", requestId: undefined } : r
+          r.requestId === requestId
+            ? { ...r, relationStatus: "none", requestId: undefined }
+            : r,
         ),
       }));
       return { success: true, message: res.data?.message || "Đã hủy lời mời" };
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Hủy lời mời thất bại";
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Hủy lời mời thất bại";
       return { success: false, message: msg };
     }
   },
@@ -421,17 +464,17 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       set((state) => ({
         friends: state.friends.filter((f) => f.friend?._id !== friendId),
         searchResults: state.searchResults.map((u) =>
-          u._id === friendId ? { ...u, relationStatus: "none" } : u
+          u._id === friendId ? { ...u, relationStatus: "none" } : u,
         ),
         recommendations: state.recommendations.map((r) =>
-          r._id === friendId ? { ...r, relationStatus: "none" } : r
+          r._id === friendId ? { ...r, relationStatus: "none" } : r,
         ),
       }));
       return { success: true, message: res.data?.message || "Đã hủy kết bạn" };
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        "Hủy kết bạn thất bại";
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Hủy kết bạn thất bại";
       return { success: false, message: msg };
     }
   },

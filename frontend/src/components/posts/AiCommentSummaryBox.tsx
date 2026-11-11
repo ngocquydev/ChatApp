@@ -1,6 +1,13 @@
 "use client";
 
-import { Box, Button, CircularProgress, IconButton, Paper, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  IconButton,
+  Paper,
+  Typography,
+} from "@mui/material";
 import { Sparkles, X, RefreshCw, Bot } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 
@@ -37,7 +44,14 @@ export function AiCommentSummaryBox({
         position: "relative",
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.25 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 1.25,
+        }}
+      >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Box
             sx={{
@@ -54,7 +68,15 @@ export function AiCommentSummaryBox({
             <Sparkles size={16} />
           </Box>
           <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 0.75 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: 0.75,
+              }}
+            >
               {tr("Tóm tắt bình luận bằng AI", "AI Comment Summary")}
               <Box
                 component="span"
@@ -68,11 +90,14 @@ export function AiCommentSummaryBox({
                   borderRadius: "4px",
                 }}
               >
-                Llama 3.3 (Groq)
+                Qwen 3.8 (Groq)
               </Box>
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {tr(`Dựa trên ${commentCount} bình luận thảo luận`, `Based on ${commentCount} discussion comments`)}
+              {tr(
+                `Dựa trên ${commentCount} bình luận thảo luận`,
+                `Based on ${commentCount} discussion comments`,
+              )}
             </Typography>
           </Box>
         </Box>
@@ -85,7 +110,10 @@ export function AiCommentSummaryBox({
             disabled={loading}
             sx={{ color: "text.secondary" }}
           >
-            <RefreshCw size={15} className={loading ? "animate-spin" : undefined} />
+            <RefreshCw
+              size={15}
+              className={loading ? "animate-spin" : undefined}
+            />
           </IconButton>
           <IconButton
             size="small"
@@ -101,8 +129,15 @@ export function AiCommentSummaryBox({
       {loading ? (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 1.5 }}>
           <CircularProgress size={18} color="primary" />
-          <Typography variant="body2" color="text.secondary" sx={{ fontStyle: "italic" }}>
-            {tr("Llama 3.3 (Groq) đang đọc và tổng hợp các ý kiến…", "Llama 3.3 (Groq) is reading and synthesizing comments…")}
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontStyle: "italic" }}
+          >
+            {tr(
+              "Llama 3.3 (Groq) đang đọc và tổng hợp các ý kiến…",
+              "Llama 3.3 (Groq) is reading and synthesizing comments…",
+            )}
           </Typography>
         </Box>
       ) : (
@@ -124,4 +159,3 @@ export function AiCommentSummaryBox({
 }
 
 export default AiCommentSummaryBox;
-

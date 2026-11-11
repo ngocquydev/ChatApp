@@ -1,9 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, ButtonBase, Card, IconButton, ListItemIcon, Menu, MenuItem, Tooltip, Typography } from "@mui/material";
-import { Heart, MessageCircle, MoreHorizontal, Pencil, Share2, Trash2 } from "lucide-react";
-import { isSharedPostAvailable, type PostView, type ReactionType } from "@/services/postsApi";
+import {
+  Box,
+  Button,
+  ButtonBase,
+  Card,
+  IconButton,
+  ListItemIcon,
+  Menu,
+  MenuItem,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import {
+  MessageCircle,
+  MoreHorizontal,
+  Pencil,
+  Share2,
+  Trash2,
+} from "lucide-react";
+import {
+  isSharedPostAvailable,
+  type PostView,
+  type ReactionType,
+} from "@/services/postsApi";
 import { useTranslation } from "@/i18n/useTranslation";
 import ReactionSummary from "@/components/reactions/ReactionSummary";
 import PostReactionButton from "@/components/reactions/PostReactionButton";
@@ -28,11 +49,13 @@ interface PostCardProps {
   defaultShowComments?: boolean;
 }
 
-/** Bài gốc mà thao tác chia sẻ sẽ trỏ tới (bài chia sẻ → bài gốc của nó). */
 function shareTarget(post: PostView) {
   if (post.sharedPost) {
     if (!isSharedPostAvailable(post.sharedPost)) return null;
-    return { authorId: post.sharedPost.author._id, privacy: post.sharedPost.privacy };
+    return {
+      authorId: post.sharedPost.author._id,
+      privacy: post.sharedPost.privacy,
+    };
   }
   return { authorId: post.author._id, privacy: post.privacy };
 }
@@ -40,7 +63,6 @@ function shareTarget(post: PostView) {
 export function canSharePost(post: PostView, currentUserId?: string): boolean {
   const target = shareTarget(post);
   if (!target) return false;
-  // Cho phép chia sẻ lại bài viết của chính mình, bài viết công khai hoặc bài viết ở chế độ bạn bè
   return (
     target.authorId === currentUserId ||
     target.privacy === "public" ||
@@ -68,7 +90,10 @@ export default function PostCard({
   const isOwn = post.author._id === currentUserId;
   const shareable = canSharePost(post, currentUserId);
   const long = post.content.length > CONTENT_PREVIEW_CHARS;
-  const text = long && !expanded ? `${post.content.slice(0, CONTENT_PREVIEW_CHARS)}…` : post.content;
+  const text =
+    long && !expanded
+      ? `${post.content.slice(0, CONTENT_PREVIEW_CHARS)}…`
+      : post.content;
 
   return (
     <Card
@@ -103,7 +128,11 @@ export default function PostCard({
                 >
                   <MoreHorizontal size={20} aria-hidden />
                 </IconButton>
-                <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={() => setMenuAnchor(null)}>
+                <Menu
+                  anchorEl={menuAnchor}
+                  open={!!menuAnchor}
+                  onClose={() => setMenuAnchor(null)}
+                >
                   <MenuItem
                     onClick={() => {
                       setMenuAnchor(null);
@@ -134,17 +163,27 @@ export default function PostCard({
         />
 
         {post.content && (
-          <Typography variant="body1" sx={{ mt: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+          <Typography
+            variant="body1"
+            sx={{ mt: 1.5, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+          >
             <MentionText text={text} />
             {long && (
-              <Button size="small" onClick={() => setExpanded((v) => !v)} sx={{ ml: 0.5, p: 0, minWidth: 0, fontWeight: 700 }}>
+              <Button
+                size="small"
+                onClick={() => setExpanded((v) => !v)}
+                sx={{ ml: 0.5, p: 0, minWidth: 0, fontWeight: 700 }}
+              >
                 {expanded ? t("common.seeLess") : t("common.seeMore")}
               </Button>
             )}
           </Typography>
         )}
 
-        <SharedPostEmbed shared={post.sharedPost} currentUserId={currentUserId} />
+        <SharedPostEmbed
+          shared={post.sharedPost}
+          currentUserId={currentUserId}
+        />
       </Box>
 
       <PostImages
@@ -179,8 +218,14 @@ export default function PostCard({
             {post.commentCount > 0 && (
               <ButtonBase
                 onClick={() => onOpenEngagers?.(post._id, "commenters")}
-                aria-label={t("feed.commentsCount", { count: post.commentCount })}
-                sx={{ borderRadius: "6px", p: 0.25, "&:hover": { textDecoration: "underline" } }}
+                aria-label={t("feed.commentsCount", {
+                  count: post.commentCount,
+                })}
+                sx={{
+                  borderRadius: "6px",
+                  p: 0.25,
+                  "&:hover": { textDecoration: "underline" },
+                }}
               >
                 <Typography variant="body2" color="text.secondary">
                   {t("feed.commentsCount", { count: post.commentCount })}
@@ -231,7 +276,7 @@ export default function PostCard({
         >
           {t("feed.comment")}
         </Button>
-        <Tooltip title={shareable ? "" : (t("feed.privacyFriends"))}>
+        <Tooltip title={shareable ? "" : t("feed.privacyFriends")}>
           <Box component="span" sx={{ flex: 1, minWidth: 0, display: "flex" }}>
             <Button
               fullWidth

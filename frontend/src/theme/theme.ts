@@ -12,7 +12,6 @@ import {
   v,
 } from "./tokens";
 
-// Mở rộng palette để `sx={{ color: "neutral.500" }}` và `--mui-palette-neutral-500` hoạt động
 declare module "@mui/material/styles" {
   interface Palette {
     neutral: Record<NeutralStep, string>;
@@ -29,16 +28,23 @@ declare module "@mui/material/styles" {
 const fontFamily =
   '"Inter Variable", "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif';
 
-const darkTone = { ...toneLight, ...toneDarkOverrides } as Record<string, string>;
+const darkTone = { ...toneLight, ...toneDarkOverrides } as Record<
+  string,
+  string
+>;
 
 const theme = createTheme({
-  // Dark mode: biến CSS + chọn scheme qua thuộc tính data-mui-color-scheme (đặt bởi InitColorSchemeScript)
   cssVariables: { colorSchemeSelector: "data" },
   defaultColorScheme: "light",
   colorSchemes: {
     light: {
       palette: {
-        primary: { main: "#2563eb", light: "#3b82f6", dark: "#1d4ed8", contrastText: "#ffffff" },
+        primary: {
+          main: "#2563eb",
+          light: "#3b82f6",
+          dark: "#1d4ed8",
+          contrastText: "#ffffff",
+        },
         secondary: { main: "#7c3aed" },
         success: { main: "#16a34a" },
         warning: { main: "#d97706" },
@@ -58,7 +64,12 @@ const theme = createTheme({
     },
     dark: {
       palette: {
-        primary: { main: "#3b82f6", light: "#60a5fa", dark: "#2563eb", contrastText: "#ffffff" },
+        primary: {
+          main: "#3b82f6",
+          light: "#60a5fa",
+          dark: "#2563eb",
+          contrastText: "#ffffff",
+        },
         secondary: { main: "#a78bfa" },
         success: { main: "#4ade80" },
         warning: { main: "#fbbf24" },
@@ -152,7 +163,9 @@ const theme = createTheme({
           borderRadius: radius.md,
           transition: `box-shadow ${motion.base} ${motion.ease}, background-color ${motion.base} ${motion.ease}`,
           "&:not(.MuiInputBase-multiline)": { height: "54px" },
-          "&.MuiInputBase-sizeSmall:not(.MuiInputBase-multiline)": { height: "42px" },
+          "&.MuiInputBase-sizeSmall:not(.MuiInputBase-multiline)": {
+            height: "42px",
+          },
           "&.Mui-focused": { boxShadow: "none" },
           "&.Mui-focused.Mui-error": { boxShadow: "none" },
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {

@@ -7,7 +7,7 @@ FROM node:22-alpine AS dev
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++ aws-cli libwebp-tools dumb-init aws-cli libwebp-tools
+RUN apk add --no-cache python3 make g++ aws-cli libwebp-tools dumb-init ffmpeg
 
 COPY package*.json ./
 RUN npm install
@@ -64,7 +64,7 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Cài đặt dumb-init để xử lý tín hiệu OS (SIGTERM, SIGINT) chuẩn xác
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init ffmpeg
 
 # Sao chép các tệp thực thi từ các stage trước
 COPY --from=prod-deps /app/node_modules ./node_modules

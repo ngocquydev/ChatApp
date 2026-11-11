@@ -1,17 +1,16 @@
 import { useState, useCallback, RefObject } from "react";
 import type { MentionCandidate } from "@/components/common/MentionAutocomplete";
 
-/**
- * Hook quản lý trạng thái gõ và gợi ý @mention bạn bè & Aura Bot
- */
 export function useMention(
   text: string,
   setText: (newText: string) => void,
-  inputRef: RefObject<HTMLInputElement | HTMLTextAreaElement | null>
+  inputRef: RefObject<HTMLInputElement | HTMLTextAreaElement | null>,
 ) {
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
-  const [mentionAnchorEl, setMentionAnchorEl] = useState<HTMLElement | null>(null);
+  const [mentionAnchorEl, setMentionAnchorEl] = useState<HTMLElement | null>(
+    null,
+  );
 
   const checkMention = useCallback(
     (val: string, cursorIndex?: number) => {
@@ -19,14 +18,12 @@ export function useMention(
       const pos = cursorIndex ?? input?.selectionStart ?? val.length;
       const textBeforeCursor = val.slice(0, pos);
 
-      // Tìm ký tự @ gần nhất trước con trỏ
       const lastAtIndex = textBeforeCursor.lastIndexOf("@");
       if (lastAtIndex !== -1) {
-        const charBeforeAt = lastAtIndex > 0 ? textBeforeCursor[lastAtIndex - 1] : " ";
-        // Kích hoạt khi @ đứng đầu dòng hoặc ngay sau khoảng trắng/dấu xuống dòng
+        const charBeforeAt =
+          lastAtIndex > 0 ? textBeforeCursor[lastAtIndex - 1] : " ";
         if (/\s/.test(charBeforeAt) || lastAtIndex === 0) {
           const query = textBeforeCursor.slice(lastAtIndex + 1);
-          // Query chưa xuống dòng và tối đa 2 từ (cho tên tiếng Việt)
           if (!/\n/.test(query) && query.length < 25) {
             setMentionQuery(query);
             setMentionOpen(true);
@@ -37,7 +34,7 @@ export function useMention(
       }
       setMentionOpen(false);
     },
-    [inputRef]
+    [inputRef],
   );
 
   const insertMention = useCallback(
@@ -54,8 +51,6 @@ export function useMention(
         const newFullText = `${prefix}${tagText}${textAfterCursor}`;
         setText(newFullText);
         setMentionOpen(false);
-
-        // Khôi phục con trỏ ngay sau thẻ mention vừa chèn
         setTimeout(() => {
           if (input) {
             const newPos = prefix.length + tagText.length;
@@ -65,7 +60,7 @@ export function useMention(
         }, 15);
       }
     },
-    [text, setText, inputRef]
+    [text, setText, inputRef],
   );
 
   return {
@@ -79,4 +74,3 @@ export function useMention(
 }
 
 export default useMention;
-

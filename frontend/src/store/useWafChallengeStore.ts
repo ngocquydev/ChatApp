@@ -7,13 +7,10 @@ interface Waiter {
 
 interface WafChallengeState {
   open: boolean;
-  /** Mở hộp thoại xác minh; Promise hoàn tất khi người dùng xác minh xong (hoặc bị từ chối khi hủy) */
   requestChallenge: () => Promise<void>;
   complete: () => void;
   cancel: () => void;
 }
-
-// Nhiều request cùng bị WAF yêu cầu xác minh sẽ dùng chung một lần xác minh
 let waiters: Waiter[] = [];
 
 export class WafChallengeCancelledError extends Error {
@@ -43,4 +40,3 @@ export const useWafChallengeStore = create<WafChallengeState>((set) => ({
     current.forEach((w) => w.reject(new WafChallengeCancelledError()));
   },
 }));
-

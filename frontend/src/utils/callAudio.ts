@@ -1,10 +1,3 @@
-// src/utils/callAudio.ts
-/**
- * Trình phát âm thanh nhạc chuông cuộc gọi sử dụng Web Audio API.
- * - Không phụ thuộc file mp3/wav ngoài mạng
- * - Chống gián đoạn khi chưa có mạng hoặc file lỗi
- */
-
 class CallAudioService {
   private ctx: AudioContext | null = null;
   private ringInterval: NodeJS.Timeout | null = null;
@@ -15,7 +8,8 @@ class CallAudioService {
       if (!this.ctx) {
         const AudioCtx =
           window.AudioContext ||
-          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+          (window as unknown as { webkitAudioContext: typeof AudioContext })
+            .webkitAudioContext;
         if (AudioCtx) {
           this.ctx = new AudioCtx();
         }
@@ -29,9 +23,6 @@ class CallAudioService {
     }
   }
 
-  /**
-   * Phát chuông gọi đi ("Tuuut... Tuuut...")
-   */
   startOutgoingRingtone() {
     this.stop();
     const ctx = this.getAudioContext();
@@ -54,18 +45,13 @@ class CallAudioService {
 
         osc.start();
         osc.stop(ctx.currentTime + 1.35);
-      } catch {
-        // Bỏ qua lỗi audio
-      }
+      } catch {}
     };
 
     playTone();
     this.ringInterval = setInterval(playTone, 3000);
   }
 
-  /**
-   * Phát chuông gọi đến (chuông điệu đà réo rắt)
-   */
   startIncomingRingtone() {
     this.stop();
     const ctx = this.getAudioContext();
@@ -92,18 +78,13 @@ class CallAudioService {
           osc.start(startTime);
           osc.stop(startTime + 0.38);
         });
-      } catch {
-        // Bỏ qua lỗi audio
-      }
+      } catch {}
     };
 
     playMelody();
     this.ringInterval = setInterval(playMelody, 2200);
   }
 
-  /**
-   * Âm báo kết thúc cuộc gọi
-   */
   playEndCallTone() {
     this.stop();
     const ctx = this.getAudioContext();
@@ -128,9 +109,7 @@ class CallAudioService {
         osc.start(startTime);
         osc.stop(startTime + 0.12);
       });
-    } catch {
-      // Bỏ qua lỗi audio
-    }
+    } catch {}
   }
 
   stop() {

@@ -4,7 +4,6 @@
 @import "@fontsource/roboto/500.css";
 @import "@fontsource/roboto/700.css";
 
-/* Thiết lập font mặc định cho toàn bộ trang web */
 body {
   font-family: "Roboto", sans-serif;
   margin: 0;

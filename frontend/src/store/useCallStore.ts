@@ -5,7 +5,12 @@ import { useAuthStore } from "./useAuthStore";
 import { callAudio } from "@/utils/callAudio";
 
 export type CallType = "audio" | "video";
-export type CallStatus = "idle" | "calling" | "incoming" | "connected" | "ended";
+export type CallStatus =
+  | "idle"
+  | "calling"
+  | "incoming"
+  | "connected"
+  | "ended";
 
 export interface CallPartner {
   id: string;
@@ -48,33 +53,46 @@ let durationInterval: NodeJS.Timeout | null = null;
 let listenersInitialized = false;
 
 async function getMediaStream(callType: CallType): Promise<MediaStream> {
-  if (typeof navigator !== "undefined" && navigator?.mediaDevices?.getUserMedia) {
+  if (
+    typeof navigator !== "undefined" &&
+    navigator?.mediaDevices?.getUserMedia
+  ) {
     try {
       return await navigator.mediaDevices.getUserMedia({
         audio: true,
-        video: callType === "video" ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false,
+        video:
+          callType === "video"
+            ? { width: { ideal: 1280 }, height: { ideal: 720 } }
+            : false,
       });
     } catch (err) {
-      console.warn("getUserMedia failed or permission denied, trying audio only fallback:", err);
+      console.warn(
+        "getUserMedia failed or permission denied, trying audio only fallback:",
+        err,
+      );
       if (callType === "video") {
         try {
-          return await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          return await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: false,
+          });
         } catch (e2) {
           console.warn("Audio only fallback failed:", e2);
         }
       }
     }
   }
-
-  // Fallback an toàn cho môi trường không có thiết bị webcam/mic vật lý (tránh crash)
   try {
     const AudioCtx =
       window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext;
     if (AudioCtx) {
       const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
-      const dst = osc.connect(ctx.createMediaStreamDestination()) as unknown as { stream: MediaStream };
+      const dst = osc.connect(
+        ctx.createMediaStreamDestination(),
+      ) as unknown as { stream: MediaStream };
       osc.start();
       const stream = dst.stream;
       if (callType === "video") {
@@ -87,8 +105,16 @@ async function getMediaStream(callType: CallType): Promise<MediaStream> {
           canvasCtx.fillRect(0, 0, 640, 480);
         }
         const videoStream =
-          typeof (canvas as unknown as { captureStream?: (fps: number) => MediaStream }).captureStream === "function"
-            ? (canvas as unknown as { captureStream: (fps: number) => MediaStream }).captureStream(10)
+          typeof (
+            canvas as unknown as {
+              captureStream?: (fps: number) => MediaStream;
+            }
+          ).captureStream === "function"
+            ? (
+                canvas as unknown as {
+                  captureStream: (fps: number) => MediaStream;
+                }
+              ).captureStream(10)
             : new MediaStream();
         videoStream.getVideoTracks().forEach((track) => stream.addTrack(track));
       }
@@ -106,9 +132,7 @@ function stopMediaTracks(stream: MediaStream | null) {
   stream.getTracks().forEach((track) => {
     try {
       track.stop();
-    } catch {
-      // Bỏ qua lỗi dừng track
-    }
+    } catch {}
   });
 }
 
@@ -131,42 +155,50 @@ export const useCallStore = create<CallState>((set, get) => ({
 
     listenersInitialized = true;
 
-    // Cuộc gọi đến
-    socket.on("call:incoming", (data: { callerId: string; callerName: string; callerAvatar?: string; callType: CallType; conversationId?: string }) => {
-      const currentStatus = get().callStatus;
-      if (currentStatus !== "idle") {
-        // Đang bận cuộc gọi khác
-        socket.emit("call:reject", { targetUserId: data.callerId, reason: "busy", callType: data.callType, conversationId: data.conversationId });
-        return;
-      }
+    socket.on(
+      "call:incoming",
+      (data: {
+        callerId: string;
+        callerName: string;
+        callerAvatar?: string;
+        callType: CallType;
+        conversationId?: string;
+      }) => {
+        const currentStatus = get().callStatus;
+        if (currentStatus !== "idle") {
+          socket.emit("call:reject", {
+            targetUserId: data.callerId,
+            reason: "busy",
+            callType: data.callType,
+            conversationId: data.conversationId,
+          });
+          return;
+        }
 
-      callAudio.startIncomingRingtone();
-      set({
-        callStatus: "incoming",
-        callType: data.callType || "audio",
-        isCaller: false,
-        partner: {
-          id: data.callerId,
-          name: data.callerName || "Người dùng",
-          avatar: data.callerAvatar,
-          conversationId: data.conversationId,
-        },
-        error: null,
-      });
-    });
+        callAudio.startIncomingRingtone();
+        set({
+          callStatus: "incoming",
+          callType: data.callType || "audio",
+          isCaller: false,
+          partner: {
+            id: data.callerId,
+            name: data.callerName || "Người dùng",
+            avatar: data.callerAvatar,
+            conversationId: data.conversationId,
+          },
+          error: null,
+        });
+      },
+    );
 
-    // Cuộc gọi được chấp nhận (phía người gọi)
     socket.on("call:accepted", async () => {
       callAudio.stop();
       set({ callStatus: "connected", duration: 0 });
-
-      // Bắt đầu đếm thời gian
       if (durationInterval) clearInterval(durationInterval);
       durationInterval = setInterval(() => {
         set((state) => ({ duration: state.duration + 1 }));
       }, 1000);
 
-      // Tạo WebRTC Offer
       const pc = peerConnection;
       const partner = get().partner;
       if (pc && partner) {
@@ -183,20 +215,21 @@ export const useCallStore = create<CallState>((set, get) => ({
       }
     });
 
-    // Cuộc gọi bị từ chối
     socket.on("call:rejected", (data: { reason?: string }) => {
       callAudio.stop();
       callAudio.playEndCallTone();
       set({
         callStatus: "ended",
-        error: data.reason === "busy" ? "Người dùng đang bận một cuộc gọi khác" : "Cuộc gọi đã bị từ chối",
+        error:
+          data.reason === "busy"
+            ? "Người dùng đang bận một cuộc gọi khác"
+            : "Cuộc gọi đã bị từ chối",
       });
       setTimeout(() => {
         get().endCall();
       }, 2000);
     });
 
-    // Cuộc gọi kết thúc
     socket.on("call:ended", () => {
       callAudio.stop();
       callAudio.playEndCallTone();
@@ -206,31 +239,44 @@ export const useCallStore = create<CallState>((set, get) => ({
       }, 1500);
     });
 
-    // Tín hiệu WebRTC (Offer, Answer, Candidate)
-    socket.on("webrtc:signal", async (data: { senderId: string; signal: { type?: string; sdp?: string; candidate?: RTCIceCandidateInit } }) => {
-      const pc = peerConnection;
-      if (!pc) return;
+    socket.on(
+      "webrtc:signal",
+      async (data: {
+        senderId: string;
+        signal: {
+          type?: string;
+          sdp?: string;
+          candidate?: RTCIceCandidateInit;
+        };
+      }) => {
+        const pc = peerConnection;
+        if (!pc) return;
 
-      const { signal } = data;
+        const { signal } = data;
 
-      try {
-        if (signal.type === "offer" && signal.sdp) {
-          await pc.setRemoteDescription(new RTCSessionDescription({ type: "offer", sdp: signal.sdp }));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          socket.emit("webrtc:signal", {
-            targetUserId: data.senderId,
-            signal: { type: "answer", sdp: answer.sdp },
-          });
-        } else if (signal.type === "answer" && signal.sdp) {
-          await pc.setRemoteDescription(new RTCSessionDescription({ type: "answer", sdp: signal.sdp }));
-        } else if (signal.candidate) {
-          await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+        try {
+          if (signal.type === "offer" && signal.sdp) {
+            await pc.setRemoteDescription(
+              new RTCSessionDescription({ type: "offer", sdp: signal.sdp }),
+            );
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            socket.emit("webrtc:signal", {
+              targetUserId: data.senderId,
+              signal: { type: "answer", sdp: answer.sdp },
+            });
+          } else if (signal.type === "answer" && signal.sdp) {
+            await pc.setRemoteDescription(
+              new RTCSessionDescription({ type: "answer", sdp: signal.sdp }),
+            );
+          } else if (signal.candidate) {
+            await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+          }
+        } catch (err) {
+          console.error("Lỗi xử lý WebRTC Signal:", err);
         }
-      } catch (err) {
-        console.error("Lỗi xử lý WebRTC Signal:", err);
-      }
-    });
+      },
+    );
   },
 
   startCall: async (targetUser: CallPartner, type: CallType) => {
@@ -242,7 +288,6 @@ export const useCallStore = create<CallState>((set, get) => ({
 
     get().initSocketListeners();
 
-    // Dừng chuông cũ nếu có
     callAudio.stop();
     callAudio.startOutgoingRingtone();
 
@@ -260,7 +305,6 @@ export const useCallStore = create<CallState>((set, get) => ({
     const localStream = await getMediaStream(type);
     set({ localStream });
 
-    // Khởi tạo PeerConnection
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnection = pc;
 
@@ -283,7 +327,6 @@ export const useCallStore = create<CallState>((set, get) => ({
       }
     };
 
-    // Gửi tín hiệu gọi đi
     const me = useAuthStore.getState().user;
     socket.emit("call:initiate", {
       targetUserId: targetUser.id,
@@ -373,7 +416,12 @@ export const useCallStore = create<CallState>((set, get) => ({
     const socket = useChatStore.getState().socket;
     const partner = get().partner;
 
-    if (socket && partner && currentStatus !== "idle" && currentStatus !== "ended") {
+    if (
+      socket &&
+      partner &&
+      currentStatus !== "idle" &&
+      currentStatus !== "ended"
+    ) {
       if (currentStatus === "calling") {
         // Người gọi hủy cuộc gọi trước khi đối phương bắt máy
         socket.emit("call:reject", {
@@ -383,7 +431,6 @@ export const useCallStore = create<CallState>((set, get) => ({
           conversationId: partner.conversationId,
         });
       } else {
-        // Cuộc gọi đã kết nối hoặc đang kết thúc
         socket.emit("call:end", {
           targetUserId: partner.id,
           duration: currentDuration,

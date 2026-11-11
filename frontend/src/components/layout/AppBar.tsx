@@ -59,10 +59,12 @@ import NotificationBell from "../notifications/NotificationBell";
 import RecentChatsPopover from "./RecentChatsPopover";
 import UserSearchResults, { SEARCH_PREVIEW_COUNT } from "./UserSearchResults";
 import type { NavShortcutItem } from "./LeftSidebar";
-import { communityGroupsApi, CommunityGroupItem } from "@/services/communityGroupsApi";
+import {
+  communityGroupsApi,
+  CommunityGroupItem,
+} from "@/services/communityGroupsApi";
 import { pagesApi, PageItem } from "@/services/pagesApi";
 
-/** Số kết quả mỗi trang khi "Xem tất cả" / cuộn vô hạn */
 const SEARCH_PAGE_SIZE = 20;
 
 interface NavPage {
@@ -76,16 +78,16 @@ function ResponsiveAppBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [chatAnchorEl, setChatAnchorEl] = useState<null | HTMLElement>(null);
-  const [friendAnchorEl, setFriendAnchorEl] = useState<null | HTMLElement>(null);
+  const [friendAnchorEl, setFriendAnchorEl] = useState<null | HTMLElement>(
+    null,
+  );
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
   const { t, tr, language } = useTranslation();
 
-  // State tìm kiếm người dùng toàn hệ thống
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  // false = chỉ xem trước vài kết quả; true = đã bấm "Xem tất cả" (cuộn vô hạn)
   const [searchExpanded, setSearchExpanded] = useState(false);
   const searchAnchorRef = useRef<HTMLDivElement | null>(null);
 
@@ -283,7 +285,12 @@ function ResponsiveAppBar() {
       label: t("nav.friends"),
       icon: <UserPlus size={20} />,
     },
-    { id: "chat", label: t("nav.messages"), icon: <MessageSquare size={20} />, href: "/chat" },
+    {
+      id: "chat",
+      label: t("nav.messages"),
+      icon: <MessageSquare size={20} />,
+      href: "/chat",
+    },
   ];
 
   return (
@@ -293,7 +300,9 @@ function ResponsiveAppBar() {
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ gap: { xs: 1, sm: 1.5, md: 2 } }}>
             {/* Logo Desktop */}
-            <Box sx={{ display: { xs: "none", md: "flex" }, mr: 1, flexShrink: 0 }}>
+            <Box
+              sx={{ display: { xs: "none", md: "flex" }, mr: 1, flexShrink: 0 }}
+            >
               <BrandLogo />
             </Box>
 
@@ -338,21 +347,23 @@ function ResponsiveAppBar() {
                 }}
                 variant="outlined"
                 slotProps={{
-                  htmlInput: { "aria-label": tr("Tìm kiếm người dùng", "Search users") },
+                  htmlInput: {
+                    "aria-label": tr("Tìm kiếm người dùng", "Search users"),
+                  },
                   input: {
                     startAdornment: (
                       <InputAdornment position="start">
-                        <Search
-                          size={18}
-                          color="rgba(255, 255, 255, 0.7)"
-                        />
+                        <Search size={18} color="rgba(255, 255, 255, 0.7)" />
                       </InputAdornment>
                     ),
                     endAdornment: searchQuery ? (
                       <InputAdornment position="end">
                         <IconButton
                           size="small"
-                          aria-label={tr("Xóa nội dung tìm kiếm", "Clear search")}
+                          aria-label={tr(
+                            "Xóa nội dung tìm kiếm",
+                            "Clear search",
+                          )}
                           onClick={() => {
                             setSearchQuery("");
                             setSearchExpanded(false);
@@ -385,7 +396,10 @@ function ResponsiveAppBar() {
                 open={isSearchOpen}
                 anchorEl={searchAnchorRef.current}
                 placement="bottom-start"
-                style={{ zIndex: 1400, width: searchAnchorRef.current?.clientWidth || 380 }}
+                style={{
+                  zIndex: 1400,
+                  width: searchAnchorRef.current?.clientWidth || 380,
+                }}
               >
                 <ClickAwayListener onClickAway={() => setIsSearchOpen(false)}>
                   <Paper
@@ -415,7 +429,9 @@ function ResponsiveAppBar() {
                       onRetry={() =>
                         searchResults.length > 0
                           ? loadMoreSearchResults(SEARCH_PAGE_SIZE)
-                          : searchUsers(searchQuery, { limit: SEARCH_PREVIEW_COUNT })
+                          : searchUsers(searchQuery, {
+                              limit: SEARCH_PREVIEW_COUNT,
+                            })
                       }
                       onSendRequest={(id) => {
                         void sendFriendRequest(id);
@@ -452,7 +468,9 @@ function ResponsiveAppBar() {
               {desktopTabs.map((tab) => {
                 const isActive = Boolean(
                   tab.href &&
-                    (tab.href === "/" ? pathname === "/" : pathname?.startsWith(tab.href))
+                  (tab.href === "/"
+                    ? pathname === "/"
+                    : pathname?.startsWith(tab.href)),
                 );
                 return (
                   <Tooltip key={tab.id} title={tab.label} enterDelay={300}>
@@ -470,7 +488,9 @@ function ResponsiveAppBar() {
                         justifyContent: "center",
                         borderRadius: "10px",
                         position: "relative",
-                        color: isActive ? "var(--mui-palette-brand-400)" : "rgba(255, 255, 255, 0.75)",
+                        color: isActive
+                          ? "var(--mui-palette-brand-400)"
+                          : "rgba(255, 255, 255, 0.75)",
                         transition: "all 0.15s ease",
                         "&:hover": {
                           bgcolor: "rgba(255, 255, 255, 0.12)",
@@ -498,7 +518,14 @@ function ResponsiveAppBar() {
             </Box>
 
             {/* Nút Lời mời kết bạn, Tin nhắn & Thông báo nhanh trên Mobile */}
-            <Box sx={{ display: { xs: "flex", md: "none" }, alignItems: "center", gap: 0.5, mr: 1 }}>
+            <Box
+              sx={{
+                display: { xs: "flex", md: "none" },
+                alignItems: "center",
+                gap: 0.5,
+                mr: 1,
+              }}
+            >
               <NotificationBell />
 
               <IconButton
@@ -530,7 +557,9 @@ function ResponsiveAppBar() {
                     !conversations.some(
                       (c) =>
                         c.unreadCounts &&
-                        Number(c.unreadCounts[String(user?.id || user?._id)] || 0) > 0
+                        Number(
+                          c.unreadCounts[String(user?.id || user?._id)] || 0,
+                        ) > 0,
                     )
                   }
                 >
@@ -547,7 +576,9 @@ function ResponsiveAppBar() {
                   onClick={handleOpenFriend}
                   aria-label={t("nav.friendRequests")}
                   sx={{
-                    bgcolor: isFriendOpen ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.1)",
+                    bgcolor: isFriendOpen
+                      ? "rgba(255, 255, 255, 0.2)"
+                      : "rgba(255, 255, 255, 0.1)",
                     "&:hover": { bgcolor: "rgba(255, 255, 255, 0.22)" },
                   }}
                 >
@@ -571,7 +602,9 @@ function ResponsiveAppBar() {
                   onClick={handleOpenChat}
                   aria-label={t("nav.chats")}
                   sx={{
-                    bgcolor: isChatOpen ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.1)",
+                    bgcolor: isChatOpen
+                      ? "rgba(255, 255, 255, 0.2)"
+                      : "rgba(255, 255, 255, 0.1)",
                     "&:hover": { bgcolor: "rgba(255, 255, 255, 0.22)" },
                   }}
                 >
@@ -582,7 +615,9 @@ function ResponsiveAppBar() {
                       !conversations.some(
                         (c) =>
                           c.unreadCounts &&
-                          Number(c.unreadCounts[String(user?.id || user?._id)] || 0) > 0
+                          Number(
+                            c.unreadCounts[String(user?.id || user?._id)] || 0,
+                          ) > 0,
                       )
                     }
                   >
@@ -591,7 +626,6 @@ function ResponsiveAppBar() {
                 </IconButton>
               </Tooltip>
             </Box>
-
 
             {/* Chuông thông báo trên Desktop */}
             <Box sx={{ display: { xs: "none", md: "flex" }, mr: 0.5 }}>
@@ -698,7 +732,14 @@ function ResponsiveAppBar() {
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.92rem" }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        fontWeight: 700,
+                        color: "var(--mui-palette-neutral-800)",
+                        fontSize: "0.92rem",
+                      }}
+                    >
                       {t("nav.friendRequests")}
                     </Typography>
                     {receivedRequests.length > 0 && (
@@ -706,7 +747,11 @@ function ResponsiveAppBar() {
                         label={receivedRequests.length}
                         size="small"
                         color="error"
-                        sx={{ height: 20, fontSize: "0.72rem", fontWeight: 700 }}
+                        sx={{
+                          height: 20,
+                          fontSize: "0.72rem",
+                          fontWeight: 700,
+                        }}
                       />
                     )}
                   </Box>
@@ -730,16 +775,35 @@ function ResponsiveAppBar() {
 
                 <Box sx={{ overflowY: "auto", maxHeight: 390, p: 0.5 }}>
                   {isLoadingRequests && receivedRequests.length === 0 ? (
-                    <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center", py: 5 }}
+                    >
                       <CircularProgress size={24} />
                     </Box>
                   ) : receivedRequests.length === 0 ? (
                     <Box sx={{ textAlign: "center", py: 5, px: 3 }}>
-                      <UserCheck size={40} color="var(--mui-palette-neutral-400)" style={{ marginBottom: 10 }} />
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--mui-palette-neutral-600)", mb: 0.5 }}>
+                      <UserCheck
+                        size={40}
+                        color="var(--mui-palette-neutral-400)"
+                        style={{ marginBottom: 10 }}
+                      />
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 600,
+                          color: "var(--mui-palette-neutral-600)",
+                          mb: 0.5,
+                        }}
+                      >
                         {t("nav.noFriendRequests")}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: "var(--mui-palette-neutral-400)", display: "block" }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "var(--mui-palette-neutral-400)",
+                          display: "block",
+                        }}
+                      >
                         {t("nav.noFriendRequestsDesc")}
                       </Typography>
                     </Box>
@@ -747,10 +811,13 @@ function ResponsiveAppBar() {
                     receivedRequests.map((req) => {
                       const requester = req.requesterId;
                       const timeAgo = req.createdAt
-                        ? new Date(req.createdAt).toLocaleDateString(language === "en" ? "en-US" : "vi-VN", {
-                            month: "numeric",
-                            day: "numeric",
-                          })
+                        ? new Date(req.createdAt).toLocaleDateString(
+                            language === "en" ? "en-US" : "vi-VN",
+                            {
+                              month: "numeric",
+                              day: "numeric",
+                            },
+                          )
                         : "";
 
                       return (
@@ -764,22 +831,41 @@ function ResponsiveAppBar() {
                             alignItems: "flex-start",
                             gap: 1.5,
                             transition: "all 0.15s ease",
-                            "&:hover": { bgcolor: "var(--mui-palette-neutral-100)" },
+                            "&:hover": {
+                              bgcolor: "var(--mui-palette-neutral-100)",
+                            },
                           }}
                         >
                           <Avatar
                             src={requester?.avatar || ""}
-                            sx={{ width: 44, height: 44, bgcolor: "var(--mui-palette-brand-500)", fontWeight: 700, mt: 0.2 }}
+                            sx={{
+                              width: 44,
+                              height: 44,
+                              bgcolor: "var(--mui-palette-brand-500)",
+                              fontWeight: 700,
+                              mt: 0.2,
+                            }}
                           >
                             {(requester?.name || "U")[0].toUpperCase()}
                           </Avatar>
 
                           <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", mb: 0.3 }}>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "baseline",
+                                mb: 0.3,
+                              }}
+                            >
                               <Typography
                                 variant="subtitle2"
                                 noWrap
-                                sx={{ fontWeight: 700, color: "var(--mui-palette-neutral-800)", fontSize: "0.88rem" }}
+                                sx={{
+                                  fontWeight: 700,
+                                  color: "var(--mui-palette-neutral-800)",
+                                  fontSize: "0.88rem",
+                                }}
                               >
                                 {requester?.name || tr("Người dùng", "User")}
                               </Typography>
@@ -787,7 +873,11 @@ function ResponsiveAppBar() {
                                 <Typography
                                   variant="caption"
                                   suppressHydrationWarning
-                                  sx={{ color: "var(--mui-palette-neutral-400)", fontSize: "0.7rem", ml: 1 }}
+                                  sx={{
+                                    color: "var(--mui-palette-neutral-400)",
+                                    fontSize: "0.7rem",
+                                    ml: 1,
+                                  }}
                                 >
                                   {timeAgo}
                                 </Typography>
@@ -797,9 +887,18 @@ function ResponsiveAppBar() {
                             <Typography
                               variant="caption"
                               noWrap
-                              sx={{ color: "var(--mui-palette-neutral-500)", display: "block", fontSize: "0.74rem", mb: 1 }}
+                              sx={{
+                                color: "var(--mui-palette-neutral-500)",
+                                display: "block",
+                                fontSize: "0.74rem",
+                                mb: 1,
+                              }}
                             >
-                              {requester?.bio || tr("Đã gửi lời mời kết bạn", "Sent you a friend request")}
+                              {requester?.bio ||
+                                tr(
+                                  "Đã gửi lời mời kết bạn",
+                                  "Sent you a friend request",
+                                )}
                             </Typography>
 
                             <Box sx={{ display: "flex", gap: 1 }}>
@@ -842,7 +941,8 @@ function ResponsiveAppBar() {
                                   "&:hover": {
                                     bgcolor: "var(--mui-palette-tone-fef2f2)",
                                     color: "var(--mui-palette-tone-ef4444)",
-                                    borderColor: "var(--mui-palette-tone-fca5a5)",
+                                    borderColor:
+                                      "var(--mui-palette-tone-fca5a5)",
                                   },
                                 }}
                               >
@@ -897,7 +997,11 @@ function ResponsiveAppBar() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <LanguageToggle size="small" />
             <ColorModeToggle />
-            <IconButton onClick={handleDrawerToggle} aria-label={tr("Đóng menu", "Close menu")} sx={{ color: "inherit" }}>
+            <IconButton
+              onClick={handleDrawerToggle}
+              aria-label={tr("Đóng menu", "Close menu")}
+              sx={{ color: "inherit" }}
+            >
               <X size={20} />
             </IconButton>
           </Box>
@@ -907,7 +1011,9 @@ function ResponsiveAppBar() {
           {drawerPages.map((page) => {
             const isActive = Boolean(
               page.href &&
-                (page.href === "/" ? pathname === "/" : pathname?.startsWith(page.href))
+              (page.href === "/"
+                ? pathname === "/"
+                : pathname?.startsWith(page.href)),
             );
             return (
               <ListItem key={page.id} disablePadding>
@@ -943,7 +1049,10 @@ function ResponsiveAppBar() {
                           !conversations.some(
                             (c) =>
                               c.unreadCounts &&
-                              Number(c.unreadCounts[String(user?.id || user?._id)] || 0) > 0
+                              Number(
+                                c.unreadCounts[String(user?.id || user?._id)] ||
+                                  0,
+                              ) > 0,
                           )
                         }
                       >
@@ -957,7 +1066,10 @@ function ResponsiveAppBar() {
                     primary={page.label}
                     secondary={
                       page.id === "friends" && receivedRequests.length > 0
-                        ? tr(`${receivedRequests.length} lời mời mới`, `${receivedRequests.length} new requests`)
+                        ? tr(
+                            `${receivedRequests.length} lời mời mới`,
+                            `${receivedRequests.length} new requests`,
+                          )
                         : undefined
                     }
                   />
@@ -1001,7 +1113,15 @@ function ResponsiveAppBar() {
           <>
             <Divider />
             <Box sx={{ px: 2, pt: 1.5, pb: 0.5 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 700,
+                  color: "text.secondary",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
                 {t("sidebar.yourShortcuts")}
               </Typography>
             </Box>
@@ -1032,7 +1152,10 @@ function ResponsiveAppBar() {
                             width: 28,
                             height: 28,
                             borderRadius: "6px",
-                            bgcolor: sc.type === "group" ? "primary.main" : "warning.main",
+                            bgcolor:
+                              sc.type === "group"
+                                ? "primary.main"
+                                : "warning.main",
                             fontSize: "0.75rem",
                             color: "common.white",
                             fontWeight: 700,

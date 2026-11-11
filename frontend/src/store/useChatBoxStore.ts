@@ -30,11 +30,10 @@ export const useChatBoxStore = create<ChatBoxState>((set, get) => ({
     const targetId = String(user._id || user.id);
 
     const existingIndex = current.findIndex(
-      (b) => String(b.user._id || b.user.id) === targetId
+      (b) => String(b.user._id || b.user.id) === targetId,
     );
 
     if (existingIndex !== -1) {
-      // Đã mở: un-minimize và xóa badge chưa đọc
       const updated = [...current];
       updated[existingIndex] = {
         ...updated[existingIndex],
@@ -46,10 +45,8 @@ export const useChatBoxStore = create<ChatBoxState>((set, get) => ({
       return;
     }
 
-    // Chưa mở: giới hạn tối đa MAX_CHAT_BOXES
     let newBoxes = [...current];
     if (newBoxes.length >= MAX_CHAT_BOXES) {
-      // Đóng hộp cũ nhất
       newBoxes.shift();
     }
 
@@ -66,7 +63,7 @@ export const useChatBoxStore = create<ChatBoxState>((set, get) => ({
   closeChat: (userId: string) => {
     set((state) => ({
       openBoxes: state.openBoxes.filter(
-        (b) => String(b.user._id || b.user.id) !== String(userId)
+        (b) => String(b.user._id || b.user.id) !== String(userId),
       ),
     }));
   },
@@ -80,7 +77,7 @@ export const useChatBoxStore = create<ChatBoxState>((set, get) => ({
               isMinimized: !b.isMinimized,
               unreadCount: b.isMinimized ? 0 : b.unreadCount,
             }
-          : b
+          : b,
       ),
     }));
   },
@@ -94,7 +91,7 @@ export const useChatBoxStore = create<ChatBoxState>((set, get) => ({
               isMinimized,
               unreadCount: !isMinimized ? 0 : b.unreadCount,
             }
-          : b
+          : b,
       ),
     }));
   },
@@ -104,7 +101,7 @@ export const useChatBoxStore = create<ChatBoxState>((set, get) => ({
       openBoxes: state.openBoxes.map((b) =>
         String(b.user._id || b.user.id) === String(userId)
           ? { ...b, conversationId }
-          : b
+          : b,
       ),
     }));
   },
@@ -114,7 +111,7 @@ export const useChatBoxStore = create<ChatBoxState>((set, get) => ({
       openBoxes: state.openBoxes.map((b) =>
         b.conversationId === conversationId && b.isMinimized
           ? { ...b, unreadCount: b.unreadCount + 1 }
-          : b
+          : b,
       ),
     }));
   },
@@ -124,7 +121,7 @@ export const useChatBoxStore = create<ChatBoxState>((set, get) => ({
       openBoxes: state.openBoxes.map((b) =>
         String(b.user._id || b.user.id) === String(userId)
           ? { ...b, unreadCount: 0 }
-          : b
+          : b,
       ),
     }));
   },

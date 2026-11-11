@@ -17,6 +17,7 @@ import {
   type PostView,
 } from "@/services/postsApi";
 import PrivacyPicker from "./PrivacyPicker";
+import { videoUploadError } from "./videoUploadError";
 import { useTranslation } from "@/i18n/useTranslation";
 
 interface Attachment {
@@ -61,7 +62,7 @@ export default function PostComposer({
   groupId,
 }: PostComposerProps) {
   const uid = useId();
-  const { t } = useTranslation();
+  const { t, tr } = useTranslation();
   const [text, setText] = useState("");
   const [privacy, setPrivacy] = useState<PostPrivacy>(defaultPrivacy);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -135,7 +136,7 @@ export default function PostComposer({
         setAttachments((prev) => prev.map((a) => (a.key === key ? { ...a, url } : a)));
       } catch (err) {
         setAttachments((prev) => prev.filter((a) => a.key !== key));
-        setError(apiErrorMessage(err, "Không tải được tệp lên."));
+        setError(isVideo ? videoUploadError(err, tr) : apiErrorMessage(err, "Không tải được tệp lên."));
       } finally {
         setUploading((n) => n - 1);
       }

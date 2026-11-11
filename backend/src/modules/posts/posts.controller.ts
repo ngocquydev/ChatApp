@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   Optional,
   BadRequestException,
+  ServiceUnavailableException,
   Patch,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -32,6 +33,7 @@ import {
 } from './dto/posts.dto.js';
 import { CreateCommentReportDto } from './dto/report-comment.dto.js';
 import { savePostImage } from './post-image.util.js';
+import { isSupportedPostVideo, optimizePostVideo } from './video-optimization.util.js';
 
 const POST_MEDIA_MAX_BYTES = 100 * 1024 * 1024;
 
@@ -76,13 +78,19 @@ export class PostsController {
       throw new BadRequestException('Chưa chọn ảnh hoặc video để tải lên');
     }
 
+    const mime = file.mimetype?.toLowerCase();
+    const isVideo = Boolean(mime?.startsWith('video/')) || ((!mime || mime === 'application/octet-stream') && isSupportedPostVideo(file.buffer));
+    if (isVideo && !this.cloudinaryService?.isConfigured()) {
+      throw new ServiceUnavailableException('Dịch vụ lưu trữ video chưa sẵn sàng');
+    }
+
     // Ảnh an toàn: Lưu trữ trên Cloudinary (chính cho media người dùng)
     if (this.cloudinaryService?.isConfigured()) {
-      const isVideo = file.mimetype?.startsWith('video/') || false;
-      const res = await this.cloudinaryService.uploadBuffer(file.buffer, {
+      const buffer = isVideo ? await optimizePostVideo(file.buffer) : file.buffer;
+      const res = await this.cloudinaryService.uploadBuffer(buffer, {
         folder: 'chatapp/posts',
         resource_type: isVideo ? 'video' : 'auto',
-        filename: file.originalname,
+        filename: isVideo ? 'video.mp4' : file.originalname,
       });
       return {
         success: true,

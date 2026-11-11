@@ -8,26 +8,18 @@ type Status = "loading" | "ready" | "error";
 export interface PagedList<T extends { _id: string }> {
   items: T[];
   status: Status;
-  /** Lỗi tải trang đầu (không có dữ liệu để hiển thị) */
   error: string | null;
   isLoadingMore: boolean;
-  /** Lỗi khi tải thêm — danh sách đã có vẫn được giữ nguyên */
   loadMoreError: string | null;
   hasMore: boolean;
   loadMore: () => void;
-  /** Tải lại từ đầu (nút "Thử lại" / làm mới) */
   reload: () => void;
   prepend: (item: T) => void;
-  /** Thêm vào cuối danh sách (vd. bình luận mới nhất) */
   append: (item: T) => void;
   patch: (id: string, updater: (item: T) => T) => void;
   remove: (id: string) => void;
 }
 
-/**
- * Danh sách phân trang theo con trỏ (cursor) dùng chung cho bài viết và bình luận.
- * Component dùng hook nên được remount (`key`) khi nguồn dữ liệu đổi — hook chỉ tải trang đầu khi mount.
- */
 export function usePagedList<T extends { _id: string }>(
   fetchPage: (after: string | null) => Promise<CursorPage<T>>,
   errorMessage: (err: unknown) => string,
@@ -71,7 +63,6 @@ export function usePagedList<T extends { _id: string }>(
   }, []);
 
   useEffect(() => {
-    // Bỏ kết quả của yêu cầu đang bay khi unmount: tăng "thế hệ" để mọi phản hồi cũ bị bỏ qua
     const invalidate = () => {
       seqRef.current += 1;
     };
@@ -96,7 +87,6 @@ export function usePagedList<T extends { _id: string }>(
       .then((page) => {
         if (seq !== seqRef.current) return;
         cursorRef.current = page.nextCursor;
-        // Loại bản ghi trùng (bài mới đăng chen vào giữa các trang)
         setItems((prev) => {
           const seen = new Set(prev.map((p) => p._id));
           return [...prev, ...page.items.filter((p) => !seen.has(p._id))];
@@ -119,7 +109,9 @@ export function usePagedList<T extends { _id: string }>(
   }, []);
 
   const append = useCallback((item: T) => {
-    setItems((prev) => (prev.some((p) => p._id === item._id) ? prev : [...prev, item]));
+    setItems((prev) =>
+      prev.some((p) => p._id === item._id) ? prev : [...prev, item],
+    );
   }, []);
 
   const patch = useCallback((id: string, updater: (item: T) => T) => {

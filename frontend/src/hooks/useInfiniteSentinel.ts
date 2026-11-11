@@ -2,11 +2,6 @@
 
 import { useEffect, useRef } from "react";
 
-/**
- * Gắn vào một phần tử "mốc" ở cuối danh sách: khi nó vào gần khung nhìn thì gọi `onReach`
- * (cuộn vô hạn). Observer dựng lại sau mỗi lần `signal` đổi (vd. số mục) để nếu mốc vẫn còn
- * trong khung nhìn thì tiếp tục tải trang kế.
- */
 export function useInfiniteSentinel(
   onReach: () => void,
   enabled: boolean,

@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Box, Button, Skeleton, Snackbar, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Skeleton,
+  Snackbar,
+  Typography,
+} from "@mui/material";
 import { Sparkles } from "lucide-react";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
 import { summarizeComments } from "@/services/groqApi";
@@ -29,19 +36,29 @@ interface PostCommentSectionProps {
   postAuthorId: string;
   groupId?: string | null;
   currentUserId?: string;
-  /** Báo cho thẻ bài viết cập nhật bộ đếm bình luận (+1 / −1) */
   onCountChange: (delta: number) => void;
 }
 
-/** Khung tải bình luận với hiệu ứng sóng (wave) phong cách Facebook */
 function FacebookCommentSkeleton() {
   return (
-    <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start", py: 0.5, listStyle: "none" }}>
-      {/* Avatar tròn 28px tương đồng với kích thước avatar trong CommentItem */}
-      <Skeleton variant="circular" width={28} height={28} animation="wave" sx={{ flexShrink: 0, mt: 0.5 }} />
+    <Box
+      sx={{
+        display: "flex",
+        gap: 1,
+        alignItems: "flex-start",
+        py: 0.5,
+        listStyle: "none",
+      }}
+    >
+      <Skeleton
+        variant="circular"
+        width={28}
+        height={28}
+        animation="wave"
+        sx={{ flexShrink: 0, mt: 0.5 }}
+      />
 
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        {/* Bong bóng bình luận bo tròn kiểu Facebook */}
         <Box
           sx={{
             bgcolor: "action.hover",
@@ -54,17 +71,61 @@ function FacebookCommentSkeleton() {
           }}
         >
           {/* Tên tác giả */}
-          <Skeleton variant="text" width={100} height={16} animation="wave" sx={{ mb: 0.5, borderRadius: "4px" }} />
+          <Skeleton
+            variant="text"
+            width={100}
+            height={16}
+            animation="wave"
+            sx={{ mb: 0.5, borderRadius: "4px" }}
+          />
           {/* Nội dung bình luận */}
-          <Skeleton variant="text" width="90%" height={14} animation="wave" sx={{ borderRadius: "4px" }} />
-          <Skeleton variant="text" width="60%" height={14} animation="wave" sx={{ borderRadius: "4px" }} />
+          <Skeleton
+            variant="text"
+            width="90%"
+            height={14}
+            animation="wave"
+            sx={{ borderRadius: "4px" }}
+          />
+          <Skeleton
+            variant="text"
+            width="60%"
+            height={14}
+            animation="wave"
+            sx={{ borderRadius: "4px" }}
+          />
         </Box>
 
         {/* Dòng tương tác: Thích · Phản hồi · Thời gian dưới bong bóng */}
-        <Box sx={{ display: "flex", gap: 1.5, mt: 0.5, ml: 1, alignItems: "center" }}>
-          <Skeleton variant="text" width={30} height={12} animation="wave" sx={{ borderRadius: "3px" }} />
-          <Skeleton variant="text" width={42} height={12} animation="wave" sx={{ borderRadius: "3px" }} />
-          <Skeleton variant="text" width={50} height={12} animation="wave" sx={{ borderRadius: "3px" }} />
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1.5,
+            mt: 0.5,
+            ml: 1,
+            alignItems: "center",
+          }}
+        >
+          <Skeleton
+            variant="text"
+            width={30}
+            height={12}
+            animation="wave"
+            sx={{ borderRadius: "3px" }}
+          />
+          <Skeleton
+            variant="text"
+            width={42}
+            height={12}
+            animation="wave"
+            sx={{ borderRadius: "3px" }}
+          />
+          <Skeleton
+            variant="text"
+            width={50}
+            height={12}
+            animation="wave"
+            sx={{ borderRadius: "3px" }}
+          />
         </Box>
       </Box>
     </Box>
@@ -82,7 +143,11 @@ export default function PostCommentSection({
   const { t, tr } = useTranslation();
   const list = usePagedList<CommentView>(
     (after) => fetchComments(postId, { limit: COMMENT_PAGE_SIZE, after }),
-    (err) => apiErrorMessage(err, tr("Không tải được bình luận.", "Could not load comments.")),
+    (err) =>
+      apiErrorMessage(
+        err,
+        tr("Không tải được bình luận.", "Could not load comments."),
+      ),
   );
 
   const [visibleCount, setVisibleCount] = useState(COMMENT_PAGE_SIZE);
@@ -90,7 +155,10 @@ export default function PostCommentSection({
   const [actionError, setActionError] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<CommentView | null>(null);
   const [toReport, setToReport] = useState<CommentView | null>(null);
-  const [reportToast, setReportToast] = useState<{ message: string; severity: "success" | "error" } | null>(null);
+  const [reportToast, setReportToast] = useState<{
+    message: string;
+    severity: "success" | "error";
+  } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
@@ -112,7 +180,12 @@ export default function PostCommentSection({
         setVisibleCount((prev) => prev + COMMENT_PAGE_SIZE);
         setIsRevealingMore(false);
       }, 350);
-    } else if (list.status === "ready" && list.hasMore && !list.isLoadingMore && !list.loadMoreError) {
+    } else if (
+      list.status === "ready" &&
+      list.hasMore &&
+      !list.isLoadingMore &&
+      !list.loadMoreError
+    ) {
       setVisibleCount((prev) => prev + COMMENT_PAGE_SIZE);
       list.loadMore();
     }
@@ -132,7 +205,8 @@ export default function PostCommentSection({
     if (e.deltaY > 0) {
       const el = e.currentTarget;
       if (el.scrollHeight > el.clientHeight && el.scrollTop > 20) {
-        const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        const distanceToBottom =
+          el.scrollHeight - el.scrollTop - el.clientHeight;
         if (distanceToBottom <= 40) {
           handleReachBottom();
         }
@@ -143,22 +217,30 @@ export default function PostCommentSection({
   // Lắng nghe sự kiện socket thời gian thực khi có bình luận mới hoặc xóa bình luận
   useEffect(() => {
     const handleComment = (e: Event) => {
-      const data = (e as CustomEvent<{ postId: string; comment: CommentView }>).detail;
+      const data = (e as CustomEvent<{ postId: string; comment: CommentView }>)
+        .detail;
       if (data && data.postId === postId && data.comment) {
         list.append(data.comment);
       }
     };
     const handleCommentDeleted = (e: Event) => {
-      const data = (e as CustomEvent<{ postId: string; commentId: string }>).detail;
+      const data = (e as CustomEvent<{ postId: string; commentId: string }>)
+        .detail;
       if (data && data.postId === postId && data.commentId) {
         list.remove(data.commentId);
       }
     };
     window.addEventListener("chatapp:post_comment", handleComment);
-    window.addEventListener("chatapp:post_comment_deleted", handleCommentDeleted);
+    window.addEventListener(
+      "chatapp:post_comment_deleted",
+      handleCommentDeleted,
+    );
     return () => {
       window.removeEventListener("chatapp:post_comment", handleComment);
-      window.removeEventListener("chatapp:post_comment_deleted", handleCommentDeleted);
+      window.removeEventListener(
+        "chatapp:post_comment_deleted",
+        handleCommentDeleted,
+      );
     };
   }, [postId, list]);
 
@@ -168,7 +250,12 @@ export default function PostCommentSection({
       const res = await summarizeComments(postId);
       setSummary(res.summary);
     } catch {
-      setActionError(tr("Không thể tóm tắt bình luận lúc này.", "Could not summarize comments at this time."));
+      setActionError(
+        tr(
+          "Không thể tóm tắt bình luận lúc này.",
+          "Could not summarize comments at this time.",
+        ),
+      );
     } finally {
       setLoadingSummary(false);
     }
@@ -190,7 +277,8 @@ export default function PostCommentSection({
         const uploaded = await uploadMedia(file);
         media = {
           url: uploaded.url,
-          type: uploaded.resource_type === "video" || isVideo ? "video" : "image",
+          type:
+            uploaded.resource_type === "video" || isVideo ? "video" : "image",
         };
       }
       const comment = await addComment(postId, content || undefined, media);
@@ -198,7 +286,12 @@ export default function PostCommentSection({
       setVisibleCount((prev) => Math.max(prev, list.items.length + 1));
       onCountChange(1);
     } catch (err) {
-      setActionError(apiErrorMessage(err, tr("Không gửi được bình luận.", "Could not send comment.")));
+      setActionError(
+        apiErrorMessage(
+          err,
+          tr("Không gửi được bình luận.", "Could not send comment."),
+        ),
+      );
     } finally {
       setSending(false);
     }
@@ -213,30 +306,50 @@ export default function PostCommentSection({
       onCountChange(-1);
       setToDelete(null);
     } catch (err) {
-      setActionError(apiErrorMessage(err, tr("Không xóa được bình luận.", "Could not delete comment.")));
+      setActionError(
+        apiErrorMessage(
+          err,
+          tr("Không xóa được bình luận.", "Could not delete comment."),
+        ),
+      );
       setToDelete(null);
     } finally {
       setDeleting(false);
     }
   };
 
-  const handleToggleCommentReaction = async (comment: CommentView, type?: ReactionType) => {
-    const targetType = type ?? (comment.myReaction ? comment.myReaction : "like");
-    const isUnreact = Boolean(comment.likedByMe && (!type || comment.myReaction === type));
+  const handleToggleCommentReaction = async (
+    comment: CommentView,
+    type?: ReactionType,
+  ) => {
+    const targetType =
+      type ?? (comment.myReaction ? comment.myReaction : "like");
+    const isUnreact = Boolean(
+      comment.likedByMe && (!type || comment.myReaction === type),
+    );
     const nextReaction = isUnreact ? null : targetType;
     const nextLiked = !isUnreact;
 
     list.patch(comment._id, (c) => {
-      const nextReactionsCount: Record<string, number> = { ...(c.reactionsCount || {}) };
+      const nextReactionsCount: Record<string, number> = {
+        ...(c.reactionsCount || {}),
+      };
       if (isUnreact) {
         if (c.myReaction && nextReactionsCount[c.myReaction]) {
-          nextReactionsCount[c.myReaction] = Math.max(0, nextReactionsCount[c.myReaction] - 1);
+          nextReactionsCount[c.myReaction] = Math.max(
+            0,
+            nextReactionsCount[c.myReaction] - 1,
+          );
         }
       } else {
         if (c.myReaction && nextReactionsCount[c.myReaction]) {
-          nextReactionsCount[c.myReaction] = Math.max(0, nextReactionsCount[c.myReaction] - 1);
+          nextReactionsCount[c.myReaction] = Math.max(
+            0,
+            nextReactionsCount[c.myReaction] - 1,
+          );
         }
-        nextReactionsCount[targetType] = (nextReactionsCount[targetType] || 0) + 1;
+        nextReactionsCount[targetType] =
+          (nextReactionsCount[targetType] || 0) + 1;
       }
       return {
         ...c,
@@ -244,7 +357,12 @@ export default function PostCommentSection({
         myReaction: nextReaction,
         likeCount: Math.max(
           0,
-          (c.likeCount ?? 0) + (nextLiked && !c.likedByMe ? 1 : !nextLiked && c.likedByMe ? -1 : 0),
+          (c.likeCount ?? 0) +
+            (nextLiked && !c.likedByMe
+              ? 1
+              : !nextLiked && c.likedByMe
+                ? -1
+                : 0),
         ),
         reactionsCount: nextReactionsCount as Record<ReactionType, number>,
       };
@@ -257,7 +375,9 @@ export default function PostCommentSection({
         likedByMe: res.liked,
         myReaction: res.myReaction,
         likeCount: res.likeCount,
-        reactionsCount: res.reactionsCount as Record<ReactionType, number> | undefined,
+        reactionsCount: res.reactionsCount as
+          | Record<ReactionType, number>
+          | undefined,
       }));
     } catch {
       list.patch(comment._id, (c) => ({
@@ -314,7 +434,10 @@ export default function PostCommentSection({
                   px: 1.2,
                 }}
               >
-                {tr("Tóm tắt bình luận (Llama 3.3)", "Summarize comments (Llama 3.3)")}
+                {tr(
+                  "Tóm tắt bình luận (Llama 3.3)",
+                  "Summarize comments (Llama 3.3)",
+                )}
               </Button>
             </Box>
           )}
@@ -328,7 +451,10 @@ export default function PostCommentSection({
           />
           {list.items.length === 0 ? (
             <Typography variant="body2" color="text.secondary" sx={{ py: 0.5 }}>
-              {tr("Chưa có bình luận nào. Hãy là người đầu tiên!", "No comments yet. Be the first to comment!")}
+              {tr(
+                "Chưa có bình luận nào. Hãy là người đầu tiên!",
+                "No comments yet. Be the first to comment!",
+              )}
             </Typography>
           ) : (
             <Box
@@ -358,7 +484,10 @@ export default function PostCommentSection({
                   key={c._id}
                   comment={c}
                   currentUserId={currentUserId}
-                  canDelete={c.author._id === currentUserId || postAuthorId === currentUserId}
+                  canDelete={
+                    c.author._id === currentUserId ||
+                    postAuthorId === currentUserId
+                  }
                   onDelete={setToDelete}
                   onReport={setToReport}
                   onToggleReaction={handleToggleCommentReaction}
@@ -367,7 +496,14 @@ export default function PostCommentSection({
 
               {/* Khung tải bình luận phong cách Facebook */}
               {(list.isLoadingMore || isRevealingMore) && (
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25, py: 0.5 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1.25,
+                    py: 0.5,
+                  }}
+                >
                   <FacebookCommentSkeleton />
                   <FacebookCommentSkeleton />
                 </Box>
@@ -400,7 +536,11 @@ export default function PostCommentSection({
       )}
 
       {actionError && (
-        <Alert severity="error" sx={{ mt: 1 }} onClose={() => setActionError(null)}>
+        <Alert
+          severity="error"
+          sx={{ mt: 1 }}
+          onClose={() => setActionError(null)}
+        >
           {actionError}
         </Alert>
       )}
@@ -420,7 +560,10 @@ export default function PostCommentSection({
             <>
               {tr("Bình luận của ", "Comment by ")}
               <strong>{toDelete.author.name}</strong>
-              {tr(" sẽ bị xóa và không thể khôi phục.", " will be permanently deleted.")}
+              {tr(
+                " sẽ bị xóa và không thể khôi phục.",
+                " will be permanently deleted.",
+              )}
             </>
           ) : (
             ""
@@ -437,7 +580,9 @@ export default function PostCommentSection({
         comment={toReport}
         groupId={groupId}
         onClose={() => setToReport(null)}
-        onSuccess={(msg) => setReportToast({ message: msg, severity: "success" })}
+        onSuccess={(msg) =>
+          setReportToast({ message: msg, severity: "success" })
+        }
         onError={(msg) => setReportToast({ message: msg, severity: "error" })}
       />
 

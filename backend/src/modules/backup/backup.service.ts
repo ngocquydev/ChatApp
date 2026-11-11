@@ -26,9 +26,7 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
   private backupTimer: NodeJS.Timeout | null = null;
   private readonly backupDir: string;
 
-  constructor(
-    @InjectConnection() private readonly connection: Connection,
-  ) {
+  constructor(@InjectConnection() private readonly connection: Connection) {
     this.backupDir = path.resolve(process.cwd(), 'backups');
     if (!fs.existsSync(this.backupDir)) {
       fs.mkdirSync(this.backupDir, { recursive: true });
@@ -38,7 +36,9 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
   onModuleInit(): void {
     this.scheduleNextBackup();
     this.cleanExpiredBackups().catch((err) => {
-      this.logger.warn(`Dọn dẹp bản sao lưu cũ thất bại: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.warn(
+        `Dọn dẹp bản sao lưu cũ thất bại: ${err instanceof Error ? err.message : String(err)}`,
+      );
     });
   }
 
@@ -48,17 +48,11 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       this.backupTimer = null;
     }
   }
-
-  /**
-   * Tính toán thời gian (ms) còn lại đến 17:00 (5:00 PM) theo giờ Việt Nam (UTC+7)
-   */
   public getNextScheduledTime(): Date {
     const now = new Date();
-    // 17:00 hàng ngày theo giờ Việt Nam (UTC+7) tương ứng với 10:00 UTC
     const target = new Date(now);
     target.setUTCHours(10, 0, 0, 0);
 
-    // Nếu thời điểm hiện tại đã qua 10:00 UTC (17:00 VN), chuyển sang ngày tiếp theo
     if (now.getTime() >= target.getTime()) {
       target.setUTCDate(target.getUTCDate() + 1);
     }
@@ -66,17 +60,17 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     return target;
   }
 
-  /**
-   * Thiết lập hẹn giờ tự động sao lưu lúc 17:00 hàng ngày
-   */
   public scheduleNextBackup(): void {
     const nextTime = this.getNextScheduledTime();
     const delayMs = Math.max(1000, nextTime.getTime() - Date.now());
 
     this.logger.log(
-      `[Auto Backup] Đã lên lịch sao lưu tự động tiếp theo: ${nextTime.toLocaleString('vi-VN', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-      })} (sau ${Math.round(delayMs / 1000 / 60)} phút)`,
+      `[Auto Backup] Đã lên lịch sao lưu tự động tiếp theo: ${nextTime.toLocaleString(
+        'vi-VN',
+        {
+          timeZone: 'Asia/Ho_Chi_Minh',
+        },
+      )} (sau ${Math.round(delayMs / 1000 / 60)} phút)`,
     );
 
     if (this.backupTimer) {
@@ -85,9 +79,13 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
 
     this.backupTimer = setTimeout(async () => {
       try {
-        this.logger.log('⏰ [Auto Backup] Đang thực thi sao lưu định kỳ lúc 17:00...');
+        this.logger.log(
+          '⏰ [Auto Backup] Đang thực thi sao lưu định kỳ lúc 17:00...',
+        );
         await this.createBackup('scheduled', 'system_scheduler');
-        this.logger.log('✅ [Auto Backup] Sao lưu định kỳ 17:00 hoàn tất thành công!');
+        this.logger.log(
+          '✅ [Auto Backup] Sao lưu định kỳ 17:00 hoàn tất thành công!',
+        );
       } catch (err: unknown) {
         this.logger.error(
           `❌ [Auto Backup] Sao lưu định kỳ 17:00 thất bại: ${
@@ -102,9 +100,6 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     this.backupTimer.unref();
   }
 
-  /**
-   * Tạo bản sao lưu mới (hỗ trợ mongodump qua Docker container hoặc native Mongoose streaming)
-   */
   async createBackup(
     trigger: 'manual' | 'scheduled' = 'manual',
     requestedBy = 'admin',
@@ -119,16 +114,19 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
 
     let createdSuccess = false;
 
-    // 1. Thử dùng mongodump qua Docker container 'chat_mongo' (Tốc độ C++ nhanh nhất)
     try {
       const containerTmpPath = `/tmp/${filename}`;
       await execAsync(
         `docker exec chat_mongo mongodump --db=chatapp --archive=${containerTmpPath} --gzip`,
       );
-      await execAsync(`docker cp chat_mongo:${containerTmpPath} "${targetPath}"`);
+      await execAsync(
+        `docker cp chat_mongo:${containerTmpPath} "${targetPath}"`,
+      );
       await execAsync(`docker exec chat_mongo rm -f ${containerTmpPath}`);
       createdSuccess = true;
-      this.logger.log(`Tạo bản sao lưu thành công qua Docker mongodump: ${filename}`);
+      this.logger.log(
+        `Tạo bản sao lưu thành công qua Docker mongodump: ${filename}`,
+      );
     } catch (dockerErr: unknown) {
       this.logger.warn(
         `Docker mongodump không khả dụng, chuyển sang chế độ Native Mongoose: ${
@@ -136,14 +134,13 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
         }`,
       );
     }
-
-    // 2. Fallback sang Native Mongoose Dump nếu Docker không khả dụng
     if (!createdSuccess) {
       await this.nativeMongooseDump(targetPath);
-      this.logger.log(`Tạo bản sao lưu thành công qua Native Mongoose Dump: ${filename}`);
+      this.logger.log(
+        `Tạo bản sao lưu thành công qua Native Mongoose Dump: ${filename}`,
+      );
     }
 
-    // 3. Tính toán kích thước và mã SHA256 checksum
     const stats = fs.statSync(targetPath);
     const sha256 = await this.calculateSha256(targetPath);
 
@@ -161,15 +158,11 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     const metaPath = path.join(this.backupDir, `${filename}.meta.json`);
     fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
 
-    // 4. Dọn dẹp bản sao lưu cũ theo chính sách Retention
     await this.cleanExpiredBackups();
 
     return meta;
   }
 
-  /**
-   * Sao lưu trực tiếp tất cả collections qua Mongoose stream và nén Gzip (Zero dependency)
-   */
   private async nativeMongooseDump(targetPath: string): Promise<void> {
     const db = this.connection.db;
     if (!db) {
@@ -183,7 +176,6 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
 
     for (const colInfo of collections) {
       const colName = colInfo.name;
-      // Ghi header tên collection
       gzip.write(`###COLLECTION:${colName}###\n`);
       const cursor = db.collection(colName).find();
 
@@ -201,9 +193,6 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  /**
-   * Lấy danh sách toàn bộ các bản sao lưu hiện có kèm siêu dữ liệu
-   */
   async listBackups(): Promise<BackupListResponse> {
     const files = fs.readdirSync(this.backupDir);
     const backupFiles = files.filter((f) => f.endsWith('.archive.gz'));
@@ -220,9 +209,7 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
           const meta = JSON.parse(content) as BackupFileInfo;
           list.push(meta);
           continue;
-        } catch {
-          // Bỏ qua lỗi đọc meta và tạo từ stat
-        }
+        } catch {}
       }
 
       const stats = fs.statSync(fullPath);
@@ -237,8 +224,10 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       });
     }
 
-    // Sắp xếp mới nhất lên đầu
-    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    list.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
 
     return {
       backups: list,
@@ -248,10 +237,9 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  /**
-   * Khôi phục CSDL từ bản sao lưu đã chọn
-   */
-  async restoreBackup(filename: string): Promise<{ success: boolean; message: string }> {
+  async restoreBackup(
+    filename: string,
+  ): Promise<{ success: boolean; message: string }> {
     const safeFilename = path.basename(filename);
     const fullPath = path.join(this.backupDir, safeFilename);
 
@@ -261,7 +249,6 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
 
     let restoredSuccess = false;
 
-    // 1. Thử dùng mongorestore qua Docker container 'chat_mongo'
     try {
       const containerTmpPath = `/tmp/${safeFilename}`;
       await execAsync(`docker cp "${fullPath}" chat_mongo:${containerTmpPath}`);
@@ -270,7 +257,9 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       );
       await execAsync(`docker exec chat_mongo rm -f ${containerTmpPath}`);
       restoredSuccess = true;
-      this.logger.log(`Khôi phục thành công qua Docker mongorestore: ${safeFilename}`);
+      this.logger.log(
+        `Khôi phục thành công qua Docker mongorestore: ${safeFilename}`,
+      );
     } catch (dockerErr: unknown) {
       this.logger.warn(
         `Docker mongorestore không khả dụng, chuyển sang chế độ Native Mongoose: ${
@@ -278,11 +267,11 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
         }`,
       );
     }
-
-    // 2. Fallback sang Native Mongoose Restore nếu file là dạng NDJSON
     if (!restoredSuccess) {
       await this.nativeMongooseRestore(fullPath);
-      this.logger.log(`Khôi phục thành công qua Native Mongoose Restore: ${safeFilename}`);
+      this.logger.log(
+        `Khôi phục thành công qua Native Mongoose Restore: ${safeFilename}`,
+      );
     }
 
     return {
@@ -291,9 +280,6 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  /**
-   * Khôi phục trực tiếp qua Mongoose từ stream Gzip
-   */
   private async nativeMongooseRestore(fullPath: string): Promise<void> {
     const db = this.connection.db;
     if (!db) {
@@ -325,7 +311,9 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
 
         if (trimmed.startsWith('###COLLECTION:') && trimmed.endsWith('###')) {
           await flushBatch();
-          currentCollection = trimmed.replace('###COLLECTION:', '').replace('###', '');
+          currentCollection = trimmed
+            .replace('###COLLECTION:', '')
+            .replace('###', '');
           await db.collection(currentCollection).deleteMany({});
         } else if (currentCollection) {
           try {
@@ -334,9 +322,7 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
             if (batch.length >= 500) {
               await flushBatch();
             }
-          } catch {
-            // Bỏ qua dòng json lỗi
-          }
+          } catch {}
         }
       }
     });
@@ -355,9 +341,6 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  /**
-   * Xóa bản sao lưu
-   */
   async deleteBackup(filename: string): Promise<boolean> {
     const safeFilename = path.basename(filename);
     const fullPath = path.join(this.backupDir, safeFilename);
@@ -376,9 +359,6 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     return true;
   }
 
-  /**
-   * Lấy đường dẫn tệp sao lưu để tải về (kèm kiểm tra an toàn)
-   */
   getBackupFilePath(filename: string): string {
     const safeFilename = path.basename(filename);
     const fullPath = path.join(this.backupDir, safeFilename);
@@ -390,9 +370,6 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     return fullPath;
   }
 
-  /**
-   * Dọn dẹp bản sao lưu quá 7 ngày hoặc vượt quá số lượng tối đa (MAX_RETAINED_BACKUPS)
-   */
   async cleanExpiredBackups(): Promise<number> {
     const { backups } = await this.listBackups();
     let deletedCount = 0;
@@ -400,7 +377,6 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     const now = Date.now();
     const maxAgeMs = RETENTION_DAYS * 24 * 3600 * 1000;
 
-    // 1. Xóa các bản sao lưu cũ hơn 7 ngày
     for (const b of backups) {
       const ageMs = now - new Date(b.createdAt).getTime();
       if (ageMs > maxAgeMs) {
@@ -409,7 +385,6 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    // 2. Nếu vẫn còn nhiều hơn MAX_RETAINED_BACKUPS (10), giữ lại 10 bản mới nhất và xóa phần còn lại
     const remaining = (await this.listBackups()).backups;
     if (remaining.length > MAX_RETAINED_BACKUPS) {
       const toDelete = remaining.slice(MAX_RETAINED_BACKUPS);
@@ -420,9 +395,10 @@ export class BackupService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (deletedCount > 0) {
-      this.logger.log(`[Retention] Đã tự động dọn dẹp ${deletedCount} bản sao lưu cũ hết hạn.`);
+      this.logger.log(
+        `[Retention] Đã tự động dọn dẹp ${deletedCount} bản sao lưu cũ hết hạn.`,
+      );
     }
-
     return deletedCount;
   }
 

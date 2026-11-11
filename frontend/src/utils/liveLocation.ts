@@ -1,14 +1,15 @@
-/**
- * Tiện ích dùng chung cho tính năng chia sẻ vị trí trực tiếp (Live Location).
- */
-
 type Translate = (vi: string, en: string) => string;
 
 const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR;
 
 /** Các mốc thời lượng chia sẻ trực tiếp (đơn vị: phút) — giống Zalo/Telegram. */
-export const LIVE_DURATION_OPTIONS = [15, 60, 8 * MINUTES_PER_HOUR, MINUTES_PER_DAY] as const;
+export const LIVE_DURATION_OPTIONS = [
+  15,
+  60,
+  8 * MINUTES_PER_HOUR,
+  MINUTES_PER_DAY,
+] as const;
 
 export type LiveDurationMinutes = (typeof LIVE_DURATION_OPTIONS)[number];
 
@@ -43,9 +44,9 @@ export function formatLiveRemaining(
       ? tr(`Còn ${hours} giờ ${mins} phút`, `${hours}h ${mins}m left`)
       : tr(`Còn ${hours} giờ`, `${hours}h left`);
   }
-  if (totalMinutes > 0) return tr(`Còn ${totalMinutes} phút`, `${totalMinutes}m left`);
+  if (totalMinutes > 0)
+    return tr(`Còn ${totalMinutes} phút`, `${totalMinutes}m left`);
 
   const secs = Math.floor(diffMs / 1000);
   return tr(`Còn ${secs} giây`, `${secs}s left`);
 }
-

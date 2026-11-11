@@ -1,8 +1,16 @@
-import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { Readable } from 'node:stream';
-import type { CloudinaryUploadResult, UploadOptions } from './cloudinary.interface.js';
+import type {
+  CloudinaryUploadResult,
+  UploadOptions,
+} from './cloudinary.interface.js';
 
 @Injectable()
 export class CloudinaryService {
@@ -18,7 +26,9 @@ export class CloudinaryService {
     if (this.configured) {
       this.logger.log(`Cloudinary đã được cấu hình với cloud: ${cloudName}`);
     } else {
-      this.logger.warn('Cloudinary chưa được cấu hình (thiếu CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET)');
+      this.logger.warn(
+        'Cloudinary chưa được cấu hình (thiếu CLOUDINARY_CLOUD_NAME / API_KEY / API_SECRET)',
+      );
     }
   }
 
@@ -26,15 +36,14 @@ export class CloudinaryService {
     return this.configured;
   }
 
-  /**
-   * Tải buffer tệp (ảnh hoặc video) lên Cloudinary qua luồng stream
-   */
   async uploadBuffer(
     buffer: Buffer,
     options: UploadOptions = {},
   ): Promise<CloudinaryUploadResult> {
     if (!this.configured) {
-      throw new InternalServerErrorException('Dịch vụ lưu trữ Cloudinary chưa được cấu hình');
+      throw new InternalServerErrorException(
+        'Dịch vụ lưu trữ Cloudinary chưa được cấu hình',
+      );
     }
     if (!buffer || buffer.length === 0) {
       throw new BadRequestException('Tệp tải lên không hợp lệ hoặc rỗng');
@@ -54,8 +63,14 @@ export class CloudinaryService {
         },
         (error, result: UploadApiResponse | undefined) => {
           if (error || !result) {
-            this.logger.error(`Lỗi tải lên Cloudinary: ${error?.message || 'Không có kết quả trả về'}`);
-            return reject(new BadRequestException(`Tải lên Cloudinary thất bại: ${error?.message || 'Lỗi không xác định'}`));
+            this.logger.error(
+              `Lỗi tải lên Cloudinary: ${error?.message || 'Không có kết quả trả về'}`,
+            );
+            return reject(
+              new BadRequestException(
+                `Tải lên Cloudinary thất bại: ${error?.message || 'Lỗi không xác định'}`,
+              ),
+            );
           }
 
           resolve({
@@ -76,23 +91,25 @@ export class CloudinaryService {
     });
   }
 
-  /**
-   * Tải ảnh/video base64 hoặc Data URI lên Cloudinary
-   */
   async uploadBase64(
     base64Str: string,
     options: UploadOptions = {},
   ): Promise<CloudinaryUploadResult> {
     if (!this.configured) {
-      throw new InternalServerErrorException('Dịch vụ lưu trữ Cloudinary chưa được cấu hình');
+      throw new InternalServerErrorException(
+        'Dịch vụ lưu trữ Cloudinary chưa được cấu hình',
+      );
     }
     if (!base64Str || !base64Str.trim()) {
       throw new BadRequestException('Dữ liệu tải lên rỗng');
     }
-
-    // Phòng thủ theo chiều sâu chống SSRF: Chỉ chấp nhận Data URI hợp lệ, chặn truyền URL từ xa vào SDK
-    if (!base64Str.startsWith('data:image/') && !base64Str.startsWith('data:video/')) {
-      throw new BadRequestException('Dữ liệu tải lên phải là Data URI hợp lệ (data:image/... hoặc data:video/...)');
+    if (
+      !base64Str.startsWith('data:image/') &&
+      !base64Str.startsWith('data:video/')
+    ) {
+      throw new BadRequestException(
+        'Dữ liệu tải lên phải là Data URI hợp lệ (data:image/... hoặc data:video/...)',
+      );
     }
 
     const folder = options.folder ?? 'chatapp/avatars';
@@ -122,9 +139,6 @@ export class CloudinaryService {
     }
   }
 
-  /**
-   * Xóa tệp khỏi Cloudinary bằng public_id
-   */
   async deleteFile(
     publicId: string,
     resourceType: 'image' | 'video' | 'raw' = 'image',

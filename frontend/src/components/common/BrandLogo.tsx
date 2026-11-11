@@ -6,14 +6,10 @@ import { Box } from "@mui/material";
 import logoImg from "@/assets/logo/Logo.png";
 
 interface BrandLogoProps {
-  /** Ẩn chữ, chỉ hiển thị biểu tượng (giữ lại để tương thích các nơi gọi cũ). */
   iconOnly?: boolean;
-  /** Đường dẫn khi bấm vào logo. Bỏ trống để render không có link. */
   href?: string;
   size?: number;
 }
-
-/** Logo thương hiệu duy nhất của ứng dụng — hiển thị logo hình ảnh từ assets/logo/Logo.png (không kèm chữ ChatApp). */
 export default function BrandLogo({ href = "/", size = 40 }: BrandLogoProps) {
   const content = (
     <Box
@@ -57,7 +53,12 @@ export default function BrandLogo({ href = "/", size = 40 }: BrandLogoProps) {
     <Link
       href={href}
       aria-label="Về trang chủ"
-      style={{ color: "inherit", textDecoration: "none", display: "inline-flex", borderRadius: 12 }}
+      style={{
+        color: "inherit",
+        textDecoration: "none",
+        display: "inline-flex",
+        borderRadius: 12,
+      }}
     >
       {content}
     </Link>

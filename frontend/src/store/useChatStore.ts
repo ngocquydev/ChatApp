@@ -100,12 +100,30 @@ interface ChatState {
   selectConversation: (conversation: ConversationItem) => Promise<void>;
   clearActiveConversation: () => void;
   startConversationWithUser: (user: ChatUser) => Promise<ConversationItem>;
-  createGroupChat: (name: string, memberIds: string[], avatar?: string) => Promise<ConversationItem>;
-  addGroupMembers: (conversationId: string, memberIds: string[]) => Promise<void>;
-  removeGroupMember: (conversationId: string, memberId: string) => Promise<void>;
-  updateGroupInfo: (conversationId: string, data: { name?: string; avatar?: string }) => Promise<void>;
-  promoteGroupAdmin: (conversationId: string, targetUserId: string) => Promise<void>;
-  fetchGroupDetails: (conversationId: string) => Promise<ConversationItem | null>;
+  createGroupChat: (
+    name: string,
+    memberIds: string[],
+    avatar?: string,
+  ) => Promise<ConversationItem>;
+  addGroupMembers: (
+    conversationId: string,
+    memberIds: string[],
+  ) => Promise<void>;
+  removeGroupMember: (
+    conversationId: string,
+    memberId: string,
+  ) => Promise<void>;
+  updateGroupInfo: (
+    conversationId: string,
+    data: { name?: string; avatar?: string },
+  ) => Promise<void>;
+  promoteGroupAdmin: (
+    conversationId: string,
+    targetUserId: string,
+  ) => Promise<void>;
+  fetchGroupDetails: (
+    conversationId: string,
+  ) => Promise<ConversationItem | null>;
   sendMessage: (
     text: string,
     options?: {
@@ -114,13 +132,30 @@ interface ChatState {
     },
   ) => Promise<void>;
   sendTyping: (isTyping: boolean) => void;
-  deleteChatMessage: (messageId: string) => Promise<{ success: boolean; message?: string }>;
-  updateActiveConversationTheme: (theme: string) => Promise<{ success: boolean; message?: string }>;
-  blockActiveConversation: () => Promise<{ success: boolean; message?: string }>;
-  unblockActiveConversation: () => Promise<{ success: boolean; message?: string }>;
-  restrictActiveConversation: (restrict: boolean) => Promise<{ success: boolean; message?: string }>;
-  deleteConversation: (conversationId: string) => Promise<{ success: boolean; message?: string }>;
-  updateLiveLocation: (messageId: string, location: Partial<LocationData>) => void;
+  deleteChatMessage: (
+    messageId: string,
+  ) => Promise<{ success: boolean; message?: string }>;
+  updateActiveConversationTheme: (
+    theme: string,
+  ) => Promise<{ success: boolean; message?: string }>;
+  blockActiveConversation: () => Promise<{
+    success: boolean;
+    message?: string;
+  }>;
+  unblockActiveConversation: () => Promise<{
+    success: boolean;
+    message?: string;
+  }>;
+  restrictActiveConversation: (
+    restrict: boolean,
+  ) => Promise<{ success: boolean; message?: string }>;
+  deleteConversation: (
+    conversationId: string,
+  ) => Promise<{ success: boolean; message?: string }>;
+  updateLiveLocation: (
+    messageId: string,
+    location: Partial<LocationData>,
+  ) => void;
   stopLiveLocation: (messageId: string) => void;
   reactToMessage: (messageId: string, type: string) => Promise<void>;
 }
@@ -136,7 +171,7 @@ let mqttUnbinders: (() => void)[] = [];
 const updateStoreTyping = (
   set: (fn: (state: ChatState) => Partial<ChatState>) => void,
   conversationId: string,
-  isTyping: boolean
+  isTyping: boolean,
 ) => {
   if (typingExpiryTimers.has(conversationId)) {
     clearTimeout(typingExpiryTimers.get(conversationId)!);
@@ -166,8 +201,12 @@ function dedupeConversations(list: ConversationItem[]): ConversationItem[] {
     const aHasMsg = Boolean(a.lastMessage?.text);
     const bHasMsg = Boolean(b.lastMessage?.text);
     if (aHasMsg !== bHasMsg) return bHasMsg ? 1 : -1;
-    const aTime = new Date(a.lastMessage?.createdAt || a.updatedAt || 0).getTime();
-    const bTime = new Date(b.lastMessage?.createdAt || b.updatedAt || 0).getTime();
+    const aTime = new Date(
+      a.lastMessage?.createdAt || a.updatedAt || 0,
+    ).getTime();
+    const bTime = new Date(
+      b.lastMessage?.createdAt || b.updatedAt || 0,
+    ).getTime();
     return bTime - aTime;
   });
 
@@ -206,161 +245,154 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!currentUserId) {
       return;
     }
-
-    // 1. KẾT NỐI MQTT OVER WEBSOCKET BROKER (PROTOCOL BUFFERS BINARY CHAT)
     const token = useAuthStore.getState().accessToken || "";
     mqttChatClient.connect(token, currentUserId);
     const isMqtt = mqttChatClient.getIsConnected();
     if (get().isMqttConnected !== isMqtt) {
       set({ isMqttConnected: isMqtt });
     }
-
-    // Hủy các listener cũ trước khi đăng ký mới để tránh trùng lặp
     mqttUnbinders.forEach((unsub) => unsub());
     mqttUnbinders = [];
 
-      // Lắng nghe tin nhắn mới nhị phân qua MQTT
-      const unbindMsg = mqttChatClient.onMessage((newMsg) => {
-        const active = get().activeConversation;
-        const msgConvId = String(newMsg.conversationId || "");
-        const activeConvId = String(active?._id || "");
-        const myId = String(
-          useAuthStore.getState().user?._id ||
-            useAuthStore.getState().user?.id ||
-            ""
+    const unbindMsg = mqttChatClient.onMessage((newMsg) => {
+      const active = get().activeConversation;
+      const msgConvId = String(newMsg.conversationId || "");
+      const activeConvId = String(active?._id || "");
+      const myId = String(
+        useAuthStore.getState().user?._id ||
+          useAuthStore.getState().user?.id ||
+          "",
+      );
+      const senderId = String(newMsg.senderId || "");
+      const receiverId = String(newMsg.receiverId || "");
+
+      const partner = active?.participants?.find(
+        (p) => String(p._id || p.id) !== myId,
+      );
+      const partnerId = String(partner?._id || partner?.id || "");
+
+      const isMatchActive =
+        Boolean(active) &&
+        ((Boolean(msgConvId) &&
+          Boolean(activeConvId) &&
+          activeConvId === msgConvId) ||
+          (Boolean(partnerId) &&
+            ((senderId === partnerId && receiverId === myId) ||
+              (senderId === myId && receiverId === partnerId))));
+
+      if (senderId && senderId !== myId) {
+        const conv = get().conversations.find(
+          (c) => String(c._id) === msgConvId,
         );
-        const senderId = String(newMsg.senderId || "");
-        const receiverId = String(newMsg.receiverId || "");
-
-        const partner = active?.participants?.find(
-          (p) => String(p._id || p.id) !== myId
+        const partnerName =
+          conv?.participants?.find((p) => String(p._id || p.id) === senderId)
+            ?.name || partner?.name;
+        soundNotification.playIncomingSound(
+          newMsg._id || newMsg.id,
+          partnerName,
         );
-        const partnerId = String(partner?._id || partner?.id || "");
+      }
 
-        const isMatchActive =
-          Boolean(active) &&
-          ((Boolean(msgConvId) && Boolean(activeConvId) && activeConvId === msgConvId) ||
-            (Boolean(partnerId) &&
-              ((senderId === partnerId && receiverId === myId) ||
-                (senderId === myId && receiverId === partnerId))));
-
-        // Phát âm thanh khi người khác nhắn tin cho mình
-        if (senderId && senderId !== myId) {
-          const conv = get().conversations.find((c) => String(c._id) === msgConvId);
-          const partnerName =
-            conv?.participants?.find(
-              (p) => String(p._id || p.id) === senderId
-            )?.name || partner?.name;
-          soundNotification.playIncomingSound(
-            newMsg._id || newMsg.id,
-            partnerName
-          );
-        }
-
-        if (isMatchActive) {
-          set((state) => {
-            const realId = String(newMsg._id || newMsg.id);
-            const exists = state.messages.some(
-              (m) => !m.isOptimistic && String(m._id || m.id) === realId
-            );
-            if (exists) return state;
-
-            // Nếu người gửi là chính mình, thay thế tin nhắn optimistic
-            if (senderId === myId) {
-              const optIndex = state.messages.findIndex(
-                (m) => m.isOptimistic && m.text.trim() === (newMsg.text || "").trim()
-              );
-              if (optIndex !== -1) {
-                const nextMessages = [...state.messages];
-                nextMessages[optIndex] = {
-                  ...newMsg,
-                  isOptimistic: false,
-                  status: "sent",
-                } as unknown as ChatMessage;
-                return { messages: nextMessages };
-              }
-            }
-
-            return { messages: [...state.messages, newMsg as unknown as ChatMessage] };
-          });
-
-          mqttChatClient.sendRead(msgConvId || activeConvId, newMsg.senderId);
-        }
-
+      if (isMatchActive) {
         set((state) => {
-          const updated = state.conversations.map((c) => {
-            const isThisConv =
-              (Boolean(msgConvId) && String(c._id) === msgConvId) ||
-              (c.participants.some((p) => String(p._id || p.id) === senderId) &&
-                c.participants.some((p) => String(p._id || p.id) === receiverId));
-
-            if (isThisConv) {
-              const currentUnread =
-                (c.unreadCounts && c.unreadCounts[myId]) || 0;
-              const isNotActive = !active || String(active._id) !== String(c._id);
-              return {
-                ...c,
-                lastMessage: {
-                  text: newMsg.text,
-                  senderId: newMsg.senderId,
-                  createdAt: newMsg.createdAt,
-                },
-                unreadCounts:
-                  isNotActive && senderId !== myId
-                    ? { ...c.unreadCounts, [myId]: currentUnread + 1 }
-                    : c.unreadCounts,
-                updatedAt: new Date().toISOString(),
-              };
-            }
-            return c;
-          });
-
-          updated.sort(
-            (a, b) =>
-              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          const realId = String(newMsg._id || newMsg.id);
+          const exists = state.messages.some(
+            (m) => !m.isOptimistic && String(m._id || m.id) === realId,
           );
+          if (exists) return state;
+          if (senderId === myId) {
+            const optIndex = state.messages.findIndex(
+              (m) =>
+                m.isOptimistic && m.text.trim() === (newMsg.text || "").trim(),
+            );
+            if (optIndex !== -1) {
+              const nextMessages = [...state.messages];
+              nextMessages[optIndex] = {
+                ...newMsg,
+                isOptimistic: false,
+                status: "sent",
+              } as unknown as ChatMessage;
+              return { messages: nextMessages };
+            }
+          }
 
-          return { conversations: updated };
+          return {
+            messages: [...state.messages, newMsg as unknown as ChatMessage],
+          };
         });
-      });
-      mqttUnbinders.push(unbindMsg);
 
-      // Lắng nghe typing nhị phân
-      const unbindTyping = mqttChatClient.onTyping((data) => {
-        if (!data?.conversationId) return;
-        updateStoreTyping(set, data.conversationId, data.isTyping);
-      });
-      mqttUnbinders.push(unbindTyping);
+        mqttChatClient.sendRead(msgConvId || activeConvId, newMsg.senderId);
+      }
 
-      // Lắng nghe seen nhị phân
-      const unbindSeen = mqttChatClient.onSeen((data) => {
-        const active = get().activeConversation;
-        if (active && active._id === data.conversationId) {
-          set((state) => ({
-            messages: state.messages.map((m) => ({
-              ...m,
-              readAt: m.readAt || data.readAt,
-            })),
-          }));
-        }
-      });
-      mqttUnbinders.push(unbindSeen);
+      set((state) => {
+        const updated = state.conversations.map((c) => {
+          const isThisConv =
+            (Boolean(msgConvId) && String(c._id) === msgConvId) ||
+            (c.participants.some((p) => String(p._id || p.id) === senderId) &&
+              c.participants.some((p) => String(p._id || p.id) === receiverId));
 
-      // Lắng nghe presence nhị phân
-      const unbindPresence = mqttChatClient.onPresence((data) => {
-        if (data.onlineUserIds && data.onlineUserIds.length > 0) {
-          set({ onlineUserIds: data.onlineUserIds });
-        } else if (data.userId) {
-          set((state) => ({
-            onlineUserIds: data.isOnline
-              ? Array.from(new Set([...state.onlineUserIds, data.userId]))
-              : state.onlineUserIds.filter((id) => id !== data.userId),
-          }));
-        }
-      });
-      mqttUnbinders.push(unbindPresence);
+          if (isThisConv) {
+            const currentUnread = (c.unreadCounts && c.unreadCounts[myId]) || 0;
+            const isNotActive = !active || String(active._id) !== String(c._id);
+            return {
+              ...c,
+              lastMessage: {
+                text: newMsg.text,
+                senderId: newMsg.senderId,
+                createdAt: newMsg.createdAt,
+              },
+              unreadCounts:
+                isNotActive && senderId !== myId
+                  ? { ...c.unreadCounts, [myId]: currentUnread + 1 }
+                  : c.unreadCounts,
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return c;
+        });
 
-    // 2. KẾT NỐI SOCKET.IO (DUAL HYBRID FALLBACK)
+        updated.sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        );
+
+        return { conversations: updated };
+      });
+    });
+    mqttUnbinders.push(unbindMsg);
+
+    const unbindTyping = mqttChatClient.onTyping((data) => {
+      if (!data?.conversationId) return;
+      updateStoreTyping(set, data.conversationId, data.isTyping);
+    });
+    mqttUnbinders.push(unbindTyping);
+
+    const unbindSeen = mqttChatClient.onSeen((data) => {
+      const active = get().activeConversation;
+      if (active && active._id === data.conversationId) {
+        set((state) => ({
+          messages: state.messages.map((m) => ({
+            ...m,
+            readAt: m.readAt || data.readAt,
+          })),
+        }));
+      }
+    });
+    mqttUnbinders.push(unbindSeen);
+
+    const unbindPresence = mqttChatClient.onPresence((data) => {
+      if (data.onlineUserIds && data.onlineUserIds.length > 0) {
+        set({ onlineUserIds: data.onlineUserIds });
+      } else if (data.userId) {
+        set((state) => ({
+          onlineUserIds: data.isOnline
+            ? Array.from(new Set([...state.onlineUserIds, data.userId]))
+            : state.onlineUserIds.filter((id) => id !== data.userId),
+        }));
+      }
+    });
+    mqttUnbinders.push(unbindPresence);
+
     const currentSocket = get().socket;
     if (
       currentSocket &&
@@ -394,7 +426,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (!data?.userId) return;
       set((state) => ({
         onlineUserIds: Array.from(
-          new Set([...state.onlineUserIds, data.userId])
+          new Set([...state.onlineUserIds, data.userId]),
         ),
       }));
     });
@@ -413,7 +445,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const myId = String(
         useAuthStore.getState().user?._id ||
           useAuthStore.getState().user?.id ||
-          ""
+          "",
       );
       const senderId =
         typeof newMsg.senderId === "string"
@@ -425,29 +457,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
           : String(newMsg.receiverId?._id || newMsg.receiverId?.id || "");
 
       const partner = active?.participants?.find(
-        (p) => String(p._id || p.id) !== myId
+        (p) => String(p._id || p.id) !== myId,
       );
       const partnerId = String(partner?._id || partner?.id || "");
 
       const isMatchActive =
         Boolean(active) &&
-        ((Boolean(msgConvId) && Boolean(activeConvId) && activeConvId === msgConvId) ||
+        ((Boolean(msgConvId) &&
+          Boolean(activeConvId) &&
+          activeConvId === msgConvId) ||
           (Boolean(partnerId) &&
             ((senderId === partnerId && receiverId === myId) ||
               (senderId === myId && receiverId === partnerId))));
 
-      // Phát âm thanh khi người khác nhắn tin cho mình
       if (senderId && senderId !== myId) {
-        const conv = get().conversations.find((c) => String(c._id) === msgConvId);
+        const conv = get().conversations.find(
+          (c) => String(c._id) === msgConvId,
+        );
         const partnerName =
           typeof newMsg.senderId === "object" && newMsg.senderId?.name
             ? newMsg.senderId.name
             : conv?.participants?.find(
-                (p) => String(p._id || p.id) === senderId
+                (p) => String(p._id || p.id) === senderId,
               )?.name || partner?.name;
         soundNotification.playIncomingSound(
           newMsg._id || newMsg.id,
-          partnerName
+          partnerName,
         );
       }
 
@@ -455,7 +490,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set((state) => {
           const realId = String(newMsg._id || newMsg.id);
           const existingIndex = state.messages.findIndex(
-            (m) => String(m._id || m.id) === realId
+            (m) => String(m._id || m.id) === realId,
           );
           if (existingIndex !== -1) {
             const nextMessages = [...state.messages];
@@ -467,10 +502,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
             return { messages: nextMessages };
           }
 
-          // Nếu người gửi là chính mình, thay thế tin nhắn optimistic
           if (senderId === myId) {
             const optIndex = state.messages.findIndex(
-              (m) => m.isOptimistic && m.text.trim() === (newMsg.text || "").trim()
+              (m) =>
+                m.isOptimistic && m.text.trim() === (newMsg.text || "").trim(),
             );
             if (optIndex !== -1) {
               const nextMessages = [...state.messages];
@@ -500,8 +535,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               c.participants.some((p) => String(p._id || p.id) === receiverId));
 
           if (isThisConv) {
-            const currentUnread =
-              (c.unreadCounts && c.unreadCounts[myId]) || 0;
+            const currentUnread = (c.unreadCounts && c.unreadCounts[myId]) || 0;
             const isNotActive = !active || String(active._id) !== String(c._id);
             return {
               ...c,
@@ -522,14 +556,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         updated.sort(
           (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
         );
 
         return { conversations: updated };
       });
     });
-
-    // Lắng nghe sự kiện luồng tin nhắn AI (Streaming Chunks)
     socket.on("message:stream_start", (newMsg: ChatMessage) => {
       const active = get().activeConversation;
       const msgConvId = String(newMsg.conversationId || "");
@@ -544,7 +576,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set((state) => {
           const realId = String(newMsg._id || newMsg.id);
           const exists = state.messages.some(
-            (m) => String(m._id || m.id) === realId
+            (m) => String(m._id || m.id) === realId,
           );
           if (exists) return state;
           return {
@@ -579,11 +611,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
             messages: state.messages.map((m) =>
               String(m._id || m.id) === String(data.messageId)
                 ? { ...m, text: data.text, isStreaming: true }
-                : m
+                : m,
             ),
           }));
         }
-      }
+      },
     );
 
     socket.on("message:stream_end", (data: ChatMessage) => {
@@ -601,7 +633,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           messages: state.messages.map((m) =>
             String(m._id || m.id) === String(data._id || data.id)
               ? { ...m, ...data, isStreaming: false }
-              : m
+              : m,
           ),
         }));
       }
@@ -628,22 +660,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
         updated.sort(
           (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
         );
 
         return { conversations: updated };
       });
     });
 
-    socket.on("typing:start", (data: { conversationId: string; userId: string }) => {
-      if (!data?.conversationId) return;
-      updateStoreTyping(set, data.conversationId, true);
-    });
+    socket.on(
+      "typing:start",
+      (data: { conversationId: string; userId: string }) => {
+        if (!data?.conversationId) return;
+        updateStoreTyping(set, data.conversationId, true);
+      },
+    );
 
-    socket.on("typing:stop", (data: { conversationId: string; userId: string }) => {
-      if (!data?.conversationId) return;
-      updateStoreTyping(set, data.conversationId, false);
-    });
+    socket.on(
+      "typing:stop",
+      (data: { conversationId: string; userId: string }) => {
+        if (!data?.conversationId) return;
+        updateStoreTyping(set, data.conversationId, false);
+      },
+    );
 
     socket.on(
       "message:seen",
@@ -657,10 +695,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
             })),
           }));
         }
-      }
+      },
     );
 
-    // Lắng nghe cập nhật tọa độ vị trí trực tiếp (Live Location)
     socket.on(
       "location:live_updated",
       (data: {
@@ -678,13 +715,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     ? { ...m.location, ...data.location }
                     : data.location,
                 }
-              : m
+              : m,
           ),
         }));
-      }
+      },
     );
 
-    // Lắng nghe cập nhật thả cảm xúc tin nhắn real-time
     socket.on(
       "message:reaction",
       (data: {
@@ -696,13 +732,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
           messages: state.messages.map((m) =>
             m._id === data.messageId || m.id === data.messageId
               ? { ...m, reactions: data.reactions }
-              : m
+              : m,
           ),
         }));
-      }
+      },
     );
-
-    // Lắng nghe sự kiện lời mời kết bạn real-time (toast hiện ở FriendNoticeToast toàn cục)
     socket.on("friend:request_received", (data?: FriendRealtimePayload) => {
       useFriendStore.getState().handleRealtimeEvent("request_received", data);
     });
@@ -710,61 +744,88 @@ export const useChatStore = create<ChatState>((set, get) => ({
     socket.on("friend:accepted", (data?: FriendRealtimePayload) => {
       useFriendStore.getState().handleRealtimeEvent("accepted", data);
     });
-
-    // Lắng nghe thông báo hệ thống & tương tác bài viết real-time (bình luận, thả icon, chia sẻ)
-    socket.on("notification:new", (data: { notification?: any; unreadCount?: number }) => {
-      if (data?.notification) {
-        useNotificationStore.getState().handleIncomingNotification(data.notification, data.unreadCount);
-        soundNotification.playIncomingSound(data.notification._id, data.notification.actor?.name);
-      }
-    });
-
-    // Lắng nghe sự kiện bài viết thời gian thực (đăng bài mới, xóa bài, cập nhật, cảm xúc, bình luận, chia sẻ)
+    socket.on(
+      "notification:new",
+      (data: { notification?: any; unreadCount?: number }) => {
+        if (data?.notification) {
+          useNotificationStore
+            .getState()
+            .handleIncomingNotification(data.notification, data.unreadCount);
+          soundNotification.playIncomingSound(
+            data.notification._id,
+            data.notification.actor?.name,
+          );
+        }
+      },
+    );
     socket.on("post:new", (post: any) => {
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("chatapp:post_new", { detail: post }));
+        window.dispatchEvent(
+          new CustomEvent("chatapp:post_new", { detail: post }),
+        );
       }
     });
 
     socket.on("post:deleted", (data: { postId: string }) => {
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("chatapp:post_deleted", { detail: data }));
+        window.dispatchEvent(
+          new CustomEvent("chatapp:post_deleted", { detail: data }),
+        );
       }
     });
 
     socket.on("post:updated", (post: any) => {
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("chatapp:post_updated", { detail: post }));
+        window.dispatchEvent(
+          new CustomEvent("chatapp:post_updated", { detail: post }),
+        );
       }
     });
 
     socket.on("post:reaction", (data: any) => {
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("chatapp:post_reaction", { detail: data }));
+        window.dispatchEvent(
+          new CustomEvent("chatapp:post_reaction", { detail: data }),
+        );
       }
     });
 
     socket.on("post:comment", (data: any) => {
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("chatapp:post_comment", { detail: data }));
+        window.dispatchEvent(
+          new CustomEvent("chatapp:post_comment", { detail: data }),
+        );
       }
     });
 
     socket.on("post:comment_deleted", (data: any) => {
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("chatapp:post_comment_deleted", { detail: data }));
-      }
-    });
-
-    socket.on("post:share_count_updated", (data: { postId: string; shareCount: number }) => {
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("chatapp:post_share_count_updated", { detail: data }));
+        window.dispatchEvent(
+          new CustomEvent("chatapp:post_comment_deleted", { detail: data }),
+        );
       }
     });
 
     socket.on(
+      "post:share_count_updated",
+      (data: { postId: string; shareCount: number }) => {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("chatapp:post_share_count_updated", {
+              detail: data,
+            }),
+          );
+        }
+      },
+    );
+
+    socket.on(
       "message:deleted",
-      (data: { messageId: string; conversationId: string; deletedBy: string }) => {
+      (data: {
+        messageId: string;
+        conversationId: string;
+        deletedBy: string;
+      }) => {
         const active = get().activeConversation;
         if (active && active._id === data.conversationId) {
           set((state) => ({
@@ -776,7 +837,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     text: "Tin nhắn đã bị thu hồi",
                     deletedBy: data.deletedBy,
                   }
-                : m
+                : m,
             ),
           }));
         }
@@ -794,7 +855,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
             return c;
           }),
         }));
-      }
+      },
     );
 
     socket.on(
@@ -802,7 +863,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       (data: { conversationId: string; theme: string }) => {
         set((state) => ({
           conversations: state.conversations.map((c) =>
-            c._id === data.conversationId ? { ...c, theme: data.theme } : c
+            c._id === data.conversationId ? { ...c, theme: data.theme } : c,
           ),
           activeConversation:
             state.activeConversation &&
@@ -810,7 +871,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               ? { ...state.activeConversation, theme: data.theme }
               : state.activeConversation,
         }));
-      }
+      },
     );
 
     socket.on(
@@ -820,7 +881,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           conversations: state.conversations.map((c) =>
             c._id === data.conversationId
               ? { ...c, blockedBy: data.blockedBy }
-              : c
+              : c,
           ),
           activeConversation:
             state.activeConversation &&
@@ -828,55 +889,60 @@ export const useChatStore = create<ChatState>((set, get) => ({
               ? { ...state.activeConversation, blockedBy: data.blockedBy }
               : state.activeConversation,
         }));
-      }
+      },
+    );
+
+    socket.on("conversation:unblocked", (data: { conversationId: string }) => {
+      set((state) => ({
+        conversations: state.conversations.map((c) =>
+          c._id === data.conversationId ? { ...c, blockedBy: null } : c,
+        ),
+        activeConversation:
+          state.activeConversation &&
+          state.activeConversation._id === data.conversationId
+            ? { ...state.activeConversation, blockedBy: null }
+            : state.activeConversation,
+      }));
+    });
+
+    socket.on(
+      "conversation:created",
+      (data: { conversation: ConversationItem }) => {
+        if (data?.conversation?._id) {
+          set((state) => ({
+            conversations: [
+              data.conversation,
+              ...state.conversations.filter(
+                (c) => c._id !== data.conversation._id,
+              ),
+            ],
+          }));
+        }
+      },
     );
 
     socket.on(
-      "conversation:unblocked",
-      (data: { conversationId: string }) => {
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
-            c._id === data.conversationId ? { ...c, blockedBy: null } : c
-          ),
-          activeConversation:
-            state.activeConversation &&
-            state.activeConversation._id === data.conversationId
-              ? { ...state.activeConversation, blockedBy: null }
-              : state.activeConversation,
-        }));
-      }
+      "conversation:updated",
+      (data: { conversation: ConversationItem }) => {
+        if (data?.conversation?._id) {
+          set((state) => ({
+            conversations: state.conversations.map((c) =>
+              c._id === data.conversation._id ? data.conversation : c,
+            ),
+            activeConversation:
+              state.activeConversation?._id === data.conversation._id
+                ? data.conversation
+                : state.activeConversation,
+          }));
+        }
+      },
     );
-
-    socket.on("conversation:created", (data: { conversation: ConversationItem }) => {
-      if (data?.conversation?._id) {
-        set((state) => ({
-          conversations: [
-            data.conversation,
-            ...state.conversations.filter((c) => c._id !== data.conversation._id),
-          ],
-        }));
-      }
-    });
-
-    socket.on("conversation:updated", (data: { conversation: ConversationItem }) => {
-      if (data?.conversation?._id) {
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
-            c._id === data.conversation._id ? data.conversation : c
-          ),
-          activeConversation:
-            state.activeConversation?._id === data.conversation._id
-              ? data.conversation
-              : state.activeConversation,
-        }));
-      }
-    });
 
     socket.on("group:kicked", (data: { conversationId: string }) => {
       if (data?.conversationId) {
         set((state) => ({
           conversations: state.conversations.filter(
-            (c) => c._id !== data.conversationId
+            (c) => c._id !== data.conversationId,
           ),
           activeConversation:
             state.activeConversation?._id === data.conversationId
@@ -926,12 +992,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const myId = String(
       useAuthStore.getState().user?._id ||
         useAuthStore.getState().user?.id ||
-        ""
+        "",
     );
     set((state) => ({
       activeConversation: conversation,
       // Xóa tin nhắn cũ khi đổi sang hội thoại khác để tránh nhấp nháy nội dung sai
-      messages: state.activeConversation?._id === conversation._id ? state.messages : [],
+      messages:
+        state.activeConversation?._id === conversation._id
+          ? state.messages
+          : [],
       isLoadingMessages: true,
       conversations: state.conversations.map((c) =>
         c._id === conversation._id && myId
@@ -942,12 +1011,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 [myId]: 0,
               },
             }
-          : c
+          : c,
       ),
     }));
 
     try {
-      const res = await api.get(`/chat/conversations/${conversation._id}/messages`);
+      const res = await api.get(
+        `/chat/conversations/${conversation._id}/messages`,
+      );
       if (res.data?.messages) {
         set({ messages: res.data.messages });
       }
@@ -962,7 +1033,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
         // Tìm partner ID
         const other = conversation.participants.find(
-          (p) => p._id !== conversation.participants[0]?._id
+          (p) => p._id !== conversation.participants[0]?._id,
         );
         socket.emit("message:read", {
           conversationId: conversation._id,
@@ -976,7 +1047,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  createGroupChat: async (name: string, memberIds: string[], avatar?: string) => {
+  createGroupChat: async (
+    name: string,
+    memberIds: string[],
+    avatar?: string,
+  ) => {
     try {
       const res = await api.post("/chat/group", { name, memberIds, avatar });
       if (res.data?.conversation) {
@@ -1006,7 +1081,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const updated = res.data.conversation as ConversationItem;
         set((state) => ({
           conversations: state.conversations.map((c) =>
-            c._id === conversationId ? updated : c
+            c._id === conversationId ? updated : c,
           ),
           activeConversation:
             state.activeConversation?._id === conversationId
@@ -1023,20 +1098,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
   removeGroupMember: async (conversationId: string, memberId: string) => {
     try {
       const res = await api.delete(
-        `/chat/group/${conversationId}/members/${memberId}`
+        `/chat/group/${conversationId}/members/${memberId}`,
       );
       if (res.data?.conversation) {
         const updated = res.data.conversation as ConversationItem;
         const myId = String(
           useAuthStore.getState().user?._id ||
             useAuthStore.getState().user?.id ||
-            ""
+            "",
         );
         if (memberId === myId) {
           // Tự rời nhóm
           set((state) => ({
             conversations: state.conversations.filter(
-              (c) => c._id !== conversationId
+              (c) => c._id !== conversationId,
             ),
             activeConversation:
               state.activeConversation?._id === conversationId
@@ -1050,7 +1125,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         } else {
           set((state) => ({
             conversations: state.conversations.map((c) =>
-              c._id === conversationId ? updated : c
+              c._id === conversationId ? updated : c,
             ),
             activeConversation:
               state.activeConversation?._id === conversationId
@@ -1067,7 +1142,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   updateGroupInfo: async (
     conversationId: string,
-    data: { name?: string; avatar?: string }
+    data: { name?: string; avatar?: string },
   ) => {
     try {
       const res = await api.patch(`/chat/group/${conversationId}`, data);
@@ -1075,7 +1150,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const updated = res.data.conversation as ConversationItem;
         set((state) => ({
           conversations: state.conversations.map((c) =>
-            c._id === conversationId ? updated : c
+            c._id === conversationId ? updated : c,
           ),
           activeConversation:
             state.activeConversation?._id === conversationId
@@ -1092,13 +1167,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   promoteGroupAdmin: async (conversationId: string, targetUserId: string) => {
     try {
       const res = await api.post(
-        `/chat/group/${conversationId}/admins/${targetUserId}`
+        `/chat/group/${conversationId}/admins/${targetUserId}`,
       );
       if (res.data?.conversation) {
         const updated = res.data.conversation as ConversationItem;
         set((state) => ({
           conversations: state.conversations.map((c) =>
-            c._id === conversationId ? updated : c
+            c._id === conversationId ? updated : c,
           ),
           activeConversation:
             state.activeConversation?._id === conversationId
@@ -1119,7 +1194,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const updated = res.data.conversation as ConversationItem;
         set((state) => ({
           conversations: state.conversations.map((c) =>
-            c._id === conversationId ? updated : c
+            c._id === conversationId ? updated : c,
           ),
           activeConversation:
             state.activeConversation?._id === conversationId
@@ -1136,7 +1211,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   startConversationWithUser: async (user: ChatUser) => {
     const existing = get().conversations.find((c) =>
-      c.participants.some((p) => p._id === user._id)
+      c.participants.some((p) => p._id === user._id),
     );
     if (existing) {
       await get().selectConversation(existing);
@@ -1172,7 +1247,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!active || !text.trim()) return;
 
     const headers = api.defaults.headers as unknown as Record<string, unknown>;
-    const currentUserId = typeof headers?.["X-User-Id"] === "string" ? headers["X-User-Id"] : undefined; // fallback
+    const currentUserId =
+      typeof headers?.["X-User-Id"] === "string"
+        ? headers["X-User-Id"]
+        : undefined; // fallback
 
     // Xử lý gửi tin nhắn cho cuộc trò chuyện nhóm
     if (active.type === "group") {
@@ -1208,7 +1286,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 },
                 updatedAt: optimisticMessage.createdAt,
               }
-            : c
+            : c,
         ),
       }));
 
@@ -1223,7 +1301,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
           const realMsg = res.data.message;
           set((state) => ({
             messages: state.messages.map((m) =>
-              m._id === tempId ? { ...realMsg, isOptimistic: false, status: "sent" } : m
+              m._id === tempId
+                ? { ...realMsg, isOptimistic: false, status: "sent" }
+                : m,
             ),
           }));
         }
@@ -1231,7 +1311,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         console.error("Lỗi gửi tin nhắn nhóm:", err);
         set((state) => ({
           messages: state.messages.map((m) =>
-            m._id === tempId ? { ...m, status: "error" } : m
+            m._id === tempId ? { ...m, status: "error" } : m,
           ),
         }));
       }
@@ -1279,7 +1359,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
               },
               updatedAt: optimisticMessage.createdAt,
             }
-          : c
+          : c,
       ),
     }));
 
@@ -1291,7 +1371,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       sentViaMqtt = mqttChatClient.sendMessage(
         active._id,
         otherParticipant._id,
-        textToSend
+        textToSend,
       );
     }
 
@@ -1322,14 +1402,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
               messages: state.messages.map((m) =>
                 m._id === tempId
                   ? { ...confirmed, isOptimistic: false, status: "sent" }
-                  : m
+                  : m,
               ),
             }));
           }
         } catch {
           set((state) => ({
             messages: state.messages.map((m) =>
-              m._id === tempId ? { ...m, status: "error" } : m
+              m._id === tempId ? { ...m, status: "error" } : m,
             ),
           }));
         }
@@ -1345,8 +1425,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!active) return;
 
     const otherParticipant =
-      active.participants.find((p) => String(p._id || p.id) !== currentUserId) ||
-      active.participants[0];
+      active.participants.find(
+        (p) => String(p._id || p.id) !== currentUserId,
+      ) || active.participants[0];
     if (!otherParticipant?._id && !otherParticipant?.id) return;
 
     const receiverId = String(otherParticipant._id || otherParticipant.id);
@@ -1374,7 +1455,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         messages: state.messages.map((m) =>
           m._id === messageId
             ? { ...m, isDeleted: true, text: "Tin nhắn đã bị thu hồi" }
-            : m
+            : m,
         ),
       }));
 
@@ -1383,7 +1464,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const currentUser = useAuthStore.getState().user;
       const myId = String(currentUser?._id || currentUser?.id || "");
       const partner = active.participants.find(
-        (p) => String(p._id || p.id) !== myId
+        (p) => String(p._id || p.id) !== myId,
       );
       if (socket && socket.connected) {
         socket.emit("message:delete", {
@@ -1413,7 +1494,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ? { ...state.activeConversation, theme }
           : null,
         conversations: state.conversations.map((c) =>
-          c._id === active._id ? { ...c, theme } : c
+          c._id === active._id ? { ...c, theme } : c,
         ),
       }));
 
@@ -1421,7 +1502,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const currentUser = useAuthStore.getState().user;
       const myId = String(currentUser?._id || currentUser?.id || "");
       const partner = active.participants.find(
-        (p) => String(p._id || p.id) !== myId
+        (p) => String(p._id || p.id) !== myId,
       );
       if (socket && socket.connected) {
         socket.emit("conversation:theme", {
@@ -1445,7 +1526,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!active) return { success: false, message: "Chưa chọn hội thoại" };
 
     const myId = String(
-      useAuthStore.getState().user?._id || useAuthStore.getState().user?.id || ""
+      useAuthStore.getState().user?._id ||
+        useAuthStore.getState().user?.id ||
+        "",
     );
     try {
       await api.patch(`/chat/conversations/${active._id}/block`);
@@ -1454,13 +1537,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ? { ...state.activeConversation, blockedBy: myId }
           : null,
         conversations: state.conversations.map((c) =>
-          c._id === active._id ? { ...c, blockedBy: myId } : c
+          c._id === active._id ? { ...c, blockedBy: myId } : c,
         ),
       }));
 
       const socket = get().socket;
       const partner = active.participants.find(
-        (p) => String(p._id || p.id) !== myId
+        (p) => String(p._id || p.id) !== myId,
       );
       if (socket && socket.connected) {
         socket.emit("conversation:block", {
@@ -1489,7 +1572,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ? { ...state.activeConversation, blockedBy: null }
           : null,
         conversations: state.conversations.map((c) =>
-          c._id === active._id ? { ...c, blockedBy: null } : c
+          c._id === active._id ? { ...c, blockedBy: null } : c,
         ),
       }));
 
@@ -1497,7 +1580,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const currentUser = useAuthStore.getState().user;
       const myId = String(currentUser?._id || currentUser?.id || "");
       const partner = active.participants.find(
-        (p) => String(p._id || p.id) !== myId
+        (p) => String(p._id || p.id) !== myId,
       );
       if (socket && socket.connected) {
         socket.emit("conversation:unblock", {
@@ -1520,7 +1603,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!active) return { success: false, message: "Chưa chọn hội thoại" };
 
     const myId = String(
-      useAuthStore.getState().user?._id || useAuthStore.getState().user?.id || ""
+      useAuthStore.getState().user?._id ||
+        useAuthStore.getState().user?.id ||
+        "",
     );
     try {
       await api.patch(`/chat/conversations/${active._id}/restrict`, {
@@ -1536,9 +1621,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ? { ...state.activeConversation, restrictedBy: updatedRestricted }
           : null,
         conversations: state.conversations.map((c) =>
-          c._id === active._id
-            ? { ...c, restrictedBy: updatedRestricted }
-            : c
+          c._id === active._id ? { ...c, restrictedBy: updatedRestricted } : c,
         ),
       }));
 
@@ -1555,9 +1638,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const socket = get().socket;
     const active = get().activeConversation;
     const currentUserId = String(
-      useAuthStore.getState().user?._id || useAuthStore.getState().user?.id || ""
+      useAuthStore.getState().user?._id ||
+        useAuthStore.getState().user?.id ||
+        "",
     );
-    const partner = active?.participants.find((p) => String(p._id) !== currentUserId);
+    const partner = active?.participants.find(
+      (p) => String(p._id) !== currentUserId,
+    );
     const receiverId = partner?._id ? String(partner._id) : "";
 
     if (socket && socket.connected) {
@@ -1578,7 +1665,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 ? { ...m.location, ...locUpdate }
                 : (locUpdate as LocationData),
             }
-          : m
+          : m,
       ),
     }));
 
@@ -1587,7 +1674,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       window.dispatchEvent(
         new CustomEvent("chatapp:location_updated", {
           detail: { messageId, ...locUpdate },
-        })
+        }),
       );
     }
   },
@@ -1601,7 +1688,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const currentUser = useAuthStore.getState().user;
     const currentUserId = String(currentUser?._id || currentUser?.id || "");
     const partner = activeConversation?.participants.find(
-      (p) => String(p._id) !== currentUserId
+      (p) => String(p._id) !== currentUserId,
     );
     const receiverId = partner?._id ? String(partner._id) : undefined;
 
@@ -1611,12 +1698,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
         messages: state.messages.map((m) => {
           if (m._id !== messageId && m.id !== messageId) return m;
           const currentReactions = [...(m.reactions || [])];
-          const existIdx = currentReactions.findIndex((r) => r.userId === currentUserId);
+          const existIdx = currentReactions.findIndex(
+            (r) => r.userId === currentUserId,
+          );
           if (existIdx > -1) {
             if (currentReactions[existIdx].type === type) {
               currentReactions.splice(existIdx, 1);
             } else {
-              currentReactions[existIdx] = { ...currentReactions[existIdx], type };
+              currentReactions[existIdx] = {
+                ...currentReactions[existIdx],
+                type,
+              };
             }
           } else {
             currentReactions.push({
@@ -1651,7 +1743,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       await api.delete(`/chat/conversations/${conversationId}`);
       set((state) => {
         const nextConversations = state.conversations.filter(
-          (c) => c._id !== conversationId
+          (c) => c._id !== conversationId,
         );
         const isCurrentActive =
           state.activeConversation?._id === conversationId;
