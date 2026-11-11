@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ArgumentsHost, BadRequestException, HttpStatus } from '@nestjs/common';
+import { ArgumentsHost, BadRequestException, HttpStatus, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { ErrorHandlerFilter } from './errorHandler.filter.js';
 import { Request, Response } from 'express';
 
@@ -26,12 +26,26 @@ describe('ErrorHandlerFilter', () => {
     };
 
     mockHost = {
+      getType: () => 'http',
       switchToHttp: () => ({
         getResponse: () => mockResponse as Response,
         getRequest: () => mockRequest as Request,
         getNext: vi.fn(),
       }),
     } as unknown as ArgumentsHost;
+  });
+
+  it('returns GraphQL authentication errors without accessing an HTTP response', () => {
+    const exception = new UnauthorizedException();
+    const host = { getType: () => 'graphql' } as unknown as ArgumentsHost;
+    expect(filter.catch(exception, host)).toBe(exception);
+  });
+
+  it('hides unexpected GraphQL error details', () => {
+    const host = { getType: () => 'graphql' } as unknown as ArgumentsHost;
+    const result = filter.catch(new Error('database details'), host);
+    expect(result).toBeInstanceOf(InternalServerErrorException);
+    expect(result?.message).not.toContain('database details');
   });
 
   it('should handle standard HttpException correctly', () => {

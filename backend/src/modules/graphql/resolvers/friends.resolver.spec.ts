@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FriendsResolver } from './friends.resolver.js';
 import { FriendsService } from '../../friends/friends.service.js';
 import { Neo4jService } from '../../neo4j/neo4j.service.js';
+import { GraphQLSchemaBuilderModule, GraphQLSchemaFactory } from '@nestjs/graphql';
+import { Test } from '@nestjs/testing';
+import { createRequire } from 'node:module';
+
+const { parse, validate } = createRequire(import.meta.url)('graphql') as typeof import('graphql');
 
 describe('FriendsResolver', () => {
   let resolver: FriendsResolver;
@@ -83,5 +88,25 @@ describe('FriendsResolver', () => {
     expect(results).toHaveLength(1);
     expect(results[0].name).toBe('Nguyễn Văn A');
     expect((results[0] as unknown as Record<string, unknown>).email).toBeUndefined();
+  });
+
+  it('exposes a paginated search query', async () => {
+    const module = await Test.createTestingModule({ imports: [GraphQLSchemaBuilderModule] }).compile();
+    const schema = await module.get(GraphQLSchemaFactory).create([FriendsResolver]);
+    expect(validate(schema, parse(`query SearchUsersPage($query: String!, $limit: Int, $after: String) {
+      searchUsersPage(query: $query, limit: $limit, after: $after) {
+        users { _id name avatar bio relationStatus requestId } hasMore nextCursor
+      }
+    }`))).toEqual([]);
+    await module.close();
+  });
+
+  it('uses the viewer and cursor for paginated search and rejects repeated calls', async () => {
+    const ctx = { req: { user: { _id: 'me-123' } } };
+    const cursor = '507f1f77bcf86cd799439011';
+    await resolver.searchUsersPage(ctx, 'Nguyễn', 20, cursor);
+    expect(friendsService.searchUsersWithRelation).toHaveBeenCalledWith('Nguyễn', 'me-123', { limit: 20, after: cursor });
+    await expect(resolver.searchUsersPage(ctx, 'Nguyễn', 20)).rejects.toThrow();
+    await expect(resolver.searchUsersPage({ req: { user: { _id: 'me-123' } } }, 'Nguyễn', 51)).rejects.toThrow();
   });
 });

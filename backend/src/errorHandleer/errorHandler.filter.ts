@@ -4,6 +4,7 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
@@ -18,7 +19,12 @@ interface MongoError extends Error {
 export class ErrorHandlerFilter implements ExceptionFilter {
   private readonly logger = new Logger(ErrorHandlerFilter.name);
 
-  catch(exception: unknown, host: ArgumentsHost): void {
+  catch(exception: unknown, host: ArgumentsHost): void | Error {
+    if (host.getType<string>() === 'graphql') {
+      if (exception instanceof HttpException) return exception;
+      this.logger.error('[GraphQL] Internal error');
+      return new InternalServerErrorException('Đã xảy ra lỗi máy chủ nội bộ. Vui lòng thử lại sau!');
+    }
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();

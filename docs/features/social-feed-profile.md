@@ -120,3 +120,13 @@ Hỗ trợ đầy đủ các trạng thái mối quan hệ thực tế trong xã
 - **Tab "Giới thiệu":** Hiển thị thẻ thông tin với nhãn rõ ràng và nút "Thêm trường học" / "Thiết lập" / "Chỉnh sửa" liên kết nhanh đến form cập nhật.
 - **Hồ sơ công khai (`/friends/profile/:userId`):** Người dùng khác ghé thăm trang cá nhân cũng sẽ nhìn thấy trường học và tình trạng quan hệ được chia sẻ trên Cột Sidebar Giới thiệu.
 
+# Truy vấn bảng tin
+
+Bảng tin và trang video ngắn dùng query GraphQL `feed(limit, after)` với xác thực hiện tại. Trang cá nhân dùng `publicProfile` và `profilePosts`; các query tái sử dụng service hiện có để áp dụng quyền xem và phân trang con trỏ, giới hạn mỗi trang từ 1 đến 30. Tìm kiếm bạn bè dùng `searchUsersPage` với phân trang con trỏ; gợi ý theo vị trí tiếp tục dùng REST. API REST tương ứng tiếp tục được hỗ trợ. Các thao tác đăng, sửa, xóa, tương tác và tải tệp vẫn dùng API REST.
+
+GraphQL giới hạn độ sâu truy vấn ở 20 và tối đa 1.000 trường sau khi mở rộng fragment. Mỗi request chỉ thực thi một lần từng query danh sách hoặc hồ sơ mới, kể cả khi dùng alias.
+
+Ảnh kiểm tra trang hồ sơ với dữ liệu GraphQL giả lập:
+
+![Trang hồ sơ với dữ liệu giả lập](../assets/screenshots/graphql-profile-demo.png)
+

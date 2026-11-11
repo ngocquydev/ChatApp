@@ -1,14 +1,15 @@
-import { UnauthorizedException, UseGuards } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { Args, Context, ID, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { FriendsService } from '../../friends/friends.service.js';
 import { Neo4jService } from '../../neo4j/neo4j.service.js';
 import { GqlAuthGuard } from '../guards/gql-auth.guard.js';
 import { FriendType } from '../types/friend.type.js';
-import { SearchUserType } from '../types/search-user.type.js';
+import { SearchUserType, SearchUsersPage } from '../types/search-user.type.js';
 import { UserSuggestionType } from '../types/user-suggestion.type.js';
 
 interface GqlContext {
   req: {
+    searchPageRequested?: boolean;
     user?: {
       _id?: string;
       id?: string;
@@ -97,6 +98,23 @@ export class FriendsResolver {
       relationStatus: u.relationStatus,
       requestId: u.requestId,
     }));
+  }
+
+  @Query(() => SearchUsersPage)
+  @UseGuards(GqlAuthGuard)
+  async searchUsersPage(
+    @Context() ctx: GqlContext,
+    @Args('query') query: string,
+    @Args('limit', { type: () => Int, defaultValue: 20 }) limit: number,
+    @Args('after', { type: () => String, nullable: true }) after?: string,
+  ) {
+    const currentUserId = this.extractUserId(ctx);
+    if (!query.trim() || query.length > 100) throw new BadRequestException('Invalid search query');
+    if (limit < 1 || limit > 50) throw new BadRequestException('Invalid page limit');
+    if (after != null && !/^[a-f\d]{24}$/i.test(after)) throw new BadRequestException('Invalid cursor');
+    if (ctx.req.searchPageRequested) throw new BadRequestException('Only one search page is allowed per request');
+    ctx.req.searchPageRequested = true;
+    return this.friendsService.searchUsersWithRelation(query, currentUserId, { limit, after });
   }
 
   @Query(() => [FriendType], {

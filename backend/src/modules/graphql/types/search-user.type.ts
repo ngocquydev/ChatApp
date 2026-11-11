@@ -20,3 +20,10 @@ export class SearchUserType {
   @Field({ nullable: true })
   requestId?: string;
 }
+
+@ObjectType()
+export class SearchUsersPage {
+  @Field(() => [SearchUserType]) users!: SearchUserType[];
+  @Field() hasMore!: boolean;
+  @Field(() => String, { nullable: true }) nextCursor!: string | null;
+}

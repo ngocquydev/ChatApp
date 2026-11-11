@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { apiErrorMessage, fetchPublicProfile, type PublicProfile } from "@/services/postsApi";
+import { apiErrorMessage, fetchPublicProfile, PostQueryError, type PublicProfile } from "@/services/postsApi";
 
 type State =
   | { status: "loading"; profile: null; error: null; notFound: false }
@@ -24,7 +24,7 @@ export function usePublicProfile(userId: string) {
       })
       .catch((err) => {
         if (cancelled) return;
-        const notFound = axios.isAxiosError(err) && [400, 404].includes(err.response?.status ?? 0);
+        const notFound = (axios.isAxiosError(err) && [400, 404].includes(err.response?.status ?? 0)) || (err instanceof PostQueryError && [400, 404].includes(err.statusCode ?? 0));
         setState({
           status: "error",
           profile: null,

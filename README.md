@@ -130,6 +130,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 
 ### 3. Bảng Tin Mạng Xã Hội & Hồ Sơ Cá Nhân (Feed & Profile Timeline)
 - **Bảng tin 100% dữ liệu thực:** Cuộn vô hạn với phân trang con trỏ (Cursor-based pagination: `limit`, `after`), loại bỏ hoàn toàn hiện tượng chớp giật layout (Zero-Layout-Shift).
+- Bảng tin, video ngắn, hồ sơ cá nhân và tìm kiếm bạn bè tải dữ liệu qua GraphQL; API REST bài viết, tương tác và tải tệp vẫn được hỗ trợ.
 - **Phân trang & Cuộn vô hạn tối ưu (5 mục ban đầu):** Dropdown thông báo chỉ tải và render 5 mục mới nhất; bình luận bài viết hiển thị 5 mục đầu tiên, tự động kích hoạt tải tiếp khi người dùng cuộn xuống dưới, tối ưu hóa triệt để hiệu năng render DOM và trải nghiệm mượt mà.
 - **Khung tạo bài viết đa phương tiện:** Hỗ trợ tối đa 4 ảnh chất lượng cao kèm kiểm tra chữ ký Magic-byte chống tệp thực thi độc hại.
 - **Phân quyền riêng tư 3 cấp độ:** *Công khai (`public`)*, *Bạn bè (`friends`)*, *Chỉ mình tôi (`only_me`)*.

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import api from "../services/api";
+import { GraphQLQueryError, searchFriendsPage } from "../services/graphqlApi";
 import { ChatUser } from "./useChatStore";
 
 export interface FriendItem {
@@ -101,6 +102,7 @@ interface FriendState {
 
 /** Chuyển lỗi axios thành câu tiếng Việt ngắn gọn cho người dùng */
 function searchErrorMessage(err: unknown): string {
+  if (err instanceof GraphQLQueryError && err.statusCode === 408) return err.message;
   const e = err as { response?: { status?: number; data?: { message?: string } } };
   if (e.response?.status === 408) {
     return e.response.data?.message || "Tìm kiếm mất quá nhiều thời gian. Hãy nhập từ khóa cụ thể hơn.";
@@ -226,17 +228,15 @@ export const useFriendStore = create<FriendState>((set, get) => ({
       searchSeq: nextSeq,
     });
     try {
-      const params = new URLSearchParams({ q: trimmed });
-      if (options?.limit) params.set("limit", String(options.limit));
-      const res = await api.get(`/friends/search?${params.toString()}`);
+      const page = await searchFriendsPage(trimmed, options?.limit ?? 20);
       // Chỉ cập nhật nếu request này là mới nhất (tránh race condition giữa các phím gõ nhanh)
       if (get().searchSeq === nextSeq) {
-        const rawUsers = (res.data?.users || []) as (UserRelationResult & { role?: string })[];
+        const rawUsers = page.users as (UserRelationResult & { role?: string })[];
         const cleanUsers = rawUsers.filter((u) => u.role !== "admin" && u.role !== "bot");
         set({
           searchResults: cleanUsers,
-          searchHasMore: Boolean(res.data?.hasMore),
-          searchCursor: res.data?.nextCursor ?? null,
+          searchHasMore: page.hasMore,
+          searchCursor: page.nextCursor,
           isSearching: false,
         });
       }
@@ -260,17 +260,16 @@ export const useFriendStore = create<FriendState>((set, get) => ({
     const seq = searchSeq || 0;
     set({ isSearchingMore: true, searchError: null });
     try {
-      const params = new URLSearchParams({ q: searchTerm, limit: String(limit), after: searchCursor });
-      const res = await api.get(`/friends/search?${params.toString()}`);
+      const page = await searchFriendsPage(searchTerm, limit, searchCursor);
       // Từ khóa đã đổi trong lúc chờ → bỏ kết quả cũ
       if (get().searchSeq !== seq) return;
-      const incoming: UserRelationResult[] = res.data?.users || [];
+      const incoming: UserRelationResult[] = page.users.map((user) => ({ ...user }));
       set((state) => {
         const seen = new Set(state.searchResults.map((u) => u._id));
         return {
           searchResults: [...state.searchResults, ...incoming.filter((u) => !seen.has(u._id))],
-          searchHasMore: Boolean(res.data?.hasMore),
-          searchCursor: res.data?.nextCursor ?? null,
+          searchHasMore: page.hasMore,
+          searchCursor: page.nextCursor,
           isSearchingMore: false,
         };
       });

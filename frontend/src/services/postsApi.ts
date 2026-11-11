@@ -1,5 +1,7 @@
 import axios from "axios";
 import api from "./api";
+import { requestGraphQL } from "./graphqlApi";
+export { GraphQLQueryError as PostQueryError } from "./graphqlApi";
 
 export type PostPrivacy = "public" | "friends" | "only_me";
 
@@ -160,9 +162,44 @@ const pageParams = ({ limit, after }: PageOptions) => ({
   ...(after ? { after } : {}),
 });
 
+type GraphQLPost = Omit<PostView, "sharedPost"> & {
+  sharedPost: (SharedPostView & { unavailable?: boolean | null }) | { unavailable: true } | null;
+};
+
+const postFields = `
+  _id author { _id name avatar } content images privacy createdAt
+  likeCount commentCount shareCount likedByMe myReaction
+  reactionsCount { like love care haha wow sad angry }
+  sharedPost { unavailable _id author { _id name avatar } content images privacy createdAt shareCount }
+  isSensitive moderationStatus moderationReason toxicityScore pageId groupId
+`;
+
+function mapPostPage(page: CursorPage<GraphQLPost>): CursorPage<PostView> {
+  return {
+    ...page,
+    items: page.items.map(({ sharedPost, ...post }) => ({
+      ...post,
+      sharedPost: !sharedPost ? null : sharedPost.unavailable ? { unavailable: true } : {
+        _id: sharedPost._id,
+        author: sharedPost.author,
+        content: sharedPost.content,
+        images: sharedPost.images,
+        privacy: sharedPost.privacy,
+        createdAt: sharedPost.createdAt,
+        shareCount: sharedPost.shareCount,
+      },
+    })),
+  };
+}
+
 export async function fetchFeed(options: PageOptions = {}): Promise<CursorPage<PostView>> {
-  const { data } = await api.get("/posts/feed", { params: pageParams(options) });
-  return data;
+  const data = await requestGraphQL<{ feed: CursorPage<GraphQLPost> }>(
+    `query Feed($limit: Int, $after: String) {
+      feed(limit: $limit, after: $after) { items { ${postFields} } hasMore nextCursor }
+    }`,
+    { limit: options.limit ?? 10, after: options.after ?? null },
+  );
+  return mapPostPage(data.feed);
 }
 
 export async function fetchPagePosts(
@@ -192,8 +229,13 @@ export async function fetchUserPosts(
   userId: string,
   options: PageOptions = {},
 ): Promise<CursorPage<PostView>> {
-  const { data } = await api.get(`/posts/user/${userId}`, { params: pageParams(options) });
-  return data;
+  const data = await requestGraphQL<{ profilePosts: CursorPage<GraphQLPost> }>(
+    `query ProfilePosts($userId: String!, $limit: Int, $after: String) {
+      profilePosts(userId: $userId, limit: $limit, after: $after) { items { ${postFields} } hasMore nextCursor }
+    }`,
+    { userId, limit: options.limit ?? 10, after: options.after ?? null },
+  );
+  return mapPostPage(data.profilePosts);
 }
 
 export async function fetchUserPhotos(userId: string, limit = 9): Promise<PhotoItem[]> {
@@ -202,8 +244,16 @@ export async function fetchUserPhotos(userId: string, limit = 9): Promise<PhotoI
 }
 
 export async function fetchPublicProfile(userId: string): Promise<PublicProfile> {
-  const { data } = await api.get(`/friends/profile/${userId}`);
-  return data;
+  const data = await requestGraphQL<{ publicProfile: PublicProfile }>(
+    `query PublicProfile($userId: String!) {
+      publicProfile(userId: $userId) {
+        user { _id name avatar cover bio school relationshipStatus createdAt }
+        relationStatus requestId friendCount friendsPreview { _id name avatar }
+      }
+    }`,
+    { userId },
+  );
+  return data.publicProfile;
 }
 
 export async function uploadPostImage(file: File): Promise<string> {
