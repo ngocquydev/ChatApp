@@ -141,6 +141,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 
 ### 3.1 Video ngắn & Khám phá bạn bè
 - Trang `/explore` hiển thị video dọc từ các bài viết người xem có quyền truy cập. Video tự phát khi vào khung nhìn, dừng ở cuối và mặc định tắt tiếng; có thể thả cảm xúc, bình luận và chia sẻ. Bấm phát để xem lại video đã hết.
+- Video bài viết MP4, MOV và WebM được FFmpeg chuyển sang MP4 H.264/AAC với `faststart` trước khi tải lên Cloudinary. Docker backend đã cài FFmpeg; khi chạy backend trực tiếp cần cài FFmpeg có `libx264` và thêm vào `PATH`.
 - Nút tim bật/tắt cảm xúc **Tim** cho video; số bên dưới là lượt thả tim. Nút chia sẻ hỗ trợ ChatApp, Facebook, X, WhatsApp, Telegram, sao chép liên kết và menu chia sẻ của thiết bị. Liên kết ra ngoài chỉ dành cho video công khai không bị gắn nhãn nhạy cảm.
 - Đăng video: chọn **Đăng video** trên `/explore` để tới ô đăng bài ở trang chủ, chọn **Ảnh/Video**, tải MP4/WebM/MOV (tối đa 100 MB), đặt quyền xem **Công khai** rồi đăng.
 - Trang khám phá bạn bè và quản lý lời mời được chuyển sang `/friends`.
