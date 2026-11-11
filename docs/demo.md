@@ -81,7 +81,7 @@ Hỗ trợ đổi 5 chủ đề phong phú (*Mặc định, Hẹn hò lãng mạ
 
 ## 3. Video ngắn (Explore) & Khám phá bạn bè
 
-Trang `/explore` hiển thị luồng video dọc lấy từ các bài viết mà người xem được phép truy cập. Video tự phát khi đi vào vùng nhìn thấy, lặp lại và mặc định tắt tiếng; người xem có thể bật âm thanh, thả cảm xúc, bình luận và chia sẻ.
+Trang `/explore` hiển thị luồng video dọc lấy từ các bài viết mà người xem được phép truy cập. Video tự phát khi đi vào vùng nhìn thấy, dừng ở cuối và mặc định tắt tiếng; người xem có thể bấm phát để xem lại, bật âm thanh, thả cảm xúc, bình luận và chia sẻ.
 
 Nút tim bật/tắt cảm xúc **Tim** và hiển thị số tim. Hộp chia sẻ có ChatApp, Facebook, X, WhatsApp, Telegram, sao chép liên kết và chia sẻ qua thiết bị. Chỉ video công khai không nhạy cảm có liên kết chia sẻ ra ngoài; liên kết này mở tệp video trực tiếp.
 

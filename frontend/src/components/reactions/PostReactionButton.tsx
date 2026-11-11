@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, MouseEvent } from "react";
-import { Box, Button } from "@mui/material";
-import { ThumbsUp } from "lucide-react";
+import { Box, Button, IconButton } from "@mui/material";
+import { Heart, ThumbsUp } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { REACTION_MAP, ReactionType, getReactionLabel } from "./reactionConstants";
 import ReactionPicker from "./ReactionPicker";
@@ -12,6 +12,7 @@ interface PostReactionButtonProps {
   onReact: (type: ReactionType) => void;
   onToggleDefault: () => void;
   disabled?: boolean;
+  iconOnly?: boolean;
 }
 
 export default function PostReactionButton({
@@ -19,6 +20,7 @@ export default function PostReactionButton({
   onReact,
   onToggleDefault,
   disabled = false,
+  iconOnly = false,
 }: PostReactionButtonProps) {
   const { language } = useTranslation();
   const isEn = language === "en";
@@ -109,7 +111,15 @@ export default function PostReactionButton({
         </Box>
       )}
 
-      <Button
+      {iconOnly ? <IconButton
+        disabled={disabled}
+        aria-pressed={Boolean(myReaction)}
+        aria-label={currentLabel}
+        onClick={handleClick}
+        sx={{ color: activeDef ? activeDef.color : "common.white", p: 0.75 }}
+      >
+        {activeDef ? <span role="img" aria-hidden style={{ fontSize: "1.6rem", lineHeight: 1 }}>{activeDef.emoji}</span> : <Heart size={30} aria-hidden />}
+      </IconButton> : <Button
         fullWidth
         color="inherit"
         disabled={disabled}
@@ -137,7 +147,7 @@ export default function PostReactionButton({
         }}
       >
         {currentLabel}
-      </Button>
+      </Button>}
     </Box>
   );
 }

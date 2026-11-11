@@ -8,7 +8,7 @@
 
 - Desktop uses the shared left navigation beside a dark, full-height viewing stage. Mobile hides the desktop sidebar and keeps the video stage full-width.
 - Each video occupies one stage and snaps into place while scrolling. Previous/next controls move between clips.
-- Videos play inline, loop, and start muted when at least 65% of the video enters the viewport. Videos pause after scrolling away.
+- Videos play inline and start muted when at least 65% of the video enters the viewport. They pause after scrolling away and stop on the last frame when finished; replay requires pressing Play.
 - The video controls provide play/pause, seek, elapsed time, and mute/unmute. The sound choice applies across clips.
 - The heart button toggles the `love` reaction and displays the love count; comment actions reuse the existing post interaction.
 - Sharing within ChatApp reuses the post sharing dialog. Public, non-sensitive videos can also be shared as direct media links through Facebook, X, WhatsApp, Telegram, a copy action, or the device share sheet when available. External shares do not increase the in-app share count.

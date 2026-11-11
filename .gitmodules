@@ -1,0 +1,4 @@
+[submodule "awesome-codex-skills"]
+	path = awesome-codex-skills
+	url = https://github.com/ComposioHQ/awesome-codex-skills.git
+	ignore = untracked
