@@ -36,6 +36,7 @@ export default function ShortVideoCard({ post, videoUrl, index, active, muted, s
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const scrubbingRef = useRef(false);
   const presentedTimeRef = useRef<number | null>(null);
+  const pausedTimeRef = useRef<number | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [paused, setPaused] = useState(true);
   const [buffering, setBuffering] = useState(false);
@@ -70,6 +71,7 @@ export default function ShortVideoCard({ post, videoUrl, index, active, muted, s
     let frame = 0;
     let lastUpdate = 0;
     const syncProgress = (now: number, mediaTime: number) => {
+      if (pausedTimeRef.current !== null) return;
       presentedTimeRef.current = mediaTime;
       if (now - lastUpdate >= 33 && !scrubbingRef.current) {
         setPosition(mediaTime);
@@ -98,6 +100,7 @@ export default function ShortVideoCard({ post, videoUrl, index, active, muted, s
     const video = videoRef.current;
     if (!video || sensitiveHidden) return;
     if (video.paused) {
+      pausedTimeRef.current = null;
       if (video.ended) {
         video.currentTime = 0;
         presentedTimeRef.current = 0;
@@ -105,13 +108,15 @@ export default function ShortVideoCard({ post, videoUrl, index, active, muted, s
       }
       void video.play().catch(() => setPaused(true));
     } else {
+      pausedTimeRef.current = video.currentTime;
+      presentedTimeRef.current = video.currentTime;
       video.pause();
     }
   };
 
   return (
     <Box component="article" data-light="" aria-label={tr({ vi: `Video của ${post.author.name}`, en: `Video by ${post.author.name}`, "zh-CN": `${post.author.name}的视频`, "zh-TW": `${post.author.name}的影片`, ko: `${post.author.name}님의 동영상`, th: `วิดีโอโดย ${post.author.name}` })} sx={{ position: "relative", width: "100%", height: "100%", flexShrink: 0, overflow: "hidden", scrollSnapAlign: "start", bgcolor: v.tone("2d251f") }}>
-      <Box component="video" ref={videoRef} src={mediaUrl(videoUrl)} playsInline muted={muted} preload={index < 2 ? "metadata" : "none"} onLoadedMetadata={(event) => { setDuration(event.currentTarget.duration); presentedTimeRef.current = event.currentTarget.currentTime; setPosition(event.currentTarget.currentTime); }} onSeeked={(event) => { presentedTimeRef.current = event.currentTarget.currentTime; if (!scrubbingRef.current) setPosition(event.currentTarget.currentTime); }} onPlay={() => setPaused(false)} onPause={(event) => { setPaused(true); if (!scrubbingRef.current) setPosition(event.currentTarget.ended ? event.currentTarget.duration : presentedTimeRef.current ?? event.currentTarget.currentTime); }} onEnded={(event) => { presentedTimeRef.current = event.currentTarget.duration; setPosition(event.currentTarget.duration); setPaused(true); }} onWaiting={() => setBuffering(true)} onCanPlay={() => setBuffering(false)} onError={() => setFailed(true)} sx={{ display: "block", width: "100%", maxWidth: 620, height: "100%", mx: "auto", objectFit: "contain", filter: sensitiveHidden ? "blur(24px)" : "none" }} />
+      <Box component="video" ref={videoRef} src={mediaUrl(videoUrl)} playsInline muted={muted} preload={index < 2 ? "metadata" : "none"} onLoadedMetadata={(event) => { setDuration(event.currentTarget.duration); presentedTimeRef.current = event.currentTarget.currentTime; setPosition(event.currentTarget.currentTime); }} onSeeked={(event) => { presentedTimeRef.current = event.currentTarget.currentTime; if (!scrubbingRef.current) setPosition(event.currentTarget.currentTime); }} onPlay={() => { pausedTimeRef.current = null; setPaused(false); }} onPause={(event) => { if (!event.currentTarget.paused) return; const positionAtPause = event.currentTarget.ended ? event.currentTarget.duration : pausedTimeRef.current ?? event.currentTarget.currentTime; pausedTimeRef.current = positionAtPause; presentedTimeRef.current = positionAtPause; setPaused(true); if (!scrubbingRef.current) setPosition(positionAtPause); }} onEnded={(event) => { pausedTimeRef.current = event.currentTarget.duration; presentedTimeRef.current = event.currentTarget.duration; setPosition(event.currentTarget.duration); setPaused(true); }} onWaiting={() => setBuffering(true)} onCanPlay={() => setBuffering(false)} onError={() => setFailed(true)} sx={{ display: "block", width: "100%", maxWidth: 620, height: "100%", mx: "auto", objectFit: "contain", filter: sensitiveHidden ? "blur(24px)" : "none" }} />
 
       <ButtonBase disableRipple onClick={togglePlayback} aria-label={paused ? tr(COPY.play) : tr(COPY.pause)} sx={{ position: "absolute", inset: 0, zIndex: 1, cursor: "pointer" }}>
         {paused && !sensitiveHidden && !failed && <Box sx={{ display: "grid", placeItems: "center", width: 68, height: 68, borderRadius: "50%", bgcolor: "color-mix(in srgb, var(--mui-palette-common-black) 55%, transparent)", color: v.white }}><Play size={30} fill="currentColor" aria-hidden /></Box>}
