@@ -138,6 +138,13 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Thông tin học vấn & Tình trạng mối quan hệ:** Cập nhật trường học (`school`) tích hợp gợi ý thông minh từ Public Universities API & CSDL chuẩn hóa bằng MUI Autocomplete (`freeSolo`), kèm thiết lập tình trạng mối quan hệ (`relationshipStatus`: độc thân, đang hẹn hò, đính hôn, kết hôn, quan hệ phức tạp, ly hôn, góa...).
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/social-feed-profile.md](docs/features/social-feed-profile.md)*
 
+### 3.1 Video ngắn & Khám phá bạn bè
+- Trang `/explore` hiển thị video dọc từ các bài viết người xem có quyền truy cập. Video tự phát khi vào khung nhìn, lặp lại và mặc định tắt tiếng; có thể thả cảm xúc, bình luận và chia sẻ.
+- Nút tim bật/tắt cảm xúc **Tim** cho video; số bên dưới là lượt thả tim. Nút chia sẻ hỗ trợ ChatApp, Facebook, X, WhatsApp, Telegram, sao chép liên kết và menu chia sẻ của thiết bị. Liên kết ra ngoài chỉ dành cho video công khai không bị gắn nhãn nhạy cảm.
+- Đăng video: chọn **Đăng video** trên `/explore` để tới ô đăng bài ở trang chủ, chọn **Ảnh/Video**, tải MP4/WebM/MOV (tối đa 100 MB), đặt quyền xem **Công khai** rồi đăng.
+- Trang khám phá bạn bè và quản lý lời mời được chuyển sang `/friends`.
+- 📖 *Xem đặc tả chi tiết tại: [docs/features/short-video-explore.md](docs/features/short-video-explore.md)*
+
 ### 4. Hệ Thống Kiểm Duyệt Nội Dung & Phòng Chống Bot AI (Moderation & Trust)
 - **Kiểm duyệt & Chặn ảnh 18+ / Khiêu dâm / Khỏa thân (NSFW Image Moderation):** Cơ chế phòng thủ đa tầng tại cả cổng tải lên `/upload` và cổng đăng bài `/posts`. Tự động phân tích từ khóa nhạy cảm song ngữ (VI / EN) kết hợp thuật toán phân tích phổ màu da người (Human Skin Tone Detection) trên buffer ảnh. Chặn đứng bài viết công khai vi phạm 18+ (`400 Bad Request`) và tự động kích hoạt lớp phủ làm mờ (`Safe Blur 24px`) với bài viết gợi cảm (`isSensitive: true`).
 - **NLP Text Classifier:** Phân loại văn bản độc hại, ngôn từ thù ghét (Hate speech) và thư rác (Spam) hỗ trợ song ngữ Tiếng Việt & Tiếng Anh.

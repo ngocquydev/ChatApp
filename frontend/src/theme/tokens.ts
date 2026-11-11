@@ -114,7 +114,7 @@ export const brandScale: Record<"light" | "dark", Record<BrandStep, string>> = {
 /** Màu nhấn / trạng thái dùng lẻ. Giá trị light = chính hex đó; dark chỉ liệt kê những màu cần đổi. */
 export const toneLight = {
   // nền cố định (không đảo): hero, banner, nút gradient
-  "0f172a": "#0f172a", "1e293b": "#1e293b", "334155": "#334155", "090d16": "#090d16", "171836": "#171836",
+  "0f172a": "#0f172a", "1e293b": "#1e293b", "334155": "#334155", "090d16": "#090d16", "171836": "#171836", "2d251f": "#2d251f",
   "1e40af": "#1e40af", "1e3a8a": "#1e3a8a", "1e1b4b": "#1e1b4b", "312e81": "#312e81", "881337": "#881337",
   // xanh lá
   "22c55e": "#22c55e", "16a34a": "#16a34a", "10b981": "#10b981", "059669": "#059669", "34d399": "#34d399",

@@ -3,13 +3,12 @@ import AuthGuard from "@/components/common/AuthGuard";
 import Explore from "@/components/pages/Explore";
 
 export const metadata: Metadata = {
-  title: "Khám phá & Tìm bạn bè",
+  title: "Video ngắn | ChatApp",
   description:
-    "Tìm kiếm bạn bè mới, kết nối theo vị trí địa lý và khám phá những gợi ý kết bạn thông minh trên ChatApp.",
+    "Khám phá video ngắn công khai từ cộng đồng ChatApp.",
   openGraph: {
-    title: "Khám phá & Tìm bạn bè | ChatApp",
-    description:
-      "Tìm kiếm bạn bè mới, kết nối theo vị trí địa lý và khám phá những gợi ý kết bạn thông minh trên ChatApp.",
+    title: "Video ngắn | ChatApp",
+    description: "Khám phá video ngắn công khai từ cộng đồng ChatApp.",
   },
 };
 

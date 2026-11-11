@@ -312,14 +312,16 @@ export default function PostFeed({
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {canCompose && (
-        <PostComposer
-          userName={user?.name}
-          userAvatar={user?.avatar}
-          defaultPrivacy={defaultPrivacy}
-          pageId={pageId}
-          groupId={groupId}
-          onCreated={handleCreated}
-        />
+        <Box id="post-composer" sx={{ scrollMarginTop: "80px" }}>
+          <PostComposer
+            userName={user?.name}
+            userAvatar={user?.avatar}
+            defaultPrivacy={defaultPrivacy}
+            pageId={pageId}
+            groupId={groupId}
+            onCreated={handleCreated}
+          />
+        </Box>
       )}
 
       <Box component="section" aria-label="Bài viết" aria-busy={list.status === "loading"} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>

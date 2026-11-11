@@ -156,7 +156,7 @@ export default function LeftSidebar() {
     {
       id: "friends",
       label: t("sidebar.friends"),
-      href: "/explore",
+      href: "/friends",
       customIcon: (
         <Box
           sx={{

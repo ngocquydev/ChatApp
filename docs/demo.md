@@ -79,9 +79,25 @@ Hỗ trợ đổi 5 chủ đề phong phú (*Mặc định, Hẹn hò lãng mạ
 
 ---
 
-## 3. Trang Khám Phá (Explore) & Radar Gợi Ý Bạn Bè Thông Minh
+## 3. Video ngắn (Explore) & Khám phá bạn bè
 
-Trang `/explore` và tab "Tìm bạn" trên thanh điều hướng bên cạnh giúp kết nối người dùng thông qua thuật toán đa chiều:
+Trang `/explore` hiển thị luồng video dọc lấy từ các bài viết mà người xem được phép truy cập. Video tự phát khi đi vào vùng nhìn thấy, lặp lại và mặc định tắt tiếng; người xem có thể bật âm thanh, thả cảm xúc, bình luận và chia sẻ.
+
+Nút tim bật/tắt cảm xúc **Tim** và hiển thị số tim. Hộp chia sẻ có ChatApp, Facebook, X, WhatsApp, Telegram, sao chép liên kết và chia sẻ qua thiết bị. Chỉ video công khai không nhạy cảm có liên kết chia sẻ ra ngoài; liên kết này mở tệp video trực tiếp.
+
+Để đăng video, chọn **Đăng video** trên `/explore`, thêm tệp bằng **Ảnh/Video** trong ô đăng bài ở trang chủ, chọn **Công khai**, rồi đăng.
+
+Giao diện sử dụng AppBar và sidebar chung của ChatApp. Khung xem video đặt bên dưới AppBar, có thông tin tác giả, cột tương tác, nút chuyển clip và thanh phát/tua video riêng.
+
+- Phân trang theo cursor dùng API `/posts/feed`; chỉ hiển thị bài có video.
+- Video dừng khi cuộn khỏi vùng nhìn thấy. Quyền riêng tư của bài viết vẫn được backend áp dụng.
+- Trang khám phá bạn bè cũ được chuyển sang `/friends`.
+- Tài liệu: [docs/features/short-video-explore.md](features/short-video-explore.md).
+- Ảnh demo chưa có: Chrome headless bị thoát trước khi tạo ảnh trong môi trường hiện tại.
+
+### Khám phá bạn bè (`/friends`)
+
+Trang `/friends` và tab "Tìm bạn" trên thanh điều hướng bên cạnh giúp kết nối người dùng thông qua thuật toán đa chiều:
 - **Bạn chung & Đồ thị quan hệ (Neo4j Graph):** Duyệt quan hệ 2-hops `(u)-[:FRIEND]-(mutual)-[:FRIEND]-(suggested)` với độ trễ < 5ms và xếp hạng theo số bạn chung.
 - **Vị trí lân cận (Redis Geospatial):** Truy vấn khoảng cách địa lý km thực tế giữa hai người dùng (`users:locations`).
 - **Khắc phục Cold-Start (Degree Centrality):** Người dùng mới được gợi ý các tài khoản uy tín có mật độ kết nối cao nhất trên đồ thị Neo4j.

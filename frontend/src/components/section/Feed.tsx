@@ -31,7 +31,7 @@ function Feed() {
         </Typography>
         <Button
           component={NextLink}
-          href="/explore"
+          href="/friends"
           size="small"
           variant="outlined"
           startIcon={<Compass size={16} aria-hidden />}
@@ -47,7 +47,7 @@ function Feed() {
         emptyTitle={t("feed.noPostsTitle")}
         emptyDescription={t("feed.noPostsDesc")}
         emptyAction={
-          <Button component={NextLink} href="/explore" variant="outlined">
+          <Button component={NextLink} href="/friends" variant="outlined">
             {t("feed.exploreFriends")}
           </Button>
         }
