@@ -231,9 +231,8 @@ export class ChatGateway
     }
   }
 
-  /**
-   */
-  private broadcastNewMessage(message: {
+  /** Broadcast a saved message to all participants, including REST fallback sends. */
+  broadcastNewMessage(message: {
     _id: { toString(): string } | string;
     id?: { toString(): string } | string;
     conversationId: { toString(): string } | string;

@@ -3,9 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  Inject,
-  Optional,
-  forwardRef,
   Param,
   Patch,
   Post,
@@ -34,9 +31,7 @@ import type { AuthenticatedRequest } from '../auth/types/auth.types.js';
 export class ChatController {
   constructor(
     private readonly chatService: ChatService,
-    @Optional()
-    @Inject(forwardRef(() => ChatGateway))
-    private readonly chatGateway?: ChatGateway,
+    private readonly chatGateway: ChatGateway,
   ) {}
 
   private extractUserId(req: AuthenticatedRequest): string {
@@ -131,14 +126,13 @@ export class ChatController {
       },
     );
 
-    if (this.chatGateway) {
-      void this.chatGateway.triggerAuraReply({
-        senderId: userId,
-        receiverId: dto.receiverId,
-        text: dto.text,
-        conversationId: message.conversationId.toString(),
-      });
-    }
+    this.chatGateway.broadcastNewMessage(message);
+    void this.chatGateway.triggerAuraReply({
+      senderId: userId,
+      receiverId: dto.receiverId,
+      text: dto.text,
+      conversationId: message.conversationId.toString(),
+    });
 
     return {
       success: true,

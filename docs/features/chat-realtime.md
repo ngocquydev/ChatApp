@@ -48,7 +48,8 @@ ChatApp sử dụng Socket.IO qua WebSocket trên cổng backend 3000. Tin nhắ
 được mã hóa bằng Protocol Buffers thành payload nhị phân cho các sự kiện
 `message:send:binary` và `message:new:binary`. Backend xác thực phiên WebSocket,
 kiểm tra DTO sau khi giải mã, lưu MongoDB rồi gửi cho người tham gia hội thoại.
-Khi Socket.IO chưa kết nối, ứng dụng dùng REST API để gửi tin nhắn. Typing,
+Khi Socket.IO chưa kết nối, ứng dụng dùng REST API để gửi tin nhắn; backend vẫn phát
+`message:new:binary` tới người nhận đang kết nối. Typing,
 read/seen và presence dùng các sự kiện Socket.IO hiện có. Kết nối công khai
 cần HTTPS/WSS qua reverse proxy.
 
