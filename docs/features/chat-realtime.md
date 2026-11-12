@@ -53,6 +53,10 @@ Khi Socket.IO chưa kết nối, ứng dụng dùng REST API để gửi tin nh�
 read/seen và presence dùng các sự kiện Socket.IO hiện có. Kết nối công khai
 cần HTTPS/WSS qua reverse proxy.
 
+Frontend gửi access token đang giữ trong bộ nhớ qua `handshake.auth.token` ở mỗi
+lần kết nối Socket.IO. Cookie vẫn được gửi khi trình duyệt cho phép. Cách này giúp
+kết nối Vercel → Render xác thực được khi cookie bên thứ ba bị chặn.
+
 ## 4. GIAO THỨC NHỊ PHÂN PROTOBUF
 
 Schema `SendMessageProto` và `ChatMessageProto` được khai báo ở cả frontend và

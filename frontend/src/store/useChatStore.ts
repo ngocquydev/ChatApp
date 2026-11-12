@@ -253,6 +253,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     const socket = io(BACKEND_URL, {
       withCredentials: true,
+      auth: (callback) => {
+        const token = useAuthStore.getState().accessToken;
+        callback(token ? { token } : {});
+      },
       transports: ["websocket", "polling"],
       autoConnect: true,
     });
