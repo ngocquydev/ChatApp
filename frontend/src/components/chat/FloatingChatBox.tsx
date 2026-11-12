@@ -78,6 +78,24 @@ const POPULAR_EMOJIS = [
   "👋", "☕", "🚀", "💪",
 ];
 
+function mergeMessagesFromServer(
+  serverMessages: ChatMessage[],
+  currentMessages: ChatMessage[],
+): ChatMessage[] {
+  const serverIds = new Set(
+    serverMessages.map((message) => String(message._id || message.id)),
+  );
+
+  return [
+    ...serverMessages,
+    ...currentMessages.filter(
+      (message) => !serverIds.has(String(message._id || message.id)),
+    ),
+  ].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  );
+}
+
 interface FloatingChatBoxProps {
   session: ChatBoxSession;
   onClose: () => void;
@@ -159,11 +177,13 @@ export default function FloatingChatBox({
   const chatTheme = getChatTheme(convTheme);
 
   const socketRef = useRef(socket);
+  const convIdRef = useRef(convId);
   const isRestrictedRef = useRef(isRestricted);
   useEffect(() => {
     socketRef.current = socket;
+    convIdRef.current = convId;
     isRestrictedRef.current = isRestricted;
-  }, [socket, isRestricted]);
+  }, [socket, convId, isRestricted]);
 
   // Scroll to bottom smoothly
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
@@ -241,8 +261,10 @@ export default function FloatingChatBox({
         if (currentConvId && isMounted) {
           // Lấy lịch sử tin nhắn
           const msgRes = await api.get(`/chat/conversations/${currentConvId}/messages`);
-          if (isMounted && msgRes.data?.messages) {
-            setMessages(msgRes.data.messages);
+          if (isMounted && Array.isArray(msgRes.data?.messages)) {
+            setMessages((current) =>
+              mergeMessagesFromServer(msgRes.data.messages, current),
+            );
           }
 
           // Đánh dấu đã đọc
@@ -275,6 +297,59 @@ export default function FloatingChatBox({
       isMounted = false;
     };
   }, [targetUserId, currentUserId, session.conversationId, setConversationId, clearUnread]);
+
+  // Socket.IO cannot replay events missed while a tab is suspended or reconnecting.
+  // Reconcile this floating chat with the server when the connection returns or
+  // the user brings the tab back into view.
+  useEffect(() => {
+    if (!socket || !convId) return;
+
+    let isCurrent = true;
+    let isSyncing = false;
+
+    const syncMessages = async () => {
+      if (isSyncing) return;
+      isSyncing = true;
+      const requestedConversationId = convId;
+
+      try {
+        const response = await api.get(
+          `/chat/conversations/${requestedConversationId}/messages`,
+        );
+        if (
+          !isCurrent ||
+          convIdRef.current !== requestedConversationId ||
+          !Array.isArray(response.data?.messages)
+        ) {
+          return;
+        }
+
+        setMessages((current) =>
+          mergeMessagesFromServer(response.data.messages, current),
+        );
+      } catch (error) {
+        console.error("Lỗi đồng bộ tin nhắn của cửa sổ chat:", error);
+      } finally {
+        isSyncing = false;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && socket.connected) {
+        void syncMessages();
+      }
+    };
+
+    socket.on("connect", syncMessages);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    if (socket.connected) void syncMessages();
+
+    return () => {
+      isCurrent = false;
+      socket.off("connect", syncMessages);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [socket, convId]);
 
   // Cuộn xuống đáy khi tin nhắn thay đổi hoặc khi un-minimize
   useEffect(() => {
@@ -1584,3 +1659,4 @@ export default function FloatingChatBox({
     </Paper>
   );
 }
+
