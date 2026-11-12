@@ -26,8 +26,12 @@ let failedQueue: Array<{
 }> = [];
 
 let authTokenGetter: (() => string | null) | null = null;
+let authTokenSetter: ((token: string) => void) | null = null;
 export const setAuthTokenGetter = (fn: () => string | null) => {
   authTokenGetter = fn;
+};
+export const setAuthTokenSetter = (fn: (token: string) => void) => {
+  authTokenSetter = fn;
 };
 
 // Request Interceptor:
@@ -103,7 +107,12 @@ api.interceptors.response.use(
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then(() => api(originalRequest))
+          .then((token) => {
+            if (token && originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            return api(originalRequest);
+          })
           .catch((err) => Promise.reject(err));
       }
 
@@ -111,8 +120,17 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await api.post("/auth/refresh");
-        processQueue(null);
+        const refreshResponse = await api.post("/auth/refresh");
+        const refreshedToken = refreshResponse.data?.accessToken;
+        if (typeof refreshedToken !== "string" || !refreshedToken) {
+          throw new Error("Refresh response did not include an access token");
+        }
+
+        authTokenSetter?.(refreshedToken);
+        processQueue(null, refreshedToken);
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${refreshedToken}`;
+        }
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
