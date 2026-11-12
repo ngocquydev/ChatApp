@@ -50,7 +50,6 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url));
         path.resolve(currentDir, '../../.env.local'),
         path.resolve(currentDir, '../.env.local'),
         '.env.local',
-        '.env',
       ],
     }),
     MongooseModule.forRootAsync({

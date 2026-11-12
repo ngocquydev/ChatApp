@@ -68,3 +68,5 @@ certs/*.key
 certs/*.pem
 !certs/README.md
 
+.vercel
+.env*
