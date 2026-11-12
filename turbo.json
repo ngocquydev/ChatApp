@@ -1,0 +1,39 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "tasks": {
+    "ci:backend": {
+      "inputs": [
+        "backend/**",
+        "scripts/ci-inspect.mjs",
+        "package.json",
+        "package-lock.json",
+        "!backend/node_modules/**",
+        "!backend/dist/**",
+        "!backend/.turbo/**"
+      ],
+      "tags": ["ci"]
+    },
+    "ci:frontend": {
+      "inputs": [
+        "frontend/**",
+        "package.json",
+        "package-lock.json",
+        "!frontend/node_modules/**",
+        "!frontend/.next/**",
+        "!frontend/.turbo/**"
+      ],
+      "tags": ["ci"]
+    },
+    "ci:admin": {
+      "inputs": [
+        "admin/**",
+        "package.json",
+        "package-lock.json",
+        "!admin/node_modules/**",
+        "!admin/dist/**",
+        "!admin/.turbo/**"
+      ],
+      "tags": ["ci"]
+    }
+  }
+}
