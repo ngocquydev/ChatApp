@@ -115,9 +115,6 @@ api.interceptors.response.use(
         processQueue(null);
         return api(originalRequest);
       } catch (refreshError) {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("has_session");
-        }
         processQueue(refreshError, null);
         return Promise.reject(refreshError);
       } finally {

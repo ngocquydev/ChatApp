@@ -70,40 +70,13 @@ export interface AuthState {
   logout: () => Promise<void>;
 }
 
-const CACHED_USER_KEY = "cached_user";
-
-function getStoredUser(): UserProfile | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(CACHED_USER_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function persistStoredUser(user: UserProfile | null) {
+function clearLegacyAuthCache() {
   if (typeof window === "undefined") return;
   try {
-    if (user) {
-      localStorage.setItem("has_session", "true");
-      const safe: UserProfile = {
-        _id: user._id,
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatar: user.avatar,
-        cover: user.cover,
-        bio: user.bio,
-        role: user.role,
-      };
-      localStorage.setItem(CACHED_USER_KEY, JSON.stringify(safe));
-    } else {
-      localStorage.removeItem("has_session");
-      localStorage.removeItem(CACHED_USER_KEY);
-    }
+    localStorage.removeItem("has_session");
+    localStorage.removeItem("cached_user");
   } catch {
-    // QuotaExceeded or privacy mode
+    // localStorage may be unavailable in privacy mode.
   }
 }
 
@@ -119,7 +92,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isFacebookLoading: false,
 
   setAuth: (user) => {
-    persistStoredUser(user);
+    clearLegacyAuthCache();
     set({
       user,
       isAuthenticated: !!user,
@@ -135,23 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return checkAuthPromise;
     }
 
-    if (typeof window !== "undefined") {
-      const hasSession = localStorage.getItem("has_session") === "true";
-      if (!hasSession) {
-        persistStoredUser(null);
-        set({
-          user: null,
-          isAuthenticated: false,
-          isCheckingAuth: false,
-        });
-        return null;
-      }
-      // Nạp ngay thông tin người dùng từ bộ nhớ đệm để hiển thị tức thì, tránh chặn LCP
-      const cached = getStoredUser();
-      if (cached && !get().user) {
-        set({ user: cached, isAuthenticated: true });
-      }
-    }
+    clearLegacyAuthCache();
 
     set({ isCheckingAuth: true });
 
@@ -159,14 +116,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         const resUser = await api.get("/auth/profile");
         const profile = resUser.data?.profile || resUser.data;
-        persistStoredUser(profile);
         set({
           user: profile,
           isAuthenticated: true,
         });
         return resUser.data;
       } catch (error) {
-        persistStoredUser(null);
         set({
           user: null,
           isAuthenticated: false,
@@ -198,7 +153,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         res.data?.profile || (await api.get("/auth/profile")).data?.profile;
       const accessToken = (res.data?.accessToken as string) || null;
 
-      persistStoredUser(profile);
       set({
         user: profile,
         accessToken,
@@ -250,7 +204,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         res.data?.profile || (await api.get("/auth/profile")).data?.profile;
       const accessToken = (res.data?.accessToken as string) || null;
 
-      persistStoredUser(profile);
       set({
         user: profile,
         accessToken,
@@ -275,7 +228,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         res.data?.profile || (await api.get("/auth/profile")).data?.profile;
       const accessToken = (res.data?.accessToken as string) || null;
 
-      persistStoredUser(profile);
       set({
         user: profile,
         accessToken,
@@ -295,7 +247,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const res = await api.patch("/auth/profile", data);
     const updatedProfile = res.data?.profile || res.data;
     const nextUser = get().user ? { ...get().user, ...updatedProfile } : updatedProfile;
-    persistStoredUser(nextUser);
     set({ user: nextUser });
     return updatedProfile;
   },
@@ -329,7 +280,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error("Lỗi khi đăng xuất backend:", error);
     } finally {
-      persistStoredUser(null);
+      clearLegacyAuthCache();
       try {
         await signOut(auth);
       } catch (firebaseError) {

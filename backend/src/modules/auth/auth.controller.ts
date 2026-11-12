@@ -28,6 +28,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { FirebaseService } from './firebase.service.js';
 import { TurnstileService } from './turnstile.service.js';
+import { RedisService } from '../redis/redis/redis.service.js';
 import { getClientIp } from '../../common/utils/client-ip.util.js';
 import type {
   AuthenticatedRequest,
@@ -50,6 +51,7 @@ export class AuthController {
     private readonly userService: UsersService,
     private readonly firebaseService: FirebaseService,
     private readonly turnstileService: TurnstileService,
+    private readonly redisService: RedisService,
   ) {}
 
   @Post('register')
@@ -241,7 +243,37 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('profile')
-  getProfile(@Req() req: AuthenticatedRequest) {
+  async getProfile(@Req() req: AuthenticatedRequest) {
+    const userId =
+      req.user._id?.toString() || req.user.id?.toString() || req.user.sub;
+    const cacheKey = userId ? `auth:profile:${userId}` : null;
+    const cachedProfile = cacheKey
+      ? await this.redisService.get(cacheKey)
+      : null;
+    if (cachedProfile) {
+      try {
+        const profile = JSON.parse(
+          cachedProfile,
+        ) as AuthenticatedRequest['user'];
+        return {
+          success: true,
+          message: 'Token hợp lệ!',
+          profile: {
+            ...profile,
+            role: req.user.role,
+            isDeleted: req.user.isDeleted,
+            isBan: req.user.isBan,
+            firebaseUid: req.user.firebaseUid,
+          },
+        };
+      } catch {
+        if (cacheKey) await this.redisService.del(cacheKey);
+      }
+    }
+
+    if (cacheKey) {
+      await this.redisService.set(cacheKey, JSON.stringify(req.user), 300);
+    }
     return {
       success: true,
       message: 'Token hợp lệ!',
@@ -264,7 +296,12 @@ export class AuthController {
     if (!userId) {
       throw new UnauthorizedException('Không xác định được danh tính người dùng');
     }
-    return this.authService.updateProfile(userId, updateProfileDto);
+    const result = await this.authService.updateProfile(
+      userId,
+      updateProfileDto,
+    );
+    await this.redisService.del(`auth:profile:${userId}`);
+    return result;
   }
 
   @UseGuards(JwtAuthGuard)

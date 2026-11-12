@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, ReactNode } from "react";
+import { useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -11,28 +11,16 @@ interface AuthGuardProps {
 export default function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isCheckingAuth } = useAuthStore();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const hasSession = mounted
-    ? typeof window !== "undefined" &&
-      localStorage.getItem("has_session") === "true"
-    : true;
-
-  useEffect(() => {
-    if (mounted) {
-      if (!isAuthenticated && (!hasSession || !isCheckingAuth)) {
-        router.replace("/login");
-      }
+    if (!isAuthenticated && !isCheckingAuth) {
+      router.replace("/login");
     }
-  }, [mounted, isAuthenticated, hasSession, isCheckingAuth, router]);
-  if (!mounted) {
-    return <>{children}</>;
+  }, [isAuthenticated, isCheckingAuth, router]);
+  if (!isAuthenticated && isCheckingAuth) {
+    return null;
   }
-  if (!isAuthenticated && (!hasSession || !isCheckingAuth)) {
+  if (!isAuthenticated) {
     return null;
   }
   return <>{children}</>;
