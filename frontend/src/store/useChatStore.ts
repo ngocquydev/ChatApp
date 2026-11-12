@@ -263,6 +263,53 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     socket.on("connect", () => {
       set({ isConnected: true });
+
+      // Socket.IO does not replay events missed while the browser was offline or suspended.
+      const activeConversationId = String(get().activeConversation?._id || "");
+      if (activeConversationId) {
+        void api
+          .get(`/chat/conversations/${activeConversationId}/messages`)
+          .then((res) => {
+            if (!Array.isArray(res.data?.messages)) return;
+            if (
+              String(get().activeConversation?._id || "") !==
+              activeConversationId
+            ) {
+              return;
+            }
+
+            set((state) => {
+              const currentById = new Map(
+                state.messages.map((message) => [
+                  String(message._id || message.id),
+                  message,
+                ]),
+              );
+              const syncedMessages = res.data.messages.map(
+                (message: ChatMessage) => {
+                  const id = String(message._id || message.id);
+                  const current = currentById.get(id);
+                  currentById.delete(id);
+                  return current ? { ...message, ...current } : message;
+                },
+              );
+
+              return {
+                messages: [
+                  ...syncedMessages,
+                  ...Array.from(currentById.values()),
+                ].sort(
+                  (a, b) =>
+                    new Date(a.createdAt).getTime() -
+                    new Date(b.createdAt).getTime(),
+                ),
+              };
+            });
+          })
+          .catch((error) => {
+            console.error("Lỗi đồng bộ tin nhắn sau khi kết nối lại:", error);
+          });
+      }
     });
 
     socket.on("disconnect", () => {
