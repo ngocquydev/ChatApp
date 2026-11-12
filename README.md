@@ -5,7 +5,7 @@
 [![NestJS](https://img.shields.io/badge/NestJS-10.0-E0234E?style=flat&logo=nestjs)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![Socket.IO](https://img.shields.io/badge/Socket.IO-Realtime-010101?style=flat&logo=socketdotio)](https://socket.io/)
-[![MQTT](https://img.shields.io/badge/MQTT-Protobuf%20Binary-660066?style=flat&logo=mqtt)](https://mqtt.org/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-Protobuf%20Binary-660066?style=flat&logo=socket)](https://socket.org/)
 [![Redis](https://img.shields.io/badge/Redis-7.0%20(GEO%20%2B%20Cache)-DC382D?style=flat&logo=redis)](https://redis.io/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?style=flat&logo=mongodb)](https://www.mongodb.com/)
 [![Neo4j](https://img.shields.io/badge/Neo4j-5.x%20(Graph%20Database)-008CC1?style=flat&logo=neo4j)](https://neo4j.com/)
@@ -13,7 +13,7 @@
 
 Hệ thống ứng dụng trò chuyện và mạng xã hội thời gian thực hiện đại (**Modern Realtime Chat & Social Platform**), kết hợp kiến trúc Client - Server với **NestJS** ở phía Backend và **Next.js 16 (App Router + Turbopack + TypeScript)** ở phía Frontend. 
 
-Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Binary MQTT/Protobuf phong cách Facebook Messenger**), thuật toán gợi ý bạn bè thông minh dựa trên **Cơ sở Dữ liệu Đồ thị Neo4j (Graph Database - Friends of Friends & Network Centrality)** kết hợp **Redis Geospatial & Caching**, cùng hệ thống kiểm duyệt nội dung độc hại & phòng chống bot tự động bằng **Trí tuệ Nhân tạo (NLP, Vision, Isolation Forest & Autoencoder)**.
+Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Binary Socket.IO/Protobuf phong cách Facebook Messenger**), thuật toán gợi ý bạn bè thông minh dựa trên **Cơ sở Dữ liệu Đồ thị Neo4j (Graph Database - Friends of Friends & Network Centrality)** kết hợp **Redis Geospatial & Caching**, cùng hệ thống kiểm duyệt nội dung độc hại & phòng chống bot tự động bằng **Trí tuệ Nhân tạo (NLP, Vision, Isolation Forest & Autoencoder)**.
 
 ---
 
@@ -99,7 +99,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 ## ✨ Tính năng cốt lõi
 
 ### 1. Nhắn tin Thời Gian Thực & Hộp Chat Nổi Facebook Messenger
-- **Dual-Engine Realtime:** Kết hợp linh hoạt Socket.IO (WebSockets) cho các tác vụ quản trị và Binary MQTT/Protobuf mã hóa TLS/WSS cho luồng tin nhắn siêu nhẹ (tiết kiệm 80% payload, độ trễ < 5ms, chống bắt gói tin và nghe lén tuyệt đối).
+- **Realtime:** Socket.IO truyền tin nhắn Protobuf dạng nhị phân qua WebSocket; typing, read/seen và presence dùng các sự kiện Socket.IO. HTTPS/WSS bảo vệ đường truyền trên môi trường production.
 - **Cửa sổ chat nổi đa nhiệm (Floating Chat Dock):** Trò chuyện đa nhiệm nhiều người cùng lúc ở góc màn hình mà không gián đoạn việc lướt bảng tin.
 - **Chia sẻ vị trí & Bản đồ tương tác (Location Sharing & Real-time Live Tracking):**
   - **Chia sẻ vị trí thời gian thực (Live Location - Phong cách Zalo / Telegram):** Phát sóng tọa độ di chuyển theo thời gian thực với tùy chọn thời lượng linh hoạt (15 phút, 1 giờ, 8 giờ, 1 ngày). Thẻ tin nhắn hiển thị huy hiệu radar xanh nhấp nháy, đồng hồ đếm ngược trực tiếp, marker phát sóng di chuyển mượt mà trên bản đồ và nút *"Dừng chia sẻ"* tức thì cho người gửi.
@@ -222,6 +222,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/meta-ai-aura-bot.md](docs/features/meta-ai-aura-bot.md)*
 
 ### 12. Nhóm Trò Chuyện (Group Chat) & Cuộc Gọi Nhóm WebRTC Tối Ưu Băng Thông
+- **Cuộc gọi 1-1:** Trình duyệt cần được cấp quyền camera và micro để gọi video; khi không thể mở thiết bị, ứng dụng hiển thị lỗi và không phát khung hình giả.
 - **Nhóm trò chuyện không giới hạn:** Tạo nhóm nhanh với hộp thoại `CreateGroupDialog`, chọn bạn bè, tìm kiếm theo tên, trao quyền Quản trị viên nhóm (Admin), đổi tên và cập nhật ảnh đại diện nhóm.
 - **Quản lý nhóm toàn diện (`GroupInfoModal`):** Thêm thành viên, xóa thành viên, rời nhóm, chuyển giao quyền quản trị và ghim tin nhắn nhóm.
 - **Cuộc gọi thoại & video nhóm Mesh-Lite tối ưu băng thông (`GroupCallModal`):**
@@ -289,9 +290,9 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 
 | Tầng | Công nghệ / Thư viện chính |
 | :--- | :--- |
-| **Frontend** | **Next.js 16 (App Router + Turbopack)**, **React 19**, TypeScript, **Material UI (MUI v9)**, Emotion, Zustand, Socket.IO Client, MQTT.js, Protobuf.js, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase SDK, Lucide Icons, GIPHY Fetch API, React Masonry CSS, i18n Store (Cổng 5173 - Dành riêng cho người dùng) |
+| **Frontend** | **Next.js 16 (App Router + Turbopack)**, **React 19**, TypeScript, **Material UI (MUI v9)**, Emotion, Zustand, Socket.IO Client, Protobuf.js, TanStack React Query v5, React Hook Form, Zod, Axios, Firebase SDK, Lucide Icons, GIPHY Fetch API, React Masonry CSS, i18n Store (Cổng 5173 - Dành riêng cho người dùng) |
 | **Admin Portal** | **React 19**, **Vite 6**, React Router DOM v7, Material UI (MUI v9), Zustand, Lucide Icons, i18n Store (Cổng 5174 - Phân hệ bảo mật & quản trị độc lập) |
-| **Backend** | **NestJS**, TypeScript, WebSockets (`@nestjs/websockets`, `@nestjs/platform-socket.io`), Aedes MQTT Broker, Passport JWT, Mongoose, Redis (IoRedis), Neo4j Driver, Firebase Admin SDK, Cloudflare Turnstile, AI Moderation & Trust Engine |
+| **Backend** | **NestJS**, TypeScript, WebSockets (`@nestjs/websockets`, `@nestjs/platform-socket.io`), Passport JWT, Mongoose, Redis (IoRedis), Neo4j Driver, Firebase Admin SDK, Cloudflare Turnstile, AI Moderation & Trust Engine |
 | **Cơ sở dữ liệu Đồ thị** | **Neo4j 5.x** (Mô hình hóa thực thể User, quan hệ FRIEND, truy vấn Cypher Friends of Friends & Degree Centrality tối ưu cho mạng xã hội) |
 | **Cơ sở dữ liệu & Cache** | **MongoDB** (lưu trữ người dùng, bài viết, quan hệ bạn bè, tin nhắn), **Redis 7** (Blacklist, locations, friends sets, recommendations cache) |
 | **DevOps & Môi trường** | **Docker & Docker Compose** (Mongo, Redis, Neo4j), GitHub Actions CI, Git Pre-Push Quality Gate |
@@ -305,7 +306,7 @@ chat/
 ├── docs/                        # 📚 Trung tâm tài liệu kỹ thuật & hình ảnh demo
 │   ├── assets/screenshots/      # Ảnh chụp màn hình giao diện thực tế
 │   ├── features/                # Tài liệu chi tiết từng tính năng
-│   │   ├── chat-realtime.md     # Nhắn tin thời gian thực & Binary MQTT
+│   │   ├── chat-realtime.md     # Nhắn tin thời gian thực & Binary Protobuf
 │   │   ├── friend-recommendation.md # Gợi ý bạn bè & Thuật toán Đồ thị Neo4j
 │   │   ├── social-feed-profile.md   # Bảng tin & Hồ sơ cá nhân
 │   │   ├── moderation-trust.md  # Kiểm duyệt AI & Phát hiện Bot
@@ -325,7 +326,7 @@ chat/
 │   │   ├── errorHandleer/       # Exception Filter chuẩn hóa lỗi
 │   │   └── modules/
 │   │       ├── auth/            # Xác thực JWT HttpOnly, OTP, Firebase, Turnstile
-│   │       ├── chat/            # Socket.IO Gateway, MQTT Protocol, Tin nhắn
+│   │       ├── chat/            # Socket.IO Gateway, Socket.IO Protocol, Tin nhắn
 │   │       ├── friends/         # Hệ thống bạn bè & Tìm kiếm
 │   │       ├── neo4j/           # Neo4j Service & Cypher Queries đồ thị kết bạn
 │   │       ├── moderation/      # AI Moderation, NLP, Isolation Forest, Autoencoder
@@ -350,7 +351,7 @@ chat/
         ├── components/          # Design System, Chat, Feed, Posts, Layout
         ├── hooks/               # Custom React Hooks
         ├── i18n/                # Bản địa hóa đa ngôn ngữ (VI, EN, ZH-CN, ZH-TW, KO, TH)
-        ├── services/            # Axios API, Socket.IO & MQTT Client
+        ├── services/            # Axios API, Socket.IO & Socket.IO Client
         ├── store/               # Zustand Global Stores
         └── theme/               # Material UI Theme & Design Tokens
 ```
@@ -448,7 +449,7 @@ Toàn bộ tài liệu chi tiết, sơ đồ thiết kế kiến trúc và hư�
 | Tài liệu | Nội dung chính | Đường dẫn |
 |---|---|:---:|
 | 📸 **Hình ảnh Demo** | Tổng hợp ảnh chụp màn hình thực tế mọi góc cạnh của ứng dụng | [Xem tài liệu](docs/demo.md) |
-| 💬 **Nhắn tin Realtime** | Giao thức nhị phân MQTT/Protobuf mã hóa TLS/WSS chống bắt gói tin, Hộp chat nổi Messenger, 5 chủ đề, chế độ hạn chế | [Xem tài liệu](docs/features/chat-realtime.md) |
+| 💬 **Nhắn tin Realtime** | Giao thức nhị phân Socket.IO/Protobuf mã hóa TLS/WSS chống bắt gói tin, Hộp chat nổi Messenger, 5 chủ đề, chế độ hạn chế | [Xem tài liệu](docs/features/chat-realtime.md) |
 | 🤝 **Gợi ý bạn bè** | Thuật toán đồ thị Neo4j (2-Hops & Degree Centrality), đồng bộ realtime, Redis Cache | [Xem tài liệu](docs/features/friend-recommendation.md) |
 | 📰 **Bảng tin & Profile** | Đăng bài 4 ảnh magic-byte, phân quyền riêng tư, timeline cá nhân, học vấn (trường học) & tình trạng mối quan hệ | [Xem tài liệu](docs/features/social-feed-profile.md) |
 | 👥 **Hội Nhóm Chuẩn Facebook** | Tái thiết kế giao diện chuẩn Facebook Groups, kiến trúc module hóa (< 250 dòng), 100% tokens, 6 ngôn ngữ | [Xem tài liệu](docs/features/community-groups-redesign.md) |

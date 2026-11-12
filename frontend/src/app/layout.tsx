@@ -145,7 +145,7 @@ const globalStructuredData = {
         priceCurrency: "VND",
       },
       featureList: [
-        "Real-time instant messaging via MQTT & Socket.IO",
+        "Real-time instant messaging via Socket.IO",
         "HD Peer-to-Peer Voice & Video Calls via WebRTC",
         "AI-Powered Content Moderation and Bot Protection",
         "Neo4j Graph Database Friend Recommendations (Friends-of-Friends & Network Centrality)",

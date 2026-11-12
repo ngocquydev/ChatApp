@@ -11,7 +11,7 @@
 4. [Hướng Dẫn Thiết Lập Từng Bước Trên Cloudflare](#4-hướng-dẫn-thiết-lập-từng-bước-trên-cloudflare)
 5. [Ẩn 100% IP Máy Chủ Gốc Bằng Cloudflare Tunnel (`cloudflared`)](#5-ẩn-100-ip-máy-chủ-gốc-bằng-cloudflare-tunnel-cloudflared)
 6. [Phục Hồi Real IP & Chống Bypass Origin Phía Backend](#6-phục-hồi-real-ip--chống-bypass-origin-phía-backend)
-7. [Bảo Vệ WebSockets & MQTT Realtime Qua Cloudflare Edge](#7-bảo-vệ-websockets--mqtt-realtime-qua-cloudflare-edge)
+7. [Bảo Vệ WebSockets & Socket.IO Realtime Qua Cloudflare Edge](#7-bảo-vệ-websockets--socket-realtime-qua-cloudflare-edge)
 8. [Quy Trình Xử Lý Khẩn Cấp Khi Đang Bị Tấn Công Dồn Dập](#8-quy-trình-xử-lý-khẩn-cấp-khi-đang-bị-tấn-công-dồn-dập)
 
 ---
@@ -21,7 +21,7 @@
 Các ứng dụng mạng xã hội và chat thời gian thực thường xuyên đối mặt với 3 loại hình tấn công từ chối dịch vụ:
 - **Tấn công tầng mạng L3/L4 (Volumetric Attacks):** SYN Flood, UDP Amplification, ICMP Flood nhằm làm nghẽn băng thông đường truyền hoặc tràn bảng trạng thái kết nối firewall máy chủ.
 - **Tấn công tầng ứng dụng L7 (HTTP/HTTPS Floods):** Gửi hàng triệu request liên tục vào các endpoint nặng như tìm kiếm bạn bè đồ thị Neo4j, kiểm duyệt AI hoặc đăng nhập nhằm tiêu hao 100% CPU/RAM.
-- **Tấn công cạn kiệt tài nguyên kết nối (Slowloris / WebSocket Exhaustion):** Mở hàng chục nghìn kết nối WebSocket hoặc MQTT giữ trạng thái dở dang nhằm đánh sập máy chủ realtime.
+- **Tấn công cạn kiệt tài nguyên kết nối (Slowloris / WebSocket Exhaustion):** Mở hàng chục nghìn kết nối WebSocket hoặc Socket.IO giữ trạng thái dở dang nhằm đánh sập máy chủ realtime.
 
 ---
 
@@ -43,7 +43,7 @@ graph TD
         TUNNEL["Cloudflare Tunnel Daemon (cloudflared - Không mở Inbound Port)"]
         CF_MW["CloudflareMiddleware (Xác thực CF-Ray & CF-Connecting-IP)"]
         RATE_MW["RateLimitMiddleware (Redis Token Bucket)"]
-        NEST["NestJS Backend (REST / GraphQL / Socket.IO / MQTT)"]
+        NEST["NestJS Backend (REST / GraphQL / Socket.IO / Socket.IO)"]
         NEXT["Next.js 16 Frontend UI"]
     end
 
@@ -77,7 +77,6 @@ Trên trang quản trị DNS của Cloudflare:
 - Tạo bản ghi `A` hoặc `CNAME`:
   - `chat.yourdomain.com` -> Trỏ về máy chủ
   - `api.yourdomain.com` -> Trỏ về máy chủ
-  - `mqtt.yourdomain.com` -> Trỏ về máy chủ
 - **Bắt buộc:** Bật trạng thái **Proxy status = Proxied (Đám mây màu cam ☁️)**. Nếu để *DNS only (Đám mây xám)*, lưu lượng sẽ đi thẳng vào máy chủ và mất hoàn toàn khả năng chống DDoS.
 
 ### 4.2. Bước 2: Kích hoạt Web Application Firewall (WAF)
@@ -138,7 +137,6 @@ Với **Cloudflare Tunnel**, máy chủ của bạn không cần mở bất kỳ
    |---|---|---|
    | `chat.yourdomain.com` | `http://localhost:5173` | `http://host.docker.internal:5173` |
    | `api.yourdomain.com` | `http://localhost:3000` | `http://host.docker.internal:3000` |
-   | `mqtt.yourdomain.com` | `https://localhost:8884` (No TLS Verify) | `https://host.docker.internal:8884` (No TLS Verify) |
 
    > Trên Docker Desktop, container chạy trong máy ảo (`192.168.65.x`) nên `localhost` **không** trỏ về máy Windows (đã kiểm chứng: `localhost:3000` → không kết nối, `host.docker.internal:3000` → 200). Kết nối qua `host.docker.internal` đến backend với IP peer `127.0.0.1`, nên giá trị mặc định của `TRUSTED_PROXY_CIDRS` vẫn đúng.
 
@@ -170,15 +168,14 @@ Middleware [`CloudflareMiddleware`](file:///d:/Web/chat/backend/src/common/middl
 
 ---
 
-## 7. BẢO VỆ WEBSOCKETS & MQTT REALTIME QUA CLOUDFLARE EDGE
+## 7. BẢO VỆ WEBSOCKETS & Socket.IO REALTIME QUA CLOUDFLARE EDGE
 
 Cloudflare hỗ trợ WebSockets mặc định trên các cổng tiêu chuẩn:
 - Cổng HTTP: `80, 8080, 8880, 2052, 2082, 2086, 2095`
 - Cổng HTTPS: `443, 2053, 2083, 2087, 2096, 8443`
 
-Để bảo vệ kết nối WSS của MQTT và Socket.IO:
+Để bảo vệ kết nối WSS của Socket.IO và Socket.IO:
 1. Đảm bảo tính năng **WebSockets** đã được BẬT trên Cloudflare Dashboard (**Network -> WebSockets: ON**).
-2. Định tuyến tên miền phụ `mqtt.yourdomain.com` qua Cloudflare Tunnel trỏ về cổng nội bộ `8884` của máy chủ.
 3. Toàn bộ gói tin nhị phân Protobuf và tin nhắn tức thời được Cloudflare bảo vệ chống tràn socket và ngập lụt băng thông.
 
 ---

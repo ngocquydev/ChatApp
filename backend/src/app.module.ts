@@ -33,8 +33,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule({
     return (
       name === 'ChatGateway' ||
       name === 'GroqService' ||
-      name === 'AuraRagService' ||
-      name === 'MqttBrokerService'
+      name === 'AuraRagService'
     );
   },
 });

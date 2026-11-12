@@ -18,12 +18,6 @@ ingress:
   - hostname: api.yourdomain.com
     service: http://localhost:3000
 
-  # 3. Định tuyến MQTT Realtime Broker (WSS / TLS)
-  - hostname: mqtt.yourdomain.com
-    service: https://localhost:8884
-    originRequest:
-      noTLSVerify: true
-
-  # 4. Quy tắc Fallback (Trả về 404 cho mọi subdomain không khai báo)
+  # 3. Quy tắc Fallback (Trả về 404 cho mọi subdomain không khai báo)
   - service: http_status:404
 

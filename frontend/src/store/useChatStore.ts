@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { io, Socket } from "socket.io-client";
 import api from "../services/api";
-import { mqttChatClient } from "../services/mqttClient";
+import { decodeChatMessage, encodeSendMessage } from "../services/chatBinary";
 import { useAuthStore } from "./useAuthStore";
 import { useFriendStore, type FriendRealtimePayload } from "./useFriendStore";
 import { useNotificationStore } from "./useNotificationStore";
@@ -85,7 +85,6 @@ export interface ConversationItem {
 interface ChatState {
   socket: Socket | null;
   isConnected: boolean;
-  isMqttConnected: boolean;
   onlineUserIds: string[];
   conversations: ConversationItem[];
   activeConversation: ConversationItem | null;
@@ -166,7 +165,6 @@ const BACKEND_URL =
   "http://localhost:3000";
 
 const typingExpiryTimers = new Map<string, NodeJS.Timeout>();
-let mqttUnbinders: (() => void)[] = [];
 
 const updateStoreTyping = (
   set: (fn: (state: ChatState) => Partial<ChatState>) => void,
@@ -229,7 +227,6 @@ function dedupeConversations(list: ConversationItem[]): ConversationItem[] {
 export const useChatStore = create<ChatState>((set, get) => ({
   socket: null,
   isConnected: false,
-  isMqttConnected: false,
   onlineUserIds: [],
   conversations: [],
   activeConversation: null,
@@ -245,154 +242,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!currentUserId) {
       return;
     }
-    const token = useAuthStore.getState().accessToken || "";
-    mqttChatClient.connect(token, currentUserId);
-    const isMqtt = mqttChatClient.getIsConnected();
-    if (get().isMqttConnected !== isMqtt) {
-      set({ isMqttConnected: isMqtt });
-    }
-    mqttUnbinders.forEach((unsub) => unsub());
-    mqttUnbinders = [];
-
-    const unbindMsg = mqttChatClient.onMessage((newMsg) => {
-      const active = get().activeConversation;
-      const msgConvId = String(newMsg.conversationId || "");
-      const activeConvId = String(active?._id || "");
-      const myId = String(
-        useAuthStore.getState().user?._id ||
-          useAuthStore.getState().user?.id ||
-          "",
-      );
-      const senderId = String(newMsg.senderId || "");
-      const receiverId = String(newMsg.receiverId || "");
-
-      const partner = active?.participants?.find(
-        (p) => String(p._id || p.id) !== myId,
-      );
-      const partnerId = String(partner?._id || partner?.id || "");
-
-      const isMatchActive =
-        Boolean(active) &&
-        ((Boolean(msgConvId) &&
-          Boolean(activeConvId) &&
-          activeConvId === msgConvId) ||
-          (Boolean(partnerId) &&
-            ((senderId === partnerId && receiverId === myId) ||
-              (senderId === myId && receiverId === partnerId))));
-
-      if (senderId && senderId !== myId) {
-        const conv = get().conversations.find(
-          (c) => String(c._id) === msgConvId,
-        );
-        const partnerName =
-          conv?.participants?.find((p) => String(p._id || p.id) === senderId)
-            ?.name || partner?.name;
-        soundNotification.playIncomingSound(
-          newMsg._id || newMsg.id,
-          partnerName,
-        );
-      }
-
-      if (isMatchActive) {
-        set((state) => {
-          const realId = String(newMsg._id || newMsg.id);
-          const exists = state.messages.some(
-            (m) => !m.isOptimistic && String(m._id || m.id) === realId,
-          );
-          if (exists) return state;
-          if (senderId === myId) {
-            const optIndex = state.messages.findIndex(
-              (m) =>
-                m.isOptimistic && m.text.trim() === (newMsg.text || "").trim(),
-            );
-            if (optIndex !== -1) {
-              const nextMessages = [...state.messages];
-              nextMessages[optIndex] = {
-                ...newMsg,
-                isOptimistic: false,
-                status: "sent",
-              } as unknown as ChatMessage;
-              return { messages: nextMessages };
-            }
-          }
-
-          return {
-            messages: [...state.messages, newMsg as unknown as ChatMessage],
-          };
-        });
-
-        mqttChatClient.sendRead(msgConvId || activeConvId, newMsg.senderId);
-      }
-
-      set((state) => {
-        const updated = state.conversations.map((c) => {
-          const isThisConv =
-            (Boolean(msgConvId) && String(c._id) === msgConvId) ||
-            (c.participants.some((p) => String(p._id || p.id) === senderId) &&
-              c.participants.some((p) => String(p._id || p.id) === receiverId));
-
-          if (isThisConv) {
-            const currentUnread = (c.unreadCounts && c.unreadCounts[myId]) || 0;
-            const isNotActive = !active || String(active._id) !== String(c._id);
-            return {
-              ...c,
-              lastMessage: {
-                text: newMsg.text,
-                senderId: newMsg.senderId,
-                createdAt: newMsg.createdAt,
-              },
-              unreadCounts:
-                isNotActive && senderId !== myId
-                  ? { ...c.unreadCounts, [myId]: currentUnread + 1 }
-                  : c.unreadCounts,
-              updatedAt: new Date().toISOString(),
-            };
-          }
-          return c;
-        });
-
-        updated.sort(
-          (a, b) =>
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-        );
-
-        return { conversations: updated };
-      });
-    });
-    mqttUnbinders.push(unbindMsg);
-
-    const unbindTyping = mqttChatClient.onTyping((data) => {
-      if (!data?.conversationId) return;
-      updateStoreTyping(set, data.conversationId, data.isTyping);
-    });
-    mqttUnbinders.push(unbindTyping);
-
-    const unbindSeen = mqttChatClient.onSeen((data) => {
-      const active = get().activeConversation;
-      if (active && active._id === data.conversationId) {
-        set((state) => ({
-          messages: state.messages.map((m) => ({
-            ...m,
-            readAt: m.readAt || data.readAt,
-          })),
-        }));
-      }
-    });
-    mqttUnbinders.push(unbindSeen);
-
-    const unbindPresence = mqttChatClient.onPresence((data) => {
-      if (data.onlineUserIds && data.onlineUserIds.length > 0) {
-        set({ onlineUserIds: data.onlineUserIds });
-      } else if (data.userId) {
-        set((state) => ({
-          onlineUserIds: data.isOnline
-            ? Array.from(new Set([...state.onlineUserIds, data.userId]))
-            : state.onlineUserIds.filter((id) => id !== data.userId),
-        }));
-      }
-    });
-    mqttUnbinders.push(unbindPresence);
-
     const currentSocket = get().socket;
     if (
       currentSocket &&
@@ -438,7 +287,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }));
     });
 
-    socket.on("message:new", (newMsg: ChatMessage) => {
+    socket.on("message:new:binary", (payload: ArrayBuffer | Uint8Array) => {
+      const newMsg = decodeChatMessage(payload) as ChatMessage;
       const active = get().activeConversation;
       const msgConvId = String(newMsg.conversationId || "");
       const activeConvId = String(active?._id || "");
@@ -960,13 +810,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   disconnectSocket: () => {
-    mqttUnbinders.forEach((unsub) => unsub());
-    mqttUnbinders = [];
-    mqttChatClient.disconnect();
     const socket = get().socket;
     if (socket) {
       socket.disconnect();
-      set({ socket: null, isConnected: false, isMqttConnected: false });
+      set({ socket: null, isConnected: false });
     }
   },
 
@@ -1363,19 +1210,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       ),
     }));
 
-    const isLocationMsg = options?.type === "location" && options.location;
-
-    // 2. Nếu là tin nhắn text thông thường, ưu tiên gửi qua MQTT Protobuf
-    let sentViaMqtt = false;
-    if (!isLocationMsg) {
-      sentViaMqtt = mqttChatClient.sendMessage(
-        active._id,
-        otherParticipant._id,
-        textToSend,
-      );
-    }
-
-    if (!sentViaMqtt) {
       const payload: {
         conversationId: string;
         receiverId: string;
@@ -1391,7 +1225,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
       };
 
       if (socket && socket.connected) {
-        socket.emit("message:send", payload);
+        socket.timeout(10_000).emit(
+          "message:send:binary",
+          encodeSendMessage(payload),
+          (error: Error | null, response: { success?: boolean } | undefined) => {
+            if (!error && response?.success) return;
+            set((state) => ({
+              messages: state.messages.map((m) =>
+                m._id === tempId ? { ...m, status: "error" } : m,
+              ),
+            }));
+          },
+        );
       } else {
         // Fallback qua REST API nếu socket chưa kết nối
         try {
@@ -1414,7 +1259,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
           }));
         }
       }
-    }
   },
 
   sendTyping: (isTyping: boolean) => {
@@ -1432,8 +1276,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     const receiverId = String(otherParticipant._id || otherParticipant.id);
 
-    // Bắn typing nhị phân qua MQTT
-    mqttChatClient.sendTyping(active._id, receiverId, isTyping);
 
     // Bắn song song qua Socket.IO nếu có
     if (socket && socket.connected) {

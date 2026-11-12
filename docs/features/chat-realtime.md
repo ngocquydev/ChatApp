@@ -1,6 +1,8 @@
 # 💬 TÍNH NĂNG NHẮN TIN THỜI GIAN THỰC & HỘP CHAT NỔI MESSENGER
 
-> Tài liệu mô tả chi tiết giải pháp kỹ thuật, giao thức truyền tin đa tầng (Dual-Engine: Socket.IO + Binary MQTT/Protobuf) và trải nghiệm hộp chat nổi Facebook Messenger.
+Cuộc gọi video 1-1 chỉ bắt đầu sau khi trình duyệt cấp quyền camera và micro và đã lấy được cả hai luồng. Nếu quyền bị chặn hoặc thiết bị không khả dụng, màn hình cuộc gọi báo lỗi để người dùng kiểm tra quyền trong trình duyệt và gọi lại.
+
+> Tài liệu mô tả kết nối Socket.IO, payload tin nhắn Protocol Buffers dạng nhị phân và trải nghiệm hộp chat nổi.
 
 ---
 
@@ -8,7 +10,7 @@
 1. [Tổng Quan Trải Nghiệm Chat](#1-tổng-quan-trải-nghiệm-chat)
 2. [Hình Ảnh Minh Họa Thực Tế](#2-hình-ảnh-minh-họa-thực-tế)
 3. [Kiến Trúc Kỹ Thuật Đa Tầng (Dual-Engine)](#3-kiến-trúc-kỹ-thuật-đa-tầng-dual-engine)
-4. [Giao Thức Nhị Phân Binary MQTT & Protobuf](#4-giao-thức-nhị-phân-binary-mqtt--protobuf)
+4. [Giao Thức Nhị Phân Binary Socket.IO & Protobuf](#4-giao-thức-nhị-phân-binary-socket--protobuf)
 5. [Các Tính Năng Bảo Mật & Quyền Riêng Tư](#5-các-tính-năng-bảo-mật--quyền-riêng-tư)
 6. [Cơ Chế Chỉ Báo Đang Soạn Tin (Typing Indicator)](#6-cơ-chế-chỉ-báo-đang-soạn-tin-typing-indicator)
 7. [Chia Sẻ Vị Trí & Bản Đồ Tương Tác (Location Sharing)](#7-chia-sẻ-vị-trí--bản-đồ-tương-tác-location-sharing)
@@ -40,97 +42,22 @@ Hệ thống cung cấp trải nghiệm nhắn tin toàn diện, liền mạch t
 
 ---
 
-## 3. KIẾN TRÚC KỸ THUẬT ĐA TẦNG (DUAL-ENGINE)
+## 3. KIẾN TRÚC REALTIME
 
-Nhằm tối ưu hóa băng thông mạng và đảm bảo độ tin cậy tuyệt đối ngay cả khi kết nối mạng yếu hoặc không ổn định, hệ thống triển khai kiến trúc truyền thông kép:
+ChatApp sử dụng Socket.IO qua WebSocket trên cổng backend 3000. Tin nhắn realtime
+được mã hóa bằng Protocol Buffers thành payload nhị phân cho các sự kiện
+`message:send:binary` và `message:new:binary`. Backend xác thực phiên WebSocket,
+kiểm tra DTO sau khi giải mã, lưu MongoDB rồi gửi cho người tham gia hội thoại.
+Khi Socket.IO chưa kết nối, ứng dụng dùng REST API để gửi tin nhắn. Typing,
+read/seen và presence dùng các sự kiện Socket.IO hiện có. Kết nối công khai
+cần HTTPS/WSS qua reverse proxy.
 
-```mermaid
-graph TD
-    Client["Client (Next.js 16)"]
-    subgraph Gateway ["NestJS Realtime Gateway"]
-        SIO["Socket.IO Gateway (Cổng 3000)"]
-        MQTT_TLS["Aedes WSS TLS (Cổng 8884 - Mã hóa TLS 1.3)"]
-        MQTT_TCP["Aedes MQTTS Native (Cổng 8883)"]
-        MQTT_DEV["Aedes Plain WS (Cổng 1884)"]
-    end
-    DB[("MongoDB Messages Collection")]
-    Cache[("Redis 7 Pub/Sub & Cache")]
+## 4. GIAO THỨC NHỊ PHÂN PROTOBUF
 
-    Client -- "WebSocket JSON Fallback" --> SIO
-    Client -- "WSS Encrypted Protobuf" --> MQTT_TLS
-    SIO --> Cache
-    MQTT_TLS --> Cache
-    MQTT_TCP --> Cache
-    MQTT_DEV --> Cache
-    SIO --> DB
-    MQTT_TLS --> DB
-    MQTT_TCP --> DB
-    MQTT_DEV --> DB
-```
-
-1. **Kênh Socket.IO (WebSockets chuẩn):** Đảm nhiệm các sự kiện quản lý kết nối, đồng bộ trạng thái đăng nhập, chuông thông báo và luồng REST API fallback.
-2. **Kênh Binary MQTT/Protobuf mã hóa TLS/WSS:** Đảm nhiệm các tác vụ có tần suất phát sóng cao (High-frequency events) như truyền tải nội dung tin nhắn tức thì, cập nhật tọa độ bạn bè và nhịp tim soạn thảo văn bản, được bọc lớp mã hóa TLS 1.3 chống nghe lén tuyệt đối.
-
----
-
-## 4. GIAO THỨC NHỊ PHÂN BINARY MQTT & PROTOBUF
-
-### 4.1. Lợi thế vượt trội so với JSON truyền thống
-- **Tiết kiệm 75% - 80% dung lượng payload:** Thay vì truyền lặp đi lặp lại các chuỗi khóa như `"senderId"`, `"conversationId"`, Google Protocol Buffers mã hóa dữ liệu thành các trường nhị phân 1-2 byte.
-- **Tốc độ tuần tự hóa siêu tốc:** Giải mã nhị phân trực tiếp trên bộ nhớ đệm `ArrayBuffer`/`Buffer` mà không cần phân tích cú pháp chuỗi JSON qua CPU.
-- **Tiết kiệm pin thiết bị di động:** Gói tin Keep-Alive của giao thức MQTT chỉ vỏn vẹn 2 byte, giảm thiểu tiêu hao năng lượng và duy trì kết nối bền vững khi chạy trên mạng 3G/4G/5G.
-
-### 4.2. Cấu trúc Message Protobuf (`chat.proto`)
-```protobuf
-syntax = "proto3";
-
-package chat;
-
-enum MessageType {
-  TEXT = 0;
-  IMAGE = 1;
-  FILE = 2;
-  SYSTEM = 3;
-}
-
-message ChatMessageProto {
-  string messageId = 1;
-  string conversationId = 2;
-  string senderId = 3;
-  string senderName = 4;
-  string content = 5;
-  int64 timestamp = 6;
-  MessageType type = 7;
-}
-
-message TypingEventProto {
-  string conversationId = 1;
-  string userId = 2;
-  string userName = 3;
-  bool isTyping = 4;
-  string receiverId = 5;
-}
-```
-
-### 4.3. Mã Hóa Đường Truyền SSL/TLS & Chống Bắt Gói Tin (Anti-Packet Sniffing)
-Để bảo vệ toàn vẹn thông tin và ngăn chặn kẻ tấn công trên cùng mạng Wi-Fi/LAN nghe lén gói tin (Packet Sniffing qua Wireshark hoặc Man-in-the-Middle):
-- **Mã hóa đường truyền TLS 1.3 / WSS (WebSocket Secure):**
-  - Chạy trên cổng `8884` (WSS) và cổng `8883` (MQTTS thuần qua TLS Socket).
-  - Thuật toán mật mã hiện đại: ECDHE trao đổi khóa phiên tạm thời (Forward Secrecy) kết hợp mã hóa khối AES-GCM hoặc ChaCha20-Poly1305.
-  - Khi bắt gói tin qua Wireshark, toàn bộ payload và header đều là ciphertext dạng `TLS Application Data`, không để lộ nội dung tin nhắn, tọa độ hay danh tính.
-- **Xác thực danh tính kép & Chống mạo danh (Anti-Spoofing):**
-  - Mọi kết nối MQTT bắt buộc phải mang Token JWT hợp lệ (qua handshake cookie `accessToken`, query param hoặc password).
-  - Backend đối chiếu trường `sub` trong JWT với `username` khai báo; nếu phát hiện lệch danh tính sẽ từ chối kết nối ngay lập tức (`returnCode: 4`).
-- **Cách sinh chứng chỉ tự ký môi trường phát triển (Dev Certificates):**
-  ```powershell
-  powershell -File .\scripts\generate-dev-certs.ps1
-  ```
-  Chứng chỉ sẽ được sinh tự động tại `backend/certs/mqtt-key.pem` và `backend/certs/mqtt-cert.pem`.
-- **Cấu hình trên Production:**
-  Mount chứng chỉ SSL CA thật từ Let's Encrypt / Cloudflare qua `MQTT_TLS_KEY_PATH` và `MQTT_TLS_CERT_PATH` hoặc truyền trực tiếp qua chuỗi biến môi trường `MQTT_TLS_KEY` và `MQTT_TLS_CERT`.
-
-
----
+Schema `SendMessageProto` và `ChatMessageProto` được khai báo ở cả frontend và
+backend trong `src/proto/chat.proto.ts`. Socket.IO gửi dữ liệu dưới dạng
+`Uint8Array`/`Buffer`. Phần quản lý sự kiện của Socket.IO vẫn có framing riêng;
+chỉ payload tin nhắn được mã hóa Protobuf.
 
 ## 5. CÁC TÍNH NĂNG BẢO MẬT & QUYỀN RIÊNG TƯ
 

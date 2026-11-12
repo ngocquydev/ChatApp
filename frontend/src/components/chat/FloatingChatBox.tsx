@@ -43,7 +43,7 @@ import {
 import api from "@/services/api";
 import { uploadMedia, MAX_FILE_BYTES } from "@/services/postsApi";
 import FloatingMessageList from "./FloatingMessageList";
-import { mqttChatClient } from "@/services/mqttClient";
+import { decodeChatMessage, encodeSendMessage } from "@/services/chatBinary";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useChatStore, ChatMessage, ChatUser, LocationData } from "@/store/useChatStore";
 import { useChatBoxStore, ChatBoxSession } from "@/store/useChatBoxStore";
@@ -170,12 +170,10 @@ export default function FloatingChatBox({
     messagesEndRef.current?.scrollIntoView({ behavior });
   }, []);
 
-  // Hàm bắn typing chung (MQTT + Socket.IO)
   const emitTyping = useCallback(
     (isTyping: boolean) => {
       if (!convId) return;
 
-      mqttChatClient.sendTyping(convId, targetUserId, isTyping);
 
       if (socket && socket.connected) {
         socket.emit(isTyping ? "typing:start" : "typing:stop", {
@@ -285,7 +283,6 @@ export default function FloatingChatBox({
     }
   }, [messages, session.isMinimized, isLoading, scrollToBottom]);
 
-  // 2. Lắng nghe qua MQTT Protocol Buffers nhị phân (Chuẩn Facebook Messenger) & Socket.IO
   useEffect(() => {
     const setPartnerTypingActive = () => {
       setIsPartnerTyping(true);
@@ -306,81 +303,8 @@ export default function FloatingChatBox({
       setIsPartnerTyping(false);
     };
 
-    const unbindMqttMsg = mqttChatClient.onMessage((newMsg) => {
-      const msgConvId = String(newMsg.conversationId || "");
-      const currentConvId = String(convId || "");
-      const msgSenderId = String(newMsg.senderId || "");
-      const msgReceiverId = String(newMsg.receiverId || "");
-
-      const isMatch =
-        (Boolean(msgConvId) && Boolean(currentConvId) && msgConvId === currentConvId) ||
-        (msgSenderId === targetUserId && msgReceiverId === currentUserId) ||
-        (msgSenderId === currentUserId && msgReceiverId === targetUserId);
-
-      if (isMatch) {
-        if (!convId && msgConvId) {
-          setConvId(msgConvId);
-        }
-        setPartnerTypingInactive();
-        if (msgSenderId && msgSenderId !== currentUserId) {
-          soundNotification.playIncomingSound(newMsg._id || newMsg.id, targetUserName);
-        }
-        setMessages((prev) => {
-          const realId = String(newMsg._id || newMsg.id);
-          const exists = prev.some(
-            (m) => !m.isOptimistic && String(m._id || m.id) === realId
-          );
-          if (exists) return prev;
-
-          // Nếu tin nhắn do chính mình gửi, thay thế tin optimistic
-          if (msgSenderId === currentUserId) {
-            const optIndex = prev.findIndex(
-              (m) => m.isOptimistic && m.text.trim() === (newMsg.text || "").trim()
-            );
-            if (optIndex !== -1) {
-              const copy = [...prev];
-              copy[optIndex] = {
-                ...newMsg,
-                isOptimistic: false,
-                status: "sent",
-              } as unknown as ChatMessage;
-              return copy;
-            }
-          }
-
-          return [...prev, newMsg as unknown as ChatMessage];
-        });
-
-        if (!session.isMinimized) {
-          mqttChatClient.sendRead(msgConvId || currentConvId, targetUserId);
-          if (msgConvId || currentConvId) {
-            api.patch(`/chat/conversations/${msgConvId || currentConvId}/read`).catch(() => {});
-          }
-          clearUnread(targetUserId);
-        } else {
-          incrementUnread(msgConvId || currentConvId);
-        }
-      }
-    });
-
-    const unbindMqttTyping = mqttChatClient.onTyping((data) => {
-      if (data.conversationId === convId && String(data.userId) === targetUserId) {
-        if (data.isTyping) {
-          setPartnerTypingActive();
-        } else {
-          setPartnerTypingInactive();
-        }
-      }
-    });
-
-    const unbindMqttSeen = mqttChatClient.onSeen((data) => {
-      if (data.conversationId === convId && String(data.readerId) === targetUserId) {
-        setPartnerSeenAt(data.readAt);
-      }
-    });
-
-    // 2.2. Lắng nghe qua Socket.IO (Fallback)
-    const handleNewMessage = (newMsg: ChatMessage) => {
+    const handleNewMessage = (payload: ArrayBuffer | Uint8Array) => {
+      const newMsg = decodeChatMessage(payload) as ChatMessage;
       const msgConvId = String(newMsg.conversationId || "");
       const currentConvId = String(convId || "");
       const senderId =
@@ -601,7 +525,7 @@ export default function FloatingChatBox({
     };
 
     if (socket) {
-      socket.on("message:new", handleNewMessage);
+      socket.on("message:new:binary", handleNewMessage);
       socket.on("message:stream_start", handleStreamStart);
       socket.on("message:stream_chunk", handleStreamChunk);
       socket.on("message:stream_end", handleStreamEnd);
@@ -618,15 +542,12 @@ export default function FloatingChatBox({
     window.addEventListener("chatapp:location_updated", handleLocalLocationUpdate);
 
     return () => {
-      unbindMqttMsg();
-      unbindMqttTyping();
-      unbindMqttSeen();
       if (partnerTypingTimeoutRef.current) {
         clearTimeout(partnerTypingTimeoutRef.current);
       }
       window.removeEventListener("chatapp:location_updated", handleLocalLocationUpdate);
       if (socket) {
-        socket.off("message:new", handleNewMessage);
+        socket.off("message:new:binary", handleNewMessage);
         socket.off("message:stream_start", handleStreamStart);
         socket.off("message:stream_chunk", handleStreamChunk);
         socket.off("message:stream_end", handleStreamEnd);
@@ -677,7 +598,6 @@ export default function FloatingChatBox({
     }, 3500);
   };
 
-  // 4. Gửi tin nhắn (ưu tiên Protocol Buffers nhị phân qua MQTT)
   const handleSendMessage = useCallback(
     async (
       customText?: string,
@@ -720,16 +640,6 @@ export default function FloatingChatBox({
       setMessages((prev) => [...prev, optimisticMsg]);
       setTimeout(() => scrollToBottom("smooth"), 10);
 
-      const isLocationMsg = options?.type === "location" && options.location;
-
-      // 1. Gửi qua MQTT Protocol Buffers nhị phân nếu là tin nhắn text thường (trừ khi nhắn với Aura để ưu tiên Socket.IO)
-      let sentViaMqtt = false;
-      if (!isLocationMsg && !isAuraChat) {
-        sentViaMqtt = mqttChatClient.sendMessage(convId, targetUserId, textToSend);
-      }
-
-      // 2. Gửi qua Socket.IO hoặc Fallback REST API
-      if (!sentViaMqtt) {
         const payload: {
           conversationId: string;
           receiverId: string;
@@ -745,7 +655,16 @@ export default function FloatingChatBox({
         };
 
         if (socket && socket.connected) {
-          socket.emit("message:send", payload);
+          socket.timeout(10_000).emit(
+            "message:send:binary",
+            encodeSendMessage(payload),
+            (error: Error | null, response: { success?: boolean } | undefined) => {
+              if (!error && response?.success) return;
+              setMessages((prev) => prev.map((m) =>
+                m._id === tempId ? { ...m, status: "error" } : m
+              ));
+            },
+          );
         } else {
           try {
             const res = await api.post("/chat/messages", payload);
@@ -764,7 +683,6 @@ export default function FloatingChatBox({
             );
           }
         }
-      }
     },
     [
       isBlocked,
@@ -773,7 +691,6 @@ export default function FloatingChatBox({
       currentUserId,
       targetUserId,
       scrollToBottom,
-      isAuraChat,
       socket,
     ]
   );

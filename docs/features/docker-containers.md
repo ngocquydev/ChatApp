@@ -1,6 +1,6 @@
 # 🐳 Triển khai Toàn bộ Hệ thống ChatApp với Docker Containers
 
-Tài liệu này hướng dẫn chi tiết quy trình containerization (đóng gói Docker) toàn bộ các dịch vụ của ChatApp bao gồm **Frontend** (Next.js 16 App Router), **Backend** (NestJS + Socket.IO + MQTT Broker), **Admin Portal** (React SPA + Nginx) và hạ tầng lưu trữ (**MongoDB**, **Redis**, **Neo4j**).
+Tài liệu này hướng dẫn chi tiết quy trình containerization (đóng gói Docker) toàn bộ các dịch vụ của ChatApp bao gồm **Frontend** (Next.js 16 App Router), **Backend** (NestJS + Socket.IO + Socket.IO Gateway), **Admin Portal** (React SPA + Nginx) và hạ tầng lưu trữ (**MongoDB**, **Redis**, **Neo4j**).
 
 ---
 
@@ -16,7 +16,7 @@ Hệ sinh thái ChatApp được tổ chức theo kiến trúc micro-service li�
                  ▼                              ▼                              ▼
       ┌─────────────────────┐        ┌─────────────────────┐        ┌─────────────────────┐
       │    chat_frontend    │        │    chat_backend     │        │     chat_admin      │
-      │  Next.js 16 (Node)  │───────▶│    NestJS + MQTT    │◀───────│    React + Nginx    │
+      │  Next.js 16 (Node)  │───────▶│    NestJS + Socket.IO    │◀───────│    React + Nginx    │
       └─────────────────────┘        └──────────┬──────────┘        └─────────────────────┘
                                                 │
                  ┌──────────────────────────────┼──────────────────────────────┐

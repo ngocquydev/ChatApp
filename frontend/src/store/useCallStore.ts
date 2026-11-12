@@ -53,78 +53,28 @@ let durationInterval: NodeJS.Timeout | null = null;
 let listenersInitialized = false;
 
 async function getMediaStream(callType: CallType): Promise<MediaStream> {
-  if (
-    typeof navigator !== "undefined" &&
-    navigator?.mediaDevices?.getUserMedia
-  ) {
-    try {
-      return await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video:
-          callType === "video"
-            ? { width: { ideal: 1280 }, height: { ideal: 720 } }
-            : false,
-      });
-    } catch (err) {
-      console.warn(
-        "getUserMedia failed or permission denied, trying audio only fallback:",
-        err,
-      );
-      if (callType === "video") {
-        try {
-          return await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: false,
-          });
-        } catch (e2) {
-          console.warn("Audio only fallback failed:", e2);
-        }
-      }
-    }
+  if (!navigator?.mediaDevices?.getUserMedia) {
+    throw new Error("media_unavailable");
   }
-  try {
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
-    if (AudioCtx) {
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const dst = osc.connect(
-        ctx.createMediaStreamDestination(),
-      ) as unknown as { stream: MediaStream };
-      osc.start();
-      const stream = dst.stream;
-      if (callType === "video") {
-        const canvas = document.createElement("canvas");
-        canvas.width = 640;
-        canvas.height = 480;
-        const canvasCtx = canvas.getContext("2d");
-        if (canvasCtx) {
-          canvasCtx.fillStyle = "rgb(30, 41, 59)";
-          canvasCtx.fillRect(0, 0, 640, 480);
-        }
-        const videoStream =
-          typeof (
-            canvas as unknown as {
-              captureStream?: (fps: number) => MediaStream;
-            }
-          ).captureStream === "function"
-            ? (
-                canvas as unknown as {
-                  captureStream: (fps: number) => MediaStream;
-                }
-              ).captureStream(10)
-            : new MediaStream();
-        videoStream.getVideoTracks().forEach((track) => stream.addTrack(track));
-      }
-      return stream;
-    }
-  } catch {
-    // Không thể tạo synthetic stream
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: callType === "video"
+      ? { width: { ideal: 1280 }, height: { ideal: 720 } }
+      : false,
+  });
+  if (!stream.getAudioTracks().length ||
+      (callType === "video" && !stream.getVideoTracks().length)) {
+    stopMediaTracks(stream);
+    throw new Error("media_unavailable");
   }
+  return stream;
+}
 
-  return new MediaStream();
+function mediaErrorCode(error: unknown): string {
+  return error instanceof DOMException &&
+    (error.name === "NotAllowedError" || error.name === "PermissionDeniedError")
+    ? "media_permission_denied"
+    : "media_unavailable";
 }
 
 function stopMediaTracks(stream: MediaStream | null) {
@@ -223,6 +173,8 @@ export const useCallStore = create<CallState>((set, get) => ({
         error:
           data.reason === "busy"
             ? "Người dùng đang bận một cuộc gọi khác"
+            : data.reason === "media_unavailable"
+              ? "partner_media_unavailable"
             : "Cuộc gọi đã bị từ chối",
       });
       setTimeout(() => {
@@ -302,7 +254,18 @@ export const useCallStore = create<CallState>((set, get) => ({
       isVideoEnabled: type === "video",
     });
 
-    const localStream = await getMediaStream(type);
+    let localStream: MediaStream;
+    try {
+      localStream = await getMediaStream(type);
+    } catch (error) {
+      callAudio.stop();
+      set({ callStatus: "ended", error: mediaErrorCode(error) });
+      return;
+    }
+    if (get().callStatus !== "calling" || get().partner?.id !== targetUser.id) {
+      stopMediaTracks(localStream);
+      return;
+    }
     set({ localStream });
 
     const pc = new RTCPeerConnection(ICE_SERVERS);
@@ -345,19 +308,33 @@ export const useCallStore = create<CallState>((set, get) => ({
 
     if (!socket || !partner) return;
 
+    let localStream: MediaStream;
+    try {
+      localStream = await getMediaStream(callType);
+    } catch (error) {
+      socket.emit("call:reject", {
+        targetUserId: partner.id,
+        reason: "media_unavailable",
+        callType,
+        conversationId: partner.conversationId,
+      });
+      set({ callStatus: "ended", error: mediaErrorCode(error) });
+      return;
+    }
+    if (get().callStatus !== "incoming" || get().partner?.id !== partner.id) {
+      stopMediaTracks(localStream);
+      return;
+    }
     set({
       callStatus: "connected",
       duration: 0,
       isMuted: false,
       isVideoEnabled: callType === "video",
     });
-
     if (durationInterval) clearInterval(durationInterval);
     durationInterval = setInterval(() => {
       set((state) => ({ duration: state.duration + 1 }));
     }, 1000);
-
-    const localStream = await getMediaStream(callType);
     set({ localStream });
 
     const pc = new RTCPeerConnection(ICE_SERVERS);

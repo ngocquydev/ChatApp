@@ -6,7 +6,6 @@ import { Message, MessageSchema } from './schemas/message.schema.js';
 import { ChatService } from './chat.service.js';
 import { ChatController } from './chat.controller.js';
 import { ChatGateway } from './chat.gateway.js';
-import { MqttBrokerService } from './mqtt-broker.service.js';
 import { UsersModule } from '../users/users.module.js';
 import { RedisModule } from '../redis/redis/redis.module.js';
 import { GroqModule } from '../groq/groq.module.js';
@@ -26,7 +25,7 @@ import { GroqModule } from '../groq/groq.module.js';
     GroqModule,
   ],
   controllers: [ChatController],
-  providers: [ChatService, ChatGateway, MqttBrokerService],
-  exports: [ChatService, ChatGateway, MqttBrokerService],
+  providers: [ChatService, ChatGateway],
+  exports: [ChatService, ChatGateway],
 })
 export class ChatModule {}

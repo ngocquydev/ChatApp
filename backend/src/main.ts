@@ -16,7 +16,6 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule, ObserveInstrument } from './app.module.js';
 import { ErrorHandlerFilter } from './errorHandleer/index.js';
-import { MqttBrokerService } from './modules/chat/mqtt-broker.service.js';
 import { UPLOAD_ROOT } from './modules/posts/post-image.util.js';
 import cookieParser from 'cookie-parser';
 import { isTrustedProxyIp } from './common/utils/client-ip.util.js';
@@ -136,9 +135,6 @@ async function bootstrap() {
       });
     });
   }
-
-  const mqttBroker = app.get(MqttBrokerService);
-  mqttBroker.attachHttpServer(app.getHttpServer());
 
   const port = Number(process.env.PORT) || 3000;
   await app.listen(port, '0.0.0.0');

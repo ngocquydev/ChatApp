@@ -11,6 +11,7 @@ import {
   Paper,
   Chip,
   Tooltip,
+  Button,
 } from "@mui/material";
 import {
   Phone,
@@ -30,6 +31,33 @@ function formatDuration(sec: number): string {
   const s = sec % 60;
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
+
+const mediaErrorCopy = {
+  media_permission_denied: {
+    vi: "Trình duyệt đã chặn camera hoặc micro. Hãy cấp quyền rồi gọi lại.",
+    en: "Camera or microphone access was blocked. Allow access and call again.",
+    "zh-CN": "浏览器已阻止摄像头或麦克风。请允许访问后重新拨打。",
+    "zh-TW": "瀏覽器已封鎖相機或麥克風。請允許存取後重新撥打。",
+    ko: "브라우저에서 카메라 또는 마이크가 차단되었습니다. 권한을 허용한 뒤 다시 통화하세요.",
+    th: "เบราว์เซอร์บล็อกกล้องหรือไมโครโฟน โปรดอนุญาตแล้วโทรอีกครั้ง",
+  },
+  media_unavailable: {
+    vi: "Không thể mở camera hoặc micro. Hãy kiểm tra thiết bị rồi gọi lại.",
+    en: "Camera or microphone is unavailable. Check the device and call again.",
+    "zh-CN": "无法使用摄像头或麦克风。请检查设备后重新拨打。",
+    "zh-TW": "無法使用相機或麥克風。請檢查裝置後重新撥打。",
+    ko: "카메라 또는 마이크를 사용할 수 없습니다. 기기를 확인한 뒤 다시 통화하세요.",
+    th: "ไม่สามารถใช้กล้องหรือไมโครโฟนได้ โปรดตรวจสอบอุปกรณ์แล้วโทรอีกครั้ง",
+  },
+  partner_media_unavailable: {
+    vi: "Đối phương không thể mở camera hoặc micro.",
+    en: "The other person could not access their camera or microphone.",
+    "zh-CN": "对方无法使用摄像头或麦克风。",
+    "zh-TW": "對方無法使用相機或麥克風。",
+    ko: "상대방이 카메라 또는 마이크를 사용할 수 없습니다.",
+    th: "อีกฝ่ายไม่สามารถใช้กล้องหรือไมโครโฟนได้",
+  },
+} as const;
 
 export default function CallModal() {
   const { tr } = useTranslation();
@@ -66,7 +94,7 @@ export default function CallModal() {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
-  }, [localStream]);
+  }, [localStream, callStatus]);
 
   useEffect(() => {
     if (remoteStream) {
@@ -77,7 +105,7 @@ export default function CallModal() {
         remoteAudioRef.current.srcObject = remoteStream;
       }
     }
-  }, [remoteStream]);
+  }, [remoteStream, callStatus]);
 
   if (callStatus === "idle") return null;
 
@@ -456,11 +484,18 @@ export default function CallModal() {
       {callStatus === "ended" && (
         <Box sx={{ p: 4, textAlign: "center" }}>
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-            {error || tr("Cuộc gọi đã kết thúc", "Call ended")}
+            {error && error in mediaErrorCopy
+              ? tr(mediaErrorCopy[error as keyof typeof mediaErrorCopy])
+              : error || tr("Cuộc gọi đã kết thúc", "Call ended")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {tr("Thời lượng: ", "Duration: ")} {formatDuration(duration)}
           </Typography>
+          {error && (
+            <Button onClick={endCall} sx={{ mt: 2 }}>
+              {tr("Đóng", "Close")}
+            </Button>
+          )}
         </Box>
       )}
     </Dialog>

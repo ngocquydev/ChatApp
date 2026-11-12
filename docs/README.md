@@ -15,7 +15,7 @@
   - 6 phân hệ quản trị cốt lõi: Tổng quan Dashboard, Quản lý Người dùng & Phân quyền, Kiểm duyệt Bài viết & Bảng tin, Thử nghiệm AI & Chống Bot, Trung tâm Bảo mật WAF, Giám sát Sức khỏe Hệ thống & V8 Memory.
   - Phân quyền RBAC nghiêm ngặt (`AdminGuard`, `RolesGuard`, `@Roles('admin')`) và đặc tả toàn bộ REST API `/api/admin/*`.
 - 💬 **[Nhắn Tin Thời Gian Thực & Hộp Chat Nổi (docs/features/chat-realtime.md)](features/chat-realtime.md)**:
-  - Kiến trúc Dual-Engine (Socket.IO + Binary MQTT/Protobuf).
+  - Realtime Socket.IO với payload tin nhắn Protobuf dạng nhị phân.
   - Cửa sổ chat nổi đa nhiệm phong cách Facebook Messenger.
   - Các tính năng nâng cao: Chủ đề đoạn chat (5 theme), Thu hồi tin nhắn (Unsend), Chế độ Hạn chế (Restrict), Chặn/Bỏ chặn (Block/Unblock), Chỉ báo soạn thảo Typing Heartbeat.
 - 🤝 **[Thuật Toán Gợi Ý Bạn Bè Thông Minh Bằng Đồ Thị Neo4j (docs/features/friend-recommendation.md)](features/friend-recommendation.md)**:
@@ -40,7 +40,7 @@
 - 🛡️ **[Phòng Thủ & Chống Tấn Công DDoS Bằng Cloudflare (docs/features/cloudflare-ddos-protection.md)](features/cloudflare-ddos-protection.md)**:
   - Kiến trúc phòng vệ Anycast L3/L4 và Cloudflare Tunnel (`cloudflared`) ẩn 100% IP máy chủ gốc.
   - Phục hồi Real IP và chống bypass máy chủ gốc bằng `CLOUDFLARE_PROXY_ONLY`.
-  - Bảo vệ kết nối WebSockets và MQTT realtime.
+  - Bảo vệ kết nối WebSockets và Socket.IO realtime.
 - 🔒 **[Xác Thực Bảo Mật & Hệ Thống Cổng CI/CD (docs/features/auth-security-cicd.md)](features/auth-security-cicd.md)**:
   - Cặp token an toàn HttpOnly Cookie (AccessToken 1h, RefreshToken 7d), tự động làm mới ngầm (Silent Refresh).
   - Phòng chống Bot bằng Cloudflare Turnstile; đăng nhập mạng xã hội Firebase (Google/Facebook).
@@ -48,7 +48,7 @@
   - Hệ thống cổng kiểm soát chất lượng 2 tầng (Git Pre-Push Hook & GitHub Actions CI với Semgrep, Gitleaks, Memory leak test).
 
 ### 3. Tài Liệu Kỹ Thuật Chuyên Sâu
-- 📄 **[Tài Liệu Kỹ Thuật MQTT & Thuật Toán Gợi Ý (docs/tai-lieu.md)](tai-lieu.md)**: Tài liệu đặc tả giao thức nhị phân MQTT và thuật toán định tuyến dữ liệu.
+- 📄 **[Tài Liệu Kỹ Thuật Socket.IO & Thuật Toán Gợi Ý (docs/tai-lieu.md)](tai-lieu.md)**: Tài liệu đặc tả giao thức nhị phân Socket.IO và thuật toán định tuyến dữ liệu.
 
 ---
 

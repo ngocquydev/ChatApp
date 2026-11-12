@@ -6,7 +6,7 @@ ChatApp is a real-time chat and social application with content moderation and b
 
 | Area | Stack / responsibility |
 |---|---|
-| `frontend/` | Next.js 16 App Router, React 19, MUI v9, Zustand, Socket.IO, MQTT, React Hook Form, Zod; user application on port 5173 |
+| `frontend/` | Next.js 16 App Router, React 19, MUI v9, Zustand, Socket.IO, Protobuf, React Hook Form, Zod; user application on port 5173 |
 | `admin/` | React 19, Vite, React Router v7, MUI v9, Zustand, Lucide; administration interface on port 5174 |
 | `backend/` | NestJS, MongoDB, Redis, Socket.IO, Swagger; API and realtime services on port 3000 |
 | Infrastructure | Docker Compose with MongoDB, Redis, and Neo4j |

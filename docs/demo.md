@@ -421,7 +421,7 @@ Toàn bộ các dịch vụ của ChatApp được đóng gói hoàn chỉnh và
 - **Cấu hình đa tầng Multi-stage:** Tách biệt môi trường build và runtime, giảm kích thước image và gia tăng bảo mật với process supervisor `dumb-init` cùng non-root user `node`.
 - **Hỗ trợ 6 dịch vụ đồng bộ:**
   - `chat_frontend`: Next.js 16 App Router (cổng 5173).
-  - `chat_backend`: NestJS + Socket.IO + MQTT Broker (cổng 3000).
+  - `chat_backend`: NestJS + Socket.IO + Socket.IO Gateway (cổng 3000).
   - `chat_admin`: Vite React SPA phục vụ qua Nginx Alpine (cổng 5174).
   - `chat_mongo`: MongoDB 7.x (cổng 27017).
   - `chat_redis`: Redis Cache & PubSub (cổng 6379).
@@ -548,7 +548,7 @@ Toàn bộ biến môi trường của hệ thống (NestJS Backend, Next.js Fro
 > - [Trang Quản trị Hệ thống Toàn diện (Admin Control Panel)](features/admin-panel.md)
 > - [Trung tâm Bảo mật WAF & Phòng chống DDoS Đa tầng](features/waf.md)
 > - [Phòng thủ & Chống tấn công DDoS bằng Cloudflare (Anycast, WAF & Tunnel)](features/cloudflare-ddos-protection.md)
-> - [Nhắn tin thời gian thực & Giao thức nhị phân MQTT](features/chat-realtime.md)
+> - [Nhắn tin thời gian thực & Giao thức nhị phân Socket.IO](features/chat-realtime.md)
 > - [Thuật toán Gợi ý bạn bè thông minh bằng Đồ thị Neo4j](features/friend-recommendation.md)
 > - [Bảng tin Mạng xã hội & Hồ sơ cá nhân](features/social-feed-profile.md)
 > - [Hệ thống Kiểm duyệt AI & Phòng chống Bot](features/moderation-trust.md)

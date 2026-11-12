@@ -17,7 +17,9 @@ import { ChatService } from './chat.service.js';
 import { SendMessageDto } from './dto/send-message.dto.js';
 import { RedisService } from '../redis/redis/redis.service.js';
 import { CallStatus, CallType } from './schemas/message.schema.js';
-import { MqttBrokerService } from './mqtt-broker.service.js';
+import { SendMessageProto, ChatMessageProto } from './proto/chat.proto.js';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { AURA_BOT_ID } from '../groq/aura-bot.constant.js';
 import { GroqService } from '../groq/groq.service.js';
 import { AuraRateLimiterService } from '../groq/aura-rate-limiter.service.js';
@@ -93,22 +95,13 @@ export class ChatGateway
     private readonly chatService: ChatService,
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
-    private readonly mqttBrokerService: MqttBrokerService,
     @Optional() private readonly groqService?: GroqService,
     @Optional() private readonly auraRateLimiter?: AuraRateLimiterService,
   ) {}
 
   afterInit() {
     this.logger.log('Chat WebSocket Gateway đã khởi tạo thành công');
-    this.mqttBrokerService.onChatMessageReceived = (data) => {
-      void this.triggerAuraReply(data);
-      if (data.message) {
-        this.server
-          ?.to(`user:${data.senderId}`)
-          ?.to(`user:${data.receiverId}`)
-          ?.emit('message:new', data.message);
-      }
-    };
+
   }
 
   /**
@@ -239,7 +232,6 @@ export class ChatGateway
   }
 
   /**
-   * Broadcast tin nhắn mới tới các bên liên quan qua cả MQTT Protobuf và Socket.IO
    */
   private broadcastNewMessage(message: {
     _id: { toString(): string } | string;
@@ -259,19 +251,6 @@ export class ChatGateway
     const receiverId = message.receiverId ? message.receiverId.toString() : null;
     const convId = message.conversationId ? message.conversationId.toString() : '';
 
-    // 1. Phát qua MQTT nhị phân (Protocol Buffers)
-    try {
-      this.mqttBrokerService.publishChatMessage({
-        ...message,
-        receiverId: receiverId || '',
-      });
-    } catch (err) {
-      this.logger.error(
-        `Lỗi publish MQTT tin nhắn: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-
-    // 2. Chuyển đổi thành plain object với id/conversationId dạng chuỗi cho Socket.IO
     const serializedMessage = {
       _id: message._id.toString(),
       id: message._id.toString(),
@@ -297,18 +276,32 @@ export class ChatGateway
       isDeleted: Boolean(message.isDeleted),
     };
 
+    const binaryMessage = Buffer.from(ChatMessageProto.encode({
+      id: serializedMessage.id,
+      conversationId: serializedMessage.conversationId,
+      senderId: serializedMessage.senderId,
+      receiverId: serializedMessage.receiverId ?? '',
+      text: serializedMessage.text,
+      createdAt: serializedMessage.createdAt,
+      readAt: serializedMessage.readAt ?? '',
+      type: serializedMessage.type,
+      callLog: serializedMessage.callLog ?? undefined,
+      location: serializedMessage.location ?? undefined,
+      isDeleted: serializedMessage.isDeleted,
+    }).finish());
+
     // 3. Phát qua Socket.IO: nếu 1-1 thì gửi tới sender và receiver; nếu group thì gửi tới room conversation và từng thành viên
     if (receiverId) {
-      this.server.to(`user:${senderId}`).to(`user:${receiverId}`).emit('message:new', serializedMessage);
+      this.server.to(`user:${senderId}`).to(`user:${receiverId}`).emit('message:new:binary', binaryMessage);
     } else {
-      this.server.to(`conversation:${convId}`).emit('message:new', serializedMessage);
+      this.server.to(`conversation:${convId}`).emit('message:new:binary', binaryMessage);
       void this.chatService
         .getConversationById(convId)
         .then((conv) => {
           if (conv) {
             conv.participants.forEach((p) => {
               const pid = p.toString();
-              this.server.to(`user:${pid}`).emit('message:new', serializedMessage);
+              this.server.to(`user:${pid}`).emit('message:new:binary', binaryMessage);
             });
           }
         })
@@ -323,7 +316,30 @@ export class ChatGateway
   /**
    * Gửi tin nhắn 1-1 realtime
    */
-  @SubscribeMessage('message:send')
+  @SubscribeMessage('message:send:binary')
+  async handleBinaryMessage(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: Buffer,
+  ) {
+    if (!(payload instanceof Uint8Array) || payload.byteLength > 32_768) {
+      return { success: false, message: 'Invalid message payload' };
+    }
+    try {
+      const decoded = SendMessageProto.toObject(SendMessageProto.decode(payload));
+      const dto = plainToInstance(SendMessageDto, decoded);
+      const errors = await validate(dto, { whitelist: true, forbidNonWhitelisted: true });
+      if (errors.length || (dto.type && dto.type !== 'text' && dto.type !== 'location')) {
+        return { success: false, message: 'Invalid message payload' };
+      }
+      const result = await this.handleSendMessage(client, dto);
+      return result.success
+        ? { success: true }
+        : { success: false, message: result.message };
+    } catch {
+      return { success: false, message: 'Invalid message payload' };
+    }
+  }
+
   async handleSendMessage(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() dto: SendMessageDto,
@@ -345,7 +361,6 @@ export class ChatGateway
         },
       );
 
-      // Bắn event message:new tới cả sender và receiver (qua cả MQTT và Socket.IO)
       this.broadcastNewMessage(message);
 
       // Kích hoạt Aura Bot nếu tin nhắn gửi tới Aura hoặc nhắc tới @aura

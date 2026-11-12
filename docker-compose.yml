@@ -40,7 +40,7 @@ services:
       - chat_network
 
   # ============================================================================
-  # 2. Máy chủ Backend (NestJS + Socket.IO + MQTT Broker + AI Aura)
+  # 2. Máy chủ Backend (NestJS + Socket.IO + AI Aura)
   # ============================================================================
   backend:
     build:
@@ -51,9 +51,6 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-      - "1884:1884"
-      - "8883:8883"
-      - "8884:8884"
     env_file:
       - ./.env.local
     environment:

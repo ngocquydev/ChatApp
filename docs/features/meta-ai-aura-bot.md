@@ -74,9 +74,6 @@ Hệ thống hỗ trợ cơ chế phản hồi song song trên mọi giao thức
    - Truy vấn Groq Cloud (`llama-3.3-70b-versatile`) để sinh câu trả lời tự nhiên, thân thiện.
    - Lưu câu trả lời vào MongoDB và broadcast `message:new` kèm `typing:stop`.
 
-2. **MQTT Protobuf Binary Stream (`mqtt-broker.service.ts`)**:
-   - Nhận diện gói tin nhị phân gửi tới `AURA_BOT_ID` và chuyển tiếp an toàn tới bộ điều phối Aura.
-
 3. **REST API Fallback (`chat.controller.ts`)**:
    - Khi kết nối socket gián đoạn, API `POST /chat/messages` vẫn tự động kích hoạt Aura trả lời qua `ChatGateway.triggerAuraReply`.
 

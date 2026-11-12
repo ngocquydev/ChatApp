@@ -7,7 +7,7 @@ This file is the entry point for agents working in this repository. Read it befo
 
 | Area           | Stack                                                                                   | Development command                      |
 | -------------- | --------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `frontend/`    | Next.js 16 App Router, React 19, MUI v9, Zustand, Socket.IO, MQTT, React Hook Form, Zod | `npm run dev` (port 5173)                |
+| `frontend/`    | Next.js 16 App Router, React 19, MUI v9, Zustand, Socket.IO, Protobuf, React Hook Form, Zod | `npm run dev` (port 5173)                |
 | `admin/`       | React 19, Vite, React Router v7, MUI v9, Zustand, Lucide                                | `npm run dev` (port 5174)                |
 | `backend/`     | NestJS, MongoDB, Redis, Socket.IO, Swagger                                              | `npm run start:dev` (port 3000)          |
 | Infrastructure | Docker Compose, MongoDB, Redis                                                          | `docker compose up -d` (repository root) |

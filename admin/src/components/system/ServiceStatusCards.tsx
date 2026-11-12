@@ -43,7 +43,7 @@ export function ServiceStatusCards({ services, isEn }: ServiceStatusCardsProps) 
       color: "var(--mui-palette-info-main)",
     },
     {
-      name: "Realtime WebSocket / MQTT",
+      name: "Realtime WebSocket",
       desc: isEn ? "Realtime chat message dispatch & presence sync" : "Điều phối tin nhắn thời gian thực & trạng thái online",
       icon: Radio,
       status: isEn ? "Operational" : "Hoạt động",

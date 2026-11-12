@@ -18,7 +18,7 @@ flowchart TD
     Gateway -->|"Phát hiện @aura"| AuraBot["Aura Bot Agent"]
     AuraBot -->|"Llama 3.3 Prompt"| GroqAPI["Groq Cloud API (llama-3.3-70b-versatile)"]
     GroqAPI -->|"Phản hồi thông minh"| AuraBot
-    AuraBot -->|"Gửi tin nhắn phản hồi"| ChatWS["Socket.IO / MQTT Broadcast"]
+    AuraBot -->|"Gửi tin nhắn phản hồi"| ChatWS["Socket.IO / Socket.IO Broadcast"]
     
     Gateway -->|"Phát hiện @[Tên](userId)"| NotifService["Notifications Service"]
     NotifService -->|"Tạo thông báo type: 'mention'"| NotifDB[("MongoDB Notifications")]
