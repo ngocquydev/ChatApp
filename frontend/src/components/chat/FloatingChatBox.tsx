@@ -1,5 +1,7 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
+
 import {
   useState,
   useRef,
@@ -109,9 +111,17 @@ export default function FloatingChatBox({
 }: FloatingChatBoxProps) {
   const router = useRouter();
   const { tr } = useTranslation();
-  const { user: currentUser } = useAuthStore();
-  const { socket, onlineUserIds, startConversationWithUser } = useChatStore();
-  const { setConversationId, incrementUnread, clearUnread } = useChatBoxStore();
+  const currentUser = useAuthStore((state) => state.user);
+  const { socket, onlineUserIds, startConversationWithUser } = useChatStore(useShallow((state) => ({
+    socket: state.socket,
+    onlineUserIds: state.onlineUserIds,
+    startConversationWithUser: state.startConversationWithUser,
+  })));
+  const { setConversationId, incrementUnread, clearUnread } = useChatBoxStore(useShallow((state) => ({
+    setConversationId: state.setConversationId,
+    incrementUnread: state.incrementUnread,
+    clearUnread: state.clearUnread,
+  })));
   const { isMuted, toggleMute } = useSoundStore();
   const { startCall } = useCallStore();
   const { initiateGroupCall } = useGroupCallStore();

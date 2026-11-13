@@ -30,7 +30,7 @@ export default function CommentItem({
   onReport,
   onToggleReaction,
 }: CommentItemProps) {
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
   const currentUserId = propCurrentUserId || (user?._id || user?.id)?.toString();
   const { t, tr } = useTranslation();
   const [lightbox, setLightbox] = useState<string | null>(null);

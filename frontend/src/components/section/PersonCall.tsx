@@ -1,5 +1,7 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
+
 import { useState, useEffect } from "react";
 import NextLink from "next/link";
 import {
@@ -117,10 +119,27 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
     userLocation,
     fetchRecommendations,
     updateLocation,
-  } = useFriendStore();
+  } = useFriendStore(useShallow((state) => ({
+    friends: state.friends,
+    isLoadingFriends: state.isLoadingFriends,
+    fetchFriends: state.fetchFriends,
+    searchResults: state.searchResults,
+    isSearching: state.isSearching,
+    searchUsers: state.searchUsers,
+    sendFriendRequest: state.sendFriendRequest,
+    cancelRequest: state.cancelRequest,
+    respondToRequest: state.respondToRequest,
+    clearSearchResults: state.clearSearchResults,
+    recommendations: state.recommendations,
+    isLoadingRecommendations: state.isLoadingRecommendations,
+    isLocating: state.isLocating,
+    userLocation: state.userLocation,
+    fetchRecommendations: state.fetchRecommendations,
+    updateLocation: state.updateLocation,
+  })));
 
-  const { onlineUserIds } = useChatStore();
-  const { openChat } = useChatBoxStore();
+  const onlineUserIds = useChatStore((state) => state.onlineUserIds);
+  const openChat = useChatBoxStore((state) => state.openChat);
 
   useEffect(() => {
     fetchFriends();

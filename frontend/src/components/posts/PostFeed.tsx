@@ -72,7 +72,7 @@ export default function PostFeed({
   defaultPrivacy,
   userId,
 }: PostFeedProps) {
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
   const { t } = useTranslation();
   const currentUserId = (user?._id || user?.id) as string | undefined;
 

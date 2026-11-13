@@ -1,5 +1,7 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
+
 import { useState, useRef, useEffect, MouseEvent } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -83,7 +85,10 @@ function ResponsiveAppBar() {
   );
   const router = useRouter();
   const pathname = usePathname();
-  const { user, logout } = useAuthStore();
+  const { user, logout } = useAuthStore(useShallow((state) => ({
+    user: state.user,
+    logout: state.logout,
+  })));
   const { t, tr, language } = useTranslation();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -106,14 +111,34 @@ function ResponsiveAppBar() {
     receivedRequests,
     isLoadingRequests,
     fetchRequests,
-  } = useFriendStore();
+  } = useFriendStore(useShallow((state) => ({
+    searchResults: state.searchResults,
+    isSearching: state.isSearching,
+    isSearchingMore: state.isSearchingMore,
+    searchHasMore: state.searchHasMore,
+    searchError: state.searchError,
+    searchUsers: state.searchUsers,
+    loadMoreSearchResults: state.loadMoreSearchResults,
+    clearSearchResults: state.clearSearchResults,
+    sendFriendRequest: state.sendFriendRequest,
+    cancelRequest: state.cancelRequest,
+    respondToRequest: state.respondToRequest,
+    receivedRequests: state.receivedRequests,
+    isLoadingRequests: state.isLoadingRequests,
+    fetchRequests: state.fetchRequests,
+  })));
 
   const {
     conversations,
     fetchConversations,
     startConversationWithUser,
     connectSocket,
-  } = useChatStore();
+  } = useChatStore(useShallow((state) => ({
+    conversations: state.conversations,
+    fetchConversations: state.fetchConversations,
+    startConversationWithUser: state.startConversationWithUser,
+    connectSocket: state.connectSocket,
+  })));
 
   const [drawerShortcuts, setDrawerShortcuts] = useState<NavShortcutItem[]>([]);
 

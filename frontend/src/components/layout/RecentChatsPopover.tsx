@@ -1,5 +1,7 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
+
 import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Box, Button, ButtonBase, IconButton, InputAdornment, Popover, TextField, Tooltip, Typography } from "@mui/material";
@@ -20,8 +22,14 @@ import { AURA_BOT_USER, isAuraBot } from "@/constants/auraBot";
 export default function RecentChatsPopover({ anchorEl, currentUserId, onClose }: { anchorEl: HTMLElement | null; currentUserId: string; onClose: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { conversations, onlineUserIds, selectConversation, fetchConversations, deleteConversation } = useChatStore();
-  const { openChat } = useChatBoxStore();
+  const { conversations, onlineUserIds, selectConversation, fetchConversations, deleteConversation } = useChatStore(useShallow((state) => ({
+    conversations: state.conversations,
+    onlineUserIds: state.onlineUserIds,
+    selectConversation: state.selectConversation,
+    fetchConversations: state.fetchConversations,
+    deleteConversation: state.deleteConversation,
+  })));
+  const openChat = useChatBoxStore((state) => state.openChat);
   const { isMuted, toggleMute } = useSoundStore();
   const { t, tr } = useTranslation();
 

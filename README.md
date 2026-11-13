@@ -1,5 +1,7 @@
 # 💬 ChatApp — Realtime Chat & Social Platform
 
+Frontend render optimization notes and measurement limits: [Zustand subscriptions](docs/frontend-rendering.md).
+
 [![Next.js](https://img.shields.io/badge/Next.js-16.4-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?style=flat&logo=react)](https://react.dev/)
 [![NestJS](https://img.shields.io/badge/NestJS-10.0-E0234E?style=flat&logo=nestjs)](https://nestjs.com/)
