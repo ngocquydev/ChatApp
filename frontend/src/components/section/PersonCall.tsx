@@ -57,6 +57,7 @@ export interface PersonCallProps {
 }
 
 const PERSON_CALL_TAB_STORAGE_KEY = "chatapp:person_call_tab";
+const RECOMMENDATIONS_PAGE_SIZE = 5;
 
 function readStoredPersonCallTab(): number {
   if (typeof window === "undefined") return 0;
@@ -82,6 +83,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
   const [searchFriend, setSearchFriend] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [geoNotice, setGeoNotice] = useState<string | null>(null);
+  const [visibleRecommendationsCount, setVisibleRecommendationsCount] = useState(RECOMMENDATIONS_PAGE_SIZE);
   const { tr } = useTranslation();
 
   const handleTabChange = (val: number) => {
@@ -130,6 +132,10 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
       fetchRecommendations();
     }
   }, [activeTab, recommendations.length, fetchRecommendations]);
+
+  useEffect(() => {
+    setVisibleRecommendationsCount(RECOMMENDATIONS_PAGE_SIZE);
+  }, [recommendations.length]);
 
   const handleRequestLocation = () => {
     setGeoNotice(null);
@@ -531,6 +537,14 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
           <Divider sx={{ mb: 1.5 }} />
 
           <Box
+            onScroll={(event) => {
+              const element = event.currentTarget;
+              if (element.scrollHeight - element.scrollTop - element.clientHeight < 100) {
+                setVisibleRecommendationsCount((count) =>
+                  Math.min(count + RECOMMENDATIONS_PAGE_SIZE, recommendations.length),
+                );
+              }
+            }}
             sx={{
               flex: 1,
               overflowY: "auto",
@@ -663,7 +677,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                   </Box>
                 )}
 
-                {recommendations.map((rec) => (
+                {recommendations.slice(0, visibleRecommendationsCount).map((rec) => (
                     <Box
                       key={rec._id}
                       sx={{
@@ -857,7 +871,7 @@ function PersonCall({ onSelectFriend }: PersonCallProps) {
                         )}
                       </Box>
                     </Box>
-                  ))}
+                ))}
               </>
             )}
 
