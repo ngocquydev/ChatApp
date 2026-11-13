@@ -56,6 +56,9 @@ cần HTTPS/WSS qua reverse proxy.
 Frontend gửi access token đang giữ trong bộ nhớ qua `handshake.auth.token` ở mỗi
 lần kết nối Socket.IO. Cookie vẫn được gửi khi trình duyệt cho phép. Cách này giúp
 kết nối Vercel → Render xác thực được khi cookie bên thứ ba bị chặn.
+Khi backend chủ động ngắt socket vì access token hết hạn, frontend gọi
+`/auth/refresh`, cập nhật token trong bộ nhớ rồi kết nối lại. Lần kết nối mới
+đồng bộ lịch sử của hội thoại đang mở để lấy các tin bị lỡ.
 
 ## 4. GIAO THỨC NHỊ PHÂN PROTOBUF
 

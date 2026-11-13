@@ -312,8 +312,34 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
     });
 
-    socket.on("disconnect", () => {
+    let isRefreshingSocketAuth = false;
+    socket.on("disconnect", (reason) => {
       set({ isConnected: false });
+      // A server-initiated disconnect does not trigger Socket.IO's automatic
+      // reconnection. Refresh the expired access token before reconnecting.
+      if (
+        reason !== "io server disconnect" ||
+        isRefreshingSocketAuth ||
+        !useAuthStore.getState().user
+      ) {
+        return;
+      }
+
+      isRefreshingSocketAuth = true;
+      void api.post("/auth/refresh")
+        .then((response) => {
+          const token = response.data?.accessToken;
+          if (typeof token !== "string" || !token) return;
+          useAuthStore.getState().setAccessToken(token);
+          if (get().socket === socket) socket.connect();
+        })
+        .catch(() => {
+          // The session is no longer valid; the next authenticated request
+          // will surface the login flow.
+        })
+        .finally(() => {
+          isRefreshingSocketAuth = false;
+        });
     });
 
     socket.on("presence:initial", (data: { onlineUserIds: string[] }) => {
