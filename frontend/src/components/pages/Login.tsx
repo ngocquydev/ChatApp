@@ -245,20 +245,16 @@ export default function Login() {
         router.push("/");
       }
     } catch (err: unknown) {
-      console.error("Lỗi đăng nhập:", err);
-
       // Reset Turnstile token khi đăng nhập thất bại để yêu cầu xác minh lại
       turnstileRef.current?.reset();
       setTurnstileToken("");
 
-      const error = err as { response?: { data?: { message?: string | string[] } }; message?: string };
+      const error = err as { response?: { data?: { message?: string | string[] } } };
       let message = tr("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!", "Sign in failed. Please check your credentials!");
       if (error.response?.data?.message) {
         message = Array.isArray(error.response.data.message)
           ? error.response.data.message.join(", ")
           : error.response.data.message;
-      } else if (error.message) {
-        message = error.message;
       }
 
       setAlertInfo({

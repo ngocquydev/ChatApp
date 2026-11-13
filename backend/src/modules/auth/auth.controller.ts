@@ -10,6 +10,7 @@ import {
   UnauthorizedException,
   HttpCode,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
 import { CreateUserDto } from '../users/dto/create-user.dto.js';
@@ -25,6 +26,7 @@ import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { ForgotPasswordDto } from './dto/forgot-password.dto.js';
 import { VerifyOtpDto } from './dto/verify-otp.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
+import { ClientAuthDiagnosticDto } from './dto/client-auth-diagnostic.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { FirebaseService } from './firebase.service.js';
 import { TurnstileService } from './turnstile.service.js';
@@ -46,6 +48,7 @@ const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 ngày
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
   constructor(
     private readonly authService: AuthService,
     private readonly userService: UsersService,
@@ -53,6 +56,13 @@ export class AuthController {
     private readonly turnstileService: TurnstileService,
     private readonly redisService: RedisService,
   ) {}
+
+  @Post('client-diagnostic')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Ghi mã lỗi cấu hình Firebase phát sinh trên trình duyệt' })
+  reportClientAuthDiagnostic(@Body() dto: ClientAuthDiagnosticDto): void {
+    this.logger.warn(`Firebase client authentication configuration error: ${dto.provider} ${dto.code}`);
+  }
 
   @Post('register')
   @ApiOperation({

@@ -43,6 +43,8 @@ export class PagesService implements OnModuleInit {
       category: dto.category?.trim() || 'Cộng đồng',
       avatar: dto.avatar || null,
       coverImage: dto.coverImage || null,
+      phone: dto.phone?.trim() || '',
+      email: dto.email?.trim().toLowerCase() || '',
       creatorId: objCreatorId,
       adminIds: [objCreatorId],
       moderatorIds: [],
@@ -214,6 +216,8 @@ export class PagesService implements OnModuleInit {
     if (dto.category) page.category = dto.category.trim();
     if (dto.avatar !== undefined) page.avatar = dto.avatar;
     if (dto.coverImage !== undefined) page.coverImage = dto.coverImage;
+    if (dto.phone !== undefined) page.phone = dto.phone.trim();
+    if (dto.email !== undefined) page.email = dto.email.trim().toLowerCase();
 
     page.updatedAt = new Date();
     await page.save();

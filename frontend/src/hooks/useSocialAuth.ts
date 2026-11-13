@@ -1,6 +1,22 @@
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../store/useAuthStore";
 import { useTranslation } from "@/i18n/useTranslation";
+import api from "@/services/api";
+
+const FIREBASE_CONFIG_CODES = new Set([
+  "auth/invalid-api-key",
+  "auth/app-not-authorized",
+  "auth/unauthorized-domain",
+  "auth/operation-not-allowed",
+  "auth/invalid-auth-domain",
+]);
+
+function reportFirebaseConfigError(provider: "google" | "facebook", code?: string) {
+  if (!code || !FIREBASE_CONFIG_CODES.has(code)) return;
+  void api.post("/auth/client-diagnostic", { provider, code }).catch(() => {
+    // Authentication must still show a safe error when diagnostics are unavailable.
+  });
+}
 
 interface UseSocialAuthOptions {
   onSuccess?: () => void;
@@ -44,7 +60,8 @@ export const useSocialAuth = ({ onSuccess, onError }: UseSocialAuthOptions = {})
         redirectAfterLogin();
       }
     } catch (err: unknown) {
-      const error = err as { code?: string; message?: string; response?: { data?: { message?: string | string[] } } };
+      const error = err as { code?: string; response?: { data?: { message?: string | string[] } } };
+      reportFirebaseConfigError("google", error?.code);
       if (
         error?.code === "auth/popup-closed-by-user" ||
         error?.code === "auth/cancelled-popup-request"
@@ -59,8 +76,6 @@ export const useSocialAuth = ({ onSuccess, onError }: UseSocialAuthOptions = {})
         message = Array.isArray(error.response.data.message)
           ? error.response.data.message.join(", ")
           : error.response.data.message;
-      } else if (error?.message) {
-        message = error.message;
       }
 
       if (onError) {
@@ -78,7 +93,8 @@ export const useSocialAuth = ({ onSuccess, onError }: UseSocialAuthOptions = {})
         redirectAfterLogin();
       }
     } catch (err: unknown) {
-      const error = err as { code?: string; message?: string; response?: { data?: { message?: string | string[] } } };
+      const error = err as { code?: string; response?: { data?: { message?: string | string[] } } };
+      reportFirebaseConfigError("facebook", error?.code);
       if (
         error?.code === "auth/popup-closed-by-user" ||
         error?.code === "auth/cancelled-popup-request"
@@ -93,8 +109,6 @@ export const useSocialAuth = ({ onSuccess, onError }: UseSocialAuthOptions = {})
         message = Array.isArray(error.response.data.message)
           ? error.response.data.message.join(", ")
           : error.response.data.message;
-      } else if (error?.message) {
-        message = error.message;
       }
 
       if (onError) {

@@ -23,6 +23,12 @@ export class Page {
   @Prop({ type: String, default: null })
   coverImage?: string | null;
 
+  @Prop({ type: String, default: '' })
+  phone: string;
+
+  @Prop({ type: String, default: '' })
+  email: string;
+
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   creatorId: Types.ObjectId;
 

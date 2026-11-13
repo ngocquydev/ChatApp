@@ -235,6 +235,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 
 ### 13. Trang Fanpage & Hội Nhóm Cộng Đồng (Fanpages & Community Groups with Feed)
 - **Trang Fanpage chính thức (`/pages`):**
+    - Quản trị viên có thể đổi ảnh đại diện, ảnh bìa, giới thiệu và cập nhật số điện thoại/email liên hệ ngay trên hồ sơ Trang; thông tin liên hệ được hiển thị công khai.
   - API công khai chỉ trả thông tin Trang cần hiển thị; danh sách ID người theo dõi và quản trị viên không nằm trong JSON. Theo dõi dùng `PUT /pages/:id/follow`, bỏ theo dõi dùng `DELETE /pages/:id/follow` để gửi lại yêu cầu an toàn.
   - Tách Trang quản lý và Trang theo dõi; thành viên không tạo Trang vẫn có thể theo dõi hoặc bỏ theo dõi từ danh sách khám phá và hồ sơ Trang.
   - Tìm Trang theo tên, mô tả hoặc danh mục khi ngừng gõ; lọc danh mục đang có Trang và tải thêm theo từng 20 kết quả.

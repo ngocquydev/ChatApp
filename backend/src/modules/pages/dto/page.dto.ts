@@ -1,4 +1,6 @@
-import { IsNotEmpty, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Length, Matches, MaxLength, ValidateIf } from 'class-validator';
+
+const PAGE_PHONE_PATTERN = /^(?:|\+?[0-9().\s-]{7,20})$/;
 
 export class CreatePageDto {
   @IsString({ message: 'Tên trang phải là chuỗi' })
@@ -29,6 +31,16 @@ export class CreatePageDto {
   @IsOptional()
   @IsString()
   coverImage?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(PAGE_PHONE_PATTERN)
+  phone?: string;
+
+  @ValidateIf((_object, value: unknown) => value !== '' && value != null)
+  @IsEmail()
+  @MaxLength(254)
+  email?: string;
 }
 
 export class UpdatePageDto {
@@ -53,5 +65,15 @@ export class UpdatePageDto {
   @IsOptional()
   @IsString()
   coverImage?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(PAGE_PHONE_PATTERN)
+  phone?: string;
+
+  @ValidateIf((_object, value: unknown) => value !== '' && value != null)
+  @IsEmail()
+  @MaxLength(254)
+  email?: string;
 }
 

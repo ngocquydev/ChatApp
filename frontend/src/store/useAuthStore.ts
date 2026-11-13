@@ -161,7 +161,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       return res.data;
     } catch (error) {
-      console.error("Lỗi login firebase:", error);
       throw error;
     } finally {
       set({ isLoggingIn: false });
@@ -175,7 +174,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const idToken = await result.user.getIdToken();
       return await get().loginfirebase(idToken);
     } catch (error) {
-      console.error("Lỗi đăng nhập Google:", error);
       throw error;
     } finally {
       set({ isGoogleLoading: false });
@@ -189,7 +187,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const idToken = await result.user.getIdToken();
       return await get().loginfirebase(idToken);
     } catch (error) {
-      console.error("Lỗi đăng nhập Facebook:", error);
       throw error;
     } finally {
       set({ isFacebookLoading: false });
@@ -212,7 +209,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       return res.data;
     } catch (error) {
-      console.error("Lỗi login truyền thống:", error);
       throw error;
     } finally {
       set({ isLoggingIn: false });

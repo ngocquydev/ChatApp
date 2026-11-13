@@ -5,6 +5,8 @@ import { UsersService } from '../users/users.service.js';
 import { FirebaseService } from './firebase.service.js';
 import { TurnstileService } from './turnstile.service.js';
 import { RedisService } from '../redis/redis/redis.service.js';
+import { ClientAuthDiagnosticDto } from './dto/client-auth-diagnostic.dto.js';
+import { validate } from 'class-validator';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -32,6 +34,14 @@ describe('AuthController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('rejects arbitrary client diagnostic text that could contain credentials', async () => {
+    const diagnostic = Object.assign(new ClientAuthDiagnosticDto(), {
+      provider: 'google',
+      code: 'auth/invalid-api-key token=private',
+    });
+    expect(await validate(diagnostic)).not.toHaveLength(0);
   });
 
   it('caches the authenticated profile in Redis', async () => {

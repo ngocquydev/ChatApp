@@ -13,7 +13,7 @@ import {
   Snackbar,
   Typography,
 } from "@mui/material";
-import { Check, Flag, Plus, Users } from "lucide-react";
+import { Check, Flag, Mail, Pencil, Phone, Plus } from "lucide-react";
 import { useTranslation } from "@/i18n/useTranslation";
 import { pagesApi, PageItem } from "@/services/pagesApi";
 import VerifiedBadge from "@/components/common/VerifiedBadge";
@@ -23,6 +23,7 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import { fetchPagePosts } from "@/services/postsApi";
 import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
+import EditPageDialog from "./EditPageDialog";
 
 export default function PageProfile({ slug }: { slug: string }) {
   const { tr, t } = useTranslation();
@@ -36,6 +37,7 @@ export default function PageProfile({ slug }: { slug: string }) {
   const [followerCount, setFollowerCount] = useState(0);
   const [isActionPending, setIsActionPending] = useState(false);
   const [followError, setFollowError] = useState(false);
+  const [editing, setEditing] = useState(false);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth);
 
@@ -193,12 +195,12 @@ export default function PageProfile({ slug }: { slug: string }) {
 
             <Box sx={{ display: "flex", gap: 1, width: { xs: "100%", sm: "auto" } }}>
               {isAdmin && (
-                <Chip
-                  label={t("pages.adminBadge")}
-                  color="primary"
-                  variant="outlined"
-                  sx={{ fontWeight: 700 }}
-                />
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                  <Chip label={t("pages.adminBadge")} color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
+                  <Button variant="outlined" startIcon={<Pencil size={16} />} onClick={() => setEditing(true)}>
+                    {t("pages.editPage")}
+                  </Button>
+                </Box>
               )}
 
               {!isAdmin && !isCheckingAuth && (isAuthenticated ? (
@@ -226,6 +228,22 @@ export default function PageProfile({ slug }: { slug: string }) {
               </Typography>
             </Box>
           )}
+          {(page.phone || page.email) && (
+            <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1 }}>
+              {page.phone && (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Phone size={17} aria-hidden="true" />
+                  <Typography variant="body2" component="a" href={`tel:${page.phone}`} color="primary.main">{page.phone}</Typography>
+                </Box>
+              )}
+              {page.email && (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Mail size={17} aria-hidden="true" />
+                  <Typography variant="body2" component="a" href={`mailto:${page.email}`} color="primary.main">{page.email}</Typography>
+                </Box>
+              )}
+            </Box>
+          )}
         </Box>
       </Card>
 
@@ -243,6 +261,10 @@ export default function PageProfile({ slug }: { slug: string }) {
       <Snackbar open={followError} autoHideDuration={3500} onClose={() => setFollowError(false)} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
         <Alert severity="error" variant="filled" onClose={() => setFollowError(false)}>{t("pages.followError")}</Alert>
       </Snackbar>
+      {editing && <EditPageDialog page={page} onClose={() => setEditing(false)} onSaved={(updated) => {
+        setData((current) => current ? { ...current, page: updated } : current);
+        setEditing(false);
+      }} />}
         </Container>
       </Box>
     </Box>

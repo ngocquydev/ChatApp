@@ -222,6 +222,17 @@ export interface TranslationDictionary {
     joinedGroupsSection: string;
   };
   pages: {
+      editPage: string;
+      changeAvatar: string;
+      changeCover: string;
+      phoneLabel: string;
+      emailLabel: string;
+      cancelEdit: string;
+      savePage: string;
+      saving: string;
+      invalidImage: string;
+      invalidContact: string;
+      saveError: string;
     title: string;
     description: string;
     createPage: string;

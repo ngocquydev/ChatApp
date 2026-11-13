@@ -4,6 +4,8 @@ import { Types } from 'mongoose';
 import { ConflictException } from '@nestjs/common';
 import { model } from 'mongoose';
 import { PageSchema } from './schemas/page.schema.js';
+import { UpdatePageDto } from './dto/page.dto.js';
+import { validate } from 'class-validator';
 
 describe('PagesService', () => {
   let service: PagesService;
@@ -44,6 +46,35 @@ describe('PagesService', () => {
     expect(result).toBeDefined();
     expect(result.slug).toBe('trang-test');
     expect(mockPageModel.create).toHaveBeenCalled();
+  });
+
+  it('updates page contact details only for an administrator', async () => {
+    const adminId = new Types.ObjectId();
+    const pageId = new Types.ObjectId().toString();
+    const page = {
+      creatorId: adminId, adminIds: [], isDeleted: false,
+      phone: '', email: '', bio: '',
+      save: vi.fn().mockResolvedValue(undefined),
+    };
+    mockPageModel.findById.mockReturnValue({ exec: vi.fn().mockResolvedValue(page) });
+
+    await service.updatePage(pageId, adminId.toString(), {
+      phone: ' +84 912 345 678 ',
+      email: ' Contact@Example.com ',
+      bio: 'Giới thiệu mới',
+    });
+
+    expect(page.phone).toBe('+84 912 345 678');
+    expect(page.email).toBe('contact@example.com');
+    expect(page.bio).toBe('Giới thiệu mới');
+    expect(page.save).toHaveBeenCalledOnce();
+    await expect(service.updatePage(pageId, new Types.ObjectId().toString(), { phone: '1234567890' })).rejects.toThrow('Bạn không có quyền');
+  });
+
+  it('rejects invalid public contact information', async () => {
+    const dto = Object.assign(new UpdatePageDto(), { phone: 'call me', email: 'bad-address' });
+    const errors = await validate(dto);
+    expect(errors.map((error) => error.property)).toEqual(expect.arrayContaining(['phone', 'email']));
   });
 
   it('should throw ConflictException if slug already exists', async () => {

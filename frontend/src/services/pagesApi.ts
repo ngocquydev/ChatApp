@@ -8,6 +8,8 @@ export interface PageItem {
   category: string;
   avatar?: string;
   coverImage?: string;
+  phone?: string;
+  email?: string;
   creatorId: { _id: string; name: string; avatar?: string } | string;
   followerCount: number;
   isVerified: boolean;
@@ -21,9 +23,23 @@ export interface CreatePageInput {
   category?: string;
   avatar?: string;
   coverImage?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface UpdatePageInput {
+  bio?: string;
+  avatar?: string;
+  coverImage?: string;
+  phone?: string;
+  email?: string;
 }
 
 export const pagesApi = {
+  updatePage: async (pageId: string, data: UpdatePageInput): Promise<PageItem> => {
+    const res = await api.patch(`/pages/${pageId}`, data);
+    return res.data;
+  },
   createPage: async (data: CreatePageInput): Promise<PageItem> => {
     const res = await api.post("/pages", data);
     return res.data;

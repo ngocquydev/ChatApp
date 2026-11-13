@@ -57,8 +57,11 @@ export default function ClientShell({ children }: ClientShellProps) {
   );
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    if (shouldHideAppBar || isAuthenticated) return;
+    void checkAuth().catch(() => {
+      // A missing or expired session is handled by AuthGuard on protected pages.
+    });
+  }, [checkAuth, shouldHideAppBar, isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
