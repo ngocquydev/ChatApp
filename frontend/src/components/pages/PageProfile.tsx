@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import {
   Avatar,
+  Alert,
   Box,
   Button,
   Card,
   Chip,
   Container,
   Skeleton,
+  Snackbar,
   Typography,
 } from "@mui/material";
 import { Check, Flag, Plus, Users } from "lucide-react";
@@ -19,7 +21,8 @@ import EmptyState from "@/components/common/EmptyState";
 import PostFeed from "@/components/posts/PostFeed";
 import LeftSidebar from "@/components/layout/LeftSidebar";
 import { fetchPagePosts } from "@/services/postsApi";
-import { v } from "@/theme/tokens";
+import Link from "next/link";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function PageProfile({ slug }: { slug: string }) {
   const { tr, t } = useTranslation();
@@ -32,6 +35,9 @@ export default function PageProfile({ slug }: { slug: string }) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [isActionPending, setIsActionPending] = useState(false);
+  const [followError, setFollowError] = useState(false);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth);
 
   useEffect(() => {
     let isMounted = true;
@@ -54,17 +60,19 @@ export default function PageProfile({ slug }: { slug: string }) {
     return () => {
       isMounted = false;
     };
-  }, [slug]);
+  }, [slug, isAuthenticated]);
 
   const handleToggleFollow = async () => {
     if (!data?.page || isActionPending) return;
     setIsActionPending(true);
+    setFollowError(false);
     try {
-      const res = await pagesApi.toggleFollowPage(data.page._id);
+      const res = await pagesApi.setFollowPage(data.page._id, !isFollowing);
       setIsFollowing(res.isFollowing);
       setFollowerCount(res.followerCount);
     } catch (e) {
       console.error("Lỗi theo dõi trang:", e);
+      setFollowError(true);
     } finally {
       setIsActionPending(false);
     }
@@ -157,7 +165,7 @@ export default function PageProfile({ slug }: { slug: string }) {
                   bgcolor: "primary.main",
                   fontSize: "2.5rem",
                   fontWeight: 800,
-                  boxShadow: "0 6px 16px rgba(0,0,0,0.12)",
+                  boxShadow: 2,
                 }}
               >
                 {page.name.charAt(0).toUpperCase()}
@@ -165,7 +173,7 @@ export default function PageProfile({ slug }: { slug: string }) {
 
               <Box sx={{ pb: 0.5 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                  <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                  <Typography variant="h5" component="h1" sx={{ fontWeight: 800 }}>
                     {page.name}
                   </Typography>
                   {page.isVerified && <VerifiedBadge size={18} />}
@@ -193,22 +201,21 @@ export default function PageProfile({ slug }: { slug: string }) {
                 />
               )}
 
-              <Button
-                variant={isFollowing ? "outlined" : "contained"}
-                startIcon={isFollowing ? <Check size={16} /> : <Plus size={16} />}
-                onClick={() => void handleToggleFollow()}
-                disabled={isActionPending}
-                sx={{
-                  borderRadius: "12px",
-                  px: 2.5,
-                  fontWeight: 700,
-                  flex: { xs: 1, sm: "initial" },
-                }}
-              >
-                {isFollowing
-                  ? t("pages.unfollow")
-                  : t("pages.follow")}
-              </Button>
+              {!isAdmin && !isCheckingAuth && (isAuthenticated ? (
+                <Button
+                  variant={isFollowing ? "outlined" : "contained"}
+                  startIcon={isFollowing ? <Check size={16} /> : <Plus size={16} />}
+                  onClick={() => void handleToggleFollow()}
+                  disabled={isActionPending}
+                  sx={{ borderRadius: "12px", px: 2.5, fontWeight: 700, flex: { xs: 1, sm: "initial" } }}
+                >
+                  {isFollowing ? t("pages.unfollow") : t("pages.follow")}
+                </Button>
+              ) : (
+                <Button component={Link} href="/login" variant="contained" startIcon={<Plus size={16} />}>
+                  {t("pages.follow")}
+                </Button>
+              ))}
             </Box>
           </Box>
 
@@ -233,6 +240,9 @@ export default function PageProfile({ slug }: { slug: string }) {
           emptyDescription={t("pages.noPostsYetDesc")}
         />
       </Box>
+      <Snackbar open={followError} autoHideDuration={3500} onClose={() => setFollowError(false)} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
+        <Alert severity="error" variant="filled" onClose={() => setFollowError(false)}>{t("pages.followError")}</Alert>
+      </Snackbar>
         </Container>
       </Box>
     </Box>

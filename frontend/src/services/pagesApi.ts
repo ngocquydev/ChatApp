@@ -9,8 +9,6 @@ export interface PageItem {
   avatar?: string;
   coverImage?: string;
   creatorId: { _id: string; name: string; avatar?: string } | string;
-  adminIds: Array<{ _id: string; name: string; avatar?: string } | string>;
-  followers: string[];
   followerCount: number;
   isVerified: boolean;
   createdAt: string;
@@ -36,8 +34,23 @@ export const pagesApi = {
     return res.data;
   },
 
-  explorePages: async (q?: string): Promise<PageItem[]> => {
-    const res = await api.get("/pages/explore", { params: { q } });
+  getFollowedPages: async (): Promise<PageItem[]> => {
+    const res = await api.get("/pages/following");
+    return res.data;
+  },
+
+  getExploreCategories: async (): Promise<string[]> => {
+    const res = await api.get("/pages/categories");
+    return res.data;
+  },
+
+  explorePages: async (params: {
+    q?: string;
+    category?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<PageItem[]> => {
+    const res = await api.get("/pages/explore", { params });
     return res.data;
   },
 
@@ -48,10 +61,13 @@ export const pagesApi = {
     return res.data;
   },
 
-  toggleFollowPage: async (
-    pageId: string
+  setFollowPage: async (
+    pageId: string,
+    shouldFollow: boolean
   ): Promise<{ isFollowing: boolean; followerCount: number }> => {
-    const res = await api.post(`/pages/${pageId}/follow`);
+    const res = shouldFollow
+      ? await api.put(`/pages/${pageId}/follow`)
+      : await api.delete(`/pages/${pageId}/follow`);
     return res.data;
   },
 };

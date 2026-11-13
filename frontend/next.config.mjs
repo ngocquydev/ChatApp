@@ -1,8 +1,10 @@
 import nextEnv from '@next/env';
 import path from 'node:path';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const { loadEnvConfig } = nextEnv;
+const appRoot = path.dirname(fileURLToPath(import.meta.url));
 const rootEnvDir = fs.existsSync(path.resolve(process.cwd(), '../.env.local'))
   ? path.resolve(process.cwd(), '..')
   : process.cwd();
@@ -84,7 +86,7 @@ const nextConfig = {
     ],
   },
   transpilePackages: ["@mui/material", "@mui/icons-material", "@mui/material-nextjs"],
-  turbopack: {},
+  turbopack: { root: appRoot },
   webpack: (config, { dev }) => {
     if (dev) {
       config.watchOptions = {

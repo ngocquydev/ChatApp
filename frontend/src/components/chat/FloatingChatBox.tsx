@@ -128,6 +128,9 @@ export default function FloatingChatBox({
 
   const [convId, setConvId] = useState<string | null>(session.conversationId || null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [olderCursor, setOlderCursor] = useState<string | null>(null);
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+  const [olderError, setOlderError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [inputText, setInputText] = useState("");
   const inputTextRef = useRef(inputText);
@@ -169,6 +172,9 @@ export default function FloatingChatBox({
 
   const docInputRef = useRef<HTMLInputElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const lastMessageIdRef = useRef<string | null>(null);
+  const wasMinimizedRef = useRef(session.isMinimized);
+  const wasLoadingRef = useRef(isLoading);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingSentRef = useRef<number>(0);
   const partnerTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -199,6 +205,31 @@ export default function FloatingChatBox({
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   }, []);
+
+  const loadOlderMessages = useCallback(async () => {
+    if (!convId || !olderCursor || isLoadingOlder) return;
+    const currentConversationId = convId;
+    setIsLoadingOlder(true);
+    setOlderError(false);
+    try {
+      const response = await api.get(`/chat/conversations/${currentConversationId}/messages`, {
+        params: { before: olderCursor },
+      });
+      if (convIdRef.current !== currentConversationId || !Array.isArray(response.data?.messages)) return;
+      setMessages((current) => mergeMessagesFromServer(response.data.messages, current));
+      setOlderCursor(response.data.nextCursor ?? null);
+    } catch (error) {
+      setOlderError(true);
+      throw error;
+    } finally {
+      setIsLoadingOlder(false);
+    }
+  }, [convId, olderCursor, isLoadingOlder]);
+
+  useEffect(() => {
+    setOlderCursor(null);
+    setOlderError(false);
+  }, [convId]);
 
   const emitTyping = useCallback(
     (isTyping: boolean) => {
@@ -275,6 +306,7 @@ export default function FloatingChatBox({
             setMessages((current) =>
               mergeMessagesFromServer(msgRes.data.messages, current),
             );
+            setOlderCursor(msgRes.data.nextCursor ?? null);
           }
 
           // Đánh dấu đã đọc
@@ -363,7 +395,14 @@ export default function FloatingChatBox({
 
   // Cuộn xuống đáy khi tin nhắn thay đổi hoặc khi un-minimize
   useEffect(() => {
-    if (!session.isMinimized && !isLoading) {
+    const latestId = String(messages[messages.length - 1]?._id || messages[messages.length - 1]?.id || "");
+    const latestChanged = latestId !== lastMessageIdRef.current;
+    const reopened = wasMinimizedRef.current && !session.isMinimized;
+    const finishedLoading = wasLoadingRef.current && !isLoading;
+    lastMessageIdRef.current = latestId;
+    wasMinimizedRef.current = session.isMinimized;
+    wasLoadingRef.current = isLoading;
+    if (!session.isMinimized && !isLoading && (latestChanged || reopened || finishedLoading)) {
       scrollToBottom("auto");
     }
   }, [messages, session.isMinimized, isLoading, scrollToBottom]);
@@ -1269,6 +1308,10 @@ export default function FloatingChatBox({
             chatTheme={chatTheme}
             convId={convId}
             messagesEndRef={messagesEndRef}
+            olderCursor={olderCursor}
+            isLoadingOlder={isLoadingOlder}
+            olderError={olderError}
+            onLoadOlderMessages={loadOlderMessages}
             onSendMessage={handleSendMessage}
             onReactMessage={handleReactMessage}
             onDeleteMessage={handlePromptDeleteMessage}

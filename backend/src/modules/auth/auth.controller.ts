@@ -213,6 +213,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Làm mới Access Token từ Refresh Token trong cookie',
   })

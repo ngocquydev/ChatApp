@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback } from "react";
+import { memo, useCallback, useRef } from "react";
 import {
   Box,
   Typography,
@@ -54,6 +54,10 @@ export interface FloatingMessageListProps {
   chatTheme: ReturnType<typeof getChatTheme>;
   convId?: string | null;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  olderCursor: string | null;
+  isLoadingOlder: boolean;
+  olderError: boolean;
+  onLoadOlderMessages: () => Promise<void>;
   onSendMessage: (text: string) => void;
   onReactMessage: (msgId: string, type: ReactionType) => void;
   onDeleteMessage: (msgId: string) => void;
@@ -74,12 +78,31 @@ function FloatingMessageListComponent({
   chatTheme,
   convId,
   messagesEndRef,
+  olderCursor,
+  isLoadingOlder,
+  olderError,
+  onLoadOlderMessages,
   onSendMessage,
   onReactMessage,
   onDeleteMessage,
   onOpenLightbox,
 }: FloatingMessageListProps) {
-  const { tr } = useTranslation();
+  const { tr, t } = useTranslation();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const handleLoadOlder = async () => {
+    const element = containerRef.current;
+    const previousTop = element?.scrollTop ?? 0;
+    const previousHeight = element?.scrollHeight ?? 0;
+    try {
+      await onLoadOlderMessages();
+      requestAnimationFrame(() => {
+        if (element) element.scrollTop = previousTop + element.scrollHeight - previousHeight;
+      });
+    } catch {
+      // The parent shows a translated retry state.
+    }
+  };
 
   const isSenderMe = useCallback(
     (msg: ChatMessage) => {
@@ -100,6 +123,7 @@ function FloatingMessageListComponent({
 
   return (
     <Box
+      ref={containerRef}
       role="log"
       aria-live="polite"
       aria-label={tr(`Tin nhắn với ${targetUser.name}`, `Messages with ${targetUser.name}`)}
@@ -114,6 +138,16 @@ function FloatingMessageListComponent({
         scrollbarWidth: "thin",
       }}
     >
+      {olderCursor && (
+        <Button size="small" disabled={isLoadingOlder} onClick={() => void handleLoadOlder()} sx={{ alignSelf: "center", mb: 1 }}>
+          {isLoadingOlder ? t("chat.loadingOlder") : t("chat.loadOlder")}
+        </Button>
+      )}
+      {olderError && (
+        <Typography role="alert" variant="caption" color="error.main" sx={{ alignSelf: "center", mb: 1 }}>
+          {t("chat.loadOlderError")}
+        </Typography>
+      )}
       <InChatSafetyBanner
         messages={messages}
         currentUserId={currentUserId}

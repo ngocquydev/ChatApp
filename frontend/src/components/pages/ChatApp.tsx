@@ -26,7 +26,7 @@ interface ToastState {
 
 export default function ChatApp() {
   const { user } = useAuthStore();
-  const { tr } = useTranslation();
+  const { tr, t } = useTranslation();
   const { isMuted, toggleMute } = useSoundStore();
   const {
     connectSocket,
@@ -43,6 +43,9 @@ export default function ChatApp() {
     typingMap,
     isLoadingConversations,
     isLoadingMessages,
+    olderMessagesCursor,
+    isLoadingOlderMessages,
+    loadOlderMessages,
     updateActiveConversationTheme,
     blockActiveConversation,
     unblockActiveConversation,
@@ -301,6 +304,10 @@ export default function ChatApp() {
               currentUserId={currentUserId}
               partner={partner}
               isLoading={isLoadingMessages}
+              olderMessagesCursor={olderMessagesCursor}
+              isLoadingOlderMessages={isLoadingOlderMessages}
+              onLoadOlderMessages={loadOlderMessages}
+              onLoadOlderError={() => showToast(t("chat.loadOlderError"), "error")}
               isPartnerTyping={isPartnerTyping}
               theme={activeConversation.theme || "default"}
               onDeleteMessage={async (msgId) => {

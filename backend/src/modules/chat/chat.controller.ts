@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -16,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { ChatService } from './chat.service.js';
 import { ChatGateway } from './chat.gateway.js';
 import { SendMessageDto } from './dto/send-message.dto.js';
+import { CreateDirectConversationDto, GetMessagesQueryDto, RestrictConversationDto } from './dto/chat-request.dto.js';
 import {
   CreateGroupDto,
   UpdateGroupDto,
@@ -75,12 +78,12 @@ export class ChatController {
   @ApiOperation({ summary: 'Tạo hoặc lấy cuộc hội thoại 1-1 với một người dùng' })
   async getOrCreateConversation(
     @Req() req: AuthenticatedRequest,
-    @Body('participantId') participantId: string,
+    @Body() dto: CreateDirectConversationDto,
   ) {
     const userId = this.extractUserId(req);
     const conversation = await this.chatService.getOrCreateConversation(
       userId,
-      participantId,
+      dto.participantId,
     );
     return {
       success: true,
@@ -93,18 +96,18 @@ export class ChatController {
   async getMessages(
     @Req() req: AuthenticatedRequest,
     @Param('id') conversationId: string,
-    @Query('limit') limit?: string,
+    @Query() query: GetMessagesQueryDto,
   ) {
     const userId = this.extractUserId(req);
-    const messageLimit = limit ? Math.min(Number(limit), 100) : 50;
-    const messages = await this.chatService.getMessages(
+    const page = await this.chatService.getMessagesPage(
       conversationId,
       userId,
-      messageLimit,
+      query.limit,
+      query.before,
     );
     return {
       success: true,
-      messages,
+      ...page,
     };
   }
 
@@ -203,13 +206,13 @@ export class ChatController {
   async restrictConversation(
     @Req() req: AuthenticatedRequest,
     @Param('id') conversationId: string,
-    @Body('restrict') restrict: boolean,
+    @Body() dto: RestrictConversationDto,
   ) {
     const userId = this.extractUserId(req);
     const conversation = await this.chatService.restrictConversation(
       conversationId,
       userId,
-      Boolean(restrict),
+      dto.restrict,
     );
     return {
       success: true,
@@ -251,6 +254,7 @@ export class ChatController {
   }
 
   @Post('messages/:id/reaction')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Thả cảm xúc / xóa cảm xúc vào tin nhắn' })
   async reactToMessage(
     @Req() req: AuthenticatedRequest,

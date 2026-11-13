@@ -4,6 +4,8 @@ Cuộc gọi video 1-1 chỉ bắt đầu sau khi trình duyệt cấp quyền c
 
 > Tài liệu mô tả kết nối Socket.IO, payload tin nhắn Protocol Buffers dạng nhị phân và trải nghiệm hộp chat nổi.
 
+Lịch sử chat qua `GET /chat/conversations/:id/messages` lấy tối đa 50 tin mới nhất theo mặc định. Truyền `before=<messageId>` để lấy trang cũ hơn và `limit` từ 1 đến 100; phản hồi có `messages` theo thứ tự thời gian, `nextCursor` và `hasMore`. Cả chat toàn màn hình và hộp chat nổi cho phép tải tin cũ, giữ nguyên vị trí cuộn.
+
 ---
 
 ## 📑 MỤC LỤC

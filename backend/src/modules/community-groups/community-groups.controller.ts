@@ -4,6 +4,8 @@ import {
   Post,
   Patch,
   Delete,
+  HttpCode,
+  HttpStatus,
   Body,
   Param,
   Query,
@@ -90,6 +92,7 @@ export class CommunityGroupsController {
   }
 
   @Post(':id/join')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Tham gia hoặc gửi yêu cầu tham gia nhóm kèm câu trả lời' })
@@ -103,6 +106,7 @@ export class CommunityGroupsController {
   }
 
   @Post(':id/leave')
+  @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Rời khỏi nhóm' })

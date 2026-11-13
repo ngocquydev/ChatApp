@@ -235,6 +235,9 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 
 ### 13. Trang Fanpage & Hội Nhóm Cộng Đồng (Fanpages & Community Groups with Feed)
 - **Trang Fanpage chính thức (`/pages`):**
+  - API công khai chỉ trả thông tin Trang cần hiển thị; danh sách ID người theo dõi và quản trị viên không nằm trong JSON. Theo dõi dùng `PUT /pages/:id/follow`, bỏ theo dõi dùng `DELETE /pages/:id/follow` để gửi lại yêu cầu an toàn.
+  - Tách Trang quản lý và Trang theo dõi; thành viên không tạo Trang vẫn có thể theo dõi hoặc bỏ theo dõi từ danh sách khám phá và hồ sơ Trang.
+  - Tìm Trang theo tên, mô tả hoặc danh mục khi ngừng gõ; lọc danh mục đang có Trang và tải thêm theo từng 20 kết quả.
   - Khám phá các Trang nổi bật theo danh mục (Công nghệ, Giải trí, Ẩm thực, Doanh nghiệp...).
   - Tạo trang mới với URL slug thân thiện tự động sinh.
   - Hồ sơ trang (`/pages/[slug]`): Nút Theo dõi/Bỏ theo dõi với số lượng follower cập nhật tức thời.

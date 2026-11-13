@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Avatar, Box, ButtonBase, IconButton, Skeleton, Tooltip, Typography } from "@mui/material";
+import { Avatar, Box, Button, ButtonBase, IconButton, Skeleton, Tooltip, Typography } from "@mui/material";
 import { Check, Clock, Sparkles, Trash2 } from "lucide-react";
 import EmptyState from "@/components/common/EmptyState";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
@@ -32,6 +32,10 @@ interface MessageListProps {
   partner: ChatUser | null;
   isLoading: boolean;
   isPartnerTyping: boolean;
+  olderMessagesCursor?: string | null;
+  isLoadingOlderMessages?: boolean;
+  onLoadOlderMessages?: () => Promise<void>;
+  onLoadOlderError?: () => void;
   theme?: string;
   onDeleteMessage?: (messageId: string) => Promise<void> | void;
   onReactMessage?: (messageId: string, type: ReactionType) => void;
@@ -149,14 +153,19 @@ export default function MessageList({
   partner,
   isLoading,
   isPartnerTyping,
+  olderMessagesCursor,
+  isLoadingOlderMessages,
+  onLoadOlderMessages,
+  onLoadOlderError,
   theme = "default",
   onDeleteMessage,
   onReactMessage,
   onSendPrompt,
 }: MessageListProps) {
-  const { tr, language } = useTranslation();
+  const { tr, t, language } = useTranslation();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
+  const loadingOlderRef = useRef(false);
   const lastConversationRef = useRef<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
@@ -171,11 +180,30 @@ export default function MessageList({
     stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
   };
 
+  const handleLoadOlder = async () => {
+    if (!onLoadOlderMessages) return;
+    const element = containerRef.current;
+    const previousTop = element?.scrollTop ?? 0;
+    const previousHeight = element?.scrollHeight ?? 0;
+    loadingOlderRef.current = true;
+    try {
+      await onLoadOlderMessages();
+      requestAnimationFrame(() => {
+        if (element) element.scrollTop = previousTop + element.scrollHeight - previousHeight;
+        loadingOlderRef.current = false;
+      });
+    } catch {
+      loadingOlderRef.current = false;
+      onLoadOlderError?.();
+    }
+  };
+
   // Chỉ tự cuộn xuống khi: đổi hội thoại, người dùng đang ở gần cuối, hoặc chính mình vừa gửi.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const conversationChanged = lastConversationRef.current !== conversationId;
+    if (loadingOlderRef.current) return;
     const last = messages[messages.length - 1];
     const sentByMe = !!last && senderOf(last) === currentUserId;
 
@@ -205,6 +233,11 @@ export default function MessageList({
         overscrollBehavior: "contain",
       }}
     >
+      {olderMessagesCursor && (
+        <Button size="small" onClick={() => void handleLoadOlder()} disabled={isLoadingOlderMessages} sx={{ alignSelf: "center", mb: 1 }}>
+          {isLoadingOlderMessages ? t("chat.loadingOlder") : t("chat.loadOlder")}
+        </Button>
+      )}
       <InChatSafetyBanner messages={messages} currentUserId={currentUserId} conversationId={conversationId} />
       {isLoading && messages.length === 0 ? (
         <MessagesSkeleton />

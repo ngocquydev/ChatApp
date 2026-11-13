@@ -16,6 +16,7 @@ describe('ChatService', () => {
   };
   let mockMessageModel: {
     find: ReturnType<typeof vi.fn>;
+    findOne: ReturnType<typeof vi.fn>;
     findById: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     updateMany: ReturnType<typeof vi.fn>;
@@ -42,6 +43,7 @@ describe('ChatService', () => {
 
     mockMessageModel = {
       find: vi.fn(),
+      findOne: vi.fn(),
       findById: vi.fn(),
       create: vi.fn(),
       updateMany: vi.fn(),
@@ -57,6 +59,55 @@ describe('ChatService', () => {
       mockMessageModel as unknown as never,
       mockUsersService as unknown as never,
     );
+  });
+
+  describe('getMessagesPage', () => {
+    it('returns the newest page in chronological order with an older cursor', async () => {
+      const ids = Array.from({ length: 4 }, () => new Types.ObjectId());
+      const messages = ids.map((id, index) => ({
+        _id: id,
+        createdAt: new Date(2026, 0, 1, 0, index),
+      }));
+      mockConversationModel.findById.mockResolvedValue({
+        participants: [new Types.ObjectId(userAId)],
+      });
+      const exec = vi.fn().mockResolvedValue([...messages].reverse());
+      const limit = vi.fn().mockReturnValue({ exec });
+      const sort = vi.fn().mockReturnValue({ limit });
+      mockMessageModel.find.mockReturnValue({ sort });
+
+      const page = await service.getMessagesPage(conversationId, userAId, 3);
+
+      expect(sort).toHaveBeenCalledWith({ createdAt: -1, _id: -1 });
+      expect(limit).toHaveBeenCalledWith(4);
+      expect(page.messages.map((message) => message._id)).toEqual(ids.slice(1));
+      expect(page.nextCursor).toBe(ids[1].toString());
+      expect(page.hasMore).toBe(true);
+    });
+
+    it('returns only messages older than the selected cursor', async () => {
+      const cursorId = new Types.ObjectId();
+      const cursorTime = new Date('2026-11-13T12:00:00.000Z');
+      mockConversationModel.findById.mockResolvedValue({
+        participants: [new Types.ObjectId(userAId)],
+      });
+      const execCursor = vi.fn().mockResolvedValue({ _id: cursorId, createdAt: cursorTime });
+      mockMessageModel.findOne.mockReturnValue({ select: vi.fn().mockReturnValue({ exec: execCursor }) });
+      const exec = vi.fn().mockResolvedValue([]);
+      mockMessageModel.find.mockReturnValue({
+        sort: vi.fn().mockReturnValue({ limit: vi.fn().mockReturnValue({ exec }) }),
+      });
+
+      await service.getMessagesPage(conversationId, userAId, 20, cursorId.toString());
+
+      expect(mockMessageModel.find).toHaveBeenCalledWith({
+        conversationId: new Types.ObjectId(conversationId),
+        $or: [
+          { createdAt: { $lt: cursorTime } },
+          { createdAt: cursorTime, _id: { $lt: cursorId } },
+        ],
+      });
+    });
   });
 
   describe('getOrCreateConversation', () => {

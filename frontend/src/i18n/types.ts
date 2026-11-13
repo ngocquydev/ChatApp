@@ -226,7 +226,14 @@ export interface TranslationDictionary {
     description: string;
     createPage: string;
     searchPlaceholder: string;
+    allCategories: string;
+    loadError: string;
+    retry: string;
+    loadMore: string;
+    loadingMore: string;
     managedPages: string;
+    followedPages: string;
+    followError: string;
     allPages: string;
     noPagesFound: string;
     noPagesDesc: string;
@@ -280,6 +287,9 @@ export interface TranslationDictionary {
     postDeleted: string;
   };
   chat: {
+    loadOlder: string;
+    loadingOlder: string;
+    loadOlderError: string;
     recentChats: string;
     seeAll: string;
     typeMessage: string;

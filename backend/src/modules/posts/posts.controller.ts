@@ -15,6 +15,8 @@ import {
   BadRequestException,
   ServiceUnavailableException,
   Patch,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -211,6 +213,7 @@ export class PostsController {
   }
 
   @Post(':postId/like')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Thích / bỏ thích / thả cảm xúc bài viết' })
   like(
     @Req() req: AuthenticatedRequest,
@@ -221,6 +224,7 @@ export class PostsController {
   }
 
   @Post(':postId/comments/:commentId/reaction')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Thích / bỏ thích / thả cảm xúc bình luận' })
   commentReaction(
     @Req() req: AuthenticatedRequest,

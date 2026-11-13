@@ -141,4 +141,5 @@ export class Message {
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
 MessageSchema.index({ conversationId: 1, createdAt: 1 });
+MessageSchema.index({ conversationId: 1, createdAt: -1, _id: -1 });
 MessageSchema.index({ receiverId: 1, readAt: 1 });

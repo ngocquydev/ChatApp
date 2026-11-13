@@ -89,6 +89,8 @@ interface ChatState {
   conversations: ConversationItem[];
   activeConversation: ConversationItem | null;
   messages: ChatMessage[];
+  olderMessagesCursor: string | null;
+  isLoadingOlderMessages: boolean;
   isLoadingConversations: boolean;
   isLoadingMessages: boolean;
   typingMap: Record<string, boolean>; // conversationId -> isTyping
@@ -97,6 +99,7 @@ interface ChatState {
   disconnectSocket: () => void;
   fetchConversations: () => Promise<void>;
   selectConversation: (conversation: ConversationItem) => Promise<void>;
+  loadOlderMessages: () => Promise<void>;
   clearActiveConversation: () => void;
   startConversationWithUser: (user: ChatUser) => Promise<ConversationItem>;
   createGroupChat: (
@@ -233,6 +236,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   isLoadingConversations: false,
   isLoadingMessages: false,
+  olderMessagesCursor: null,
+  isLoadingOlderMessages: false,
   typingMap: {},
 
   connectSocket: () => {
@@ -909,7 +914,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   clearActiveConversation: () => {
-    set({ activeConversation: null, messages: [], isLoadingMessages: false });
+    set({ activeConversation: null, messages: [], isLoadingMessages: false, olderMessagesCursor: null });
   },
 
   selectConversation: async (conversation: ConversationItem) => {
@@ -926,6 +931,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ? state.messages
           : [],
       isLoadingMessages: true,
+      olderMessagesCursor: null,
       conversations: state.conversations.map((c) =>
         c._id === conversation._id && myId
           ? {
@@ -943,8 +949,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const res = await api.get(
         `/chat/conversations/${conversation._id}/messages`,
       );
-      if (res.data?.messages) {
-        set({ messages: res.data.messages });
+      if (res.data?.messages && get().activeConversation?._id === conversation._id) {
+        set({ messages: res.data.messages, olderMessagesCursor: res.data.nextCursor ?? null });
       }
 
       // Đánh dấu đã xem
@@ -968,6 +974,32 @@ export const useChatStore = create<ChatState>((set, get) => ({
       console.error("Lỗi tải lịch sử tin nhắn:", err);
     } finally {
       set({ isLoadingMessages: false });
+    }
+  },
+
+  loadOlderMessages: async () => {
+    const { activeConversation, olderMessagesCursor, isLoadingOlderMessages } = get();
+    if (!activeConversation || !olderMessagesCursor || isLoadingOlderMessages) return;
+    const conversationId = activeConversation._id;
+    set({ isLoadingOlderMessages: true });
+    try {
+      const response = await api.get(`/chat/conversations/${conversationId}/messages`, {
+        params: { before: olderMessagesCursor },
+      });
+      if (!Array.isArray(response.data?.messages)) return;
+      set((state) => {
+        if (state.activeConversation?._id !== conversationId) return state;
+        const existingIds = new Set(state.messages.map((message) => String(message._id || message.id)));
+        const older = (response.data.messages as ChatMessage[]).filter(
+          (message) => !existingIds.has(String(message._id || message.id)),
+        );
+        return {
+          messages: [...older, ...state.messages],
+          olderMessagesCursor: response.data.nextCursor ?? null,
+        };
+      });
+    } finally {
+      set({ isLoadingOlderMessages: false });
     }
   },
 

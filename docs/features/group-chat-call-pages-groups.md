@@ -56,9 +56,12 @@ graph TD
   - Tự động hiển thị Avatar dự phòng thanh lịch khi người tham gia tắt camera.
 
 ### 2.3. Trang Fanpage (Pages)
+- **Hợp đồng API**: `GET /pages/explore` và `GET /pages/:slug` không trả danh sách ID người theo dõi, quản trị viên hoặc kiểm duyệt viên. `PUT /pages/:id/follow` và `DELETE /pages/:id/follow` đặt trạng thái theo dõi rõ ràng; `POST /pages/:id/follow` được giữ tạm cho client cũ.
 - **Thực thể Trang**:
   - `name`, `slug`, `category`, `bio`, `avatar`, `coverImage`, `ownerId`, `adminIds`, `followerCount`, `isVerified`.
 - **Hành vi**:
+  - Trang do người dùng tạo/quản lý hiển thị riêng với Trang chỉ theo dõi. Mọi thành viên đăng nhập có thể theo dõi Trang khác; quyền quản trị không được cấp khi theo dõi.
+  - `/pages` tìm theo tên, mô tả hoặc danh mục; bộ lọc danh mục lấy từ các Trang đang hoạt động. Kết quả phân trang 20 mục với nút tải thêm, có trạng thái tải, rỗng và thử lại khi lỗi.
   - Khám phá các Trang nổi bật theo danh mục (Công nghệ, Giải trí, Ẩm thực, Doanh nghiệp...).
   - Theo dõi / Bỏ theo dõi với cập nhật tức thì.
   - Tích hợp Bảng tin bài viết: Quản trị viên đăng bài chính thức từ Fanpage, cộng đồng bình luận và thả cảm xúc.

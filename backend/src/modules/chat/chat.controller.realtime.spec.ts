@@ -4,6 +4,35 @@ import { ChatGateway } from './chat.gateway.js';
 import { ChatMessageProto } from './proto/chat.proto.js';
 
 describe('REST chat fallback', () => {
+  it('passes a validated history cursor and limit to the service', async () => {
+    const getMessagesPage = vi.fn().mockResolvedValue({ messages: [], nextCursor: null, hasMore: false });
+    const controller = new ChatController({ getMessagesPage } as never, {} as never);
+    const conversationId = '507f1f77bcf86cd799439013';
+    const userId = '507f1f77bcf86cd799439011';
+    const before = '507f1f77bcf86cd799439014';
+
+    await controller.getMessages({ user: { sub: userId } } as never, conversationId, { limit: 20, before });
+
+    expect(getMessagesPage).toHaveBeenCalledWith(conversationId, userId, 20, before);
+  });
+
+  it('preserves false when removing a conversation restriction', async () => {
+    const restrictConversation = vi.fn().mockResolvedValue({ restrictedBy: [] });
+    const controller = new ChatController({ restrictConversation } as never, {} as never);
+
+    await controller.restrictConversation(
+      { user: { sub: '507f1f77bcf86cd799439011' } } as never,
+      '507f1f77bcf86cd799439013',
+      { restrict: false },
+    );
+
+    expect(restrictConversation).toHaveBeenCalledWith(
+      '507f1f77bcf86cd799439013',
+      '507f1f77bcf86cd799439011',
+      false,
+    );
+  });
+
   it('broadcasts the saved message to connected recipients', async () => {
     const message = {
       _id: '507f1f77bcf86cd799439014',

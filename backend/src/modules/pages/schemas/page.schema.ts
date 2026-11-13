@@ -49,6 +49,16 @@ export class Page {
 }
 
 export const PageSchema = SchemaFactory.createForClass(Page);
+PageSchema.set('toJSON', {
+  transform: (_document, result) => {
+    const publicPage = result as unknown as Record<string, unknown>;
+    delete publicPage.followers;
+    delete publicPage.adminIds;
+    delete publicPage.moderatorIds;
+    return result;
+  },
+});
 PageSchema.index({ name: 'text', bio: 'text' });
 PageSchema.index({ creatorId: 1, _id: -1 });
 PageSchema.index({ adminIds: 1 });
+PageSchema.index({ followers: 1, isDeleted: 1, updatedAt: -1 });

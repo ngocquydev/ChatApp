@@ -286,6 +286,16 @@ export class ChatService {
     userId: string,
     limit = 50,
   ): Promise<MessageDocument[]> {
+    const page = await this.getMessagesPage(conversationId, userId, limit);
+    return page.messages;
+  }
+
+  async getMessagesPage(
+    conversationId: string,
+    userId: string,
+    limit = 50,
+    before?: string,
+  ): Promise<{ messages: MessageDocument[]; nextCursor: string | null; hasMore: boolean }> {
     const conv = await this.conversationModel.findById(conversationId);
     if (!conv) {
       throw new NotFoundException('Không tìm thấy cuộc hội thoại');
@@ -298,11 +308,30 @@ export class ChatService {
       throw new ForbiddenException('Bạn không thuộc cuộc hội thoại này');
     }
 
-    return this.messageModel
-      .find({ conversationId: new Types.ObjectId(conversationId) })
-      .sort({ createdAt: 1 })
-      .limit(limit)
+    const conversationObjectId = new Types.ObjectId(conversationId);
+    const query: Record<string, unknown> = { conversationId: conversationObjectId };
+    if (before) {
+      const cursor = await this.messageModel
+        .findOne({ _id: new Types.ObjectId(before), conversationId: conversationObjectId })
+        .select('_id createdAt')
+        .exec();
+      if (!cursor?.createdAt) {
+        throw new BadRequestException('Mốc tin nhắn không hợp lệ');
+      }
+      query.$or = [
+        { createdAt: { $lt: cursor.createdAt } },
+        { createdAt: cursor.createdAt, _id: { $lt: cursor._id } },
+      ];
+    }
+
+    const newestFirst = await this.messageModel
+      .find(query)
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit + 1)
       .exec();
+    const hasMore = newestFirst.length > limit;
+    const messages = newestFirst.slice(0, limit).reverse();
+    return { messages, nextCursor: hasMore ? messages[0]._id.toString() : null, hasMore };
   }
 
   /**
