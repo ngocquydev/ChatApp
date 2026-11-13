@@ -311,6 +311,8 @@ export const zhCN: TranslationDictionary = {
     loading: "加载中…",
   },
   auth: {
+    checkingSession: "正在恢复登录状态…",
+    redirectingToLogin: "正在跳转到登录页面…",
     loginTitle: "登录",
     loginSubtitle: "欢迎回到 ChatApp",
     registerTitle: "创建新账户",

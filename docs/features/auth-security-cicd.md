@@ -62,6 +62,7 @@ sequenceDiagram
 ## 4. ĐĂNG NHẬP MẠNG XÃ HỘI (FIREBASE SOCIAL LOGIN)
 
 - Hỗ trợ đăng nhập một chạm qua tài khoản Google và Facebook thông qua Firebase Authentication Client SDK.
+- Khi tải lại trang được bảo vệ, giao diện hiển thị trạng thái đang khôi phục phiên thay vì để trống; sau đăng xuất, trạng thái chuyển sang đăng nhập được giữ cho đến khi trang đăng nhập xuất hiện. Kiểm tra phiên chỉ chạy ở `ClientShell` trên các trang cần phiên.
 - Phía backend xác thực `IdToken` từ Firebase Admin SDK, tự động liên kết tài khoản nếu email đã tồn tại và phát hành cặp HttpOnly Cookie đồng nhất với luồng đăng nhập truyền thống.
 
 ---

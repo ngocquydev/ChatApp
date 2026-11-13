@@ -311,6 +311,8 @@ export const ko: TranslationDictionary = {
     loading: "더 불러오는 중…",
   },
   auth: {
+    checkingSession: "로그인 상태를 복원하는 중…",
+    redirectingToLogin: "로그인 페이지로 이동하는 중…",
     loginTitle: "로그인",
     loginSubtitle: "ChatApp에 오신 것을 환영합니다",
     registerTitle: "새 계정 만들기",

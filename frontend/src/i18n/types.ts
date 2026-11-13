@@ -328,6 +328,8 @@ export interface TranslationDictionary {
     loading: string;
   };
   auth: {
+    checkingSession: string;
+    redirectingToLogin: string;
     loginTitle: string;
     loginSubtitle: string;
     registerTitle: string;

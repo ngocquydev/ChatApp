@@ -311,6 +311,8 @@ export const vi: TranslationDictionary = {
     loading: "Đang tải thêm…",
   },
   auth: {
+    checkingSession: "Đang khôi phục phiên đăng nhập…",
+    redirectingToLogin: "Đang chuyển đến trang đăng nhập…",
     loginTitle: "Đăng nhập",
     loginSubtitle: "Chào mừng bạn quay trở lại với ChatApp",
     registerTitle: "Tạo tài khoản mới",

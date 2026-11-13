@@ -311,6 +311,8 @@ export const zhTW: TranslationDictionary = {
     loading: "載入中…",
   },
   auth: {
+    checkingSession: "正在恢復登入狀態…",
+    redirectingToLogin: "正在前往登入頁面…",
     loginTitle: "登入",
     loginSubtitle: "歡迎回到 ChatApp",
     registerTitle: "建立新帳號",

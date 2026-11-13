@@ -96,6 +96,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       user,
       isAuthenticated: !!user,
+      isCheckingAuth: false,
     });
   },
 
@@ -157,6 +158,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: profile,
         accessToken,
         isAuthenticated: true,
+        isCheckingAuth: false,
       });
 
       return res.data;
@@ -205,6 +207,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: profile,
         accessToken,
         isAuthenticated: true,
+        isCheckingAuth: false,
       });
 
       return res.data;
@@ -228,6 +231,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: profile,
         accessToken,
         isAuthenticated: true,
+        isCheckingAuth: false,
       });
 
       return res.data;
@@ -286,6 +290,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: null,
         accessToken: null,
         isAuthenticated: false,
+        isCheckingAuth: false,
       });
     }
   },

@@ -311,6 +311,8 @@ export const en: TranslationDictionary = {
     loading: "Loading more…",
   },
   auth: {
+    checkingSession: "Restoring your session…",
+    redirectingToLogin: "Taking you to sign in…",
     loginTitle: "Log In",
     loginSubtitle: "Welcome back to ChatApp",
     registerTitle: "Create a new account",

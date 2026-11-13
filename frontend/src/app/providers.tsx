@@ -1,11 +1,10 @@
 "use client";
 
-import { ReactNode, useState, useEffect, useRef } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import theme from "@/theme/theme";
-import { useAuthStore } from "@/store/useAuthStore";
 import { useLanguageStore } from "@/i18n/useLanguageStore";
 
 interface ProvidersProps {
@@ -18,22 +17,6 @@ function LanguageInitializer({ children }: { children: ReactNode }) {
   useEffect(() => {
     hydrateLanguage();
   }, [hydrateLanguage]);
-
-  return <>{children}</>;
-}
-
-function AuthInitializer({ children }: { children: ReactNode }) {
-  const checkAuth = useAuthStore((state) => state.checkAuth);
-  const hasCheckedRef = useRef(false);
-
-  useEffect(() => {
-    if (!hasCheckedRef.current) {
-      hasCheckedRef.current = true;
-      checkAuth?.().catch(() => {
-        // Ignored unauthenticated error on boot
-      });
-    }
-  }, [checkAuth]);
 
   return <>{children}</>;
 }
@@ -56,7 +39,7 @@ export default function Providers({ children }: ProvidersProps) {
       <ThemeProvider theme={theme} defaultMode="system">
         <CssBaseline enableColorScheme />
         <LanguageInitializer>
-          <AuthInitializer>{children}</AuthInitializer>
+          {children}
         </LanguageInitializer>
       </ThemeProvider>
     </QueryClientProvider>

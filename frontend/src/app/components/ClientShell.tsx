@@ -45,7 +45,7 @@ interface ClientShellProps {
 
 export default function ClientShell({ children }: ClientShellProps) {
   const pathname = usePathname();
-  const { isAuthenticated, user, checkAuth } = useAuthStore();
+  const { isAuthenticated, isCheckingAuth, user, checkAuth } = useAuthStore();
   const { connectSocket, disconnectSocket } = useChatStore();
   const { fetchFriends, fetchRequests } = useFriendStore();
   const { fetchUnreadCount } = useNotificationStore();
@@ -57,11 +57,11 @@ export default function ClientShell({ children }: ClientShellProps) {
   );
 
   useEffect(() => {
-    if (shouldHideAppBar || isAuthenticated) return;
+    if (shouldHideAppBar || isAuthenticated || !isCheckingAuth) return;
     void checkAuth().catch(() => {
       // A missing or expired session is handled by AuthGuard on protected pages.
     });
-  }, [checkAuth, shouldHideAppBar, isAuthenticated]);
+  }, [checkAuth, shouldHideAppBar, isAuthenticated, isCheckingAuth]);
 
   useEffect(() => {
     if (isAuthenticated && user) {

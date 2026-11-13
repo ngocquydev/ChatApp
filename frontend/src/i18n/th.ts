@@ -311,6 +311,8 @@ export const th: TranslationDictionary = {
     loading: "กำลังโหลดเพิ่มเติม…",
   },
   auth: {
+    checkingSession: "กำลังกู้คืนเซสชันของคุณ…",
+    redirectingToLogin: "กำลังไปยังหน้าเข้าสู่ระบบ…",
     loginTitle: "เข้าสู่ระบบ",
     loginSubtitle: "ยินดีต้อนรับกลับสู่ ChatApp",
     registerTitle: "สร้างบัญชีใหม่",
