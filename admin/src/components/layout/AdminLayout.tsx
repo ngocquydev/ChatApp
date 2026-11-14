@@ -18,6 +18,7 @@ import LanguageToggle from "@/components/common/LanguageToggle";
 import AdminSidebar from "./AdminSidebar";
 import { useAdminAuthStore } from "@/store/useAdminAuthStore";
 import { useTranslation } from "@/i18n/useTranslation";
+import { ADMIN_REPORTS_COPY } from "@/i18n/adminReports";
 
 interface AdminLayoutProps {
   children?: ReactNode;
@@ -31,7 +32,7 @@ export default function AdminLayout({ children }: AdminLayoutProps = {}) {
   const pathname = location.pathname;
   const navigate = useNavigate();
   const { logout } = useAdminAuthStore();
-  const { isEnglish: isEn } = useTranslation();
+  const { isEnglish: isEn, tr } = useTranslation();
 
   const handleLogout = async () => {
     await logout();
@@ -46,7 +47,7 @@ export default function AdminLayout({ children }: AdminLayoutProps = {}) {
     if (pathname === "/" || pathname === "/admin") return isEn ? "System Overview" : "Tổng quan hệ thống";
     if (pathname?.startsWith("/users")) return isEn ? "User Management" : "Quản lý người dùng";
     if (pathname?.startsWith("/posts")) return isEn ? "Post Moderation" : "Kiểm duyệt bài viết";
-    if (pathname?.startsWith("/moderation")) return isEn ? "AI Moderation" : "Kiểm duyệt AI & Bot";
+    if (pathname?.startsWith("/reports")) return tr(ADMIN_REPORTS_COPY.title);
     if (pathname?.startsWith("/security")) return isEn ? "Security & WAF" : "Trung tâm bảo mật & WAF";
     if (pathname?.startsWith("/system")) return isEn ? "System Health" : "Sức khỏe hệ thống";
     return isEn ? "Administration" : "Khu vực quản trị";
@@ -160,7 +161,7 @@ export default function AdminLayout({ children }: AdminLayoutProps = {}) {
               </Typography>
             </Box>
 
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.25, sm: 1 }, flexShrink: 0 }}>
               <Chip
                 icon={<ShieldCheck size={14} aria-hidden />}
                 label={isEn ? "Protected" : "Bảo vệ đa tầng"}
@@ -183,6 +184,7 @@ export default function AdminLayout({ children }: AdminLayoutProps = {}) {
                 onClick={handleLogout}
                 startIcon={<LogOut size={14} />}
                 sx={{
+                  display: { xs: "none", sm: "inline-flex" },
                   textTransform: "none",
                   height: 28,
                   fontSize: "0.75rem",
@@ -193,6 +195,14 @@ export default function AdminLayout({ children }: AdminLayoutProps = {}) {
               >
                 {isEn ? "Sign out" : "Đăng xuất"}
               </Button>
+              <IconButton
+                aria-label={isEn ? "Sign out" : "Đăng xuất"}
+                color="error"
+                onClick={handleLogout}
+                sx={{ display: { xs: "inline-flex", sm: "none" } }}
+              >
+                <LogOut size={18} aria-hidden />
+              </IconButton>
             </Box>
           </Box>
 
@@ -200,6 +210,7 @@ export default function AdminLayout({ children }: AdminLayoutProps = {}) {
           <Box
             sx={{
               flexGrow: 1,
+              minWidth: 0,
               overflowY: "auto",
               p: { xs: 2, sm: 3, md: 3.5 },
             }}

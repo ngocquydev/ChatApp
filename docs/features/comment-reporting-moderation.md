@@ -36,7 +36,7 @@ Hệ thống cho phép người dùng báo cáo các bình luận vi phạm tiê
 - Mỗi hành động đều cho phép đính kèm ghi chú xử lý để lưu vết kiểm duyệt (Audit Log).
 
 ### 2.3. Phía Quản trị viên Web (Platform Admin Portal)
-- Truy cập Cổng Admin: `/moderation` -> Tab **Báo cáo bình luận (Reported Comments)**.
+- Truy cập Cổng Admin: `/reports` -> **Báo cáo bình luận (Reported Comments)**. Đường dẫn `/moderation` cũ tự chuyển đến `/reports`.
 - Quản trị viên web có thể lọc theo nơi tiếp nhận (`web_admin` hoặc `group_admin`) và trạng thái.
 - Thực hiện xử lý, gỡ bỏ vi phạm hoặc áp dụng chế tài tài khoản trên quy mô toàn hệ thống.
 

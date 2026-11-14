@@ -389,7 +389,7 @@ Hệ thống nâng cấp cơ chế quản trị Hội nhóm Cộng đồng (`/gr
     - 👢 **Xóa thành viên khỏi nhóm (`banned_user`)**
     - 👁️ **Bỏ qua báo cáo (`dismiss`)**
   - Hỗ trợ nhập ghi chú lý do xử lý để lưu vết kiểm duyệt (Audit Log).
-- **Cổng Quản trị Viên Web (`Admin Portal` -> `AI Moderation` -> Tab Báo cáo bình luận):**
+- **Cổng Quản trị Viên Web (`Admin Portal` -> `Báo cáo bình luận`):**
   - Web Admin có thể lọc theo nơi nhận và trạng thái, xử lý bình luận vi phạm trên toàn nền tảng.
 - **Hỗ trợ 100% đầy đủ cả 6 ngôn ngữ:** Tiếng Việt, English, 简体中文, 繁體中文, 한국어, ไทย.
 

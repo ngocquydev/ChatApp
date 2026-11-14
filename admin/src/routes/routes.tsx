@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 import AdminLogin from "../components/auth/AdminLogin";
 import AdminLayout from "../components/layout/AdminLayout";
 import DashboardView from "../components/dashboard/DashboardView";
 import UsersManagementView from "../components/users/UsersManagementView";
 import PostsModerationView from "../components/posts/PostsModerationView";
-import ModerationView from "../components/moderation/ModerationView";
+import ReportsView from "../components/moderation/ReportsView";
 import SecurityCenter from "../components/security/SecurityCenter";
 import SystemHealthView from "../components/system/SystemHealthView";
 
@@ -19,7 +20,8 @@ export const childRoutes: RouteItem[] = [
   { index: true, element: <DashboardView /> },
   { path: "users", element: <UsersManagementView /> },
   { path: "posts", element: <PostsModerationView /> },
-  { path: "moderation", element: <ModerationView /> },
+  { path: "reports", element: <ReportsView /> },
+  { path: "moderation", element: <Navigate to="/reports" replace /> },
   { path: "security", element: <SecurityCenter /> },
   { path: "system", element: <SystemHealthView /> },
 ];

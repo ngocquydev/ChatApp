@@ -17,7 +17,7 @@ import {
   LayoutDashboard,
   Users,
   FileText,
-  Bot,
+  Flag,
   ShieldAlert,
   Cpu,
   LogOut,
@@ -26,6 +26,7 @@ import BrandLogo from "@/components/common/BrandLogo";
 import PresenceAvatar from "@/components/common/PresenceAvatar";
 import { useAdminAuthStore } from "@/store/useAdminAuthStore";
 import { useTranslation } from "@/i18n/useTranslation";
+import { ADMIN_REPORTS_COPY } from "@/i18n/adminReports";
 
 interface NavItem {
   href: string;
@@ -56,10 +57,10 @@ const NAV_ITEMS: NavItem[] = [
     icon: FileText,
   },
   {
-    href: "/moderation",
-    labelVi: "Kiểm duyệt AI",
-    labelEn: "AI Moderation",
-    icon: Bot,
+    href: "/reports",
+    labelVi: ADMIN_REPORTS_COPY.title.vi,
+    labelEn: ADMIN_REPORTS_COPY.title.en,
+    icon: Flag,
   },
   {
     href: "/security",
@@ -84,7 +85,7 @@ export default function AdminSidebar({ onItemClick }: AdminSidebarProps) {
   const pathname = location.pathname;
   const navigate = useNavigate();
   const { user, logout } = useAdminAuthStore();
-  const { isEnglish: isEn } = useTranslation();
+  const { isEnglish: isEn, tr } = useTranslation();
 
   const handleLogout = async () => {
     if (onItemClick) onItemClick();
@@ -153,7 +154,7 @@ export default function AdminSidebar({ onItemClick }: AdminSidebarProps) {
           {NAV_ITEMS.map((item) => {
             const active = isItemActive(item);
             const IconComponent = item.icon;
-            const label = isEn ? item.labelEn : item.labelVi;
+            const label = item.href === "/reports" ? tr(ADMIN_REPORTS_COPY.title) : isEn ? item.labelEn : item.labelVi;
 
             return (
               <ListItem key={item.href} disablePadding>

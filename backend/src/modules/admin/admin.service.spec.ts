@@ -97,6 +97,34 @@ describe('AdminService', () => {
       expect(res.stats.system.services.mongo).toBe('connected');
       expect(res.stats.system.services.redis).toBe('connected');
     });
+
+    it('caches only collection counts while refreshing live security and system data', async () => {
+      const now = vi.spyOn(Date, 'now').mockReturnValue(1000);
+      await service.getStats();
+      mockWafConfigService.getConfig.mockResolvedValue({ enabled: false, underAttack: true });
+      mockUserModel.countDocuments.mockResolvedValue(20);
+
+      const cached = await service.getStats();
+      expect(cached.stats.users.total).toBe(10);
+      expect(cached.stats.security.underAttack).toBe(true);
+      expect(mockUserModel.countDocuments).toHaveBeenCalledTimes(4);
+      expect(mockWafConfigService.getConfig).toHaveBeenCalledTimes(2);
+      expect(mockRedisService.client.ping).toHaveBeenCalledTimes(2);
+
+      now.mockReturnValue(16001);
+      const fresh = await service.getStats();
+      expect(fresh.stats.users.total).toBe(20);
+      expect(mockUserModel.countDocuments).toHaveBeenCalledTimes(8);
+      now.mockRestore();
+    });
+
+    it('shares one count query per collection across concurrent dashboard requests', async () => {
+      await Promise.all([service.getStats(), service.getStats(), service.getStats()]);
+      expect(mockUserModel.countDocuments).toHaveBeenCalledTimes(4);
+      expect(mockPostModel.countDocuments).toHaveBeenCalledTimes(1);
+      expect(mockCommentModel.countDocuments).toHaveBeenCalledTimes(1);
+      expect(mockWafConfigService.getConfig).toHaveBeenCalledTimes(3);
+    });
   });
 
   describe('getUsers', () => {

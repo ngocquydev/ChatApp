@@ -23,6 +23,12 @@ import { AdminModerationQueueQueryDto, AdminResolveQueueDto } from './dto/admin-
 
 @Injectable()
 export class AdminService {
+  // Collection totals are comparatively stable. Keep one small snapshot per process;
+  // RAM, uptime, connectivity and security state are always collected live.
+  private readonly countsTtlMs = 15_000;
+  private countsCache: { expiresAt: number; values: [number, number, number, number, number, number] } | null = null;
+  private countsInFlight: Promise<[number, number, number, number, number, number]> | null = null;
+
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserRepository>,
     @InjectModel(Post.name) private readonly postModel: Model<PostDocument>,
@@ -36,26 +42,36 @@ export class AdminService {
     private readonly reportModel?: Model<CommentReportDocument>,
   ) {}
 
-  async getStats() {
-    const [
-      totalUsers,
-      activeUsers,
-      bannedUsers,
-      adminUsers,
-      totalPosts,
-      totalComments,
-      wafConfig,
-      activeBans,
-    ] = await Promise.all([
+  private async getCachedCounts(): Promise<[number, number, number, number, number, number]> {
+    if (this.countsCache && Date.now() < this.countsCache.expiresAt) {
+      return this.countsCache.values;
+    }
+    if (this.countsInFlight) return this.countsInFlight;
+
+    this.countsInFlight = Promise.all([
       this.userModel.countDocuments({ isDeleted: { $ne: true } }),
       this.userModel.countDocuments({ isDeleted: { $ne: true }, isBan: { $ne: true } }),
       this.userModel.countDocuments({ isDeleted: { $ne: true }, isBan: true }),
       this.userModel.countDocuments({ isDeleted: { $ne: true }, role: 'admin' }),
       this.postModel.countDocuments({ isDeleted: { $ne: true } }),
       this.commentModel.countDocuments(),
+    ]);
+    try {
+      const values = await this.countsInFlight;
+      this.countsCache = { values, expiresAt: Date.now() + this.countsTtlMs };
+      return values;
+    } finally {
+      this.countsInFlight = null;
+    }
+  }
+
+  async getStats() {
+    const [counts, wafConfig, activeBans] = await Promise.all([
+      this.getCachedCounts(),
       this.wafConfigService.getConfig(),
       this.edgeBanService.listBans(),
     ]);
+    const [totalUsers, activeUsers, bannedUsers, adminUsers, totalPosts, totalComments] = counts;
 
     const memoryMetrics = await this.getMemoryMetrics();
     let redisConnected = false;

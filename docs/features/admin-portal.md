@@ -38,6 +38,7 @@ Backend NestJS cung cấp một endpoint chuyên biệt dành riêng cho quản 
 - Chỉ chấp nhận tài khoản có `role === 'admin'`. Nếu người dùng thông thường (`role !== 'admin'`) cố gắng đăng nhập tại đây, backend lập tức từ chối với lỗi **403 Forbidden: Tài khoản này không có quyền quản trị viên!**.
 - Tích hợp xác thực **Cloudflare Turnstile** chống brute-force và tấn công tự động bằng bot.
 - Cấp cặp `AccessToken` (1 giờ) và `RefreshToken` (7 ngày) qua **HttpOnly Cookie**, hoàn toàn không lưu trữ token nhạy cảm trong `localStorage`.
+- Admin Portal không lưu hồ sơ hay cờ đăng nhập vào `localStorage`. Khi tải trang, `checkAuth` gọi `/auth/profile` bằng HttpOnly cookie; backend cache hồ sơ xác thực trên Redis với TTL 300 giây và xác nhận lại quyền hiện hành mỗi request. Các khóa cũ `cached_admin_user` và `has_admin_session` được xóa khi ứng dụng mở, đăng nhập hoặc đăng xuất.
 
 ### B. Kiểm soát Truy cập Client (`<AdminGuard />`)
 Mọi tuyến đường bên trong Admin Portal đều được bọc bởi `<AdminGuard />`:
@@ -55,7 +56,7 @@ Mọi tuyến đường bên trong Admin Portal đều được bọc bởi `<Ad
 | `/` | `DashboardView.tsx` | Bảng điều khiển phân tích số liệu tổng quan (người dùng, bài viết, RAM, WAF) |
 | `/users` | `UsersManagementView.tsx` | Quản lý người dùng, tìm kiếm, lọc theo vai trò, cấm/mở cấm tài khoản |
 | `/posts` | `PostsModerationView.tsx` | Kiểm duyệt bảng tin và các bài viết vi phạm tiêu chuẩn cộng đồng |
-| `/moderation` | `ModerationView.tsx` | Hàng đợi kiểm duyệt AI (NLP, Vision) và Sandbox thử nghiệm mô hình |
+| `/reports` | `ReportsView.tsx` | Xem và xử lý báo cáo bình luận trên toàn hệ thống |
 | `/security` | `SecurityCenter.tsx` | Trung tâm phòng thủ WAF, Under Attack Mode, Cloudflare integration |
 | `/system` | `SystemHealthView.tsx` | Giám sát tài nguyên máy chủ, RAM Heap, Redis, MongoDB, Neo4j |
 

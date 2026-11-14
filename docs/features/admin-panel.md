@@ -11,7 +11,7 @@
    - [3.1. Tổng Quan Hệ Thống (Dashboard & Analytics)](#31-tổng-quan-hệ-thống-dashboard--analytics)
    - [3.2. Quản Lý Người Dùng & Phân Quyền (Users Management)](#32-quản-lý-người-dùng--phân-quyền-users-management)
    - [3.3. Kiểm Duyệt Bài Viết & Bảng Tin (Posts Moderation)](#33-kiểm-duyệt-bài-viết--bảng-tin-posts-moderation)
-   - [3.4. Hệ Thống Kiểm Duyệt AI & Hàng Đợi An Toàn (AI Moderation Queue & Playground)](#34-hệ-thống-kiểm-duyệt-ai--hàng-đợi-an-toàn-ai-moderation-queue--playground)
+   - [3.4. Báo Cáo Bình Luận](#34-báo-cáo-bình-luận)
    - [3.5. Trung Tâm Bảo Mật & Tường Lửa WAF (Security Center)](#35-trung-tâm-bảo-mật--tường-lửa-waf-security-center)
    - [3.6. Trạng Thái Hệ Thống & Hạ Tầng (System Health & V8 Metrics)](#36-trạng-thái-hệ-thống--hạ-tầng-system-health--v8-metrics)
 4. [Đặc Tả API Backend (`/api/admin/*`)](#4-đặc-tả-api-backend-apiadmin)
@@ -21,7 +21,11 @@
 
 ## 1. TỔNG QUAN KIẾN TRÚC GIAO DIỆN (LAYOUT ARCHITECTURE)
 
-Giao diện quản trị viên được xây dựng hoàn toàn tuân thủ theo **ChatApp Design System** và **Next.js 16 App Router**, tách biệt rõ rệt giữa điều hướng và nội dung:
+Trang tổng quan dùng lưới một cột trên điện thoại, hai cột ở màn hình vừa và bốn cột khi đủ rộng. Các thẻ cho phép nhãn số lớn xuống dòng; header dùng nút đăng xuất dạng biểu tượng ở màn hình nhỏ. Có thể kiểm tra tràn ngang và chữ bị cắt với `python scripts/test-admin-dashboard.py` (Playwright, API giả lập) tại 320, 390, 768, 1024 và 1440 px. Ảnh kiểm thử: [390 px](../assets/screenshots/admin-dashboard-390.png) · [1440 px](../assets/screenshots/admin-dashboard-1440.png).
+
+Endpoint `/admin/stats` giữ trong RAM của từng tiến trình backend duy nhất sáu bộ đếm người dùng, bài viết và bình luận trong tối đa 15 giây; các request đồng thời dùng chung một lần tính. WAF, danh sách IP cấm, RAM, uptime và trạng thái MongoDB/Redis/Neo4j được lấy mới ở mọi request. Cache có giới hạn một bản ghi và tự hết hạn, nên bộ đếm có thể trễ tối đa 15 giây.
+
+Giao diện quản trị viên là React SPA dùng Vite và React Router, với thanh điều hướng và nội dung độc lập:
 
 ```mermaid
 graph LR
@@ -40,14 +44,14 @@ graph LR
   1. 📊 **Tổng quan** (`/admin`)
   2. 👥 **Người dùng** (`/admin/users`)
   3. 📰 **Bài viết** (`/admin/posts`)
-  4. 🤖 **Kiểm duyệt AI** (`/admin/moderation`)
+  4. 🚩 **Báo cáo bình luận** (`/reports`)
   5. 🛡️ **Bảo mật & WAF** (`/admin/security`)
   6. ⚙️ **Hệ thống & Dịch vụ** (`/admin/system`)
 - **Tích hợp chân trang (Footer) & Nút Đăng Xuất:** Hiển thị avatar người dùng trực quan với `PresenceAvatar`, email quản trị và nút **Đăng xuất** nhanh chóng, tách biệt hoàn toàn khỏi không gian người dùng.
 
 ### 1.2. Cột Phải: Content Area (`AdminLayout.tsx`)
 - **Sub-Header:** Thanh điều khiển phụ chứa nút mở Drawer trên mobile, Breadcrumbs chỉ dẫn đường dẫn phân cấp, biểu tượng trạng thái bảo vệ đa tầng, bộ chuyển đổi chế độ Sáng/Tối (`ColorModeToggle`), Song ngữ VI/EN (`LanguageToggle`) và nút Đăng xuất an toàn.
-- **Nội dung độc lập:** Mỗi tính năng con nằm trong thư mục App Router riêng (`/admin/page.tsx`, `/admin/users/page.tsx`, `/admin/posts/page.tsx`, `/admin/moderation/page.tsx`, `/admin/security/page.tsx`, `/admin/system/page.tsx`).
+- **Nội dung độc lập:** Các trang được định tuyến trong `admin/src/routes/routes.tsx`. Đường dẫn `/moderation` cũ chuyển đến `/reports`.
 
 ---
 
@@ -96,14 +100,9 @@ Quyền truy cập khu vực Quản trị viên được bảo vệ chặt chẽ
 - **Tìm Kiếm Nội Dung:** Tìm bài viết chứa từ khóa độc hại, khiêu dâm, lừa đảo hoặc vi phạm tiêu chuẩn cộng đồng.
 - **Gỡ Bỏ Nội Dung Vi Phạm:** Nút gỡ bài viết vi phạm một chạm kèm xác nhận Dialog an toàn; bài viết bị ẩn ngay lập tức khỏi bảng tin và trang cá nhân của tất cả người dùng.
 
-### 3.4. Hệ Thống Kiểm Duyệt AI & Hàng Đợi An Toàn (AI Moderation Queue & Playground)
-- **Hàng Đợi Kiểm Duyệt Bài Viết (`ModerationQueueTab.tsx`):**
-  - Tự động gom các bài viết hoặc nội dung bị AI chấm điểm độc hại cao hoặc mang hình ảnh nhạy cảm.
-  - Phân loại vi phạm chi tiết: Toxicity %, Hate speech, Harassment, Spam, Profanity, Sensitive Media.
-  - Tác vụ 1-chạm: Duyệt an toàn (`approve`), Gỡ bỏ (`hide`), và Cảnh cáo người dùng (`warn`).
-- **Thử Nghiệm Mô Hình AI (`ModerationPlaygroundTab.tsx`):**
-  - Mô hình phân loại văn bản Transformer song ngữ VI/EN.
-  - Mô hình phát hiện Bot & Tài khoản ảo (Isolation Forest & Autoencoder).
+### 3.4. Báo Cáo Bình Luận
+- Trang `/reports` hiển thị danh sách báo cáo bình luận để quản trị viên lọc theo nơi tiếp nhận và trạng thái, xem nội dung vi phạm và xử lý báo cáo.
+- Giao diện hàng đợi AI và thử nghiệm mô hình đã được gỡ khỏi Admin Portal. Các API và logic kiểm duyệt phía backend vẫn hoạt động.
 
 ### 3.5. Trung Tâm Bảo Mật & Tường Lửa WAF (Security Center)
 - **Tích Hợp Sâu Tường Lửa Đa Tầng:**

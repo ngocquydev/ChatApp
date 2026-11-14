@@ -26,13 +26,14 @@ import {
 } from "lucide-react";
 import { adminApi, AdminStats } from "@/services/adminApi";
 import { useTranslation } from "@/i18n/useTranslation";
+import { ADMIN_REPORTS_COPY } from "@/i18n/adminReports";
 
 export default function DashboardView() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { isEnglish: isEn } = useTranslation();
+  const { isEnglish: isEn, tr } = useTranslation();
 
   const loadStats = useCallback(async () => {
     try {
@@ -90,7 +91,7 @@ export default function DashboardView() {
   }
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
       {/* Tiêu đề trang & Nút tải lại */}
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
         <Box>
@@ -115,7 +116,7 @@ export default function DashboardView() {
       </Box>
 
       {/* 4 Thẻ thống kê cốt lõi */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }, gap: 2.5 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))", xl: "repeat(4, minmax(0, 1fr))" }, gap: 2.5 }}>
         {/* Người dùng */}
         <Card sx={{ borderRadius: "16px", height: "100%", border: "1px solid", borderColor: "divider" }}>
           <CardContent sx={{ p: 2.5 }}>
@@ -141,20 +142,20 @@ export default function DashboardView() {
             <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
               {stats.users.total.toLocaleString()}
             </Typography>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1, minWidth: 0 }}>
               <Chip
-                label={`${stats.users.active} ${isEn ? "active" : "hoạt động"}`}
+                label={`${stats.users.active.toLocaleString()} ${isEn ? "active" : "hoạt động"}`}
                 size="small"
                 color="success"
                 variant="outlined"
-                sx={{ height: 20, fontSize: "0.7rem", fontWeight: 600 }}
+                sx={{ minHeight: 20, height: "auto", maxWidth: "100%", fontSize: "0.7rem", fontWeight: 600, "& .MuiChip-label": { whiteSpace: "normal", overflowWrap: "anywhere" } }}
               />
               {stats.users.banned > 0 && (
                 <Chip
-                  label={`${stats.users.banned} ${isEn ? "banned" : "bị cấm"}`}
+                  label={`${stats.users.banned.toLocaleString()} ${isEn ? "banned" : "bị cấm"}`}
                   size="small"
                   color="error"
-                  sx={{ height: 20, fontSize: "0.7rem", fontWeight: 600 }}
+                  sx={{ minHeight: 20, height: "auto", maxWidth: "100%", fontSize: "0.7rem", fontWeight: 600, "& .MuiChip-label": { whiteSpace: "normal", overflowWrap: "anywhere" } }}
                 />
               )}
             </Box>
@@ -217,15 +218,15 @@ export default function DashboardView() {
             <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
               {stats.security.underAttack ? "ATTACK" : "SECURE"}
             </Typography>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+            <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 0.8, minWidth: 0 }}>
               <Chip
                 label={stats.security.underAttack ? (isEn ? "Under Attack" : "Đang bị tấn công") : (isEn ? "Normal" : "Bình thường")}
                 size="small"
                 color={stats.security.underAttack ? "error" : "success"}
                 sx={{ height: 20, fontSize: "0.7rem", fontWeight: 700 }}
               />
-              <Typography variant="caption" color="text.secondary">
-                {stats.security.activeBans} {isEn ? "banned IPs" : "IP đang bị cấm"}
+              <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: "anywhere" }}>
+                {stats.security.activeBans.toLocaleString()} {isEn ? "banned IPs" : "IP đang bị cấm"}
               </Typography>
             </Box>
           </CardContent>
@@ -241,11 +242,11 @@ export default function DashboardView() {
           }}
         >
           <CardContent sx={{ p: 2.5 }}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1, mb: 1.5 }}>
               <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
                 {isEn ? "Server RAM & Resources" : "RAM Máy Chủ & Tài Nguyên"}
               </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
                 {stats.system.memory.status === "critical" ? (
                   <Chip size="small" color="error" label={isEn ? "Upgrade RAM" : "Cần nâng cấp"} sx={{ fontWeight: 800, height: 22 }} />
                 ) : stats.system.memory.status === "warning" ? (
@@ -272,13 +273,13 @@ export default function DashboardView() {
             <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
               {stats.system.memory.systemUsagePercent !== undefined ? `${stats.system.memory.systemUsagePercent}% RAM` : `${stats.system.memory.heapUsedMB} MB`}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", overflowWrap: "anywhere" }}>
               {stats.system.memory.systemUsedMB !== undefined && stats.system.memory.systemTotalMB
                 ? `${stats.system.memory.systemTotalMB >= 1024 ? `${(stats.system.memory.systemUsedMB / 1024).toFixed(1)} / ${(stats.system.memory.systemTotalMB / 1024).toFixed(1)} GB` : `${stats.system.memory.systemUsedMB} / ${stats.system.memory.systemTotalMB} MB`} • Heap: ${stats.system.memory.heapUsedMB} MB`
                 : `Heap: ${stats.system.memory.heapUsedMB} MB • Uptime: ${formatUptime(stats.system.uptimeSeconds)}`}
             </Typography>
             {stats.system.memory.cloudBreakdown && (
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5, fontSize: "0.72rem" }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5, fontSize: "0.72rem", overflowWrap: "anywhere" }}>
                 Render: {stats.system.memory.cloudBreakdown.render.usedMB}/{stats.system.memory.cloudBreakdown.render.totalMB} MB • Redis: {stats.system.memory.cloudBreakdown.redis.usedMB}/{stats.system.memory.cloudBreakdown.redis.totalMB} MB
               </Typography>
             )}
@@ -287,7 +288,7 @@ export default function DashboardView() {
       </Box>
 
       {/* Trạng thái dịch vụ & Lối tắt nhanh */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" }, gap: 2.5 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", lg: "repeat(2, minmax(0, 1fr))" }, gap: 2.5 }}>
         {/* Cột trái: Trạng thái kết nối dịch vụ */}
         <Card sx={{ borderRadius: "16px", border: "1px solid", borderColor: "divider", height: "100%" }}>
           <CardContent sx={{ p: 3 }}>
@@ -388,7 +389,7 @@ export default function DashboardView() {
               </Button>
               <Button
                 component={Link}
-                to="/moderation"
+                to="/reports"
                 variant="outlined"
                 endIcon={<ArrowRight size={16} />}
                 sx={{
@@ -400,7 +401,7 @@ export default function DashboardView() {
                   fontWeight: 600,
                 }}
               >
-                {isEn ? "AI Toxicity & Bot Sandbox" : "Thử nghiệm AI & Chống Bot"}
+                {tr(ADMIN_REPORTS_COPY.title)}
               </Button>
               <Button
                 component={Link}

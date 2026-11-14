@@ -12,57 +12,27 @@ export interface AdminAuthState {
   logout: () => Promise<void>;
 }
 
-const CACHED_ADMIN_KEY = "cached_admin_user";
-
-function getStoredAdmin(): AdminUser | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(CACHED_ADMIN_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function persistStoredAdmin(user: AdminUser | null) {
+function clearLegacyAdminStorage() {
   if (typeof window === "undefined") return;
   try {
-    if (user) {
-      localStorage.setItem("has_admin_session", "true");
-      localStorage.setItem(CACHED_ADMIN_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem("has_admin_session");
-      localStorage.removeItem(CACHED_ADMIN_KEY);
-    }
+    localStorage.removeItem("has_admin_session");
+    localStorage.removeItem("cached_admin_user");
   } catch {
-    // ignore storage errors
+    // Browser storage can be unavailable; authentication still uses the cookie.
   }
 }
 
 let checkPromise: Promise<unknown> | null = null;
 
-export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
-  user: getStoredAdmin(),
-  isAuthenticated: !!getStoredAdmin(),
+export const useAdminAuthStore = create<AdminAuthState>((set) => ({
+  user: null,
+  isAuthenticated: false,
   isCheckingAuth: true,
   isLoggingIn: false,
 
   checkAuth: async () => {
     if (checkPromise) return checkPromise;
-
-    if (typeof window !== "undefined") {
-      const hasSession = localStorage.getItem("has_admin_session") === "true";
-      if (!hasSession) {
-        persistStoredAdmin(null);
-        set({ user: null, isAuthenticated: false, isCheckingAuth: false });
-        return null;
-      }
-      const cached = getStoredAdmin();
-      if (cached && !get().user) {
-        set({ user: cached, isAuthenticated: true });
-      }
-    }
-
+    clearLegacyAdminStorage();
     set({ isCheckingAuth: true });
     checkPromise = (async () => {
       try {
@@ -71,13 +41,11 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
         if (profile?.role !== "admin") {
           throw new Error("Không có quyền truy cập quản trị viên");
         }
-        persistStoredAdmin(profile);
         set({ user: profile, isAuthenticated: true });
         return profile;
-      } catch (err) {
-        persistStoredAdmin(null);
+      } catch {
         set({ user: null, isAuthenticated: false });
-        throw err;
+        return null;
       } finally {
         set({ isCheckingAuth: false });
         checkPromise = null;
@@ -88,6 +56,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
   },
 
   login: async (body) => {
+    clearLegacyAdminStorage();
     set({ isLoggingIn: true });
     try {
       const res = await api.post("/auth/admin/login", body);
@@ -95,7 +64,6 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
       if (profile?.role !== "admin") {
         throw new Error("Tài khoản này không có quyền quản trị viên!");
       }
-      persistStoredAdmin(profile);
       set({ user: profile, isAuthenticated: true });
       return res.data;
     } finally {
@@ -109,7 +77,7 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
     } catch {
       // ignore
     } finally {
-      persistStoredAdmin(null);
+      clearLegacyAdminStorage();
       set({ user: null, isAuthenticated: false });
     }
   },

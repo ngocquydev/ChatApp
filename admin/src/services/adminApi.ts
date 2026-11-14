@@ -144,60 +144,6 @@ export interface SystemHealthData {
   };
 }
 
-export interface ModerationTextResult {
-  isClean?: boolean;
-  action: 'ALLOW' | 'WARN' | 'FLAG_REVIEW' | 'BLOCK' | 'pass' | 'flag' | 'block' | string;
-  toxicityScore: number;
-  categories: {
-    toxic?: number;
-    hateSpeech: number | boolean;
-    harassment: number | boolean;
-    spam: number | boolean;
-    profanity: number | boolean;
-    violence?: number;
-  };
-  flags?: string[];
-  reason?: string;
-  language: string;
-  flaggedKeywords?: string[];
-}
-
-export interface ModerationBehaviorResult {
-  isAnomaly: boolean;
-  anomalyScore: number;
-  autoencoderAnomaly?: boolean;
-  autoencoderError?: number;
-  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-  assessment: string;
-}
-
-export interface ModerationQueueItem {
-  _id: string;
-  authorId?: {
-    _id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-  };
-  content: string;
-  images: string[];
-  privacy: string;
-  isSensitive?: boolean;
-  moderationStatus: 'approved' | 'flagged' | 'rejected';
-  toxicityScore?: number;
-  moderationReason?: string;
-  createdAt: string;
-}
-
-export interface ModerationQueueResponse {
-  success: boolean;
-  items: ModerationQueueItem[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
 export const adminApi = {
   async getStats(): Promise<AdminStats> {
     const res = await api.get<{ success: boolean; stats: AdminStats }>('/admin/stats');
@@ -252,56 +198,9 @@ export const adminApi = {
     return res.data;
   },
 
-  async testModerationText(
-    text: string,
-    language?: 'vi' | 'en' | 'auto',
-  ): Promise<ModerationTextResult> {
-    const res = await api.post<{ success: boolean; result: ModerationTextResult }>(
-      '/admin/moderation/test-text',
-      { text, language },
-    );
-    return res.data.result;
-  },
-
-  async testModerationBehavior(sample: {
-    friendRequestsPerHour: number;
-    acceptanceRate: number;
-    actionIntervalVariance: number;
-    actionRepetitionRatio: number;
-    interactionVelocity: number;
-    distinctTargetRatio: number;
-  }): Promise<ModerationBehaviorResult> {
-    const res = await api.post<{ success: boolean; result: ModerationBehaviorResult }>(
-      '/admin/moderation/test-behavior',
-      sample,
-    );
-    return res.data.result;
-  },
-
   async getSystemHealth(): Promise<SystemHealthData> {
     const res = await api.get<{ success: boolean; system: SystemHealthData }>('/admin/system');
     return res.data.system;
-  },
-
-  async getModerationQueue(params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-  }): Promise<ModerationQueueResponse> {
-    const res = await api.get<ModerationQueueResponse>('/admin/moderation/queue', { params });
-    return res.data;
-  },
-
-  async resolveModerationQueueItem(
-    id: string,
-    action: 'approve' | 'hide' | 'warn',
-    reason?: string,
-  ): Promise<{ success: boolean; message: string }> {
-    const res = await api.patch<{ success: boolean; message: string }>(
-      `/admin/moderation/queue/${id}/resolve`,
-      { action, reason },
-    );
-    return res.data;
   },
 
   async getCommentReports(params?: {
