@@ -3,35 +3,58 @@
   "tasks": {
     "ci:backend": {
       "inputs": [
-        "backend/**",
-        "scripts/ci-inspect.mjs",
+        "apps/server/**",
+        ".github/scripts/ci-inspect.mjs",
         "package.json",
         "package-lock.json",
-        "!backend/node_modules/**",
-        "!backend/dist/**",
-        "!backend/.turbo/**"
+        "!apps/server/node_modules/**",
+        "!apps/server/dist/**",
+        "!apps/server/.turbo/**"
+      ],
+      "tags": ["ci"]
+    },
+    "ci:server": {
+      "inputs": [
+        "apps/server/**",
+        ".github/scripts/ci-inspect.mjs",
+        "package.json",
+        "package-lock.json",
+        "!apps/server/node_modules/**",
+        "!apps/server/dist/**",
+        "!apps/server/.turbo/**"
       ],
       "tags": ["ci"]
     },
     "ci:frontend": {
       "inputs": [
-        "frontend/**",
+        "apps/web/**",
         "package.json",
         "package-lock.json",
-        "!frontend/node_modules/**",
-        "!frontend/.next/**",
-        "!frontend/.turbo/**"
+        "!apps/web/node_modules/**",
+        "!apps/web/.next/**",
+        "!apps/web/.turbo/**"
+      ],
+      "tags": ["ci"]
+    },
+    "ci:web": {
+      "inputs": [
+        "apps/web/**",
+        "package.json",
+        "package-lock.json",
+        "!apps/web/node_modules/**",
+        "!apps/web/.next/**",
+        "!apps/web/.turbo/**"
       ],
       "tags": ["ci"]
     },
     "ci:admin": {
       "inputs": [
-        "admin/**",
+        "apps/admin/**",
         "package.json",
         "package-lock.json",
-        "!admin/node_modules/**",
-        "!admin/dist/**",
-        "!admin/.turbo/**"
+        "!apps/admin/node_modules/**",
+        "!apps/admin/dist/**",
+        "!apps/admin/.turbo/**"
       ],
       "tags": ["ci"]
     }

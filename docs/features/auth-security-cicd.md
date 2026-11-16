@@ -109,3 +109,9 @@ Các nhà phát triển có thể tự chạy toàn bộ quy trình kiểm tra n
 bash scripts/check.sh
 ```
 
+# Bảo vệ Origin và cổng mạng
+
+API và Socket.IO dùng danh sách Origin chính xác từ `FRONTEND_URL`, `ADMIN_URL` và `CORS_ORIGIN` (phân cách bằng dấu phẩy). Chỉ môi trường không phải production tự cho phép các cổng localhost phát triển. Request thay đổi dữ liệu mang cookie đăng nhập phải gửi Origin được phép; client không dùng cookie có thể xác thực bằng Bearer token. Socket.IO kiểm tra Origin ở cả polling và WebSocket handshake; kết nối cookie không có Origin bị từ chối. Quyền của token và trạng thái người dùng được kiểm tra lại khi kết nối socket.
+
+Docker Compose chỉ publish cổng ứng dụng trên `127.0.0.1`; MongoDB, Redis và Neo4j chỉ truy cập qua mạng Docker. Chạy `docker compose up -d` để áp dụng cấu hình mới cho container hiện có. Cloudflare Tunnel phải được cấu hình bằng thông tin thật và định tuyến đến localhost; thiết lập firewall của máy chủ và xác minh từ một máy bên ngoài trước khi coi origin đã được bảo vệ. Không đưa Redis, MongoDB hay Neo4j ra Internet.
+

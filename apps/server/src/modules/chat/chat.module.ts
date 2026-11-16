@@ -1,0 +1,31 @@
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { JwtModule } from '@nestjs/jwt';
+import { Conversation, ConversationSchema } from './schemas/conversation.schema.js';
+import { Message, MessageSchema } from './schemas/message.schema.js';
+import { ChatService } from './chat.service.js';
+import { ChatController } from './chat.controller.js';
+import { ChatGateway } from './chat.gateway.js';
+import { UsersModule } from '../users/users.module.js';
+import { RedisModule } from '../redis/redis/redis.module.js';
+import { GroqModule } from '../groq/groq.module.js';
+
+@Module({
+  imports: [
+    MongooseModule.forFeature([
+      { name: Conversation.name, schema: ConversationSchema },
+      { name: Message.name, schema: MessageSchema },
+    ]),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '1h' },
+    }),
+    UsersModule,
+    RedisModule,
+    GroqModule,
+  ],
+  controllers: [ChatController],
+  providers: [ChatService, ChatGateway],
+  exports: [ChatService, ChatGateway],
+})
+export class ChatModule {}

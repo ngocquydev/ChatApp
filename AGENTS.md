@@ -7,12 +7,12 @@ This file is the entry point for agents working in this repository. Read it befo
 
 | Area           | Stack                                                                                   | Development command                      |
 | -------------- | --------------------------------------------------------------------------------------- | ---------------------------------------- |
-| `frontend/`    | Next.js 16 App Router, React 19, MUI v9, Zustand, Socket.IO, Protobuf, React Hook Form, Zod | `npm run dev` (port 5173)                |
-| `admin/`       | React 19, Vite, React Router v7, MUI v9, Zustand, Lucide                                | `npm run dev` (port 5174)                |
-| `backend/`     | NestJS, MongoDB, Redis, Socket.IO, Swagger                                              | `npm run start:dev` (port 3000)          |
-| Infrastructure | Docker Compose, MongoDB, Redis                                                          | `docker compose up -d` (repository root) |
+| `apps/web/`    | Next.js 16 App Router, React 19, MUI v9, Zustand, Socket.IO, Protobuf, React Hook Form, Zod | `npm run dev` (port 5173)                |
+| `apps/admin/`  | React 19, Vite, React Router v7, MUI v9, Zustand, Lucide                                | `npm run dev` (port 5174)                |
+| `apps/server/` | NestJS, MongoDB, Redis, Socket.IO, Swagger                                              | `npm run start:dev` (port 3000)          |
+| Infrastructure | Docker Compose, MongoDB, Redis, Neo4j                                                   | `docker compose up -d` (repository root) |
 
-Quality scripts: `scripts/check.ps1` (Windows), `scripts/check.sh`; the repository security/RAM/N+1 inspection is `node scripts/ci-inspect.mjs`.
+Quality scripts: `.github/scripts/check.ps1` (Windows), `.github/scripts/check.sh`; the repository security/RAM/N+1 inspection is `node .github/scripts/ci-inspect.mjs`.
 
 ## Working rules
 

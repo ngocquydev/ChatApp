@@ -2,18 +2,15 @@ name: CI Quality & Security Gate
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ============================================================================
-  # 1. KIỂM TRA LỖI CÚ PHÁP, LINTING VÀ STRICT TYPE SYSTEM
-  # ============================================================================
   syntax-and-types:
     name: "1. Syntax, Lint & Type Safety"
     runs-on: ubuntu-latest
@@ -25,38 +22,35 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
+            apps/server/package-lock.json
+            apps/web/package-lock.json
 
       - name: "Install Backend Dependencies"
-        working-directory: ./backend
+        working-directory: ./apps/server
         run: npm ci --legacy-peer-deps
 
       - name: "Install Frontend Dependencies"
-        working-directory: ./frontend
+        working-directory: ./apps/web
         run: npm ci --legacy-peer-deps
 
       - name: "[Backend] Kiem tra Cu phap & Lint (Oxlint)"
-        working-directory: ./backend
+        working-directory: ./apps/server
         run: npm run lint
 
       - name: "[Backend] Kiem tra Type System (TypeScript tsc)"
-        working-directory: ./backend
+        working-directory: ./apps/server
         run: npm run typecheck
 
       - name: "[Frontend] Kiem tra Cu phap & Lint (ESLint)"
-        working-directory: ./frontend
+        working-directory: ./apps/web
         run: npm run lint
 
       - name: "[Frontend] Kiem tra Type System (TypeScript tsc)"
-        working-directory: ./frontend
+        working-directory: ./apps/web
         run: npm run typecheck
 
-  # ============================================================================
-  # 2. KIỂM TRA BẢO MẬT THEO OWASP TOP 10 & RÒ RỈ DỮ LIỆU
-  # ============================================================================
   owasp-security:
     name: "2. OWASP Top 10 & Data Leakage Protection"
     runs-on: ubuntu-latest
@@ -70,17 +64,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
+            apps/server/package-lock.json
+            apps/web/package-lock.json
 
       - name: "Install Backend Dependencies"
-        working-directory: ./backend
+        working-directory: ./apps/server
         run: npm ci --legacy-peer-deps
 
       - name: "Install Frontend Dependencies"
-        working-directory: ./frontend
+        working-directory: ./apps/web
         run: npm ci --legacy-peer-deps
 
       - name: "Quet Ro ri Secret & Credentials (Gitleaks)"
@@ -100,20 +94,17 @@ jobs:
         continue-on-error: true
 
       - name: "[Backend] Kiem tra Lo hong Thu vien (npm audit)"
-        working-directory: ./backend
+        working-directory: ./apps/server
         run: npm audit --omit=dev --audit-level=critical
 
       - name: "[Frontend] Kiem tra Lo hong Thu vien (npm audit)"
-        working-directory: ./frontend
+        working-directory: ./apps/web
         run: npm audit --omit=dev --audit-level=critical
 
       - name: "Chay Bo Test Bao mat OWASP & Chong Ro ri Du lieu"
-        working-directory: ./backend
+        working-directory: ./apps/server
         run: npm run test:security
 
-  # ============================================================================
-  # 3. KIỂM TRA TRÀN BỘ NHỚ, RÒ RỈ RAM VÀ LỖI TRUY VẤN N+1
-  # ============================================================================
   performance-and-memory:
     name: "3. Memory Leaks, Buffer Overflow & N+1 Queries"
     runs-on: ubuntu-latest
@@ -125,27 +116,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
+          cache: "npm"
+          cache-dependency-path: apps/server/package-lock.json
 
       - name: "Install Backend Dependencies"
-        working-directory: ./backend
+        working-directory: ./apps/server
         run: npm ci --legacy-peer-deps
 
       - name: "Quet Phan tich Tinh (CI Inspector: N+1 queries, dangerous buffers, memory leaks)"
-        run: node scripts/ci-inspect.mjs
+        run: node .github/scripts/ci-inspect.mjs
 
       - name: "Chay Bo Test Ro ri RAM & Tran Bo dem (--expose-gc)"
-        working-directory: ./backend
+        working-directory: ./apps/server
         run: npm run test:memory
 
       - name: "Chay Bo Test Phong chong Loi Truy van N+1"
-        working-directory: ./backend
+        working-directory: ./apps/server
         run: npm run test:nplusone
 
-  # ============================================================================
-  # 4. CHẠY TOÀN BỘ TEST SUITE VÀ KIỂM TRA BUILD SẢN PHẨM
-  # ============================================================================
   test-and-build:
     name: "4. Full Unit Tests & Production Build"
     runs-on: ubuntu-latest
@@ -158,24 +146,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
+            apps/server/package-lock.json
+            apps/web/package-lock.json
 
       - name: "Install Dependencies"
         run: |
-          cd backend && npm ci --legacy-peer-deps
-          cd ../frontend && npm ci --legacy-peer-deps
+          cd apps/server && npm ci --legacy-peer-deps
+          cd ../web && npm ci --legacy-peer-deps
 
       - name: "[Backend] Chay Toan bo Unit Tests"
-        working-directory: ./backend
+        working-directory: ./apps/server
         run: npm run test
 
       - name: "[Backend] Build NestJS Production Bundle"
-        working-directory: ./backend
+        working-directory: ./apps/server
         run: npm run build
 
       - name: "[Frontend] Build Next.js Production Bundle"
-        working-directory: ./frontend
+        working-directory: ./apps/web
         run: npm run build

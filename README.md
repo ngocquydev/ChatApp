@@ -177,6 +177,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - Tự động làm mới phiên ngầm (Silent Refresh) qua Axios Interceptors khi gặp lỗi 401.
 - Tích hợp Cloudflare Turnstile chống bot và brute-force; đăng nhập mạng xã hội một chạm với Firebase (Google & Facebook).
 - Khôi phục mật khẩu 4 bước qua Email OTP và đưa token đã đăng xuất vào Redis Blacklist (hỗ trợ chế độ Fail-safe).
+- **Origin và cổng dịch vụ:** API và Socket.IO chỉ cho phép Origin khớp `FRONTEND_URL`, `ADMIN_URL` hoặc danh sách `CORS_ORIGIN`; request thay đổi dữ liệu dùng cookie phải có Origin hợp lệ. Docker Compose chỉ bind cổng ứng dụng vào `127.0.0.1` và giữ database trong mạng Docker; cập nhật domain thật trước khi triển khai và dùng Cloudflare Tunnel hoặc reverse proxy tin cậy.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/waf.md](docs/features/waf.md), [docs/features/cloudflare-ddos-protection.md](docs/features/cloudflare-ddos-protection.md) & [docs/features/auth-security-cicd.md](docs/features/auth-security-cicd.md)*
 
 ### 7. Trang Quản Trị Hệ Thống Toàn Diện & Bố Cục Sidebar 2 Cột (Admin Control Panel)
@@ -196,7 +197,7 @@ Dự án tích hợp giao thức thời gian thực đa tầng (**Socket.IO & Bi
 - **Hiệu năng cao với Docker mongodump nhị phân:** Sao lưu toàn bộ dữ liệu CSDL MongoDB (> 1.000.000 bản ghi) chỉ mất ~5 giây, dung lượng nén giảm ~85% (32MB), có cơ chế Native Mongoose Fallback dự phòng khi không dùng Docker CLI.
 - **Tải file, Phục hồi & Xóa an toàn:** Tải trực tiếp bản sao lưu `.archive.gz`, khôi phục CSDL thông qua hộp thoại xác nhận `ConfirmDialog` chống ghi đè nhầm lẫn.
 - **Chính sách lưu trữ thông minh (Retention Policy):** Giữ tối đa 10 bản sao lưu gần nhất trong vòng 7 ngày, tự động loại bỏ các file cũ nhằm bảo vệ dung lượng đĩa cứng.
-- **Kịch bản dòng lệnh CLI độc lập:** Cung cấp sẵn `scripts/backup-database.ps1` (PowerShell) và `scripts/backup-database.sh` (Bash) cho sysadmin/cronjob.
+- **Kịch bản dòng lệnh CLI độc lập:** Cung cấp sẵn `.github/scripts/backup-database.ps1` (PowerShell) và `.github/scripts/backup-database.sh` (Bash) cho sysadmin/cronjob.
 - 📖 *Xem đặc tả chi tiết tại: [docs/features/database-backup.md](docs/features/database-backup.md)*
 
 ### 9. Hệ Thống Thả Cảm Xúc Chuẩn Facebook (Reactions) & Bảng Chọn Emoji
@@ -328,40 +329,40 @@ chat/
 ├── README.md                    # Giới thiệu tổng quan dự án
 ├── AGENTS.md                    # Quy chuẩn & quy trình bắt buộc cho AI Agents
 │
-├── backend/                     # Mã nguồn Backend (NestJS + TypeScript)
-│   ├── src/
-│   │   ├── common/              # Guards, Interceptors, Filters dùng chung
-│   │   ├── errorHandleer/       # Exception Filter chuẩn hóa lỗi
-│   │   └── modules/
-│   │       ├── auth/            # Xác thực JWT HttpOnly, OTP, Firebase, Turnstile
-│   │       ├── chat/            # Socket.IO Gateway, Socket.IO Protocol, Tin nhắn
-│   │       ├── friends/         # Hệ thống bạn bè & Tìm kiếm
-│   │       ├── neo4j/           # Neo4j Service & Cypher Queries đồ thị kết bạn
-│   │       ├── moderation/      # Báo cáo bình luận dành cho quản trị viên
-│   │       ├── waf/             # WAF Engine, Clearance, Edge Auto-Ban & Cloudflare CLI
-│   │       ├── posts/           # Bảng tin, Thích, Bình luận, Tải ảnh
-│   │       ├── users/           # Hồ sơ người dùng
-│   │       └── redis/           # Redis Service (Blacklist, GEO, Sets, Caching)
-│   └── test/                    # Bộ kiểm thử bảo mật OWASP, RAM, N+1, Unit Tests
-│
-├── admin/                       # 🛡️ Cổng Quản trị độc lập (React 19 + Vite + React Router DOM)
-│   ├── src/
-│   │   ├── components/          # Dashboard, Users, Posts, Moderation, Security, System
-│   │   ├── services/            # Axios API (withCredentials) kết nối Backend
-│   │   ├── store/               # Admin Auth Store (đăng nhập /auth/admin/login)
-│   │   └── theme/               # Dark/Light MUI Theme & Tokens
-│   └── package.json
-│
-└── frontend/                    # Mã nguồn Frontend (Next.js 16 + TypeScript) - 100% Client thuần túy
-    ├── public/                  # Tài nguyên tĩnh, robots.txt, logo
-    └── src/
-        ├── app/                 # Next.js App Router (chat, profile, explore, auth...)
-        ├── components/          # Design System, Chat, Feed, Posts, Layout
-        ├── hooks/               # Custom React Hooks
-        ├── i18n/                # Bản địa hóa đa ngôn ngữ (VI, EN, ZH-CN, ZH-TW, KO, TH)
-        ├── services/            # Axios API, Socket.IO & Socket.IO Client
-        ├── store/               # Zustand Global Stores
-        └── theme/               # Material UI Theme & Design Tokens
+├── apps/
+│   ├── server/                  # Mã nguồn Backend (NestJS + TypeScript)
+│   │   ├── src/
+│   │   │   ├── common/          # Guards, Interceptors, Filters dùng chung
+│   │   │   ├── errorHandleer/   # Exception Filter chuẩn hóa lỗi
+│   │   │   └── modules/
+│   │   │       ├── auth/        # Xác thực JWT HttpOnly, OTP, Firebase, Turnstile
+│   │   │       ├── chat/        # Socket.IO Gateway, Socket.IO Protocol, Tin nhắn
+│   │   │       ├── friends/     # Hệ thống bạn bè & Tìm kiếm
+│   │   │       ├── neo4j/       # Neo4j Service & Cypher Queries đồ thị kết bạn
+│   │   │       ├── waf/         # WAF Engine, Clearance, Edge Auto-Ban & Cloudflare CLI
+│   │   │       ├── posts/       # Bảng tin, Thích, Bình luận, Tải ảnh
+│   │   │       ├── users/       # Hồ sơ người dùng
+│   │   │       └── redis/       # Redis Service (Blacklist, GEO, Sets, Caching)
+│   │   └── test/                # Bộ kiểm thử bảo mật OWASP, RAM, N+1, Unit Tests
+│   │
+│   ├── admin/                   # 🛡️ Cổng Quản trị độc lập (React 19 + Vite + React Router DOM)
+│   │   ├── src/
+│   │   │   ├── components/      # Dashboard, Users, Posts, Reports, Security, System
+│   │   │   ├── services/        # Axios API (withCredentials) kết nối Backend
+│   │   │   ├── store/           # Admin Auth Store (đăng nhập /auth/admin/login)
+│   │   │   └── theme/           # Dark/Light MUI Theme & Tokens
+│   │   └── package.json
+│   │
+│   └── web/                     # Mã nguồn Frontend (Next.js 16 + TypeScript) - 100% Client thuần túy
+│       ├── public/              # Tài nguyên tĩnh, robots.txt, logo
+│       └── src/
+│           ├── app/             # Next.js App Router (chat, profile, explore, auth...)
+│           ├── components/      # Design System, Chat, Feed, Posts, Layout
+│           ├── hooks/           # Custom React Hooks
+│           ├── i18n/            # Bản địa hóa đa ngôn ngữ (VI, EN, ZH-CN, ZH-TW, KO, TH)
+│           ├── services/        # Axios API, Socket.IO & Socket.IO Client
+│           ├── store/           # Zustand Global Stores
+│           └── theme/           # Material UI Theme & Design Tokens
 ```
 
 ---
@@ -380,7 +381,7 @@ chat/
 #### Cách 1: Khởi chạy Trọn gói Toàn Bộ Dịch Vụ (Khuyến nghị)
 ```powershell
 # Tự động phát hiện Docker Desktop và khởi chạy: Databases + Backend + Frontend + Admin
-powershell -File .\scripts\ensure-docker.ps1 -All
+powershell -File .\.github\scripts\ensure-docker.ps1 -All
 
 # Hoặc dùng Docker Compose chuẩn:
 docker compose up -d
@@ -409,12 +410,12 @@ cp .env.example .env.local
 
 ---
 
-### 3. Cấu hình & Chạy Backend (NestJS)
+### 3. Cấu hình & Chạy Backend (`apps/server` - NestJS)
 ```bash
-cd backend
+cd apps/server
 npm install
 
-# Khởi chạy server ở chế độ phát triển (tự động nạp ../.env.local):
+# Khởi chạy server ở chế độ phát triển (tự động nạp ../../.env.local):
 npm run start:dev
 
 # (Tùy chọn) Đồng bộ bộ quy tắc WAF lên Cloudflare qua WAF-as-Code CLI:
@@ -426,24 +427,24 @@ npm run cf:waf -- --sync
 
 ---
 
-### 4. Cấu hình & Chạy Frontend (Next.js 16)
+### 4. Cấu hình & Chạy Frontend (`apps/web` - Next.js 16)
 ```bash
-cd ../frontend
+cd apps/web
 npm install
 
-# Khởi chạy máy chủ phát triển (Turbopack, tự động nạp ../.env.local):
+# Khởi chạy máy chủ phát triển (Turbopack, tự động nạp ../../.env.local):
 npm run dev
 ```
 - Truy cập ứng dụng: `http://localhost:5173` (hoặc `http://localhost:3000`)
 
 ---
 
-### 5. Cấu hình & Chạy Admin Portal (React 19 + Vite)
+### 5. Cấu hình & Chạy Admin Portal (`apps/admin` - React 19 + Vite)
 ```bash
-cd ../admin
+cd apps/admin
 npm install
 
-# Khởi chạy cổng quản trị (tự động nạp ../.env.local):
+# Khởi chạy cổng quản trị (tự động nạp ../../.env.local):
 npm run dev
 ```
 - Truy cập trang Quản trị: `http://localhost:5174/login` (Tài khoản role `admin`)
@@ -499,10 +500,10 @@ Dự án được bảo vệ nghiêm ngặt bởi hệ thống **Cổng Kiểm s
 ### Chạy kiểm tra chất lượng cục bộ trước khi push:
 ```powershell
 # Trên Windows PowerShell:
-.\scripts\check.ps1
+.\.github\scripts\check.ps1
 
 # Trên Linux / macOS / Git Bash:
-bash scripts/check.sh
+bash .github/scripts/check.sh
 ```
 
 ---

@@ -7,8 +7,6 @@ services:
     container_name: chat_redis
     restart: unless-stopped
     command: redis-server --appendonly yes
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -18,8 +16,6 @@ services:
     image: mongo:latest
     container_name: chat_mongo
     restart: unless-stopped
-    ports:
-      - "27017:27017"
     volumes:
       - mongo_data:/data/db
     networks:
@@ -29,11 +25,8 @@ services:
     image: neo4j:5-community
     container_name: chat_neo4j
     restart: unless-stopped
-    ports:
-      - "7474:7474"
-      - "7687:7687"
     environment:
-      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-neo4j_dev_password_change_me}
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
     volumes:
       - neo4j_data:/data
     networks:
@@ -44,13 +37,13 @@ services:
   # ============================================================================
   backend:
     build:
-      context: ./backend
+      context: ./apps/server
       dockerfile: Dockerfile
       target: dev
     container_name: chat_backend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     env_file:
       - ./.env.local
     environment:
@@ -63,18 +56,18 @@ services:
       - REDIS_PORT=6379
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
-      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-neo4j_dev_password_change_me}
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
-      - ADMIN_URL=${ADMIN_URL:-http://localhost:5174}
-      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5173,http://localhost:5174}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - ADMIN_URL=${ADMIN_URL}
+      - CORS_ORIGIN=${CORS_ORIGIN}
     volumes:
       # Bind Mount source code & configs để kích hoạt Hot Reload lập tức khi sửa file
-      - ./backend/src:/app/src
-      - ./backend/package.json:/app/package.json
-      - ./backend/tsconfig.json:/app/tsconfig.json
-      - ./backend/tsconfig.build.json:/app/tsconfig.build.json
-      - ./backend/nest-cli.json:/app/nest-cli.json
-      - ./backend/certs:/app/certs:ro
+      - ./apps/server/src:/app/src
+      - ./apps/server/package.json:/app/package.json
+      - ./apps/server/tsconfig.json:/app/tsconfig.json
+      - ./apps/server/tsconfig.build.json:/app/tsconfig.build.json
+      - ./apps/server/nest-cli.json:/app/nest-cli.json
+      - ./apps/server/certs:/app/certs:ro
       - ./.env.local:/app/.env.local:ro
       - ./.env.local:/app/.env:ro
       # Anonymous volume bảo toàn node_modules riêng biệt của container Linux
@@ -91,15 +84,15 @@ services:
   # ============================================================================
   frontend:
     build:
-      context: ./frontend
+      context: ./apps/web
       dockerfile: Dockerfile
       target: dev
       args:
-        - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3000}
+        - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
     container_name: chat_frontend
     restart: unless-stopped
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     env_file:
       - ./.env.local
     environment:
@@ -107,14 +100,14 @@ services:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
-      - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
     volumes:
       # Bind Mount source code & assets để kích hoạt Fast Refresh lập tức
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      - ./frontend/package.json:/app/package.json
-      - ./frontend/next.config.mjs:/app/next.config.mjs
-      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./apps/web/src:/app/src
+      - ./apps/web/public:/app/public
+      - ./apps/web/package.json:/app/package.json
+      - ./apps/web/next.config.mjs:/app/next.config.mjs
+      - ./apps/web/tsconfig.json:/app/tsconfig.json
       - ./.env.local:/app/.env.local:ro
       - ./.env.local:/app/.env:ro
       # Anonymous volume bảo toàn dependencies
@@ -130,26 +123,26 @@ services:
   # ============================================================================
   admin:
     build:
-      context: ./admin
+      context: ./apps/admin
       dockerfile: Dockerfile
       target: dev
       args:
-        - VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3000}
+        - VITE_BACKEND_URL=${VITE_BACKEND_URL}
     container_name: chat_admin
     restart: unless-stopped
     ports:
-      - "5174:5174"
+      - "127.0.0.1:5174:5174"
     env_file:
       - ./.env.local
     environment:
-      - VITE_BACKEND_URL=${VITE_BACKEND_URL:-http://localhost:3000}
+      - VITE_BACKEND_URL=${VITE_BACKEND_URL}
     volumes:
       # Bind Mount source code để kích hoạt Vite HMR lập tức
-      - ./admin/src:/app/src
-      - ./admin/public:/app/public
-      - ./admin/package.json:/app/package.json
-      - ./admin/index.html:/app/index.html
-      - ./admin/vite.config.ts:/app/vite.config.ts
+      - ./apps/admin/src:/app/src
+      - ./apps/admin/public:/app/public
+      - ./apps/admin/package.json:/app/package.json
+      - ./apps/admin/index.html:/app/index.html
+      - ./apps/admin/vite.config.ts:/app/vite.config.ts
       - ./.env.local:/app/.env.local:ro
       - ./.env.local:/app/.env:ro
       # Anonymous volume bảo toàn dependencies

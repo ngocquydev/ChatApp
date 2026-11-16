@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+
+set -eu
+
+[ -n "${CHAT_SKIP_HOOKS:-}" ] && exit 0
+
+deleting_only=1
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+	case "$local_sha" in
+	0000000000000000000000000000000000000000) ;;
+	*) deleting_only=0 ;;
+	esac
+done
+[ "$deleting_only" = "1" ] && exit 0
+
+echo "🔍 [Pre-push Hook] Đang kiểm tra mã nguồn trước khi push..."
+
+echo "➡️ [1/4] Kiểm tra Backend Lint & Types (apps/server)..."
+(cd apps/server && npm run lint && npm run typecheck)
+
+echo "➡️ [2/4] Kiểm tra Backend Unit Tests (apps/server)..."
+(cd apps/server && npm run test)
+
+echo "➡️ [3/4] Kiểm tra Backend Build (apps/server)..."
+(cd apps/server && npm run build)
+
+echo "➡️ [4/4] Kiểm tra Frontend Lint & Build (apps/web)..."
+(cd apps/web && npm run lint && npm run build)
+
+echo "✅ [Pre-push Hook] Tất cả kiểm tra đều thành công! Tiếp tục push..."
+exit 0
